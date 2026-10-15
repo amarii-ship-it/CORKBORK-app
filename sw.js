@@ -9,7 +9,7 @@
    - Google sign-in and Drive: never cached; sync handles being offline.     */
 const SHELL = "corkbork-shell-v1";
 const LIBS = "corkbork-libs-v1";
-const SHELL_FILES = ["./", "./index.html", "./corkboard.html", "./manifest.webmanifest",
+const SHELL_FILES = ["./", "./index.html", "./corkboard.html", "./privacy.html", "./manifest.webmanifest",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 const LIB_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "tessdata.projectnaptha.com"];
 

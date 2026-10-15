@@ -96,6 +96,14 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
   padding:0 6px; border-radius:4px; font-size:9.5px; line-height:1; letter-spacing:.01em;}
 /* Fixed translucent blue stays recognisable without turning black on dark
    themes or bright teal on light ones. Opacity belongs to the box, not text. */
+#cloudWrap{position:relative; flex:none; z-index:3;}
+#cloudMenu{position:absolute; left:0; top:34px; background:var(--surface-hi); border:1px solid var(--border);
+  border-radius:6px; display:none; flex-direction:column; width:250px; padding:10px; gap:7px;
+  box-shadow:0 6px 18px rgba(0,0,0,.4);}
+#cloudMenu.open{display:flex;}
+#cloudMenu button{padding:7px 10px; border-radius:5px; text-align:left; font-size:12.5px; background:var(--surface); color:var(--text);}
+#cloudMenu button:hover{background:var(--canvas);}
+#cloudMenu .meta{font-size:12px; line-height:1.4; color:var(--text-dim);}
 #cloudChip{gap:7px; font-size:12px; font-weight:600; color:var(--text); max-width:190px;}
 #cloudChip .cc-text{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 #cloudChip .cc-dot{width:9px; height:9px; border-radius:50%; flex:none; background:#8A8F98;}
@@ -2406,9 +2414,18 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>
   </button>
   <span class="barsep"></span>
-  <button class="barbtn" id="cloudChip" data-state="local" title="Cloud save — click for sync settings and backups" aria-live="polite">
-    <span class="cc-dot"></span><span class="cc-text">On this device</span>
-  </button>
+  <div id="cloudWrap">
+    <button class="barbtn" id="cloudChip" data-state="local" title="Cloud save — click for sync and backups" aria-live="polite" aria-haspopup="true">
+      <span class="cc-dot"></span><span class="cc-text">On this device</span>
+    </button>
+    <div id="cloudMenu" role="menu">
+      <div class="meta" id="cloudMenuStatus"></div>
+      <button class="wide" id="cmSync">Sync now</button>
+      <button class="wide backup-primary" id="cmBackup" title="Verify the current save and keep a restore point in local version history">Back up now (local restore point)</button>
+      <button class="wide" id="cmCopy" title="Save a self-contained dated CORKBORK package">Save a copy (.corkbork file)</button>
+      <button class="wide" id="cmSettings">Sync settings…</button>
+    </div>
+  </div>
   <span class="barsep"></span>
   <button class="barbtn iconbtn" id="btnLabels" title="Labels — browse and filter by label">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
@@ -3220,7 +3237,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div class="meta">Google Drive becomes the master copy shared by all your devices: PC, laptop, iPad and phone.
           Boards, notes and original files sync to a <b>CORKBORK</b> folder in your Drive. CORKBORK can only reach the files it creates there, never the rest of your Drive.
           Edits made on two devices are merged. If the same card was changed on both, the newer edit wins and the other is kept as a conflict copy.
-          On iPad and phone, original files download when you open them.</div>
+          On iPad and phone, original files download when you open them. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></div>
         <div class="meta"><b>Private boards</b> (right-click a board → Make private) never leave the device they were made private on, and anything already uploaded from them is deleted from Drive. Other devices see a locked placeholder. Encrypted syncing of private boards comes later.</div>
         <div class="meta" id="syncFileNote"></div>
         <div class="meta" id="syncStatus"></div>
@@ -3351,7 +3368,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b84";
+window.BUILD = "b85";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -13132,9 +13149,33 @@ async function saveCopy(){
     toast("Self-contained copy downloaded: "+a.download); return true;
   } catch (err){ toast("Could not make a complete copy: "+(err?.message||"unknown error"),9000); return false; }
 }
-$("#cloudChip").addEventListener("click", () => {
-  openSettings();
-  document.querySelector('.setnav[data-sec="cloud"]')?.click();
+/* The chip opens a small menu: what the cloud state is, and the backup
+   actions that used to sit in the bar, without going through Settings. */
+function closeCloudMenu(){ $("#cloudMenu").classList.remove("open"); }
+$("#cloudChip").addEventListener("click", e => {
+  e.stopPropagation();
+  const m = $("#cloudMenu"), opening = !m.classList.contains("open");
+  if (opening){
+    updateCloudChip();
+    $("#cloudMenuStatus").textContent = $("#cloudChip").dataset.tip || "";
+    const connected = !!SYNC.clientId && syncAvailable();
+    $("#cmSync").textContent = connected ? "Sync now" : syncAvailable() ? "Connect Google Drive…" : "Cloud sync needs the app's web address";
+    $("#cmSync").disabled = !syncAvailable();
+  }
+  m.classList.toggle("open", opening);
+});
+document.addEventListener("pointerdown", e => { if (!e.target.closest?.("#cloudWrap")) closeCloudMenu(); }, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeCloudMenu(); });
+$("#cmSync").addEventListener("click", async () => {
+  closeCloudMenu();
+  if (!SYNC.clientId){ openSettings(); document.querySelector('.setnav[data-sec="cloud"]')?.click(); return; }
+  try { await getToken(true); } catch (e){ toast("Google sign-in didn't finish: " + e.message); return; }
+  if (await requestCloudSync()) toast("Synced.");
+});
+$("#cmBackup").addEventListener("click", () => { closeCloudMenu(); backupNow(); });
+$("#cmCopy").addEventListener("click", () => { closeCloudMenu(); saveCopy(); });
+$("#cmSettings").addEventListener("click", () => {
+  closeCloudMenu(); openSettings(); document.querySelector('.setnav[data-sec="cloud"]')?.click();
 });
 $("#btnSaveCopy2").addEventListener("click", saveCopy);
 
@@ -15814,7 +15855,7 @@ async function toggleBoardPrivate(bid){
    Client ID is public by design (it is sent in every sign-in URL); it only
    names the app to Google. Google accepts it only from the origins listed
    in its console, so it is offered only on the hosted address. */
-const BUILTIN_CLIENT_ID = "";
+const BUILTIN_CLIENT_ID = "258973271030-ev22ft5gqlfdduku0h9724e3spjlrm2m.apps.googleusercontent.com";
 const BUILTIN_CLIENT_ORIGIN = "https://amarii-ship-it.github.io";
 function builtinClientId(){ return location.origin === BUILTIN_CLIENT_ORIGIN ? BUILTIN_CLIENT_ID : ""; }
 const SYNC = {
@@ -15832,24 +15873,52 @@ function loadGIS(){
     document.head.appendChild(s);
   });
 }
+/* Google gives a browser-only app a pass that lasts one hour, and each new
+   pass flashes Google's sign-in window. The pass is kept on this device until
+   it expires, so reloading or reopening CORKBORK doesn't ask again, and
+   requests made at the same moment share one sign-in instead of each opening
+   a window. The account hint lets Google's window close by itself. */
+let tokenRequest = null;
+function rememberedToken(){
+  try {
+    const t = JSON.parse(SAFE_STORE.get("cb_token") || "null");
+    if (t?.token && t.client === SYNC.clientId && Date.now() < t.exp - 60000){ SYNC.token = t.token; SYNC.tokenExp = t.exp; }
+  } catch (_) {}
+}
 async function getToken(interactive){
+  if (!SYNC.token) rememberedToken();
   if (SYNC.token && Date.now() < SYNC.tokenExp - 60000) return SYNC.token;
-  await loadGIS();
-  return new Promise((res, rej) => {
-    const tc = google.accounts.oauth2.initTokenClient({
-      client_id: SYNC.clientId,
-      scope: "https://www.googleapis.com/auth/drive.file",
-      callback: t => {
-        if (t.access_token){
-          SYNC.token = t.access_token;
-          SYNC.tokenExp = Date.now() + (Number(t.expires_in) || 3600) * 1000;
-          res(SYNC.token);
-        } else rej(new Error(t.error || "Google didn't grant access."));
-      },
-      error_callback: e => rej(new Error(e.type || "Sign-in was closed."))
+  if (tokenRequest) return tokenRequest;
+  tokenRequest = (async () => {
+    await loadGIS();
+    return new Promise((res, rej) => {
+      const hint = SAFE_STORE.get("cb_hint") || undefined;
+      const tc = google.accounts.oauth2.initTokenClient({
+        client_id: SYNC.clientId,
+        scope: "https://www.googleapis.com/auth/drive.file",
+        login_hint: hint,
+        callback: t => {
+          if (t.access_token){
+            SYNC.token = t.access_token;
+            SYNC.tokenExp = Date.now() + (Number(t.expires_in) || 3600) * 1000;
+            SAFE_STORE.set("cb_token", JSON.stringify({token:SYNC.token, exp:SYNC.tokenExp, client:SYNC.clientId}));
+            if (!hint) rememberAccountHint();
+            res(SYNC.token);
+          } else rej(new Error(t.error || "Google didn't grant access."));
+        },
+        error_callback: e => rej(new Error(e.type || "Sign-in was closed."))
+      });
+      tc.requestAccessToken({ prompt: interactive ? "" : "none" });
     });
-    tc.requestAccessToken({ prompt: interactive ? "" : "none" });
-  });
+  })();
+  try { return await tokenRequest; } finally { tokenRequest = null; }
+}
+async function rememberAccountHint(){
+  try {
+    const j = await (await fetch(DRIVE_API + "/drive/v3/about?fields=user(emailAddress)",
+      {headers:{Authorization:"Bearer " + SYNC.token}})).json();
+    if (j?.user?.emailAddress) SAFE_STORE.set("cb_hint", j.user.emailAddress);
+  } catch (_) {}
 }
 /* ---------------- Google Drive: the cloud master ----------------
    Drive holds one folder, "CORKBORK", made by this app. The app's Google
@@ -15877,7 +15946,7 @@ const SYNC_POLL_MS = 60 * 1000;
 async function driveFetch(path, opts = {}){
   const t = await getToken(false);
   const r = await fetch(DRIVE_API + path, {...opts, headers:{...(opts.headers || {}), Authorization:"Bearer " + t}});
-  if (r.status === 401){ SYNC.token = null; throw new Error("Google needs a fresh sign-in."); }
+  if (r.status === 401){ SYNC.token = null; SAFE_STORE.del("cb_token"); throw new Error("Google needs a fresh sign-in."); }
   if (!r.ok){
     let why = ""; try { why = (await r.json())?.error?.message || ""; } catch (_) {}
     const e = new Error("Drive error " + r.status + (why ? " — " + why : "")); e.status = r.status; throw e;
@@ -16272,7 +16341,9 @@ function updateCloudChip(){
   }
   chip.dataset.state = st;
   chip.querySelector(".cc-text").textContent = text;
-  chip.title = tip + " Click for sync settings and backups.";
+  chip.dataset.tip = tip;
+  chip.title = tip + " Click for sync and backups.";
+  if ($("#cloudMenu")?.classList.contains("open")) $("#cloudMenuStatus").textContent = tip;
 }
 function refreshSyncUI(){
   updateCloudChip();
@@ -16347,6 +16418,7 @@ $("#syncNow").addEventListener("click", async () => {
 });
 $("#syncOff").addEventListener("click", async () => {
   SYNC.clientId = ""; SYNC.token = null; SYNC.layout = null;
+  SAFE_STORE.del("cb_token"); SAFE_STORE.del("cb_hint");
   clearInterval(cloudPoll);
   try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); } catch (_) {}
   refreshSyncUI();
@@ -16435,6 +16507,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b85", [
+    "Connect Google Drive is one button: CORKBORK now brings its own Google app ID.",
+    "Google's sign-in window no longer flashes on every reload: the sign-in is kept on the device until Google's one-hour limit, and Google can close the window by itself.",
+    "The cloud status in the top bar opens a menu with Sync now, Back up now and Save a copy."
+  ]],
   ["b84", [
     "The top bar shows cloud save status (Synced, Syncing, Offline, Sign in) where Back up now and Save a copy were; both moved to Settings → Backup & data.",
     "iPad: keyboard shortcuts (Cmd+Z, Delete, N…) work after typing in a box — tapping the board now releases it. The shortcuts panel shows which key arrived.",
@@ -16471,12 +16548,6 @@ const PATCH_NOTES = [
   ["b77", [
     "Folders dragged from Explorer keep nested and empty folders; unknown file types are stored and archived byte-for-byte.",
     "Large images, files and folders can be compressed to ZIP before import."
-  ]],
-  ["b76", [
-    "Large attachments are stored once locally; repeat autosaves no longer reprocess their bytes.",
-    "Each theme remembers its own colour edits; Enter saves dialogs and Escape cancels.",
-    "Document cards are clearer, folders can be imported, and edited TXT files ask before closing.",
-    "Archive setup is clearer, and the 1.0 plan now reflects current priorities."
   ]]
 ];
 function renderPatchNotes(){
