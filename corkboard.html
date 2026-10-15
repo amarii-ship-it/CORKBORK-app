@@ -173,6 +173,16 @@ body.lib-open #tbHandle{visibility:hidden;}
 #barTitle:hover{background:var(--surface); color:var(--accent);}
 #barTitle:empty{display:none;}
 #barCentre.crowded{visibility:hidden;}
+/* narrow windows: fold buttons into ••• instead of letting them fall off */
+#topbar .bar-folded{display:none !important;}
+#topbar.squeezed .barsep, #topbar.squeezed #buildStamp, #topbar.squeezed #wordmark{display:none;}
+#topbar.tight #cloudChip .cc-text{display:none;}
+#barMoreWrap{position:relative; flex:none;}
+#barMoreMenu{position:absolute; right:0; top:34px; z-index:60; display:none; flex-direction:column; min-width:200px; padding:6px;
+  background:var(--surface-hi); border:1px solid var(--border); border-radius:7px; box-shadow:0 6px 18px rgba(0,0,0,.35);}
+#barMoreMenu.open{display:flex;}
+#barMoreMenu button{text-align:left; padding:8px 10px; border-radius:5px; font-size:13px; color:var(--text);}
+#barMoreMenu button:hover{background:var(--surface);}
 .barsep{width:1px; height:20px; background:var(--border); flex:none; opacity:.7;}
 /* Scoped to #topbar, not #barCentre: the zoom control was moved out of the
    absolutely-positioned #barCentre into the bar's normal flow (so its panel
@@ -663,6 +673,9 @@ body.focus-mode #focusExit{display:flex;}
 .settings-body > *{width:100%; max-width:none;}
 .setsec{display:flex; flex-direction:column; gap:12px; align-items:stretch;}
 .sethead{font-size:14px; margin:10px 0 -4px; font-weight:700;}
+.tool-list{display:flex; flex-direction:column; gap:2px;}
+.tool-row{display:grid; grid-template-columns:96px 34px 1fr; gap:10px; align-items:baseline; padding:7px 4px; border-bottom:1px solid var(--border); font-size:13px;}
+.tool-row kbd, .setsec .meta kbd{font:600 11px/1.2 var(--font-ui); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-align:center;}
 .setup-steps li{margin-bottom:12px;}
 .setup-act{display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;}
 .setup-act button{padding:6px 12px; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12.5px;}
@@ -2495,6 +2508,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="10.5" r="2"/><path d="M5.5 16c.4-1.6 1.4-2.4 2.5-2.4s2.1.8 2.5 2.4 M14 9.5h4 M14 13h4"/></svg>
   </button>
   <button class="barbtn iconbtn small" id="btnShortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  <div id="barMoreWrap" style="display:none;">
+    <button class="barbtn iconbtn small" id="barMore" title="More" aria-haspopup="true">•••</button>
+    <div id="barMoreMenu" role="menu"></div>
+  </div>
   <div class="barGroup">
     <button class="barbtn iconbtn small" id="btnBugs" title="Bug list — jot down anything broken">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8V6a3 3 0 0 1 6 0v2 M6 10h12v6a6 6 0 0 1-12 0v-6z M4 10l2.5 1.5 M20 10l-2.5 1.5 M4 17l2.5-1.5 M20 17l-2.5-1.5 M12 10v9"/></svg>
@@ -2611,7 +2628,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div class="shortcut-row"><span>Close / cancel</span><kbd>Esc</kbd></div>
       </div>
     </div>
-    <div class="row"><button id="shortcutClose" class="primary">Done</button></div>
+    <div class="row"><button id="shortcutTools">What each tool does</button><button id="shortcutClose" class="primary">Done</button></div>
   </div>
 </div>
 
@@ -3247,6 +3264,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button class="setnav sel" data-sec="appearance">Appearance</button>
       <button class="setnav" data-sec="canvas">Canvas &amp; media</button>
       <button class="setnav" data-sec="data">Your data</button>
+      <button class="setnav" data-sec="tools">Tools</button>
       <button class="setnav" data-sec="help">Help</button>
       <button class="setnav" data-sec="patches">Patch notes</button>
       <button id="settingsClose">Close</button>
@@ -3296,6 +3314,30 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div class="meta">What changed, newest first. Kept terse on purpose —
           this file carries its own history, so verbosity costs file size.</div>
         <div id="patchNotes" class="patchlist"></div>
+      </div>
+
+      <div class="setsec" data-sec="tools" style="display:none;">
+        <div class="meta">Every tool on the left rail. Click or drag one onto the canvas, or press its key.</div>
+        <div class="tool-list">
+          <div class="tool-row"><b>Note</b><kbd>N</kbd><span>A sticky note for writing. Double-click to type; text can be bold, listed, coloured.</span></div>
+          <div class="tool-row"><b>Arrow</b><kbd>—</kbd><span>Connects two cards. Click one card, then another.</span></div>
+          <div class="tool-row"><b>Board</b><kbd>B</kbd><span>Creates an entirely new board/working canvas. Double-click to go inside.</span></div>
+          <div class="tool-row"><b>List</b><kbd>T</kbd><span>A checklist, bulleted or numbered list.</span></div>
+          <div class="tool-row"><b>Column</b><kbd>C</kbd><span>Groups cards in a vertical stack. Drag cards into it.</span></div>
+          <div class="tool-row"><b>Album</b><kbd>G</kbd><span>A grid for images. Drag pictures into it.</span></div>
+          <div class="tool-row"><b>Sheet</b><kbd>E</kbd><span>A spreadsheet with formulas.</span></div>
+          <div class="tool-row"><b>Link</b><kbd>L</kbd><span>Saves a web address with its title and preview.</span></div>
+          <div class="tool-row"><b>Heading</b><kbd>H</kbd><span>Big text for labelling parts of a board.</span></div>
+          <div class="tool-row"><b>Image</b><kbd>I</kbd><span>Adds a picture from your device.</span></div>
+          <div class="tool-row"><b>Upload</b><kbd>U</kbd><span>Upload files from your computer's local storage.</span></div>
+          <div class="tool-row"><b>Library</b><kbd>—</kbd><span>Cloud-based library of images, videos and files. Upload your own files to access them from anywhere.</span></div>
+          <div class="tool-row"><b>Card</b><kbd>D</kbd><span>(Under More.) A character, item or place. Mentions of its name link to it in notes.</span></div>
+          <div class="tool-row"><b>D&amp;D sheet</b><kbd>R</kbd><span>(Under More.) A fillable D&amp;D 5e character sheet.</span></div>
+          <div class="tool-row"><b>Block</b><kbd>K</kbd><span>(Under More.) A titled panel; anything stuck to its edges moves with it.</span></div>
+        </div>
+        <div class="meta"><b>Everywhere:</b> <kbd>Ctrl+K</kbd> search · <kbd>Ctrl+Z</kbd> undo · <kbd>Delete</kbd> remove ·
+          <kbd>Z</kbd> fit everything · <kbd>S</kbd> snap to grid · <kbd>F</kbd> focus mode · <kbd>?</kbd> all shortcuts.
+          Right-click any card for more, such as making a board private.</div>
       </div>
 
       <div class="setsec" data-sec="help" style="display:none;">
@@ -3479,7 +3521,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b90";
+window.BUILD = "b91";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -9794,7 +9836,7 @@ function renderBarTitle(){
     const b = cur();
     el.textContent = b ? (b.title || "Untitled") : "";
   }
-  fitBarTitle();
+  queueFitTopbar();
 }
 /* The centred title floats over the bar. In a narrow window (split screen,
    phone) it ran into the buttons. It is hidden whenever it would touch
@@ -9810,7 +9852,48 @@ function fitBarTitle(){
   });
   centre.classList.toggle("crowded", hit);
 }
-addEventListener("resize", () => requestAnimationFrame(fitBarTitle));
+/* Least-needed first. Settings, the bug list, zoom and the cloud status
+   always stay in the bar. */
+const BAR_FOLD_ORDER = ["#btnTags", "#btnLabels", "#btnShortcuts", "#btnRecenter", "#btnTextBar", "#btnSnap", "#btnFavs", "#btnSearch"];
+const BAR_LABELS = {btnRecenter:"Center view", btnSnap:"Snap to grid", btnTextBar:"Text formatting", btnFavs:"Favourites", btnSearch:"Search"};
+function barItemLabel(el){
+  if (BAR_LABELS[el.id]) return BAR_LABELS[el.id];
+  return (el.getAttribute("aria-label") || el.title || el.textContent || "").split(/ \u2014 | \(| — /)[0].trim();
+}
+function fitTopbar(){
+  const bar = $("#topbar"), wrap = $("#barMoreWrap"); if (!bar || !wrap) return;
+  bar.classList.remove("squeezed", "tight");
+  for (const sel of BAR_FOLD_ORDER) $(sel)?.classList.remove("bar-folded");
+  wrap.style.display = "none";
+  const over = () => bar.scrollWidth > bar.clientWidth + 1;
+  const folded = [];
+  if (over()){
+    bar.classList.add("squeezed");
+    wrap.style.display = "";
+    for (const sel of BAR_FOLD_ORDER){
+      if (!over()) break;
+      const el = $(sel); if (!el || getComputedStyle(el).display === "none") continue;
+      el.classList.add("bar-folded"); folded.push(el);
+    }
+    if (over()) bar.classList.add("tight");
+    if (!folded.length) wrap.style.display = "none";
+  }
+  const menu = $("#barMoreMenu"); menu.textContent = "";
+  for (const el of folded){
+    const b = document.createElement("button"); b.textContent = barItemLabel(el);
+    b.addEventListener("click", () => { menu.classList.remove("open"); el.click(); });
+    menu.appendChild(b);
+  }
+  fitBarTitle();
+}
+var fitTopbarQueued = false;   /* var: may be reached before this line runs */
+function queueFitTopbar(){
+  if (fitTopbarQueued) return; fitTopbarQueued = true;
+  requestAnimationFrame(() => { fitTopbarQueued = false; fitTopbar(); });
+}
+addEventListener("resize", queueFitTopbar);
+$("#barMore").addEventListener("click", e => { e.stopPropagation(); $("#barMoreMenu").classList.toggle("open"); });
+document.addEventListener("pointerdown", e => { if (!e.target.closest?.("#barMoreWrap")) $("#barMoreMenu").classList.remove("open"); }, true);
 
 let railHome = null;                       /* where the rail lives on a board */
 function railTo(container, before){
@@ -15310,6 +15393,9 @@ $("#personalizeSave").addEventListener("click", () => {
 $("#tutorialArchive").addEventListener("click", () => { closeOverlay("#settingsOverlay"); openFirstTimeSetup(); });
 $("#tutorialTour").addEventListener("click", () => { closeOverlay("#settingsOverlay"); startTour(); });
 $("#tutorialKeys").addEventListener("click", () => { closeOverlay("#settingsOverlay"); openOverlay("#shortcutOverlay"); });
+$("#shortcutTools").addEventListener("click", () => {
+  closeOverlay("#shortcutOverlay"); openSettings(); document.querySelector('.setnav[data-sec="tools"]')?.click();
+});
 /* ---- first visit: a dismissible bar instead of a window in the way ---- */
 function showWelcomeBar(){ $("#welcomeBar").classList.add("show"); }
 function hideWelcomeBar(markDone=true){
@@ -15365,25 +15451,24 @@ $("#setupTour").addEventListener("click", () => { finishFirstRun(); startTour();
    Steps whose target isn't on screen (a card page is open, the rail is
    collapsed) are skipped rather than pointing at nothing. */
 const TOUR_STEPS = [
-  {title:"Welcome to CORKBORK", text:"A one-minute look at the main tools. Use the arrow keys or the buttons; Esc ends the tour."},
-  {target:"#railTools", place:"right", title:"Make things",
-    text:"Click a tool to add it to the board, or drag it to the spot you want. Each has a letter key: <b>N</b> note, <b>B</b> board, <b>T</b> list, <b>L</b> link."},
+  {title:"Welcome to CORKBORK!", text:"Let's get started."},
+  {target:"#railTools", place:"right", title:"Tools",
+    text:"Click or drag a tool to add it to the canvas. Look under <b>?</b> in the top right to view each tool's keybind."},
   {target:'#railTools .tool[data-type="board"]', place:"right", title:"Boards inside boards",
-    text:"A board card is a whole new board. Double-click its icon to go inside."},
-  {target:"#crumbs", place:"down", title:"Find your way back",
-    text:"This trail shows where you are. Click any part of it to go back up."},
+    text:"Creates an entirely new board/working canvas. Double-click to go inside. Shortcut: <b>B</b>."},
+  {target:"#crumbs", place:"down", title:"Navigation",
+    text:"Used to navigate your boards. Click any part of the trail to go back up."},
   {target:"#canvas", place:"center", title:"Move around",
-    text:"Scroll to move, <b>Ctrl</b>+scroll or pinch to zoom, <b>Z</b> to fit everything. Right-click any card for more, such as making a board private."},
+    text:"Scroll to move, <b>Ctrl</b>+scroll or pinch to zoom, <b>Z</b> to fit everything. Right-click any card for more options."},
   {target:"#toolUpload", place:"right", title:"Upload",
-    text:"Puts a file from this device straight onto the board. You can also drag files in from your desktop."},
+    text:"Upload files from your computer's local storage."},
   {target:"#toolLibrary", place:"right", title:"Library",
-    text:"Your shelf of images, videos and files, on every device. Drop a batch in once, then click or drag one onto any board."},
+    text:"Cloud-based library of images, videos and files. Upload your own files to access them from anywhere."},
   {target:"#btnSearch", place:"down", title:"Search everything",
-    text:"Finds any board, card or note. Shortcut: <b>Ctrl+K</b>."},
-  {target:"#cloudWrap", place:"down", title:"Saved and synced",
-    text:"Shows whether your work is in Google Drive. Click it for Sync now, Back up now and Save a copy."},
-  {target:"#btnSettings", place:"down", title:"Settings",
-    text:"Themes, Google Drive, backups — and this tour or First time setup again, under <b>Help</b>. Press <b>?</b> for every shortcut."}
+    text:"Pretty self-explanatory. Finds any board, card or note. Shortcut: <b>Ctrl+K</b>."},
+  {target:"#cloudWrap", place:"down", title:"Google Drive cloud save",
+    text:"Shows whether your work is backed up via Google Drive. Click it for Sync now, Back up now and Save a copy."},
+  {title:"That's the basics", text:"An explanation of ALL tools can be found under <b>Settings → Tools</b>. Happy BORKing!"}
 ];
 let tourAt = -1;
 function tourVisible(sel){
@@ -15410,7 +15495,7 @@ function renderTour(){
   $("#tourTitle").textContent = step.title;
   $("#tourText").innerHTML = step.text;
   $("#tourBack").style.visibility = tourAt ? "" : "hidden";
-  $("#tourNext").textContent = tourAt === TOUR_STEPS.length - 1 ? "Done" : "Next";
+  $("#tourNext").textContent = tourAt === TOUR_STEPS.length - 1 ? "Thanks!" : "Next";
   /* the interface is scaled with body zoom: measure in screen pixels,
      position in the zoomed page's own units */
   const z = uiz() || 1, raw = tourVisible(step.target);
@@ -16924,6 +17009,7 @@ function updateCloudChip(){
     }[st] || (() => { st = "ok"; text = "Synced"; }))();
   }
   chip.dataset.state = st;
+  if (chip.querySelector(".cc-text").textContent !== text) queueFitTopbar();
   chip.querySelector(".cc-text").textContent = text;
   chip.dataset.tip = tip;
   chip.title = tip + " Click for sync and backups.";
@@ -17091,6 +17177,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b91", [
+    "Tour rewritten; new Settings → Tools page explains every tool and its key (also from the ? panel).",
+    "On phones and narrow windows, top-bar buttons that don't fit fold into a ••• menu instead of falling off the edge."
+  ]],
   ["b90", [
     "First visit shows a small welcome bar (Run setup, Open tutorial, or ✕) instead of a window in the way.",
     "New guided tour points at each main tool. First time setup covers Drive, a computer folder, installing and personalizing; both reopen from Settings → Help.",
