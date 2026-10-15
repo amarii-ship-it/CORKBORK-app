@@ -172,6 +172,7 @@ body.lib-open #tbHandle{visibility:hidden;}
 }
 #barTitle:hover{background:var(--surface); color:var(--accent);}
 #barTitle:empty{display:none;}
+#barCentre.crowded{visibility:hidden;}
 .barsep{width:1px; height:20px; background:var(--border); flex:none; opacity:.7;}
 /* Scoped to #topbar, not #barCentre: the zoom control was moved out of the
    absolutely-positioned #barCentre into the bar's normal flow (so its panel
@@ -661,6 +662,41 @@ body.focus-mode #focusExit{display:flex;}
    while the active section receives the large, scrollable right-hand area. */
 .settings-body > *{width:100%; max-width:none;}
 .setsec{display:flex; flex-direction:column; gap:12px; align-items:stretch;}
+.sethead{font-size:14px; margin:10px 0 -4px; font-weight:700;}
+.setup-steps li{margin-bottom:12px;}
+.setup-act{display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;}
+.setup-act button{padding:6px 12px; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12.5px;}
+#welcomeBar{position:fixed; left:50%; top:46px; transform:translate(-50%,-140%); z-index:170; display:flex; align-items:center; gap:10px;
+  width:max-content; max-width:calc(100vw - 32px); padding:10px 12px 10px 16px; border-radius:9px; background:var(--surface-hi); color:var(--text);
+  border:1px solid var(--border); box-shadow:0 8px 26px rgba(0,0,0,.3); font-size:13.5px; opacity:0; pointer-events:none;
+  transition:transform .28s ease, opacity .28s ease; flex-wrap:wrap;}
+#welcomeBar.show{transform:translate(-50%,0); opacity:1; pointer-events:auto;}
+#welcomeBar button{padding:6px 12px; border-radius:6px; font-weight:600; font-size:12.5px; background:var(--surface); border:1px solid var(--border); color:var(--text);}
+#welcomeBar .wb-blue{background:#2F6FE4; border-color:#2F6FE4; color:#fff;}
+#welcomeBar #wbClose{padding:4px 8px; background:none; border:0; color:var(--text-dim); font-size:14px;}
+#tourLayer{position:fixed; inset:0; z-index:180; display:none;}
+#tourLayer.open{display:block;}
+#tourSpot{position:fixed; border-radius:9px; box-shadow:0 0 0 9999px rgba(0,0,0,.5), 0 0 0 3px #2F6FE4;
+  transition:all .25s ease; pointer-events:none;}
+#tourSpot.none{box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+#tourTip{position:fixed; width:300px; max-width:calc(100vw - 32px); background:var(--surface-hi); color:var(--text);
+  border-radius:10px; padding:14px 16px 12px; box-shadow:0 12px 34px rgba(0,0,0,.45); font-size:13.5px; line-height:1.45;
+  transition:left .25s ease, top .25s ease;}
+#tourTip h3{margin:2px 0 6px; font-size:15px;}
+#tourTip .tt-count{font-size:11px; color:var(--text-dim);}
+#tourTip .tt-row{display:flex; gap:6px; margin-top:12px; align-items:center;}
+#tourTip button{padding:6px 11px; border-radius:6px; font-size:12.5px; font-weight:600; background:var(--surface); border:1px solid var(--border); color:var(--text);}
+#tourTip button.primary{background:#2F6FE4; border-color:#2F6FE4; color:#fff;}
+#tourTip #tourSkip{background:none; border:0; color:var(--text-dim); padding-left:0;}
+#tourTip::before{content:""; position:absolute; width:14px; height:14px; background:var(--surface-hi); transform:rotate(45deg); display:none;}
+#tourTip[data-arrow="left"]::before{display:block; left:-7px; top:var(--ay,24px);}
+#tourTip[data-arrow="right"]::before{display:block; right:-7px; top:var(--ay,24px);}
+#tourTip[data-arrow="up"]::before{display:block; top:-7px; left:var(--ax,24px);}
+#tourTip[data-arrow="down"]::before{display:block; bottom:-7px; left:var(--ax,24px);}
+.sethead:first-child{margin-top:0;}
+.btnrow{display:flex; gap:7px; flex-wrap:wrap;}
+.btnrow button{flex:1 1 120px; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600;}
+.primary-wide{background:var(--accent) !important; color:#fff !important; font-weight:700;}
 #canvas:hover .scrollbar{opacity:1;}
 .scrollbar .sbthumb{position:absolute; background:color-mix(in srgb, var(--accent) 60%, var(--text-dim)); opacity:.42; border-radius:5px;}
 .scrollbar .sbthumb:hover{background:var(--accent); opacity:.85;}
@@ -3129,21 +3165,47 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- first startup: intentionally short; the app itself is the tutorial -->
 <div class="overlay" id="firstRunOverlay">
   <div class="panel" id="firstRunPanel">
-    <h2>Keep your work safe</h2>
-    <ol class="first-run-steps">
-      <li>Create a folder on your PC called <b>CORKBORK</b>. Documents is a good place for it.</li>
-      <li>Choose that folder below. It becomes the one master archive for original files and the workspace catalogue.</li>
-      <li><b>Save a copy</b> packages the catalogue and files together. To use the same workspace on other devices, connect Google Drive in Settings.</li>
+    <h2>First time setup</h2>
+    <div class="meta">Every step is optional, and all of it is in Settings later.</div>
+    <ol class="first-run-steps setup-steps">
+      <li><b>Sync your devices.</b> Saves to your Google Drive so your PC, iPad and phone share one workspace.
+        <div class="setup-act"><button id="setupDrive">Connect Google Drive</button><span id="setupDriveState" class="meta"></span></div></li>
+      <li id="setupFolderStep"><b>Keep a folder copy on this computer.</b> Make a folder called <b>CORKBORK</b> in Documents, then choose it.
+        <div class="setup-act"><button id="firstRunArchive">Choose folder…</button></div></li>
+      <li id="firstRunNoFolder" style="display:none;"><b>No folder needed here.</b> iPad and phone browsers can't use folders, so your work is kept in this browser and in Google Drive.</li>
+      <li><b>Install CORKBORK as an app,</b> so it has its own icon and opens even without internet.
+        <div class="setup-act"><button id="setupInstall" style="display:none;">Install</button><span id="setupInstallHint" class="meta"></span></div></li>
+      <li><b>Make it yours.</b> Theme, interface size and image storage.
+        <div class="setup-act"><button id="setupPersonalize">Personalize…</button></div></li>
     </ol>
-    <ol class="first-run-steps" id="firstRunNoFolder" style="display:none;">
-      <li>This browser cannot use a folder on your device. iPad and iPhone browsers never can.</li>
-      <li>Your boards and files are saved in this browser instead.</li>
-      <li>Connect Google Drive in Settings to share one workspace with your other devices. <b>Save a copy</b> also makes a backup.</li>
-    </ol>
-    <div class="first-run-note">Your workspace also saves automatically in this browser.</div>
+    <div class="first-run-note">Your work always saves automatically on this device.</div>
     <div class="row">
-      <button id="firstRunDone">Not now</button>
-      <button id="firstRunArchive" class="primary">Choose archive folder…</button>
+      <button id="setupTour">Take the tour</button>
+      <button id="firstRunDone" class="primary">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- shown once, on a first visit, under the top bar -->
+<div id="welcomeBar" role="status" aria-live="polite">
+  <span>I noticed this is your first time opening CORKBORK! Run <b>first time setup</b> now?</span>
+  <button id="wbSetup">Run setup</button>
+  <button id="wbTour" class="wb-blue">Open tutorial</button>
+  <button id="wbClose" title="No thanks" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- guided tour: dims the screen, rings one thing at a time -->
+<div id="tourLayer" aria-live="polite">
+  <div id="tourSpot"></div>
+  <div id="tourTip" role="dialog" aria-label="Tour">
+    <div class="tt-count" id="tourCount"></div>
+    <h3 id="tourTitle"></h3>
+    <div id="tourText"></div>
+    <div class="tt-row">
+      <button id="tourSkip">Skip tour</button>
+      <span style="flex:1"></span>
+      <button id="tourBack">Back</button>
+      <button id="tourNext" class="primary">Next</button>
     </div>
   </div>
 </div>
@@ -3183,11 +3245,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <div class="settings-nav">
       <h2 style="margin-bottom:6px;">Settings</h2>
       <button class="setnav sel" data-sec="appearance">Appearance</button>
-      <button class="setnav" data-sec="canvas">Canvas &amp; editing</button>
-      <button class="setnav" data-sec="media">Media</button>
-      <button class="setnav" data-sec="cloud">Cloud sync</button>
-      <button class="setnav" data-sec="data">Backup &amp; data</button>
-      <button class="setnav" data-sec="tutorials">Tutorials</button>
+      <button class="setnav" data-sec="canvas">Canvas &amp; media</button>
+      <button class="setnav" data-sec="data">Your data</button>
+      <button class="setnav" data-sec="help">Help</button>
       <button class="setnav" data-sec="patches">Patch notes</button>
       <button id="settingsClose">Close</button>
     </div>
@@ -3238,11 +3298,12 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div id="patchNotes" class="patchlist"></div>
       </div>
 
-      <div class="setsec" data-sec="tutorials" style="display:none;">
-        <div class="meta">Short guides you can reopen at any time.</div>
+      <div class="setsec" data-sec="help" style="display:none;">
         <div class="tutorial-actions">
-          <button class="tutorial-card" id="tutorialArchive"><b>Backups and archive folder</b><span>Where your work is saved and how to keep readable copies.</span></button>
-          <button class="tutorial-card" id="tutorialPersonalize"><b>Personalization</b><span>Theme, interface size, image storage and a Home-board starter.</span></button>
+          <button class="tutorial-card" id="tutorialTour"><b>Take the tour</b><span>A quick walk through the main tools, pointing at each one.</span></button>
+          <button class="tutorial-card" id="tutorialArchive"><b>First time setup</b><span>Sync with Google Drive, a folder on this computer, installing the app.</span></button>
+          <button class="tutorial-card" id="tutorialPersonalize"><b>Personalization</b><span>Theme, interface size and image storage.</span></button>
+          <button class="tutorial-card" id="tutorialKeys"><b>Keyboard shortcuts</b><span>Every shortcut on one page. Press ? any time.</span></button>
         </div>
       </div>
 
@@ -3259,9 +3320,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <input type="checkbox" id="boundedPanToggle" style="accent-color:var(--accent); width:15px; height:15px;">
           Keep the board within reach — stop panning a screen or so past the outermost card, so you cannot drift into empty space. The edge moves outward as you add things.
         </label>
-      </div>
-
-      <div class="setsec" data-sec="media" style="display:none;">
         <label>Imported image size
           <select id="imgQuality">
             <option value="0">Original — retain the imported file (default)</option>
@@ -3275,15 +3333,17 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         </label>
       </div>
 
-      <div class="setsec" data-sec="cloud" style="display:none;">
-        <div class="meta">Google Drive becomes the master copy shared by all your devices: PC, laptop, iPad and phone.
-          Boards, notes and original files sync to a <b>CORKBORK</b> folder in your Drive. CORKBORK can only reach the files it creates there, never the rest of your Drive.
-          Edits made on two devices are merged. If the same card was changed on both, the newer edit wins and the other is kept as a conflict copy.
-          On iPad and phone, original files download when you open them. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a></div>
-        <div class="meta"><b>Private boards</b> (right-click a board → Make private) never leave the device they were made private on, and anything already uploaded from them is deleted from Drive. Other devices see a locked placeholder. Encrypted syncing of private boards comes later.</div>
-        <div class="meta" id="syncFileNote"></div>
+
+      <div class="setsec" data-sec="data" style="display:none;">
+        <h3 class="sethead">Cloud sync</h3>
         <div class="meta" id="syncStatus"></div>
-        <details id="syncHelp" class="synchelp">
+        <div class="meta" id="syncFileNote"></div>
+        <div id="syncSetup" style="display:none; flex-direction:column; gap:8px;">
+          <button class="wide primary-wide" id="syncConnect">Connect Google Drive</button>
+          <details id="syncOwnId" class="synchelp">
+            <summary>Advanced: use your own Google Client ID</summary>
+            <input id="syncClientId" type="text" placeholder="Paste your Google Client ID here" style="margin-top:8px; width:100%;">
+            <details id="syncHelp" class="synchelp">
           <summary>How do I get a Client ID?</summary>
           <div class="meta">
             Google requires the app to be identified before it will hand over access
@@ -3301,11 +3361,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
             </ol>
           </div>
         </details>
-        <div id="syncSetup" style="display:none; flex-direction:column; gap:8px;">
-          <button class="wide" id="syncConnect">Connect Google Drive</button>
-          <details id="syncOwnId" class="synchelp">
-            <summary>Use your own Google Client ID (advanced)</summary>
-            <input id="syncClientId" type="text" placeholder="Paste your Google Client ID here" style="margin-top:8px;">
           </details>
         </div>
         <div id="syncActive" style="display:none; flex-direction:column; gap:8px;">
@@ -3313,19 +3368,31 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
             <input type="checkbox" id="syncKeepOffline" style="accent-color:var(--accent); width:15px; height:15px;">
             Keep every original file on this device, so it opens without internet
           </label>
-          <button class="wide" id="syncNow">Sync now</button>
-          <button class="wide" id="syncOff">Disconnect</button>
+          <div class="btnrow"><button id="syncNow">Sync now</button><button id="syncOff">Disconnect</button></div>
         </div>
-      </div>
+        <div class="meta">Your boards and files sync to a <b>CORKBORK</b> folder in your Google Drive, shared by all your devices.
+          Private boards (right-click a board → Make private) stay on their own device.
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a></div>
 
-      <div class="setsec" data-sec="data" style="display:none;">
-        <div id="storageHealth" class="storage-health" aria-live="polite"></div>
-        <button class="wide" id="integrityNow">Check workspace integrity now</button>
-        <button class="wide" id="storagePersist">Ask browser to protect local data</button>
-        <button class="wide" id="storageCompact">Compact local storage now</button>
-        <div class="meta"><b>Archive folder.</b> Set this up once. This is your master archive. It stores your original files
-          and the workspace data needed to rebuild your boards. Keep the entire folder together. CORKBORK cannot access
-          anything outside it.</div>
+        <h3 class="sethead">Backups</h3>
+        <div class="btnrow">
+          <button class="backup-primary" id="snapNow">Back up now</button>
+          <button id="btnSaveCopy2">Save a copy</button>
+          <button id="btnOpenFile">Open a copy…</button>
+        </div>
+        <div class="meta"><b>Back up now</b> keeps a restore point on this device. <b>Save a copy</b> downloads one .corkbork file
+          holding everything. <b>Open a copy</b> loads one back.</div>
+        <details class="synchelp">
+          <summary>Restore an earlier version</summary>
+          <div class="meta"><b>Version history.</b> A snapshot of the whole workspace is
+          kept every few minutes, and the newest 10 are retained. Large attachments are shared
+          between snapshots instead of copied into each one. Restoring keeps the current version
+          as a snapshot too, so restoring is itself undoable.</div>
+          <div id="snapList" class="snaplist"></div>
+        </details>
+
+        <h3 class="sethead">Folder on this computer <span class="meta">(optional)</span></h3>
+        <div class="meta">Keeps a readable copy of your originals in a folder you choose, e.g. Documents/CORKBORK.</div>
         <div class="meta" id="archiveUnsupported" style="display:none;"><b>Not available in this browser.</b>
           Archive folders work in Chrome or Edge on a computer. iPad and iPhone browsers cannot use folders, so here
           your files are kept in this browser's storage. Use “Save a copy” below for a backup.</div>
@@ -3336,17 +3403,19 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <button id="archiveCopy">Copy master archive to another folder…</button>
           <button id="archiveForget">Forget folder</button>
         </div>
-        <div class="meta"><b>Version history.</b> A snapshot of the whole workspace is
-          kept every few minutes, and the newest 10 are retained. Large attachments are shared
-          between snapshots instead of copied into each one. Restoring keeps the current version
-          as a snapshot too, so restoring is itself undoable.</div>
-        <div id="snapList" class="snaplist"></div>
-        <button class="wide backup-primary" id="snapNow" style="margin-bottom:14px;">Back up now (local restore point)</button>
-        <button class="wide" id="btnSaveCopy2">Save a copy (self-contained .corkbork)</button>
-        <button class="wide" id="btnOpenFile">Open .corkbork or legacy .json…</button>
-        <div class="meta">Your boards are saved automatically in this browser as a fast working cache. The selected archive folder is the durable master. “Back up now” adds a local restore point. “Save a copy” packages the catalogue and its files together; very large archives are copied directly to another folder instead.<br><br>New image imports retain their original bytes in the master archive while CORKBORK keeps a smaller viewing preview.</div>
+
+        <details class="synchelp">
+          <summary>Storage health and repair</summary>
+          <div id="storageHealth" class="storage-health" aria-live="polite"></div>
+          <div class="btnrow">
+            <button id="integrityNow">Check integrity</button>
+            <button id="storagePersist">Protect local data</button>
+            <button id="storageCompact">Compact storage</button>
+          </div>
+          <div class="meta">Your boards are saved automatically in this browser as a fast working cache. The selected archive folder is the durable master. “Back up now” adds a local restore point. “Save a copy” packages the catalogue and its files together; very large archives are copied directly to another folder instead.<br><br>New image imports retain their original bytes in the master archive while CORKBORK keeps a smaller viewing preview.</div>
         <div class="meta" style="margin-top:14px;">The saved workspace lives in the browser, not in the HTML file — every corkboard file opened from this computer shares the same boards. That is why a newly downloaded build opens with your existing boards instead of empty. To test a build against a truly blank workspace:</div>
-        <button class="wide" id="btnEraseAll" style="margin-top:8px; color:#C08078;">Start fresh — erase workspace, keep backups…</button>
+          <button class="wide" id="btnEraseAll" style="margin-top:8px; color:#C08078;">Start fresh — erase workspace, keep backups…</button>
+        </details>
       </div>
 
     </div>
@@ -3410,7 +3479,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b89";
+window.BUILD = "b90";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -9725,7 +9794,23 @@ function renderBarTitle(){
     const b = cur();
     el.textContent = b ? (b.title || "Untitled") : "";
   }
+  fitBarTitle();
 }
+/* The centred title floats over the bar. In a narrow window (split screen,
+   phone) it ran into the buttons. It is hidden whenever it would touch
+   anything else in the bar — the breadcrumb still names the board. */
+function fitBarTitle(){
+  const centre = $("#barCentre"), bar = $("#topbar"); if (!centre || !bar) return;
+  centre.classList.remove("crowded");
+  const c = centre.getBoundingClientRect(); if (!c.width) return;
+  const hit = [...bar.children].some(el => {
+    if (el === centre || el.id === "barSpacer" || el.contains(centre) || getComputedStyle(el).display === "none") return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.left < c.right + 6 && r.right > c.left - 6 && r.top < c.bottom && r.bottom > c.top;
+  });
+  centre.classList.toggle("crowded", hit);
+}
+addEventListener("resize", () => requestAnimationFrame(fitBarTitle));
 
 let railHome = null;                       /* where the rail lives on a board */
 function railTo(container, before){
@@ -13226,14 +13311,14 @@ document.addEventListener("pointerdown", e => { if (!e.target.closest?.("#cloudW
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeCloudMenu(); });
 $("#cmSync").addEventListener("click", async () => {
   closeCloudMenu();
-  if (!SYNC.clientId){ openSettings(); document.querySelector('.setnav[data-sec="cloud"]')?.click(); return; }
+  if (!SYNC.clientId){ openSettings(); document.querySelector('.setnav[data-sec="data"]')?.click(); return; }
   try { await getToken(true); } catch (e){ toast("Google sign-in didn't finish: " + e.message); return; }
   if (await requestCloudSync()) toast("Synced.");
 });
 $("#cmBackup").addEventListener("click", () => { closeCloudMenu(); backupNow(); });
 $("#cmCopy").addEventListener("click", () => { closeCloudMenu(); saveCopy(); });
 $("#cmSettings").addEventListener("click", () => {
-  closeCloudMenu(); openSettings(); document.querySelector('.setnav[data-sec="cloud"]')?.click();
+  closeCloudMenu(); openSettings(); document.querySelector('.setnav[data-sec="data"]')?.click();
 });
 $("#btnSaveCopy2").addEventListener("click", saveCopy);
 /* ---------------- Library (like Canva's Uploads) ----------------
@@ -13918,10 +14003,7 @@ async function updateArchiveFolder(handle, askPermission=true){
   if (typeof showDirectoryPicker === "function") return;
   $("#archiveUnsupported").style.display = "";
   $(".archive-actions").style.display = "none";
-  $("#firstRunArchive").style.display = "none";
-  $("#firstRunDone").textContent = "Got it";
-  const steps = $("#firstRunPanel .first-run-steps:not(#firstRunNoFolder)");
-  if (steps) steps.style.display = "none";
+  $("#setupFolderStep").style.display = "none";
   $("#firstRunNoFolder").style.display = "";
 })();
 $("#archiveChoose").addEventListener("click", async () => {
@@ -15203,12 +15285,9 @@ function finishFirstRun(showNext=true){
     state.settings = Object.assign({}, state.settings, { firstRunDone:true });
     markDirty();
   }
-  if (showNext && personalizationIsDue()) setTimeout(openPersonalization, 120);
 }
 $("#firstRunDone").addEventListener("click", finishFirstRun);
-$("#firstRunArchive").addEventListener("click", () => {
-  finishFirstRun(); $("#archiveChoose").click();
-});
+$("#firstRunArchive").addEventListener("click", () => $("#archiveChoose").click());
 $("#personalizeSkip").addEventListener("click", () => {
   state.settings = Object.assign({}, state.settings, { personalizationVersion:PERSONALIZATION_VERSION });
   markDirty(); closeOverlay("#personalizeOverlay");
@@ -15228,7 +15307,149 @@ $("#personalizeSave").addEventListener("click", () => {
   if (backupHabit === "archive") setTimeout(() => $("#archiveChoose").click(), 80);
   toast("Preferences saved.");
 });
-$("#tutorialArchive").addEventListener("click", () => openOverlay("#firstRunOverlay"));
+$("#tutorialArchive").addEventListener("click", () => { closeOverlay("#settingsOverlay"); openFirstTimeSetup(); });
+$("#tutorialTour").addEventListener("click", () => { closeOverlay("#settingsOverlay"); startTour(); });
+$("#tutorialKeys").addEventListener("click", () => { closeOverlay("#settingsOverlay"); openOverlay("#shortcutOverlay"); });
+/* ---- first visit: a dismissible bar instead of a window in the way ---- */
+function showWelcomeBar(){ $("#welcomeBar").classList.add("show"); }
+function hideWelcomeBar(markDone=true){
+  $("#welcomeBar").classList.remove("show");
+  if (markDone && !state.settings?.firstRunDone){
+    state.settings = Object.assign({}, state.settings, {firstRunDone:true}); markDirty();
+  }
+}
+$("#wbClose").addEventListener("click", () => hideWelcomeBar());
+$("#wbSetup").addEventListener("click", () => { hideWelcomeBar(); openFirstTimeSetup(); });
+$("#wbTour").addEventListener("click", () => { hideWelcomeBar(); startTour(); });
+
+/* ---- First time setup ---- */
+let installPrompt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; refreshSetupSteps(); });
+addEventListener("appinstalled", () => { installPrompt = null; refreshSetupSteps(); });
+function appIsInstalled(){
+  return matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+function refreshSetupSteps(){
+  const drive = $("#setupDrive"), driveState = $("#setupDriveState");
+  if (drive){
+    const connected = !!SYNC.clientId;
+    drive.style.display = connected || !syncAvailable() ? "none" : "";
+    driveState.textContent = connected ? "✓ Connected" : syncAvailable() ? "" : "Needs the app's web address.";
+  }
+  const btn = $("#setupInstall"), hint = $("#setupInstallHint");
+  if (!btn) return;
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  btn.style.display = installPrompt && !appIsInstalled() ? "" : "none";
+  hint.textContent = appIsInstalled() ? "✓ Installed"
+    : installPrompt ? ""
+    : ios ? "Tap Share, then Add to Home Screen."
+    : "Use the install icon at the right of the address bar.";
+}
+function openFirstTimeSetup(){ refreshSetupSteps(); openOverlay("#firstRunOverlay"); }
+$("#setupDrive").addEventListener("click", () => {
+  closeOverlay("#firstRunOverlay"); openSettings();
+  document.querySelector('.setnav[data-sec="data"]')?.click();
+  setTimeout(() => $("#syncConnect")?.click(), 60);
+});
+$("#setupInstall").addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  try { await installPrompt.userChoice; } catch (_) {}
+  installPrompt = null; refreshSetupSteps();
+});
+$("#setupPersonalize").addEventListener("click", () => { closeOverlay("#firstRunOverlay"); openPersonalization(); });
+$("#setupTour").addEventListener("click", () => { finishFirstRun(); startTour(); });
+
+/* ---- Guided tour ----
+   Dims the screen, rings one thing at a time and points a small card at it.
+   Steps whose target isn't on screen (a card page is open, the rail is
+   collapsed) are skipped rather than pointing at nothing. */
+const TOUR_STEPS = [
+  {title:"Welcome to CORKBORK", text:"A one-minute look at the main tools. Use the arrow keys or the buttons; Esc ends the tour."},
+  {target:"#railTools", place:"right", title:"Make things",
+    text:"Click a tool to add it to the board, or drag it to the spot you want. Each has a letter key: <b>N</b> note, <b>B</b> board, <b>T</b> list, <b>L</b> link."},
+  {target:'#railTools .tool[data-type="board"]', place:"right", title:"Boards inside boards",
+    text:"A board card is a whole new board. Double-click its icon to go inside."},
+  {target:"#crumbs", place:"down", title:"Find your way back",
+    text:"This trail shows where you are. Click any part of it to go back up."},
+  {target:"#canvas", place:"center", title:"Move around",
+    text:"Scroll to move, <b>Ctrl</b>+scroll or pinch to zoom, <b>Z</b> to fit everything. Right-click any card for more, such as making a board private."},
+  {target:"#toolUpload", place:"right", title:"Upload",
+    text:"Puts a file from this device straight onto the board. You can also drag files in from your desktop."},
+  {target:"#toolLibrary", place:"right", title:"Library",
+    text:"Your shelf of images, videos and files, on every device. Drop a batch in once, then click or drag one onto any board."},
+  {target:"#btnSearch", place:"down", title:"Search everything",
+    text:"Finds any board, card or note. Shortcut: <b>Ctrl+K</b>."},
+  {target:"#cloudWrap", place:"down", title:"Saved and synced",
+    text:"Shows whether your work is in Google Drive. Click it for Sync now, Back up now and Save a copy."},
+  {target:"#btnSettings", place:"down", title:"Settings",
+    text:"Themes, Google Drive, backups — and this tour or First time setup again, under <b>Help</b>. Press <b>?</b> for every shortcut."}
+];
+let tourAt = -1;
+function tourVisible(sel){
+  const el = sel && document.querySelector(sel); if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth ? r : null;
+}
+function startTour(){
+  closeCloudMenu?.(); openLibrary?.(false);
+  for (const ov of document.querySelectorAll(".overlay.open")) closeOverlay(ov);
+  tourAt = 0; $("#tourLayer").classList.add("open"); renderTour();
+}
+function endTour(){ tourAt = -1; $("#tourLayer").classList.remove("open"); }
+function tourGo(d){
+  let i = tourAt + d;
+  while (i > 0 && i < TOUR_STEPS.length && TOUR_STEPS[i].target && !tourVisible(TOUR_STEPS[i].target)) i += d;
+  if (i >= TOUR_STEPS.length){ endTour(); return; }
+  tourAt = Math.max(0, i); renderTour();
+}
+function renderTour(){
+  if (tourAt < 0) return;
+  const step = TOUR_STEPS[tourAt], tip = $("#tourTip"), spot = $("#tourSpot");
+  $("#tourCount").textContent = (tourAt + 1) + " of " + TOUR_STEPS.length;
+  $("#tourTitle").textContent = step.title;
+  $("#tourText").innerHTML = step.text;
+  $("#tourBack").style.visibility = tourAt ? "" : "hidden";
+  $("#tourNext").textContent = tourAt === TOUR_STEPS.length - 1 ? "Done" : "Next";
+  /* the interface is scaled with body zoom: measure in screen pixels,
+     position in the zoomed page's own units */
+  const z = uiz() || 1, raw = tourVisible(step.target);
+  const r = raw && {left:raw.left / z, top:raw.top / z, right:raw.right / z, bottom:raw.bottom / z, width:raw.width / z, height:raw.height / z};
+  const innerWidth = window.innerWidth / z, innerHeight = window.innerHeight / z;
+  const tw = Math.min(300, innerWidth - 32), th = tip.offsetHeight || 150, pad = 6, gap = 14;
+  let x, y, arrow = "";
+  if (!r || step.place === "center"){
+    spot.classList.toggle("none", !r);
+    if (r) Object.assign(spot.style, {left:r.left + pad * 3 + "px", top:r.top + pad * 3 + "px", width:r.width - pad * 6 + "px", height:r.height - pad * 6 + "px"});
+    else Object.assign(spot.style, {left:innerWidth / 2 + "px", top:innerHeight / 2 + "px", width:"0px", height:"0px"});
+    x = (innerWidth - tw) / 2; y = (innerHeight - th) / 2;
+  } else {
+    spot.classList.remove("none");
+    Object.assign(spot.style, {left:r.left - pad + "px", top:r.top - pad + "px", width:r.width + pad * 2 + "px", height:r.height + pad * 2 + "px"});
+    if (step.place === "right"){ x = r.right + pad + gap; y = r.top + Math.min(r.height, 120) / 2 - 30; arrow = "left"; }
+    else if (step.place === "down"){ x = r.left + r.width / 2 - tw / 2; y = r.bottom + pad + gap; arrow = "up"; }
+    else if (step.place === "left"){ x = r.left - pad - gap - tw; y = r.top; arrow = "right"; }
+    else { x = r.left + r.width / 2 - tw / 2; y = r.top - pad - gap - th; arrow = "down"; }
+    x = Math.max(16, Math.min(x, innerWidth - tw - 16)); y = Math.max(16, Math.min(y, innerHeight - th - 16));
+    tip.style.setProperty("--ax", Math.max(14, Math.min(tw - 28, r.left + r.width / 2 - x - 7)) + "px");
+    tip.style.setProperty("--ay", Math.max(14, Math.min(th - 28, r.top + Math.min(r.height, 120) / 2 - y - 7)) + "px");
+  }
+  tip.dataset.arrow = arrow;
+  Object.assign(tip.style, {left:x + "px", top:y + "px", width:tw + "px"});
+}
+$("#tourNext").addEventListener("click", () => tourGo(1));
+$("#tourBack").addEventListener("click", () => tourGo(-1));
+$("#tourSkip").addEventListener("click", endTour);
+addEventListener("resize", renderTour);
+document.addEventListener("keydown", e => {
+  if (tourAt < 0) return;
+  if (e.key === "Escape") endTour();
+  else if (e.key === "ArrowRight" || e.key === "Enter") tourGo(1);
+  else if (e.key === "ArrowLeft") tourGo(-1);
+  else return;
+  e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+
 $("#tutorialPersonalize").addEventListener("click", openPersonalization);
 function fillSettings(){
   $("#imgQuality").value = String(state.settings?.imageMax ?? 0);
@@ -16850,7 +17071,7 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   lastIntegrityReport = validateWorkspace(state);
   if (!lastIntegrityReport.ok) saveBroken = true;
   renderAll();
-  if (firstRun && !state.settings.firstRunDone) openOverlay("#firstRunOverlay");
+  if (firstRun && !state.settings.firstRunDone) setTimeout(showWelcomeBar, 400);
   else if (!workspaceLoadFailure && personalizationIsDue()) openPersonalization();
   /* Snapshot what we LOADED, before any edit can touch it. If this session
      goes wrong, the state you opened with is always recoverable. */
@@ -16870,6 +17091,12 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b90", [
+    "First visit shows a small welcome bar (Run setup, Open tutorial, or ✕) instead of a window in the way.",
+    "New guided tour points at each main tool. First time setup covers Drive, a computer folder, installing and personalizing; both reopen from Settings → Help.",
+    "Settings trimmed to five sections; cloud sync and backups now share one Your data page.",
+    "In narrow windows the board title steps aside instead of running into the buttons."
+  ]],
   ["b88", [
     "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup.",
     "Library → From Google Drive: pick files already in your Drive (select many at once) to add them to your Library."
@@ -16903,17 +17130,6 @@ const PATCH_NOTES = [
     "Private boards: right-click a board → Make private. It and everything inside it stay on that device, anything already uploaded is deleted from Drive, and other devices see a locked placeholder.",
     "iPad and phone: original files download from Drive when you open them; a computer with an archive folder copies them into it.",
     "Runs on iPad Chrome: archive-folder controls are hidden where browsers can't use folders, and trackpad or touch pinch zooms the board."
-  ]],
-  ["b81", [
-    "Rail redesign: Card, D&D sheet and Block tuck behind a new More (•••) button; File and Folder are now one Upload tool; Arrow moved near the top. No more rail scrollbar — Recycle and Delete are always one click away.",
-    "Board's rail icon is a simplified filled tile instead of the old outline (boards on a canvas are unchanged), and rail labels/icons are brighter and more saturated.",
-    "Dragging a desktop folder onto the board still imports it; the separate Folder tool, which opened a confusing file dialog, is gone."
-  ]],
-  ["b80", [
-    "Fixed: dragging a card never snapped to the cork grid on release — a backwards modifier check made the grid-snap and the Ctrl-to-align-with-other-cards modes fight each other, so neither reliably landed."
-  ]],
-  ["b79", [
-    "Archive setup uses simpler language in a slightly larger Settings window."
   ]]
 ];
 function renderPatchNotes(){
