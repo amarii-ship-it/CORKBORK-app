@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="CORKBORK">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>CORKBORK</title>
 
 <!-- FAVICON — single self-contained data URI, no separate file, no network
@@ -3237,6 +3239,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <button class="wide" id="syncConnect">Connect Google Drive</button>
         </div>
         <div id="syncActive" style="display:none; flex-direction:column; gap:8px;">
+          <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
+            <input type="checkbox" id="syncKeepOffline" style="accent-color:var(--accent); width:15px; height:15px;">
+            Keep every original file on this device, so it opens without internet
+          </label>
           <button class="wide" id="syncNow">Sync now</button>
           <button class="wide" id="syncOff">Disconnect</button>
         </div>
@@ -3334,7 +3340,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b82";
+window.BUILD = "b83";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -15965,15 +15971,33 @@ async function mirrorCloudFilesToArchive(){
   if (done){ markDirty(); renderAll(); }
   return done;
 }
+/* Offline first: unless turned off on this device, every original in Drive
+   is downloaded into this browser in the background, so it opens with no
+   connection. A computer with an archive folder keeps them there instead. */
+function keepOfflineEnabled(){ return SAFE_STORE.get("cb_keepOffline") !== "0"; }
+let prefetchRunning = false;
+async function keepOriginalsOffline(){
+  if (prefetchRunning || !keepOfflineEnabled() || navigator.onLine === false || await archiveHandle()) return 0;
+  prefetchRunning = true; let done = 0;
+  try {
+    for (const c of Object.values(state.cards)){
+      if (!c?.driveRef || c.archiveRef || (c.type === "file" && c.dataUrl)) continue;
+      if (await idbHas(DRIVE_CACHE_PREFIX + c.driveRef.id).catch(() => true)) continue;
+      try { await driveOriginalBlob(c.driveRef, true); done++; } catch (_) { if (navigator.onLine === false) break; }
+    }
+  } finally { prefetchRunning = false; }
+  return done;
+}
 /* On-demand download for a card whose original lives only in Drive. */
 const driveDownloads = new Map();
-async function driveOriginalBlob(ref){
+async function driveOriginalBlob(ref, quiet=false){
   if (!ref?.id) throw new Error("This file has no Drive copy.");
   try { const hit = await idbGetRaw(DRIVE_CACHE_PREFIX + ref.id); if (hit instanceof Blob) return hit; } catch (_) {}
   if (!SYNC.clientId) throw new Error("This file is in Google Drive. Connect Drive in Settings to open it.");
+  if (navigator.onLine === false) throw new Error("This file hasn't been downloaded to this device yet, and there's no internet connection.");
   if (driveDownloads.has(ref.id)) return driveDownloads.get(ref.id);
   const job = (async () => {
-    toast("Downloading from Drive…", 2500);
+    if (!quiet) toast("Downloading from Drive…", 2500);
     const raw = await (await driveFetch(`/drive/v3/files/${ref.id}?alt=media`)).blob();
     const blob = ref.type && raw.type !== ref.type ? new Blob([raw], {type:ref.type}) : raw;
     if (Number.isFinite(ref.size) && blob.size !== ref.size) throw new Error("The Drive copy is incomplete.");
@@ -16060,8 +16084,12 @@ function requestCloudSync(){
   })();
   return syncRunning.finally(() => { syncRunning = null; });
 }
+function syncLooksOffline(e){
+  return navigator.onLine === false || e instanceof TypeError || /Failed to fetch|Load failed|NetworkError|internet connection/i.test(e?.message || "");
+}
 async function cloudSyncOnce(){
   if (workspaceLoadFailure || !validateWorkspace(state).ok) return false;
+  if (navigator.onLine === false){ SYNC.status = "offline"; refreshSyncUI(); return false; }
   try {
     SYNC.status = "syncing"; refreshSyncUI();
     const layout = await driveLayout();
@@ -16115,11 +16143,11 @@ async function cloudSyncOnce(){
     }
     if (purged && file) await dropOldCatalogueVersions(file.id);
     await setSyncMeta({rev:readRev, assets:meta.assets, at:Date.now()});
-    setTimeout(mirrorCloudFilesToArchive, 0);
+    setTimeout(async () => { if (!await mirrorCloudFilesToArchive()) keepOriginalsOffline(); }, 0);
     SYNC.status = "ok"; SYNC.lastError = ""; SYNC.lastSync = Date.now();
     refreshSyncUI(); return true;
   } catch (e){
-    SYNC.status = SYNC.token ? "error" : "reconnect";
+    SYNC.status = syncLooksOffline(e) ? "offline" : SYNC.token ? "error" : "reconnect";
     SYNC.lastError = e.message; SYNC.detail = "";
     refreshSyncUI(); return false;
   }
@@ -16170,6 +16198,7 @@ function refreshSyncUI(){
       ok: "Connected. Boards and files sync to the CORKBORK folder in your Drive. Private boards stay on this device." + when,
       syncing: SYNC.detail || "Syncing…",
       reconnect: "Connected, but Google needs a fresh sign-in — press “Sync now”.",
+      offline: "Offline. Everything is saved on this device and will sync when you're back online.",
       error: "Sync problem: " + SYNC.lastError + " Your work is still saved on this device.",
       off: "Connected."
     }[SYNC.status] || "Connected.";
@@ -16206,6 +16235,24 @@ $("#syncOff").addEventListener("click", async () => {
   refreshSyncUI();
   toast("Disconnected. Your boards stay on this device; the CORKBORK folder stays in your Drive.");
 });
+$("#syncKeepOffline").checked = keepOfflineEnabled();
+$("#syncKeepOffline").addEventListener("change", e => {
+  SAFE_STORE.set("cb_keepOffline", e.target.checked ? "1" : "0");
+  if (e.target.checked){ toast("Downloading original files to this device in the background."); keepOriginalsOffline(); }
+});
+
+/* Offline app: a service worker keeps a copy of CORKBORK on the device, so
+   the hosted address opens with no connection (sw.js). Not possible from a
+   file opened off disk, which is offline already. */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.addEventListener("message", e => {
+    if (e.data?.type === "corkbork-updated")
+      toast("A newer CORKBORK was downloaded. It opens next time, or reload now to use it.", 8000);
+  });
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => console.warn("Offline copy unavailable:", err));
+  });
+}
 
 
 (async function boot(){
@@ -16270,6 +16317,11 @@ $("#syncOff").addEventListener("click", async () => {
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b83", [
+    "Works offline: after one online visit, the hosted CORKBORK opens with no internet and keeps saving to the device; sync catches up later and shows Offline meanwhile.",
+    "Installable as an app (address-bar install on PC, Add to Home Screen on iPad), with the newest version downloaded in the background.",
+    "Original files from Drive download in the background so they open offline (Settings → Sync to turn off per device)."
+  ]],
   ["b82", [
     "Google Drive is now the master copy shared by every device: boards, notes and original files sync to a CORKBORK folder in your Drive, every minute and after each edit.",
     "Edits made on two devices merge card by card. If both changed the same thing, the newer edit wins and the other is kept as a conflict copy beside it.",
@@ -16307,14 +16359,6 @@ const PATCH_NOTES = [
     "DOCX files gain Word-layout viewing; image and PDF-page OCR can create editable notes.",
     "First-run personalization and reusable tutorials cover theme, sizing, storage and backups.",
     "Columns collapse from their headers; monitor fitting follows window size; transparent images behave like stickers."
-  ]],
-  ["b74", [
-    "Settings keeps its wide layout but uses a shorter, proportional window.",
-    "Future work is source-mapped; image cards gain direct right-click download."
-  ]],
-  ["b73", [
-    "The audited Bug list now clears once; future features and limitations live in project files.",
-    "Note-drag recovery and visible card tools gained direct regression coverage."
   ]]
 ];
 function renderPatchNotes(){
