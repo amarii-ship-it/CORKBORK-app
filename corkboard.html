@@ -3064,12 +3064,12 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <ol class="first-run-steps">
       <li>Create a folder on your PC called <b>CORKBORK</b>. Documents is a good place for it.</li>
       <li>Choose that folder below. It becomes the one master archive for original files and the workspace catalogue.</li>
-      <li><b>Save a copy</b> packages the catalogue and files together. Catalogue-only Google Drive sync is available in Settings.</li>
+      <li><b>Save a copy</b> packages the catalogue and files together. To use the same workspace on other devices, connect Google Drive in Settings.</li>
     </ol>
     <ol class="first-run-steps" id="firstRunNoFolder" style="display:none;">
       <li>This browser cannot use a folder on your device. iPad and iPhone browsers never can.</li>
       <li>Your boards and files are saved in this browser instead.</li>
-      <li>Use <b>Save a copy</b> in Settings to keep a backup until cloud sync is set up.</li>
+      <li>Connect Google Drive in Settings to share one workspace with your other devices. <b>Save a copy</b> also makes a backup.</li>
     </ol>
     <div class="first-run-note">Your workspace also saves automatically in this browser.</div>
     <div class="row">
@@ -3207,7 +3207,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       </div>
 
       <div class="setsec" data-sec="cloud" style="display:none;">
-        <div class="meta">CORKBORK can sync its small catalogue through your Google Drive using <code>drive.file</code>; it can only touch the one catalogue file it creates. Original attachments are not silently uploaded. For cloud backup of the master archive, choose a folder managed by Google Drive for desktop, OneDrive or another folder-sync service.</div>
+        <div class="meta">Google Drive becomes the master copy shared by all your devices: PC, laptop, iPad and phone.
+          Boards, notes and original files sync to a <b>CORKBORK</b> folder in your Drive. CORKBORK can only reach the files it creates there, never the rest of your Drive.
+          Edits made on two devices are merged. If the same card was changed on both, the newer edit wins and the other is kept as a conflict copy.
+          On iPad and phone, original files download when you open them.</div>
+        <div class="meta"><b>Private boards</b> (right-click a board → Make private) never leave the device they were made private on, and anything already uploaded from them is deleted from Drive. Other devices see a locked placeholder. Encrypted syncing of private boards comes later.</div>
         <div class="meta" id="syncFileNote"></div>
         <div class="meta" id="syncStatus"></div>
         <details id="syncHelp" class="synchelp">
@@ -3330,7 +3334,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b79";
+window.BUILD = "b82";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3617,7 +3621,8 @@ async function putSharedAsset(dataUrl){
     id = digest + ":" + (++suffix);
   }
   const token = ASSET_TOKEN_PREFIX + id;
-  if (assetTokenCache.size > 512) assetTokenCache.clear();
+  /* every live image must fit, or each save re-hashes all of them; the strings are held by the workspace anyway */
+  if (assetTokenCache.size > 20000) assetTokenCache.clear();
   assetTokenCache.set(dataUrl, token);
   return token;
 }
@@ -4325,7 +4330,7 @@ function renderBoard(){
        points at. The cache only watched the card, so moving something into a
        board left the tile reading its old count until a full reload. Board
        cards therefore carry the count they were drawn with. */
-    const dependency = c.type === "board" ? subBoardCounts(c.boardId) :
+    const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") :
       (c.type === "column" || c.type === "grid")
         ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") : null;
     if (hit && hit.el && (hit.ref === c || id === editingId) && hit.dependency === dependency){
@@ -4575,7 +4580,7 @@ function buildCardEl(c){
        title would fire on top of it and force rename even on the icon. */
     const n = document.createElement("div"); n.className = "bcount";
     n.textContent = !b ? "board was deleted"
-      : (c.shortcut ? "shortcut · " : "") + subBoardCounts(c.boardId);
+      : (boardIsPrivate(c.boardId) ? "\u{1F512} private · " : "") + (c.shortcut ? "shortcut · " : "") + subBoardCounts(c.boardId);
     wrap.append(tile, t, n); el.appendChild(wrap);
   }
 
@@ -4848,13 +4853,13 @@ function buildFile(c, el){
    coming back later lands on page 7 — including on the small preview. */
 let pdfReaderId = null;
 async function openPdfReader(id){
-  const c = card(id); if (!cardHasSource(c)) return;
+  const c = card(id); if (!cardCanOpen(c)) return;
   pdfReaderId = id;
   const page = c.pdfPage || 1;
   $("#pdfName").textContent = c.fileName || "Document";
   $("#pdfPage").value = page;
   $("#pdfReader").classList.add("open");
-  try { $("#pdfFrame").src = (c.archiveRef ? await cardSourceUrl(c) : c.dataUrl) + "#page=" + page + "&view=FitH"; }
+  try { $("#pdfFrame").src = ((c.archiveRef || !c.dataUrl) ? await cardSourceUrl(c) : c.dataUrl) + "#page=" + page + "&view=FitH"; }
   catch (err){ toast("Could not open that archived PDF: " + (err?.message || "unknown error"), 8000); closePdfReader(); }
 }
 function pdfGo(n){
@@ -4908,7 +4913,7 @@ function setDocumentView(mode){
   $("#docViewToggle").textContent = mode === "layout" ? "Text view" : "Word layout";
 }
 async function openDocumentReader(id){
-  const c = card(id); if (!cardHasSource(c)) return;
+  const c = card(id); if (!cardCanOpen(c)) return;
   const ext = fileExt(c.fileName);
   if (ext === "pdf"){ openPdfReader(id); return; }
   if (ext !== "txt" && ext !== "docx"){ openFileCard(c); return; }
@@ -5003,16 +5008,16 @@ async function recognizeCanvasOrImage(source, status){
   finally { await worker.terminate(); }
 }
 async function ocrImageCard(c){
-  if (!cardHasSource(c)) return;
+  if (!cardCanOpen(c)) return;
   toast("Starting OCR…", 2500);
   try {
-    const source = c.archiveRef ? await cardSourceBlob(c) : c.dataUrl;
+    const source = (c.archiveRef || c.driveRef || !c.dataUrl) ? await cardSourceBlob(c) : c.dataUrl;
     const text = await recognizeCanvasOrImage(source, s => toast("OCR: " + s, 1800));
     addOcrNote(c, text); markDirty(); renderAll(); toast("OCR text added as a note.");
   } catch (err){ toast("OCR could not finish: " + (err?.message || "unknown error"), 7000); }
 }
 async function ocrPdfPage(){
-  const c = card(pdfReaderId); if (!cardHasSource(c)) return;
+  const c = card(pdfReaderId); if (!cardCanOpen(c)) return;
   const btn = $("#pdfOcr"), status = $("#pdfOcrStatus"), pageNo = Math.max(1, Number($("#pdfPage").value) || 1);
   btn.disabled = true; status.textContent = "Loading OCR…";
   try {
@@ -5030,7 +5035,7 @@ async function ocrPdfPage(){
   finally { btn.disabled = false; }
 }
 async function openFileCard(c){
-  if (!cardHasSource(c)){ toast("This file has no data."); return; }
+  if (!cardCanOpen(c)){ toast("This file has no data."); return; }
   /* Chrome can refuse top-level navigation to a data: URL and leave the tab
      at about:blank. A same-origin blob URL is made for exactly this job and
      works for text, audio, video, documents and arbitrary downloads. */
@@ -6899,6 +6904,12 @@ function moveToTrash(ids){
   if (!ids.length) return;
   pushUndo();
   const tb = trashBoard();
+  /* a card deleted from a private board stays private in the bin */
+  const priv = workspacePrivacy();
+  for (const id of ids){
+    const c = card(id), p = priv.cards.has(id);
+    if (!!c.trashPrivate !== p){ if (p) patchCard(id, {trashPrivate:true}); else { const n = {...c}; delete n.trashPrivate; state.cards[id] = n; } }
+  }
   detachEverywhere(ids);
   let i = tb.cardIds.length;
   for (const id of ids){
@@ -7710,6 +7721,7 @@ $("#linkOk").addEventListener("click", () => {
 function enterEdit(c){
   const el = worldEl.querySelector(`.card[data-id="${c.id}"]`);
   if (!el) return;
+  if (c.locked){ toast("This board is private on another device. Open it there."); return; }
   if (c.type === "note" || c.type === "heading") editNote(c, el);
   else if (c.type === "board") openBoard(c.boardId);
   else if (c.type === "link") openLinkDialog(c);
@@ -9922,7 +9934,7 @@ document.addEventListener("pointerdown", e => {
 /* ---------------- context menu ---------------- */
 const ctx = $("#ctx");
 async function downloadStoredImage(c){
-  if (!c || c.type !== "image" || !cardHasSource(c)) return false;
+  if (!c || c.type !== "image" || !cardCanOpen(c)) return false;
   if (!c.fileName){
     const ext = String(c.fileType || "").split("/")[1] ||
       (c.dataUrl?.startsWith("data:image/png") ? "png" : c.dataUrl?.startsWith("data:image/gif") ? "gif" : "jpg");
@@ -9942,6 +9954,8 @@ function openCtx(x, y, c){
     add("Open", () => openBoard(c.boardId));
     add("Create shortcut", () => createShortcut(c));
     add("Edit… (title, icon, color)", () => openBoardDialog(c));
+    if (board(c.boardId)) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
+      : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
     add("Duplicate board…", async () => {
       /* three real outcomes, so this is a three-button dialog rather than the
          OK/Cancel pun the native confirm forced it into */
@@ -9989,9 +10003,9 @@ function openCtx(x, y, c){
   });
   /* Open in a new tab: an image at full size, a link at its destination. */
   if (c.type === "image") add("View full size", () => openLightbox(c.id));
-  if (c.type === "image" && cardHasSource(c)) add("Download image", () => downloadStoredImage(c));
-  if (c.type === "image" && cardHasSource(c)) add("OCR image as note", () => ocrImageCard(c));
-  if (c.type === "image" && cardHasSource(c)) add("Open image in new tab", async () => {
+  if (c.type === "image" && cardCanOpen(c)) add("Download image", () => downloadStoredImage(c));
+  if (c.type === "image" && cardCanOpen(c)) add("OCR image as note", () => ocrImageCard(c));
+  if (c.type === "image" && cardCanOpen(c)) add("Open image in new tab", async () => {
     const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
     try { const url=await cardSourceUrl(c); w.location.replace(url); setTimeout(()=>URL.revokeObjectURL(url),60000); }
     catch (err){ try { w.close(); } catch (_) {} toast("Could not open that image from the archive."); }
@@ -10012,7 +10026,7 @@ function openCtx(x, y, c){
   if (c.type === "link" && c.url) add("Open link in new tab",
     () => window.open(c.url, "_blank", "noopener"));
   /* An image card can also hand the PICTURE to other apps, not just the card. */
-  if (c.type === "image" && cardHasSource(c)) add("Copy image", async () => {
+  if (c.type === "image" && cardCanOpen(c)) add("Copy image", async () => {
     try {
       const blob = await cardSourceBlob(c);
       await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
@@ -11525,15 +11539,23 @@ async function dataUrlToBlob(dataUrl){
   return r.blob();
 }
 function cardHasSource(c){ return !!(c && (c.archiveRef || c.dataUrl)); }
+/* openable at all, if need be by downloading the original from Drive */
+function cardCanOpen(c){ return cardHasSource(c) || !!c?.driveRef; }
 const archiveObjectUrls=new Map();
 async function cardSourceBlob(c, askPermission=true){
   if (!c) throw new Error("This card no longer exists.");
-  if (c.archiveRef) return archiveReferenceFile(c.archiveRef, null, askPermission);
+  if (c.archiveRef){
+    try { return await archiveReferenceFile(c.archiveRef, null, askPermission); }
+    catch (err){ if (!c.driveRef) throw err; }
+  }
+  /* an image's embedded copy may only be a preview when Drive holds the original */
+  if (c.dataUrl && (c.type !== "image" || !c.driveRef)) return dataUrlToBlob(c.dataUrl);
+  if (c.driveRef) return driveOriginalBlob(c.driveRef);
   if (c.dataUrl) return dataUrlToBlob(c.dataUrl);
   throw new Error("This file has no stored source.");
 }
 async function cardSourceUrl(c, cache=false){
-  const key=c?.archiveRef ? c.id+":"+(c.archiveRef.lastModified||0)+":"+(c.archiveRef.size||0) : "";
+  const key=c?.archiveRef ? c.id+":"+(c.archiveRef.lastModified||0)+":"+(c.archiveRef.size||0) : c?.driveRef ? c.id+":d:"+c.driveRef.id : "";
   if(cache&&key&&archiveObjectUrls.has(key))return archiveObjectUrls.get(key);
   const blob = await cardSourceBlob(c);
   const url=URL.createObjectURL(blob);
@@ -15205,7 +15227,7 @@ function lbRender(){
   const c = lbCard();
   if (!c){ closeLightbox(); return; }
   $("#lbImg").src = c.dataUrl;
-  if(c.archiveRef){const id=c.id;cardSourceUrl(c,true).then(url=>{
+  if(c.archiveRef||c.driveRef){const id=c.id;cardSourceUrl(c,true).then(url=>{
     if(LB.mode==="view"&&lbCard()?.id===id)$("#lbImg").src=url;
   }).catch(()=>{});}
   $("#lbCaption").textContent = c.caption || "";
@@ -15376,12 +15398,339 @@ const SAFE_STORE = (() => {
     }
   };
 })();
+/* ---------------- cloud sync core: privacy, projection, merge ----------------
+   Pure functions over workspace objects. Nothing here touches Drive, the DOM
+   or `state`, so every rule is testable on plain data.
+
+   Privacy. A board marked `private` makes everything inside it private: its
+   cards, their nested cards, and every board below it. A card moved to the
+   Recycle Bin from a private board carries `trashPrivate` so deleting it does
+   not publish it. Until encryption ships, private items never leave the
+   device. A public card that opens a private board (a board card or a
+   shortcut) is replaced by a locked placeholder note in the cloud copy.
+
+   Merge. Each sync compares three copies of every board, card and label:
+   the copy last agreed with Drive (base), this device's (local) and Drive's
+   (remote). A side that did not change an item takes the other side's
+   version. When both changed it, fields merge one by one; lists of IDs merge
+   as sets; a field changed differently on both sides goes to the newer card,
+   and long text that loses is kept in a conflict copy so nothing vanishes. */
+const SYNC_DEVICE_SETTINGS = new Set(["uiScale","uiAutoFit","firstRunDone","personalizationVersion",
+  "wheelZoom","boundedPan","backupHabit"]);
+const SYNC_DEVICE_CARD_FIELDS = ["archiveRef"];
+const SYNC_ID_LISTS = new Set(["cardIds","unsortedIds","childIds","attachedIds","labelIds"]);
+const SYNC_TEXT_FIELDS = new Set(["text","html","desc","title","caption","name"]);
+const LOCKED_NOTE_TEXT = "\u{1F512} Private";
+
+function syncPrivacy(ws){
+  const boards = new Set(), cards = new Set();
+  const all = ws?.boards || {}, cs = ws?.cards || {};
+  const seenBoards = new Set(), seenCards = new Set();
+  const walkCard = (cid, priv, inTrash) => {
+    const c = cs[cid]; if (!c || seenCards.has(cid)) return;
+    seenCards.add(cid);
+    const p = priv || (inTrash && !!c.trashPrivate);
+    if (p) cards.add(cid);
+    for (const k of ["childIds","attachedIds","unsortedIds"])
+      for (const nested of c[k] || []) walkCard(nested, p, inTrash);
+    if (c.type === "board" && !c.shortcut && c.boardId) walkBoard(c.boardId, p, false);
+  };
+  const walkBoard = (bid, priv, inTrash) => {
+    const b = all[bid]; if (!b || seenBoards.has(bid)) return;
+    seenBoards.add(bid);
+    const p = priv || !!b.private;
+    if (p) boards.add(bid);
+    for (const cid of [...(b.cardIds || []), ...(b.unsortedIds || [])]) walkCard(cid, p, inTrash);
+  };
+  for (const b of Object.values(all)) if (b && b.parentId == null) walkBoard(b.id, false, b.id === "b_trash");
+  /* boards no card reaches still inherit through parentId */
+  for (const bid of Object.keys(all)){
+    if (seenBoards.has(bid)) continue;
+    for (let at = all[bid], hops = 0; at && hops < 1000; at = all[at.parentId], hops++)
+      if (at.private || boards.has(at.id)){ boards.add(bid); break; }
+    walkBoard(bid, boards.has(bid), false);
+  }
+  return {boards, cards};
+}
+function syncIsLockedCard(c){ return !!(c && c.locked && c.type === "note"); }
+function syncLockedPlaceholder(c){
+  return {id:c.id, type:"note", locked:true, text:LOCKED_NOTE_TEXT,
+    x:c.x, y:c.y, w:c.w, h:c.h, z:c.z, createdAt:c.createdAt || 0, updatedAt:c.createdAt || 0};
+}
+/* The copy that may leave this device. */
+function syncPublicProjection(ws, priv=syncPrivacy(ws)){
+  const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
+    boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
+    bugs:syncClone((ws.bugs || [])), settings:{}};
+  for (const [k, v] of Object.entries(ws.settings || {}))
+    if (!SYNC_DEVICE_SETTINGS.has(k)) out.settings[k] = syncClone((v ?? null));
+  const keep = id => !priv.cards.has(id);
+  for (const [bid, b] of Object.entries(ws.boards || {})){
+    if (priv.boards.has(bid)) continue;
+    const copy = syncClone((b));
+    copy.cardIds = (b.cardIds || []).filter(keep);
+    copy.unsortedIds = (b.unsortedIds || []).filter(keep);
+    if (Array.isArray(b.connectors))
+      copy.connectors = b.connectors.filter(cn => keep(cn.from) && keep(cn.to));
+    out.boards[bid] = copy;
+  }
+  for (const [cid, c] of Object.entries(ws.cards || {})){
+    if (priv.cards.has(cid)) continue;
+    if (c.type === "board" && c.boardId && priv.boards.has(c.boardId)){ out.cards[cid] = syncLockedPlaceholder(c); continue; }
+    const copy = syncClone((c));
+    for (const f of SYNC_DEVICE_CARD_FIELDS) delete copy[f];
+    /* a file whose original is in Drive travels without its embedded copy */
+    if (copy.type === "file" && copy.driveRef) delete copy.dataUrl;
+    for (const k of ["childIds","attachedIds","unsortedIds"])
+      if (Array.isArray(copy[k])) copy[k] = copy[k].filter(keep);
+    out.cards[cid] = copy;
+  }
+  return out;
+}
+
+/* deep copy that shares strings: a workspace's images are long strings,
+   and JSON round-trips copied every one of them on each sync */
+function syncClone(v){
+  if (Array.isArray(v)) return v.map(syncClone);
+  if (v && typeof v === "object"){ const o = {}; for (const k in v) if (v[k] !== undefined) o[k] = syncClone(v[k]); return o; }
+  return v;
+}
+const syncSame = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
+function syncMergeIdList(base=[], local=[], remote=[]){
+  base = base || []; local = local || []; remote = remote || [];
+  const removedRemote = new Set(base.filter(x => !remote.includes(x)));
+  const out = local.filter(x => !removedRemote.has(x));
+  for (const x of remote) if (!base.includes(x) && !out.includes(x)) out.push(x);
+  return out;
+}
+/* field-by-field merge of one record changed on both sides */
+function syncMergeRecord(base, local, remote, localNewer, conflicts){
+  base = base || {};
+  const out = {}, keys = new Set([...Object.keys(local), ...Object.keys(remote)]);
+  for (const k of keys){
+    const b = base[k], l = local[k], r = remote[k];
+    if (syncSame(l, r)) { if (l !== undefined) out[k] = l; continue; }
+    if (k === "updatedAt"){ out[k] = Math.max(Number(l) || 0, Number(r) || 0); continue; }
+    if (syncSame(b, l)){ if (r !== undefined) out[k] = r; continue; }
+    if (syncSame(b, r)){ if (l !== undefined) out[k] = l; continue; }
+    if (SYNC_ID_LISTS.has(k) && (Array.isArray(l) || Array.isArray(r))){ out[k] = syncMergeIdList(b, l, r); continue; }
+    if (k === "connectors" && (Array.isArray(l) || Array.isArray(r))){
+      const key = cn => (cn?.id) || (cn?.from + ">" + cn?.to);
+      const bm = new Map((b || []).map(cn => [key(cn), cn])), rm = new Map((r || []).map(cn => [key(cn), cn]));
+      const merged = (l || []).filter(cn => !(bm.has(key(cn)) && !rm.has(key(cn))));
+      for (const cn of r || []) if (!bm.has(key(cn)) && !merged.some(x => key(x) === key(cn))) merged.push(cn);
+      out[k] = merged; continue;
+    }
+    const win = localNewer ? l : r, lose = localNewer ? r : l;
+    if (win !== undefined) out[k] = win;
+    if (SYNC_TEXT_FIELDS.has(k) && typeof lose === "string" && lose.trim()) conflicts.push({field:k, value:lose});
+  }
+  return out;
+}
+/* Merge Drive's public copy into this device's workspace. `base` and
+   `remote` are public projections; `local` is the full workspace. Private
+   local records are never changed by remote data. */
+function syncMergeWorkspace(base, local, remote){
+  base = base || {boards:{}, cards:{}, labels:{}, bugs:[], settings:{}};
+  const priv = syncPrivacy(local);
+  /* items another device made private: drop them here, edits or not, so an
+     offline device can't publish its old copy again */
+  const withheld = new Set(remote.withheld || []);
+  const out = syncClone((local));
+  const report = {fromRemote:0, conflicts:0, copies:[]};
+  const localPublic = syncPublicProjection(local, priv);
+  const localNewerWs = (local.lastModified || 0) >= (remote.lastModified || 0);
+
+  const mergeMap = (name, isPrivate, newer) => {
+    const B = base[name] || {}, L = localPublic[name] || {}, R = remote[name] || {}, target = out[name] = out[name] || {};
+    for (const id of new Set([...Object.keys(L), ...Object.keys(R), ...Object.keys(B)])){
+      if (isPrivate(id)) continue;
+      if (withheld.has(id) && name !== "labels"){ if (target[id]){ delete target[id]; report.fromRemote++; } continue; }
+      const b = B[id], l = L[id], r = R[id];
+      if (syncSame(l, r)) continue;
+      /* Drive only has a placeholder for a card whose board is private here */
+      if (name === "cards" && syncIsLockedCard(r) && local.cards[id] && !syncIsLockedCard(local.cards[id]) &&
+          priv.boards.has(local.cards[id].boardId)) continue;
+      let next;
+      if (syncSame(b, l)) next = r;                    /* remote changed or deleted it */
+      else if (syncSame(b, r)) continue;               /* only this device changed it */
+      else if (!l || !r) next = l || r;                /* deleted on one side, edited on the other: keep the edit */
+      else {
+        const conflicts = [];
+        next = syncMergeRecord(b, l, r, newer(l, r), conflicts);
+        if (name === "cards" && conflicts.length) report.copies.push({id, conflicts, card:newer(l, r) ? r : l});
+        report.conflicts++;
+      }
+      report.fromRemote++;
+      if (next === undefined) { delete target[id]; continue; }
+      const prior = local[name]?.[id];
+      const merged = syncClone((next));
+      if (name === "cards" && prior){
+        /* this device's own copy of the file stays, unless the file itself was replaced elsewhere */
+        const sameFile = !merged.driveRef || !prior.driveRef || merged.driveRef.sha256 === prior.driveRef.sha256;
+        if (sameFile) for (const f of SYNC_DEVICE_CARD_FIELDS) if (prior[f] !== undefined) merged[f] = prior[f];
+        if (sameFile && merged.type === "file" && merged.driveRef && prior.dataUrl && merged.dataUrl === undefined) merged.dataUrl = prior.dataUrl;
+      }
+      if (name === "boards" && prior){
+        /* the cloud copy of a public board omits its private cards; put them back */
+        for (const k of ["cardIds","unsortedIds"])
+          for (const cid of prior[k] || []) if (priv.cards.has(cid) && !merged[k]?.includes(cid)) (merged[k] = merged[k] || []).push(cid);
+        if (Array.isArray(prior.connectors))
+          for (const cn of prior.connectors) if ((priv.cards.has(cn.from) || priv.cards.has(cn.to)) && !(merged.connectors || []).some(x => syncSame(x, cn))) (merged.connectors = merged.connectors || []).push(cn);
+      }
+      if (name === "cards" && prior)
+        for (const k of ["childIds","attachedIds","unsortedIds"])
+          for (const cid of prior[k] || []) if (priv.cards.has(cid) && !merged[k]?.includes(cid)) (merged[k] = merged[k] || []).push(cid);
+      target[id] = merged;
+    }
+  };
+  mergeMap("boards", id => priv.boards.has(id), () => localNewerWs);
+  mergeMap("cards", id => priv.cards.has(id), (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  mergeMap("labels", () => false, () => localNewerWs);
+
+  /* bugs: list of {id,...} */
+  {
+    const key = x => x?.id ?? JSON.stringify(x);
+    const toMap = list => new Map((list || []).map(x => [key(x), x]));
+    const B = toMap(base.bugs), L = toMap(local.bugs), R = toMap(remote.bugs);
+    const merged = [];
+    for (const [k, l] of L){ if (B.has(k) && !R.has(k) && syncSame(B.get(k), l)) continue; merged.push(R.has(k) && syncSame(B.get(k), l) ? R.get(k) : l); }
+    for (const [k, r] of R) if (!L.has(k) && !B.has(k)) merged.push(r);
+    out.bugs = merged;
+  }
+  /* settings: per key, device-only keys untouched */
+  {
+    const B = base.settings || {}, L = local.settings || {}, R = remote.settings || {};
+    out.settings = {...L};
+    for (const k of new Set([...Object.keys(R), ...Object.keys(B)])){
+      if (SYNC_DEVICE_SETTINGS.has(k)) continue;
+      if (syncSame(L[k], R[k]) || !syncSame(B[k], L[k])) continue;
+      if (R[k] === undefined) delete out.settings[k]; else out.settings[k] = syncClone((R[k]));
+    }
+  }
+  /* conflict copies: the losing text, beside the card that won */
+  for (const {id, conflicts, card:loser} of report.copies){
+    const winner = out.cards[id]; if (!winner) continue;
+    const copyId = id + "_conflict_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const copy = {...syncClone((loser)), id:copyId, x:(winner.x || 0) + 40, y:(winner.y || 0) + 40,
+      childIds:[], attachedIds:[], unsortedIds:[], conflictOf:id};
+    for (const {field, value} of conflicts) copy[field] = value;
+    if (typeof copy.title === "string") copy.title = (copy.title || "Untitled") + " (conflict copy)";
+    else if (copy.type === "note") copy.text = "<p><b>Conflict copy</b></p>" + (copy.text || "");
+    if (copy.type === "board"){ copy.type = "note"; delete copy.boardId; copy.text = copy.text || copy.title || "Conflict copy"; }
+    out.cards[copyId] = copy;
+    const home = Object.values(out.boards).find(b => b.cardIds?.includes(id) || b.unsortedIds?.includes(id));
+    (home || out.boards[out.rootBoardId]).unsortedIds.push(copyId);
+  }
+  out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
+  const openedBefore = new Set(Object.values(local.cards || {}).filter(c => c.type === "board" && !c.shortcut).map(c => c.boardId));
+  report.repairs = syncRepairWorkspace(out, openedBefore);
+  return {workspace:out, report};
+}
+
+/* After a merge, references can disagree (a card moved to different boards
+   on two devices, a board deleted on one while a card was added on the
+   other). Make the graph valid without dropping content: duplicates keep
+   their first placement, dangling IDs are removed, and anything left with no
+   home goes to Home's Unsorted tray. */
+function syncRepairWorkspace(ws, openedBefore=new Set()){
+  let fixes = 0;
+  const boards = ws.boards, cards = ws.cards;
+  if (!boards[ws.rootBoardId]){
+    const rid = ws.rootBoardId || "b_root";
+    boards[rid] = {id:rid, title:"Home", parentId:null, cardIds:[], unsortedIds:[], viewport:{panX:0, panY:0, zoom:1}};
+    ws.rootBoardId = rid; fixes++;
+  }
+  const root = boards[ws.rootBoardId];
+  for (const c of Object.values(cards)){
+    if (c.type === "board" && !boards[c.boardId]){
+      Object.assign(c, {type:"note", text:(c.title || "Board") + " (its board was deleted on another device)"});
+      delete c.boardId; fixes++;
+    }
+    for (const k of ["x","y","w","h","z"]) if (!Number.isFinite(c[k])){ c[k] = k === "w" || k === "h" ? 200 : 0; fixes++; }
+  }
+  const placed = new Set();
+  const cleanList = (list, owner) => (list || []).filter(cid => {
+    if (!cards[cid] || cid === owner || placed.has(cid)){ fixes++; return false; }
+    placed.add(cid); return true;
+  });
+  for (const b of Object.values(boards)){
+    b.cardIds = cleanList(b.cardIds); b.unsortedIds = cleanList(b.unsortedIds);
+    if (b.parentId != null && !boards[b.parentId]){ b.parentId = ws.rootBoardId === b.id ? null : ws.rootBoardId; fixes++; }
+  }
+  for (const c of Object.values(cards))
+    for (const k of ["childIds","attachedIds","unsortedIds"]) if (Array.isArray(c[k])) c[k] = cleanList(c[k], c.id);
+  for (const b of Object.values(boards)) if (Array.isArray(b.connectors)){
+    const n = b.connectors.length;
+    b.connectors = b.connectors.filter(cn => cards[cn?.from] && cards[cn?.to]);
+    fixes += n - b.connectors.length;
+  }
+  for (const cid of Object.keys(cards)) if (!placed.has(cid)){ root.unsortedIds.push(cid); placed.add(cid); fixes++; }
+  /* a board whose opening card was deleted on another device gets a new card in Home's tray */
+  const opened = new Set(Object.values(cards).filter(c => c.type === "board" && !c.shortcut).map(c => c.boardId));
+  for (const b of Object.values(boards)){
+    if (b.parentId == null || opened.has(b.id) || !openedBefore.has(b.id)) continue;
+    const cid = "c_restored_" + b.id;
+    cards[cid] = {id:cid, type:"board", boardId:b.id, title:b.title || "Board", x:0, y:0, w:150, h:150, z:0,
+      createdAt:Date.now(), updatedAt:Date.now()};
+    root.unsortedIds.push(cid); b.parentId = ws.rootBoardId; fixes++;
+  }
+  /* break parent cycles */
+  for (const bid of Object.keys(boards)){
+    const seen = new Set();
+    for (let at = boards[bid]; at && at.parentId != null; at = boards[at.parentId]){
+      if (seen.has(at.id)){ at.parentId = at.id === ws.rootBoardId ? null : ws.rootBoardId; fixes++; break; }
+      seen.add(at.id);
+    }
+  }
+  return fixes;
+}
+/* IDs (never content) of everything private on any device. Sticky across
+   devices until a device publishes the item again. */
+function syncWithheld(previous, projection, priv){
+  const out = new Set(previous || []);
+  for (const id of priv.boards) out.add(id);
+  for (const id of priv.cards) out.add(id);
+  for (const id of Object.keys(projection.boards)) out.delete(id);
+  for (const [id, c] of Object.entries(projection.cards)) if (!c.locked) out.delete(id);
+  return [...out].sort();
+}
+/* ---------------- end cloud sync core ---------------- */
+let privacyCache = null;
+function workspacePrivacy(){
+  if (!privacyCache || privacyCache.ws !== state || privacyCache.at !== state.lastModified)
+    privacyCache = {ws:state, at:state.lastModified, value:syncPrivacy(state)};
+  return privacyCache.value;
+}
+function boardIsPrivate(bid){ return workspacePrivacy().boards.has(bid); }
+/* private because a board above it is, so this board's own switch can't make it public */
+function boardPrivacyInherited(bid){
+  const b = board(bid); return !!b && !b.private && boardIsPrivate(bid);
+}
+async function toggleBoardPrivate(bid){
+  const b = board(bid); if (!b || bid === state.rootBoardId || bid === TRASH_ID) return;
+  if (boardPrivacyInherited(bid)){ toast("This board is inside a private board, so it is private already."); return; }
+  const making = !b.private;
+  const ok = await askConfirm(making ? {
+    title:"Make \u201c" + (b.title || "board") + "\u201d private?",
+    message:"It and everything inside it, including boards inside it, stay on this device only.",
+    detail:"They stop syncing to Google Drive and are removed from the Drive copy. Other devices see a locked placeholder. Encrypted syncing of private boards comes later.",
+    okLabel:"Make private"
+  } : {
+    title:"Make \u201c" + (b.title || "board") + "\u201d public?",
+    message:"It and everything inside it will sync to Google Drive, readable by anyone with access to that Drive.",
+    okLabel:"Make public"
+  });
+  if (!ok) return;
+  pushUndo();
+  if (making) b.private = true; else delete b.private;
+  markDirty(); renderAll();
+  toast(making ? "Private. It stays on this device." : "Public. It will sync to Drive.");
+}
 const SYNC = {
   get clientId(){ return SAFE_STORE.get("cb_clientId") || ""; },
   set clientId(v){ v ? SAFE_STORE.set("cb_clientId", v) : SAFE_STORE.del("cb_clientId"); },
-  get fileId(){ return SAFE_STORE.get("cb_fileId") || ""; },
-  set fileId(v){ v ? SAFE_STORE.set("cb_fileId", v) : SAFE_STORE.del("cb_fileId"); },
-  token: null, tokenExp: 0, status: "off", lastError: ""
+  token: null, tokenExp: 0, status: "off", lastError: "", detail: "", lastSync: 0, layout: null
 };
 function loadGIS(){
   return new Promise((res, rej) => {
@@ -15412,113 +15761,383 @@ async function getToken(interactive){
     tc.requestAccessToken({ prompt: interactive ? "" : "none" });
   });
 }
+/* ---------------- Google Drive: the cloud master ----------------
+   Drive holds one folder, "CORKBORK", made by this app. The app's Google
+   permission (drive.file) only reaches files it created, never the rest of
+   the Drive.
+
+     CORKBORK/workspace.json   the public catalogue: boards, cards, labels,
+                                with large images replaced by asset tokens
+     CORKBORK/assets/          one file per image/preview, named by its
+                                SHA-256, shared by every device
+     CORKBORK/files/           original files, under their own names
+
+   Each device keeps a copy of the catalogue as it last agreed with Drive
+   (the merge base). A sync pulls Drive's catalogue when it changed, merges
+   it into this device's workspace, uploads anything new, then writes the
+   merged catalogue back. Two devices writing in the same second is caught
+   by reading the file's revision history afterwards: if another write
+   landed between our read and our write, it is merged and written again. */
+const DRIVE_API = "https://www.googleapis.com";
+const DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
+const DRIVE_CHUNK = 8 * 1024 * 1024;
+const SYNC_BASE_KEY = "sync:base", SYNC_STATE_KEY = "sync:meta", DRIVE_CACHE_PREFIX = "drivefile:";
+const SYNC_POLL_MS = 60 * 1000;
+
 async function driveFetch(path, opts = {}){
   const t = await getToken(false);
-  const r = await fetch("https://www.googleapis.com" + path, {
-    ...opts, headers: { ...(opts.headers || {}), Authorization: "Bearer " + t }
-  });
-  if (r.status === 404 && SYNC.fileId){ SYNC.fileId = ""; throw new Error("Drive file missing — it will be recreated on next sync."); }
-  if (!r.ok) throw new Error("Drive error " + r.status);
+  const r = await fetch(DRIVE_API + path, {...opts, headers:{...(opts.headers || {}), Authorization:"Bearer " + t}});
+  if (r.status === 401){ SYNC.token = null; throw new Error("Google needs a fresh sign-in."); }
+  if (!r.ok){
+    let why = ""; try { why = (await r.json())?.error?.message || ""; } catch (_) {}
+    const e = new Error("Drive error " + r.status + (why ? " — " + why : "")); e.status = r.status; throw e;
+  }
   return r;
 }
-async function findOrCreateFile(){
-  if (SYNC.fileId) return SYNC.fileId;
-  const q = encodeURIComponent("name='corkboard-workspace.json' and trashed=false");
-  const r = await driveFetch(`/drive/v3/files?q=${q}&fields=files(id,name)&spaces=drive`);
-  const j = await r.json();
-  if (j.files?.length){ SYNC.fileId = j.files[0].id; return SYNC.fileId; }
-  const boundary = "cb" + Date.now();
-  const body =
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-    JSON.stringify({ name: "corkboard-workspace.json" }) +
-    `\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
-    JSON.stringify(state) + `\r\n--${boundary}--`;
-  const r2 = await driveFetch(`/upload/drive/v3/files?uploadType=multipart&fields=id`, {
-    method: "POST",
-    headers: { "Content-Type": "multipart/related; boundary=" + boundary },
-    body
-  });
-  SYNC.fileId = (await r2.json()).id;
-  return SYNC.fileId;
+const driveJson = async (path, opts) => (await driveFetch(path, opts)).json();
+const driveQ = s => encodeURIComponent(s);
+async function driveFind(role, parentId){
+  const q = `appProperties has { key='corkbork' and value='${role}' } and trashed=false` + (parentId ? ` and '${parentId}' in parents` : "");
+  const j = await driveJson(`/drive/v3/files?q=${driveQ(q)}&fields=files(id,name,headRevisionId,modifiedTime)&spaces=drive&pageSize=10`);
+  return j.files?.[0] || null;
 }
-let cloudTimer = null;
+function driveMultipart(meta, body, mime){
+  const boundary = "cork" + Math.random().toString(36).slice(2);
+  const head = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`;
+  return {body:new Blob([head, body, `\r\n--${boundary}--`]), type:"multipart/related; boundary=" + boundary};
+}
+async function driveCreate(meta, body = "", mime = "application/json"){
+  const m = driveMultipart(meta, body, mime);
+  return driveJson(`/upload/drive/v3/files?uploadType=multipart&fields=id,headRevisionId`,
+    {method:"POST", headers:{"Content-Type":m.type}, body:m.body});
+}
+async function driveFolder(role, name, parentId){
+  const found = await driveFind(role, parentId); if (found) return found.id;
+  const meta = {name, mimeType:DRIVE_FOLDER_MIME, appProperties:{corkbork:role}};
+  if (parentId) meta.parents = [parentId];
+  return (await driveJson(`/drive/v3/files?fields=id`, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(meta)})).id;
+}
+async function driveLayout(){
+  const cached = SYNC.layout; if (cached) return cached;
+  const root = await driveFolder("root", "CORKBORK");
+  const layout = {root, assets:await driveFolder("assets", "assets", root), files:await driveFolder("files", "files", root)};
+  SYNC.layout = layout; return layout;
+}
+/* Large originals go up in 8 MB pieces, so a 5 GB file never sits in memory. */
+async function driveUploadBlob(meta, blob, onProgress){
+  if (blob.size <= DRIVE_CHUNK){
+    return driveCreate(meta, blob, blob.type || "application/octet-stream");
+  }
+  const start = await driveFetch(`/upload/drive/v3/files?uploadType=resumable&fields=id`, {method:"POST",
+    headers:{"Content-Type":"application/json; charset=UTF-8", "X-Upload-Content-Type":blob.type || "application/octet-stream",
+      "X-Upload-Content-Length":String(blob.size)}, body:JSON.stringify(meta)});
+  const session = start.headers.get("Location");
+  if (!session){
+    /* the browser could not read the session address; a one-piece upload still works for moderate sizes */
+    if (blob.size <= 64 * 1024 * 1024) return driveCreate(meta, blob, blob.type || "application/octet-stream");
+    throw new Error("Drive did not open an upload session.");
+  }
+  let at = 0;
+  while (at < blob.size){
+    const end = Math.min(blob.size, at + DRIVE_CHUNK);
+    const r = await fetch(session, {method:"PUT", headers:{"Content-Range":`bytes ${at}-${end - 1}/${blob.size}`}, body:blob.slice(at, end)});
+    if (r.status === 308){ const range = r.headers.get("Range"); at = range ? Number(range.split("-")[1]) + 1 : end; onProgress?.(at / blob.size); continue; }
+    if (!r.ok) throw new Error("Drive upload stopped (" + r.status + ").");
+    return r.json();
+  }
+  throw new Error("Drive upload ended early.");
+}
+async function sha256Hex(blob){
+  if (!globalThis.crypto?.subtle) throw new Error("file uploads need the app's https address (or localhost)");
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+/* ---- sync state on this device ---- */
+async function syncMeta(){ return Object.assign({rev:"", assets:{}}, await idbGetRaw(SYNC_STATE_KEY) || {}); }
+async function setSyncMeta(patch){ const m = Object.assign(await syncMeta(), patch); await idbSet(SYNC_STATE_KEY, m); return m; }
+
+/* The catalogue that may leave the device: public only, attachments as
+   asset tokens, originals of file cards replaced by their Drive copy. */
+async function cloudCatalogue(base){
+  const priv = workspacePrivacy(), pub = syncPublicProjection(state, priv);
+  pub.withheld = syncWithheld(base?.withheld, pub, priv);
+  return packWorkspaceForStorage(cloneWorkspaceForSave(pub));
+}
+async function uploadAssets(catalogue, meta){
+  const {assets:folder} = await driveLayout();
+  for (const id of collectAssetTokens(catalogue).keys()){
+    if (meta.assets[id]) continue;
+    const found = await driveFind("asset:" + id, folder);
+    if (found){ meta.assets[id] = found.id; continue; }
+    const dataUrl = await idbGetRaw(ASSET_KEY_PREFIX + id);
+    if (typeof dataUrl !== "string") throw new Error("an attachment is missing from this device's storage");
+    meta.assets[id] = (await driveCreate({name:"asset-" + id.replace(/[^a-z0-9]/gi, "_"), parents:[folder],
+      appProperties:{corkbork:"asset:" + id}}, dataUrl, "text/plain")).id;
+  }
+}
+async function downloadAssets(catalogue, meta){
+  const want = [...collectAssetTokens(catalogue).keys()];
+  const remoteMap = catalogue.driveAssets || {};
+  for (const id of want){
+    if (await idbHas(ASSET_KEY_PREFIX + id)) continue;
+    let fileId = remoteMap[id] || meta.assets[id];
+    if (!fileId) fileId = (await driveFind("asset:" + id))?.id;
+    if (!fileId) throw new Error("Drive is missing an attachment another device uploaded. Sync that device first.");
+    const text = await (await driveFetch(`/drive/v3/files/${fileId}?alt=media`)).text();
+    await idbSet(ASSET_KEY_PREFIX + id, text);
+    meta.assets[id] = fileId;
+  }
+}
+/* Originals: anything this device holds that Drive does not have yet. */
+function cardUploadSource(c){
+  return c.archiveRef ? "a:" + (c.archiveRef.size || 0) + ":" + (c.archiveRef.lastModified || 0) : "d:" + (c.dataUrl || "").length;
+}
+function cardNeedsUpload(c){
+  if (!c || !["file","image"].includes(c.type)) return false;
+  if (c.type === "image" && !c.archiveRef) return false;  /* the picture itself syncs as an asset */
+  if (!c.archiveRef && !c.dataUrl) return false;
+  const src = cardUploadSource(c);
+  /* copied down from Drive into the archive folder and not edited since */
+  if (c.archiveRef?.cloudSrc === src) return false;
+  return !c.driveRef || c.driveRef.src !== src;
+}
+async function uploadOriginals(){
+  const priv = workspacePrivacy();
+  const todo = Object.values(state.cards).filter(c => !priv.cards.has(c.id) && cardNeedsUpload(c));
+  if (!todo.length) return 0;
+  const {files:folder} = await driveLayout();
+  let done = 0;
+  for (const c of todo){
+    let blob;
+    try { blob = c.archiveRef ? await archiveReferenceFile(c.archiveRef, null, false) : await dataUrlToBlob(c.dataUrl); }
+    catch (_) { continue; }   /* the archive folder needs permission again; try on the next sync */
+    const src = cardUploadSource(c);
+    const sha256 = await sha256Hex(blob);
+    let file = c.driveRef?.sha256 === sha256 ? {id:c.driveRef.id} : await driveFind("file:" + sha256, folder);
+    if (!file){
+      SYNC.detail = "Uploading " + (c.fileName || "file") + "…"; refreshSyncUI();
+      file = await driveUploadBlob({name:c.fileName || "file", parents:[folder], appProperties:{corkbork:"file:" + sha256}}, blob,
+        p => { SYNC.detail = "Uploading " + (c.fileName || "file") + " " + Math.round(p * 100) + "%"; refreshSyncUI(); });
+    }
+    const live = card(c.id); if (!live) continue;
+    patchCard(c.id, {driveRef:{id:file.id, sha256, size:blob.size, type:blob.type || c.fileType || "", src}});
+    try { await idbSet(DRIVE_CACHE_PREFIX + file.id, blob); } catch (_) {}
+    done++;
+  }
+  SYNC.detail = "";
+  if (done) markDirty();
+  return done;
+}
+/* A computer with an archive folder keeps a readable copy of everything:
+   originals that arrived from other devices are written into it. */
+let mirrorRunning = false;
+async function mirrorCloudFilesToArchive(){
+  if (mirrorRunning) return 0;
+  const handle = await archiveHandle(); if (!handle) return 0;
+  try { if (!await archivePermission(handle, false)) return 0; } catch (_) { return 0; }
+  mirrorRunning = true; let done = 0;
+  try {
+    const priv = workspacePrivacy();
+    for (const c of Object.values(state.cards)){
+      if (!c || c.archiveRef || priv.cards.has(c.id)) continue;
+      const fromDrive = c.driveRef && ["file","image"].includes(c.type);
+      const pictureOnly = c.type === "image" && !c.driveRef && c.dataUrl;
+      if (!fromDrive && !pictureOnly) continue;
+      let blob;
+      try {
+        if (fromDrive){
+          const cached = await idbGetRaw(DRIVE_CACHE_PREFIX + c.driveRef.id).catch(() => null);
+          blob = cached instanceof Blob ? cached : await (await driveFetch(`/drive/v3/files/${c.driveRef.id}?alt=media`)).blob();
+        } else blob = await dataUrlToBlob(c.dataUrl);
+      } catch (_) { continue; }
+      const live = card(c.id); if (!live || live.archiveRef) continue;
+      const copy = {...live};
+      const keepDataUrl = copy.dataUrl;
+      if (!await archiveStoreCardSource(copy, blob, handle, false)) break;
+      if (copy.type === "image") copy.dataUrl = keepDataUrl;
+      copy.archiveRef = {...copy.archiveRef, cloudSrc:cardUploadSource(copy)};
+      state.cards[c.id] = copy; done++;
+      if (copy.driveRef) try { await idbDel(DRIVE_CACHE_PREFIX + copy.driveRef.id); } catch (_) {}
+    }
+  } finally { mirrorRunning = false; }
+  if (done){ markDirty(); renderAll(); }
+  return done;
+}
+/* On-demand download for a card whose original lives only in Drive. */
+const driveDownloads = new Map();
+async function driveOriginalBlob(ref){
+  if (!ref?.id) throw new Error("This file has no Drive copy.");
+  try { const hit = await idbGetRaw(DRIVE_CACHE_PREFIX + ref.id); if (hit instanceof Blob) return hit; } catch (_) {}
+  if (!SYNC.clientId) throw new Error("This file is in Google Drive. Connect Drive in Settings to open it.");
+  if (driveDownloads.has(ref.id)) return driveDownloads.get(ref.id);
+  const job = (async () => {
+    toast("Downloading from Drive…", 2500);
+    const raw = await (await driveFetch(`/drive/v3/files/${ref.id}?alt=media`)).blob();
+    const blob = ref.type && raw.type !== ref.type ? new Blob([raw], {type:ref.type}) : raw;
+    if (Number.isFinite(ref.size) && blob.size !== ref.size) throw new Error("The Drive copy is incomplete.");
+    try { await idbSet(DRIVE_CACHE_PREFIX + ref.id, blob); } catch (_) {}
+    return blob;
+  })();
+  driveDownloads.set(ref.id, job);
+  try { return await job; } finally { driveDownloads.delete(ref.id); }
+}
+
+async function readRemoteCatalogue(fileId){
+  const text = await (await driveFetch(`/drive/v3/files/${fileId}?alt=media`)).text();
+  let remote; try { remote = JSON.parse(text); } catch (_) { throw new Error("Drive's copy is not readable."); }
+  const integrity = validateWorkspace(remote);
+  if (!integrity.ok) throw new Error("Drive's copy failed its integrity check: " + integrity.errors[0]);
+  return remote;
+}
+/* Bring a remote catalogue into this device. Returns true if anything changed. */
+async function mergeRemoteCatalogue(base, remote, meta){
+  await downloadAssets(remote, meta);
+  const local = await packWorkspaceForStorage(cloneWorkspaceForSave(state));
+  const {workspace, report} = syncMergeWorkspace(base, local, remote);
+  if (!report.fromRemote && !report.repairs) return false;
+  delete workspace.driveAssets;
+  const merged = await unpackStoredWorkspace(workspace);
+  const integrity = validateWorkspace(merged);
+  if (!integrity.ok) throw new Error("the merged workspace failed its integrity check: " + integrity.errors[0]);
+  state = merged;
+  if (!state.boards[currentBoardId]) currentBoardId = state.rootBoardId;
+  undoStack = []; redoStack = []; selection.clear();
+  dirty = true; await saveNow(); renderAll();
+  if (report.copies.length) toast(report.copies.length === 1
+    ? "One card was edited on two devices. The other version is kept as a conflict copy beside it."
+    : report.copies.length + " cards were edited on two devices. The other versions are kept as conflict copies.", 9000);
+  return true;
+}
+async function latestRevisions(fileId){
+  try {
+    const j = await driveJson(`/drive/v3/files/${fileId}/revisions?fields=revisions(id)&pageSize=1000`);
+    return (j.revisions || []).map(r => r.id);
+  } catch (_) { return []; }
+}
+/* Making a board private must also take back what already reached Drive:
+   originals and pictures used only by private cards are deleted, and the
+   catalogue's older versions (which still list the board) are removed. */
+async function purgePrivateFromDrive(catalogue, meta){
+  const priv = workspacePrivacy(); if (!priv.cards.size) return false;
+  const publicFiles = new Set(Object.values(catalogue.cards).map(c => c.driveRef?.id).filter(Boolean));
+  const publicAssets = new Set(collectAssetTokens(catalogue).keys());
+  let purged = false;
+  for (const id of priv.cards){
+    const c = card(id); if (!c) continue;
+    if (c.driveRef?.id && !publicFiles.has(c.driveRef.id)){
+      try { await driveFetch(`/drive/v3/files/${c.driveRef.id}`, {method:"DELETE"}); } catch (e){ if (e.status !== 404) throw e; }
+      const n = {...c}; delete n.driveRef; state.cards[id] = n; purged = true;
+    }
+  }
+  const privatePacked = await packWorkspaceForStorage(cloneWorkspaceForSave([...priv.cards].map(card)));
+  for (const assetId of collectAssetTokens(privatePacked).keys()){
+    if (publicAssets.has(assetId) || !meta.assets[assetId]) continue;
+    try { await driveFetch(`/drive/v3/files/${meta.assets[assetId]}`, {method:"DELETE"}); } catch (e){ if (e.status !== 404) throw e; }
+    delete meta.assets[assetId]; purged = true;
+  }
+  if (purged) markDirty();
+  return purged;
+}
+async function dropOldCatalogueVersions(fileId){
+  const revs = await latestRevisions(fileId);
+  for (const id of revs.slice(0, -1))
+    try { await driveFetch(`/drive/v3/files/${fileId}/revisions/${id}`, {method:"DELETE"}); } catch (_) {}
+}
+
+function syncUserBusy(){
+  return !!(editing || activeEditor || drag || document.querySelector(".overlay.open:not(#settingsOverlay)"));
+}
+let syncRunning = null, syncAgain = false;
+function requestCloudSync(){
+  if (!SYNC.clientId || location.protocol === "file:") return Promise.resolve(false);
+  if (syncRunning){ syncAgain = true; return syncRunning; }
+  syncRunning = (async () => {
+    let result = false;
+    do { syncAgain = false; result = await cloudSyncOnce(); } while (syncAgain && result);
+    return result;
+  })();
+  return syncRunning.finally(() => { syncRunning = null; });
+}
+async function cloudSyncOnce(){
+  if (workspaceLoadFailure || !validateWorkspace(state).ok) return false;
+  try {
+    SYNC.status = "syncing"; refreshSyncUI();
+    const layout = await driveLayout();
+    const meta = await syncMeta();
+    let base = await idbGetRaw(SYNC_BASE_KEY) || null;
+    let file = await driveFind("catalogue", layout.root);
+    let readRev = file?.headRevisionId || "";
+    /* Another device changed something. Don't swap the workspace out from
+       under a drag, an open editor or an open card page; try again shortly. */
+    if (file && readRev !== meta.rev && syncUserBusy()){
+      setTimeout(requestCloudSync, 4000);
+      SYNC.status = "ok"; refreshSyncUI(); return true;
+    }
+    if (file && readRev !== meta.rev){
+      const remote = await readRemoteCatalogue(file.id);
+      await mergeRemoteCatalogue(base, remote, meta);
+      base = remote;
+    }
+    let readBase = base, purged = false;
+    await uploadOriginals();
+    for (let attempt = 0; attempt < 3; attempt++){
+      const catalogue = await cloudCatalogue(base);
+      if (await purgePrivateFromDrive(catalogue, meta)) purged = true;
+      /* something newly private: Drive's older catalogue versions still list it */
+      const before = new Set(base?.withheld || []);
+      if (catalogue.withheld.some(id => !before.has(id))) purged = true;
+      await uploadAssets(catalogue, meta);
+      catalogue.driveAssets = {...(base?.driveAssets || {}), ...meta.assets};
+      const unchanged = file && readRev === meta.rev && base && syncSame({...catalogue, lastModified:0, saveRevision:0},
+        {...base, lastModified:0, saveRevision:0});
+      if (unchanged) break;
+      const body = JSON.stringify(catalogue);
+      let written;
+      if (file) written = await driveJson(`/upload/drive/v3/files/${file.id}?uploadType=media&fields=id,headRevisionId`,
+        {method:"PATCH", headers:{"Content-Type":"application/json"}, body});
+      else written = file = await driveCreate({name:"workspace.json", parents:[layout.root], appProperties:{corkbork:"catalogue"}}, body);
+      /* did another device write between our read and our write? */
+      let intervening = null;
+      if (readRev){
+        const revs = await latestRevisions(file.id), i = revs.indexOf(written.headRevisionId);
+        const before = i > 0 ? revs[i - 1] : null;
+        if (before && before !== readRev) intervening = before;
+      }
+      base = catalogue; readRev = written.headRevisionId;
+      await idbSet(SYNC_BASE_KEY, catalogue); await setSyncMeta({rev:readRev, assets:meta.assets});
+      if (!intervening) break;
+      /* that write was overwritten by ours: merge it in and write again */
+      const lost = JSON.parse(await (await driveFetch(`/drive/v3/files/${file.id}/revisions/${intervening}?alt=media`)).text());
+      await mergeRemoteCatalogue(readBase, lost, meta);
+      readBase = catalogue;
+    }
+    if (purged && file) await dropOldCatalogueVersions(file.id);
+    await setSyncMeta({rev:readRev, assets:meta.assets, at:Date.now()});
+    setTimeout(mirrorCloudFilesToArchive, 0);
+    SYNC.status = "ok"; SYNC.lastError = ""; SYNC.lastSync = Date.now();
+    refreshSyncUI(); return true;
+  } catch (e){
+    SYNC.status = SYNC.token ? "error" : "reconnect";
+    SYNC.lastError = e.message; SYNC.detail = "";
+    refreshSyncUI(); return false;
+  }
+}
+let cloudTimer = null, cloudPoll = null;
 function queueCloudPush(){
   if (!SYNC.clientId) return;
   clearTimeout(cloudTimer);
-  cloudTimer = setTimeout(pushToDrive, 2500);
+  cloudTimer = setTimeout(requestCloudSync, 2500);
 }
-async function pushToDrive(){
-  if (!SYNC.clientId) return;
-  try {
-    SYNC.status = "syncing"; refreshSyncUI();
-    const id = await findOrCreateFile();
-    await driveFetch(`/upload/drive/v3/files/${id}?uploadType=media`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state)
-    });
-    SAFE_STORE.set("cb_lastSynced", String(state.lastModified || 0));
-    SYNC.status = "ok"; SYNC.lastError = "";
-  } catch(e){
-    SYNC.status = SYNC.token ? "error" : "reconnect";
-    SYNC.lastError = e.message;
-  }
-  refreshSyncUI();
+function startCloudPolling(){
+  clearInterval(cloudPoll);
+  if (!SYNC.clientId || location.protocol === "file:") return;
+  cloudPoll = setInterval(() => { if (document.visibilityState === "visible") requestCloudSync(); }, SYNC_POLL_MS);
 }
-async function verifyDriveCatalogueFiles(remote){
-  const refs=Object.values(remote.cards||{}).filter(c=>c?.archiveRef);
-  if(!refs.length)return true;
-  const handle=await archiveHandle();
-  if(!handle)throw new Error("Drive has a catalogue, but this device has no master archive folder selected.");
-  const seen=new Set();
-  for(const c of refs){
-    const key=c.archiveRef.dir+"/"+c.archiveRef.name; if(seen.has(key))continue; seen.add(key);
-    try{await archiveReferenceFile(c.archiveRef,handle,false);}
-    catch(_){throw new Error("Drive catalogue refers to files that are not in this device's selected master archive.");}
-  }
-  return true;
-}
-async function pullFromDrive(interactive){
-  if (!SYNC.clientId) return;
-  try {
-    SYNC.status = "syncing"; refreshSyncUI();
-    if (interactive) await getToken(true);
-    const id = await findOrCreateFile();
-    const r = await driveFetch(`/drive/v3/files/${id}?alt=media`);
-    const remote = await r.json().catch(() => null);
-    if (remote && remote.boards && remote.rootBoardId){
-      const integrity = validateWorkspace(remote);
-      if (!integrity.ok) throw new Error("Drive copy failed integrity check: " + integrity.errors[0]);
-      const lastSynced = Number(SAFE_STORE.get("cb_lastSynced") || 0);
-      const remoteNewer = (remote.lastModified || 0) > (state.lastModified || 0);
-      const localChanged = (state.lastModified || 0) > lastSynced;
-      if (remoteNewer && localChanged &&
-          !await askConfirm({ title:"Drive has newer changes",
-            message:"Your Drive copy was changed more recently, probably from another device. Load that version here?",
-            detail:"Loading replaces this device's version. Keeping this one means the next autosave overwrites Drive.",
-            okLabel:"Load from Drive" })){
-        await pushToDrive(); return;
-      }
-      if (remoteNewer){
-        await verifyDriveCatalogueFiles(remote);
-        state = remote;
-        workspaceLoadFailure = null;
-        if (!state.settings) state.settings = { imageMax: 0, imagePolicyVersion: 1 };
-        currentBoardId = state.boards[currentBoardId] ? currentBoardId : state.rootBoardId;
-        undoStack = []; redoStack = []; selection.clear();
-        renderAll();
-        const handle=await archiveHandle(); if(handle)await updateArchiveFolder(handle,true); else await saveNow();
-        SAFE_STORE.set("cb_lastSynced", String(state.lastModified || 0));
-      } else if (localChanged){
-        await pushToDrive(); return;
-      }
-    }
-    SYNC.status = "ok"; SYNC.lastError = "";
-  } catch(e){
-    SYNC.status = SYNC.token ? "error" : "reconnect";
-    SYNC.lastError = e.message;
-  }
-  refreshSyncUI();
-}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && SYNC.clientId) requestCloudSync(); });
+addEventListener("online", () => { if (SYNC.clientId) requestCloudSync(); });
+
 function refreshSyncUI(){
   const st = $("#syncStatus"), setup = $("#syncSetup"), active = $("#syncActive");
   if (!st) return;
@@ -15532,10 +16151,10 @@ function refreshSyncUI(){
     note.className = "meta" + (blocked ? " syncblocked" : "");
     note.innerHTML = blocked
       ? "<b>Drive sync cannot run from a file opened straight off disk.</b> " +
-        "Google sign-in needs a real web address. To use it, serve the folder " +
-        "locally \u2014 for example, in that folder run <code>npx http-server -p 8080</code> " +
+        "Google sign-in needs a real web address. Open CORKBORK from its hosted address " +
+        "(see HOSTING.md), or serve this folder locally — for example, run <code>npx http-server -p 8080</code> " +
         "and open <code>http://localhost:8080/corkboard.html</code>. " +
-        "Everything else, including local snapshots and \u201CSave a copy\u201D, works normally as a file."
+        "Everything else, including local snapshots and “Save a copy”, works normally as a file."
       : "";
   }
   setup.style.display = (connected || blocked) ? "none" : "flex";
@@ -15543,12 +16162,13 @@ function refreshSyncUI(){
   const help = $("#syncHelp"); if (help) help.style.display = connected ? "none" : "";
   if (!connected){
     st.textContent = blocked
-      ? "Local saving and snapshots are unaffected \u2014 only Drive sync is unavailable here."
-      : "Not connected. Paste the Client ID from the setup guide and connect — the app only gets access to the one file it creates, never the rest of your Drive.";
+      ? "Local saving and snapshots are unaffected — only Drive sync is unavailable here."
+      : "Not connected. Paste the Client ID from the setup guide and connect — the app only gets access to the CORKBORK folder it creates, never the rest of your Drive.";
   } else {
+    const when = SYNC.lastSync ? " Last synced " + new Date(SYNC.lastSync).toLocaleTimeString() + "." : "";
     st.textContent = {
-      ok: "Connected. Catalogue changes upload automatically; original files stay in the master archive folder.",
-      syncing: "Syncing…",
+      ok: "Connected. Boards and files sync to the CORKBORK folder in your Drive. Private boards stay on this device." + when,
+      syncing: SYNC.detail || "Syncing…",
       reconnect: "Connected, but Google needs a fresh sign-in — press “Sync now”.",
       error: "Sync problem: " + SYNC.lastError + " Your work is still saved on this device.",
       off: "Connected."
@@ -15565,20 +16185,26 @@ $("#syncConnect").addEventListener("click", async () => {
   SYNC.clientId = cid;
   try {
     await getToken(true);
-    await pullFromDrive(false);
+    const ok = await requestCloudSync();
+    if (!ok) throw new Error(SYNC.lastError || "the first sync did not finish");
+    startCloudPolling();
     toast("Google Drive connected.");
   } catch(e){
-    SYNC.clientId = "";
+    SYNC.clientId = ""; SYNC.layout = null;
     toast("Couldn't connect: " + e.message);
   }
   refreshSyncUI();
 });
-$("#syncNow").addEventListener("click", () => pullFromDrive(true));
-$("#syncOff").addEventListener("click", () => {
-  SYNC.clientId = ""; SYNC.fileId = ""; SYNC.token = null;
-  SAFE_STORE.del("cb_lastSynced");
+$("#syncNow").addEventListener("click", async () => {
+  try { await getToken(true); } catch (e){ toast("Google sign-in didn't finish: " + e.message); return; }
+  if (await requestCloudSync()) toast("Synced.");
+});
+$("#syncOff").addEventListener("click", async () => {
+  SYNC.clientId = ""; SYNC.token = null; SYNC.layout = null;
+  clearInterval(cloudPoll);
+  try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); } catch (_) {}
   refreshSyncUI();
-  toast("Disconnected. Your boards stay on this device; the Drive file stays in your Drive.");
+  toast("Disconnected. Your boards stay on this device; the CORKBORK folder stays in your Drive.");
 });
 
 
@@ -15639,11 +16265,18 @@ $("#syncOff").addEventListener("click", () => {
     : "Local storage is incomplete. Saving is blocked so CORKBORK cannot overwrite it. Restore or import a valid copy in Backup & data.", 12000), 300);
   if (!lastIntegrityReport.ok) setTimeout(() =>
     toast("Workspace integrity check failed. Saving is blocked; open Settings > Backup & data.", 10000), 300);
-  if (SYNC.clientId && location.protocol !== "file:") pullFromDrive(false);
+  if (SYNC.clientId && location.protocol !== "file:"){ startCloudPolling(); requestCloudSync(); }
 })();
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b82", [
+    "Google Drive is now the master copy shared by every device: boards, notes and original files sync to a CORKBORK folder in your Drive, every minute and after each edit.",
+    "Edits made on two devices merge card by card. If both changed the same thing, the newer edit wins and the other is kept as a conflict copy beside it.",
+    "Private boards: right-click a board → Make private. It and everything inside it stay on that device, anything already uploaded is deleted from Drive, and other devices see a locked placeholder.",
+    "iPad and phone: original files download from Drive when you open them; a computer with an archive folder copies them into it.",
+    "Runs on iPad Chrome: archive-folder controls are hidden where browsers can't use folders, and trackpad or touch pinch zooms the board."
+  ]],
   ["b81", [
     "Rail redesign: Card, D&D sheet and Block tuck behind a new More (•••) button; File and Folder are now one Upload tool; Arrow moved near the top. No more rail scrollbar — Recycle and Delete are always one click away.",
     "Board's rail icon is a simplified filled tile instead of the old outline (boards on a canvas are unchanged), and rail labels/icons are brighter and more saturated.",
@@ -15682,15 +16315,6 @@ const PATCH_NOTES = [
   ["b73", [
     "The audited Bug list now clears once; future features and limitations live in project files.",
     "Note-drag recovery and visible card tools gained direct regression coverage."
-  ]],
-  ["b71", [
-    "Workspace imports, restores, Drive copies and saves now pass a structural integrity check.",
-    "Serialized saves verify exact revisions; archives carry a checksum manifest and verify after writing.",
-    "Storage capacity is visible; search reports every match; keyboard shortcuts are discoverable."
-  ]],
-  ["b70", [
-    "Settings gained a wide layout and 10 individually deletable restore points.",
-    "Archived child boards use Boards folders; first startup explains local and Drive copies."
   ]]
 ];
 function renderPatchNotes(){
