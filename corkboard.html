@@ -3237,7 +3237,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div class="meta">Google Drive becomes the master copy shared by all your devices: PC, laptop, iPad and phone.
           Boards, notes and original files sync to a <b>CORKBORK</b> folder in your Drive. CORKBORK can only reach the files it creates there, never the rest of your Drive.
           Edits made on two devices are merged. If the same card was changed on both, the newer edit wins and the other is kept as a conflict copy.
-          On iPad and phone, original files download when you open them. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></div>
+          On iPad and phone, original files download when you open them. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a></div>
         <div class="meta"><b>Private boards</b> (right-click a board → Make private) never leave the device they were made private on, and anything already uploaded from them is deleted from Drive. Other devices see a locked placeholder. Encrypted syncing of private boards comes later.</div>
         <div class="meta" id="syncFileNote"></div>
         <div class="meta" id="syncStatus"></div>
@@ -3368,7 +3368,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b85";
+window.BUILD = "b86";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -16507,6 +16507,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b86", [
+    "Terms of service page, linked next to Privacy in Settings → Cloud sync."
+  ]],
   ["b85", [
     "Connect Google Drive is one button: CORKBORK now brings its own Google app ID.",
     "Google's sign-in window no longer flashes on every reload: the sign-in is kept on the device until Google's one-hour limit, and Google can close the window by itself.",
