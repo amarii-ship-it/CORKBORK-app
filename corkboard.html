@@ -96,6 +96,31 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
   padding:0 6px; border-radius:4px; font-size:9.5px; line-height:1; letter-spacing:.01em;}
 /* Fixed translucent blue stays recognisable without turning black on dark
    themes or bright teal on light ones. Opacity belongs to the box, not text. */
+#libraryPanel{position:absolute; left:var(--rail-w); top:0; bottom:0; width:300px; max-width:calc(100vw - var(--rail-w));
+  background:var(--surface-hi); border-right:1px solid var(--border); z-index:31; display:none; flex-direction:column;
+  gap:9px; padding:12px; box-shadow:6px 0 18px rgba(0,0,0,.25);}
+#libraryPanel.open{display:flex;}
+body.lib-open #tbHandle{visibility:hidden;}
+#libraryPanel.dropping{outline:2px dashed var(--accent); outline-offset:-6px;}
+.lib-head{display:flex; align-items:center; justify-content:space-between; font-size:15px;}
+.lib-head button{width:28px; height:28px; border-radius:5px;}
+#libSearch{width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border);}
+.lib-actions{display:flex; gap:6px;}
+.lib-actions button{flex:1; padding:8px; border-radius:6px; background:var(--surface); color:var(--text); font-weight:600; font-size:12.5px;}
+.lib-actions button.primary{background:var(--accent); color:#fff;}
+.lib-tabs{display:flex; gap:14px; border-bottom:1px solid var(--border); font-size:13px;}
+.lib-tabs button{padding:6px 0; color:var(--text-dim);}
+.lib-tabs button.sel{color:var(--text); box-shadow:inset 0 -2px 0 var(--accent);}
+#libGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; overflow-y:auto; align-content:start; flex:1; min-height:0;}
+.lib-item{position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden; background:var(--surface); cursor:grab;
+  display:flex; align-items:center; justify-content:center; border:1px solid var(--border);}
+.lib-item img{width:100%; height:100%; object-fit:cover; pointer-events:none;}
+.lib-item .lib-icon{font-size:11px; padding:8px; text-align:center; color:var(--text-dim); word-break:break-word;}
+.lib-item .lib-icon b{display:block; font-size:18px; color:var(--text); margin-bottom:4px;}
+.lib-item .lib-badge{position:absolute; left:5px; bottom:5px; font-size:10px; background:rgba(0,0,0,.6); color:#fff; padding:1px 5px; border-radius:4px;}
+.lib-item .lib-del{position:absolute; right:4px; top:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.6); color:#fff; display:none; font-size:12px;}
+.lib-item:hover .lib-del, .lib-item:focus-within .lib-del{display:flex; align-items:center; justify-content:center;}
+.lib-item.busy{opacity:.5;}
 #cloudWrap{position:relative; flex:none; z-index:3;}
 #cloudMenu{position:absolute; left:0; top:34px; background:var(--surface-hi); border:1px solid var(--border);
   border-radius:6px; display:none; flex-direction:column; width:250px; padding:10px; gap:7px;
@@ -229,13 +254,13 @@ body.cardpage-open #cpCrumbs{display:flex; align-items:center; gap:2px; overflow
 /* tool rail */
 #rail{
   width:var(--rail-w); flex:none; background:var(--surface-hi); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; align-items:center; padding:8px 0 8px; gap:3px; z-index:30;
+  display:flex; flex-direction:column; align-items:center; padding:6px 0 6px; gap:2px; z-index:30;
   overflow-y:auto;
 }
 .railSpacer{flex:1 1 auto; min-height:8px;}
 #toolTrash{flex:none;}
 .tool{
-  width:48px; height:40px; border-radius:5px; display:flex; flex-direction:column;
+  width:48px; height:38px; border-radius:5px; display:flex; flex-direction:column;
   align-items:center; justify-content:center; color:var(--text);
   /* ui-rounded is Safari/iOS's rounded system font (SF Pro Rounded), no
      network fetch. "Segoe UI Rounded" is a real Windows font shipped since
@@ -2605,6 +2630,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          source-choice flyout (cloud, mobile gallery) plugs in. -->
     <button class="tool" id="toolUpload" title="Upload [U] — a file from this device">
       <svg viewBox="0 0 24 24"><path d="M13 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z M13 3v5h5 M9 16h6 M12 11v5 M9.5 13.5 12 11l2.5 2.5"/></svg>Upload</button>
+    <!-- Library: CORKBORK's own media shelf (like Canva's Uploads). Files are
+         kept in Drive and only small thumbnails come to each device; a file
+         downloads when it is placed on a board. -->
+    <button class="tool" id="toolLibrary" title="Library — your uploaded images, videos and files, on every device">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="12" height="14" rx="1.5"/><path d="M18 7.5v12a1.5 1.5 0 0 1-1.5 1.5H7 M6.5 15l2.8-3 2.2 2.2 1.5-1.5 2 2.3"/><circle cx="8.3" cy="9.2" r="1.1"/></svg>Library</button>
     </div>
     <!-- Flyout for the three rail tools that are real but rarely reached
          for: Card, the D&D character sheet and Block. Same popup pattern as
@@ -2651,6 +2681,18 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   </div>
 
 
+  <div id="libraryPanel" aria-label="Library">
+    <div class="lib-head"><b>Library</b><button id="libClose" title="Close">✕</button></div>
+    <input id="libSearch" type="search" placeholder="Search your library">
+    <div class="lib-actions">
+      <button id="libAdd" class="primary">Add files</button>
+      <button id="libDrive" title="Choose files already in your Google Drive">From Google Drive</button>
+    </div>
+    <div class="lib-tabs"><button data-k="all" class="sel">All</button><button data-k="image">Images</button><button data-k="video">Videos</button><button data-k="file">Files</button></div>
+    <div id="libGrid"></div>
+    <div id="libEmpty" class="meta">Drop images, videos or files here, or press Add files. They're kept in your Google Drive and appear on every device. Click one, or drag it onto the board, to use it.</div>
+    <input id="libInput" type="file" multiple style="display:none">
+  </div>
   <div id="canvas" tabindex="-1">
     <div id="world"></div>
     <div id="emptyHint">This board is empty.<br>Drag a card from the left, or paste an image.</div>
@@ -3368,7 +3410,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b86";
+window.BUILD = "b87";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3889,8 +3931,17 @@ async function deleteSnapshot(ts, confirmed=false){
   await renderSnapshots(); await refreshStorageStatus();
   toast("Restore point deleted."); return true;
 }
-function markDirty(){
+/* Panning and zooming are remembered per board on this device, but they are
+   not edits: they don't bump the workspace's modified time and don't start a
+   Drive sync. */
+let cloudDirty = false;
+function markViewDirty(){
   dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 500);
+}
+function markDirty(){
+  dirty = true; cloudDirty = true;
   entityIdxCache = null;
   state.lastModified = now();
   clearTimeout(saveTimer);
@@ -3967,7 +4018,8 @@ async function saveNowOnce(){
     for (const id of refs){
       if (!await idbHas(ASSET_KEY_PREFIX + id)) throw new Error("a shared attachment is missing from local storage");
     }
-    dirty = false; queueCloudPush(); saveFailWarned = false;
+    dirty = false; saveFailWarned = false;
+    if (cloudDirty){ cloudDirty = false; queueCloudPush(); }
     lastSaveVerifiedAt = Date.now();
     if (saveBroken){ saveBroken = false; refreshSaveHealth(); toast("Saving is working again."); }
     await takeSnapshot(false);
@@ -4051,7 +4103,7 @@ function applyViewport(persist=true){
   $("#zoomPct").textContent = pct + "%";
   $("#zSlider").value = pct;
   updateScrollbars();
-  if (persist && cur()){ cur().viewport = { panX, panY, zoom }; markDirty(); }
+  if (persist && cur()){ cur().viewport = { panX, panY, zoom }; markViewDirty(); }
 }
 function contentBounds(){
   const b = cur();
@@ -12438,6 +12490,12 @@ function dragImageUrl(dt){
 }
 async function handleExternalDrop(e, toUnsorted){
   e.preventDefault();
+  const libId = e.dataTransfer?.getData("text/x-corkbork-lib");
+  if (libId && state.library?.[libId]){
+    const at = toUnsorted || inCardPage() ? viewCenterWorld() : screenToWorld(e.clientX, e.clientY);
+    await placeLibraryItem(state.library[libId], at.x, at.y);
+    return;
+  }
   const folderDrop = await readDroppedFolders(e.dataTransfer);
   const dropPoint = toUnsorted || inCardPage() ? viewCenterWorld() : screenToWorld(e.clientX,e.clientY);
   if (folderDrop){
@@ -13178,6 +13236,244 @@ $("#cmSettings").addEventListener("click", () => {
   closeCloudMenu(); openSettings(); document.querySelector('.setnav[data-sec="cloud"]')?.click();
 });
 $("#btnSaveCopy2").addEventListener("click", saveCopy);
+/* ---------------- Library (like Canva's Uploads) ----------------
+   A shelf of your images, videos and files, separate from any board. Each
+   item is uploaded once to CORKBORK/Library in your Drive; every device gets
+   only a small thumbnail through sync. The full file downloads when an item
+   is placed on a board (and is then kept like any other original).
+
+   Why not "drop files into a Drive folder and CORKBORK sees them": CORKBORK's
+   Google permission (drive.file) only reaches files CORKBORK created or that
+   you pick in Google's own file chooser. Reading everything in a folder
+   would need access to your whole Drive. So files enter the Library either
+   by dropping them on this panel, or through "From Google Drive". */
+const LIB_BLOB_PREFIX = "libblob:";
+const LIB_THUMB = 240;
+let libFilter = "all";
+function libKind(type, name){
+  if (/^image\//.test(type) || /\.(heic|heif|webp|avif)$/i.test(name)) return "image";
+  if (/^video\//.test(type)) return "video";
+  return "file";
+}
+function libItems(){
+  const q = ($("#libSearch")?.value || "").trim().toLowerCase();
+  return Object.values(state.library || {})
+    .filter(it => libFilter === "all" || it.kind === libFilter)
+    .filter(it => !q || (it.name || "").toLowerCase().includes(q))
+    .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+}
+/* a small square-ish JPEG for the grid; null when the browser can't draw it */
+async function libThumbnail(blob, kind){
+  try {
+    let src, w, h, cleanup = () => {};
+    if (kind === "image"){
+      src = await createImageBitmap(blob); w = src.width; h = src.height; cleanup = () => src.close?.();
+    } else if (kind === "video"){
+      const url = URL.createObjectURL(blob), v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; setTimeout(rej, 8000); });
+      v.currentTime = Math.min(1, (v.duration || 2) / 4);
+      await new Promise(res => { v.onseeked = res; setTimeout(res, 3000); });
+      src = v; w = v.videoWidth; h = v.videoHeight; cleanup = () => URL.revokeObjectURL(url);
+    } else return null;
+    const scale = Math.min(1, LIB_THUMB / Math.max(w, h));
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(w * scale)); cv.height = Math.max(1, Math.round(h * scale));
+    cv.getContext("2d").drawImage(src, 0, 0, cv.width, cv.height); cleanup();
+    return {thumb:cv.toDataURL("image/jpeg", .78), w, h};
+  } catch (_) { return null; }
+}
+async function addToLibrary(files){
+  files = [...files].filter(f => f && f.size >= 0);
+  if (!files.length) return 0;
+  state.library = state.library || {};
+  const known = new Map(Object.values(state.library).map(it => [it.sha256, it]));
+  let added = 0;
+  for (const f of files){
+    let sha = ""; try { sha = await sha256Hex(f); } catch (_) {}
+    if (sha && known.has(sha)) continue;      /* already in the Library */
+    const id = uid("lib"), kind = libKind(f.type || "", f.name || "");
+    const t = await libThumbnail(f, kind);
+    await idbSet(LIB_BLOB_PREFIX + id, f);
+    state.library[id] = {id, name:f.name || "file", type:f.type || "", size:f.size, kind, sha256:sha,
+      thumb:t?.thumb || null, w:t?.w || 0, h:t?.h || 0, addedAt:Date.now()};
+    known.set(sha, state.library[id]); added++;
+  }
+  if (added){ markDirty(); renderLibrary(); }
+  toast(added ? (added === 1 ? "Added to your Library." : added + " files added to your Library.")
+    : "Those files are already in your Library.");
+  return added;
+}
+/* sync step: send Library files this device added to Drive */
+async function uploadLibraryPending(){
+  const pending = Object.values(state.library || {}).filter(it => !it.driveId);
+  if (!pending.length) return 0;
+  const {root} = await driveLayout();
+  const folder = SYNC.layout.library || (SYNC.layout.library = await driveFolder("library", "Library", root));
+  let done = 0;
+  for (const it of pending){
+    const blob = await idbGetRaw(LIB_BLOB_PREFIX + it.id).catch(() => null);
+    if (!(blob instanceof Blob)) continue;    /* added on another device; it uploads it */
+    SYNC.detail = "Uploading " + it.name + "…"; refreshSyncUI();
+    let file = it.sha256 ? await driveFind("file:" + it.sha256) : null;
+    if (!file) file = await driveUploadBlob({name:it.name, parents:[folder], appProperties:{corkbork:"file:" + it.sha256}}, blob,
+      p => { SYNC.detail = "Uploading " + it.name + " " + Math.round(p * 100) + "%"; refreshSyncUI(); });
+    if (!state.library?.[it.id]) continue;
+    state.library[it.id] = {...state.library[it.id], driveId:file.id, updatedAt:Date.now()};
+    try { await idbSet(DRIVE_CACHE_PREFIX + file.id, blob); await idbDel(LIB_BLOB_PREFIX + it.id); } catch (_) {}
+    done++;
+  }
+  SYNC.detail = "";
+  if (done){ markDirty(); renderLibrary(); }
+  return done;
+}
+async function libItemBlob(it){
+  const local = await idbGetRaw(LIB_BLOB_PREFIX + it.id).catch(() => null);
+  if (local instanceof Blob) return local;
+  if (!it.driveId) throw new Error("This file is still uploading from the device it was added on.");
+  return driveOriginalBlob({id:it.driveId, size:it.size, type:it.type});
+}
+async function placeLibraryItem(it, wx, wy){
+  if (!it) return null;
+  const tile = document.querySelector(`.lib-item[data-id="${it.id}"]`);
+  tile?.classList.add("busy");
+  try {
+    const ref = it.driveId ? {id:it.driveId, sha256:it.sha256, size:it.size, type:it.type, src:"lib"} : null;
+    /* a file card can point straight at Drive: nothing downloads until it's opened */
+    if (it.kind !== "image" && ref){
+      const c = addCard("file", wx, wy, {fileName:it.name, fileType:it.type, fileSize:it.size, dataUrl:null, driveRef:ref});
+      markDirty(); renderAll(); return c;
+    }
+    const blob = await libItemBlob(it);
+    const file = new File([blob], it.name, {type:it.type || blob.type});
+    const c = it.kind === "image" ? await addImageCard(file, wx, wy, false) : await addChosenFile(file, wx, wy, false);
+    if (c && ref && card(c.id) && !card(c.id).driveRef){ patchCard(c.id, {driveRef:ref}); markDirty(); }
+    return c;
+  } catch (e){ toast("Couldn't place " + it.name + ": " + (e?.message || "unknown error"), 7000); return null; }
+  finally { tile?.classList.remove("busy"); }
+}
+async function removeFromLibrary(id){
+  const it = state.library?.[id]; if (!it) return;
+  const used = it.driveId && Object.values(state.cards).some(c => c?.driveRef?.id === it.driveId);
+  if (!await askConfirm({title:"Remove “" + it.name + "” from your Library?",
+    message: it.picked ? "Your original stays in Google Drive where it was." :
+      used ? "It's used on a board, so the file stays in Drive for that card." : "It will be deleted from the CORKBORK Library in your Drive.",
+    okLabel:"Remove", danger:true})) return;
+  delete state.library[id];
+  try { await idbDel(LIB_BLOB_PREFIX + id); } catch (_) {}
+  if (it.driveId && !it.picked && !used && SYNC.clientId)
+    driveFetch(`/drive/v3/files/${it.driveId}`, {method:"DELETE"}).catch(() => {});
+  markDirty(); renderLibrary();
+}
+function renderLibrary(){
+  const grid = $("#libGrid"); if (!grid || !$("#libraryPanel").classList.contains("open")) return;
+  const items = libItems();
+  grid.innerHTML = "";
+  $("#libEmpty").style.display = Object.keys(state.library || {}).length ? "none" : "";
+  for (const it of items){
+    const el = document.createElement("div");
+    el.className = "lib-item"; el.dataset.id = it.id; el.draggable = true; el.tabIndex = 0;
+    el.title = it.name + " — click to place, or drag onto the board";
+    if (it.thumb){ const img = document.createElement("img"); img.src = it.thumb; img.alt = it.name; el.appendChild(img); }
+    else {
+      const ic = document.createElement("div"); ic.className = "lib-icon";
+      ic.innerHTML = "<b>" + escapeHtmlText((fileExt(it.name) || "file").toUpperCase().slice(0, 4)) + "</b>";
+      ic.appendChild(document.createTextNode(it.name)); el.appendChild(ic);
+    }
+    if (it.kind === "video"){ const b = document.createElement("span"); b.className = "lib-badge"; b.textContent = "▶ video"; el.appendChild(b); }
+    if (!it.driveId && SYNC.clientId){ const b = document.createElement("span"); b.className = "lib-badge"; b.textContent = "uploading"; el.appendChild(b); }
+    const del = document.createElement("button"); del.className = "lib-del"; del.textContent = "✕"; del.title = "Remove from Library";
+    del.addEventListener("click", e => { e.stopPropagation(); removeFromLibrary(it.id); });
+    el.appendChild(del);
+    el.addEventListener("click", () => { const p = viewCenterWorld(); placeLibraryItem(it, p.x, p.y); });
+    el.addEventListener("keydown", e => { if (e.key === "Enter"){ const p = viewCenterWorld(); placeLibraryItem(it, p.x, p.y); } });
+    el.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/x-corkbork-lib", it.id);
+      e.dataTransfer.effectAllowed = "copy";
+    });
+    grid.appendChild(el);
+  }
+}
+function escapeHtmlText(t){ const d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+function openLibrary(open = !$("#libraryPanel").classList.contains("open")){
+  $("#libraryPanel").classList.toggle("open", open);
+  $("#toolLibrary").classList.toggle("armed", open);
+  document.body.classList.toggle("lib-open", open);
+  $("#libDrive").style.display = librarySupportsPicker() ? "" : "none";
+  if (open) renderLibrary();
+}
+$("#toolLibrary").addEventListener("click", () => openLibrary());
+$("#libClose").addEventListener("click", () => openLibrary(false));
+$("#libAdd").addEventListener("click", () => $("#libInput").click());
+$("#libInput").addEventListener("change", async e => { const f = [...e.target.files]; e.target.value = ""; await addToLibrary(f); });
+$("#libSearch").addEventListener("input", renderLibrary);
+document.querySelectorAll(".lib-tabs button").forEach(b => b.addEventListener("click", () => {
+  libFilter = b.dataset.k;
+  document.querySelectorAll(".lib-tabs button").forEach(x => x.classList.toggle("sel", x === b));
+  renderLibrary();
+}));
+/* files dropped on the panel go into the Library, not onto the board */
+const libPanel = $("#libraryPanel");
+libPanel.addEventListener("dragover", e => {
+  if ([...(e.dataTransfer?.types || [])].includes("Files")){ e.preventDefault(); e.stopPropagation(); libPanel.classList.add("dropping"); }
+});
+libPanel.addEventListener("dragleave", e => { if (!libPanel.contains(e.relatedTarget)) libPanel.classList.remove("dropping"); });
+libPanel.addEventListener("drop", async e => {
+  libPanel.classList.remove("dropping");
+  if (!e.dataTransfer?.files?.length) return;
+  e.preventDefault(); e.stopPropagation();
+  await addToLibrary(e.dataTransfer.files);
+});
+
+/* "From Google Drive": Google's own chooser. Whatever is picked there becomes
+   reachable by CORKBORK, which is what drive.file allows. Needs a browser API
+   key (public, limited to this site) — see SETUP.md. */
+const GOOGLE_PICKER_API_KEY = "";
+const GOOGLE_PROJECT_NUMBER = "258973271030";
+function librarySupportsPicker(){ return !!(GOOGLE_PICKER_API_KEY && syncAvailable() && SYNC.clientId === builtinClientId()); }
+function loadPickerApi(){
+  return new Promise((res, rej) => {
+    if (window.google?.picker) return res();
+    const go = () => window.gapi.load("picker", {callback:res, onerror:() => rej(new Error("Google's chooser didn't load."))});
+    if (window.gapi) return go();
+    const s = document.createElement("script"); s.src = "https://apis.google.com/js/api.js";
+    s.onload = go; s.onerror = () => rej(new Error("Google's chooser didn't load — check the internet connection."));
+    document.head.appendChild(s);
+  });
+}
+async function addFromGoogleDrive(){
+  if (!SYNC.clientId){ toast("Connect Google Drive first (Settings → Cloud sync)."); return; }
+  let token;
+  try { token = await getToken(true); await loadPickerApi(); }
+  catch (e){ toast(e.message); return; }
+  const P = google.picker;
+  const view = new P.DocsView(P.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false);
+  new P.PickerBuilder()
+    .addView(view).enableFeature(P.Feature.MULTISELECT_ENABLED)
+    .setOAuthToken(token).setDeveloperKey(GOOGLE_PICKER_API_KEY).setAppId(GOOGLE_PROJECT_NUMBER)
+    .setTitle("Add to your CORKBORK Library").setCallback(async data => {
+      if (data[P.Response.ACTION] !== P.Action.PICKED) return;
+      const docs = data[P.Response.DOCUMENTS] || [];
+      state.library = state.library || {};
+      const known = new Set(Object.values(state.library).map(it => it.driveId));
+      let added = 0;
+      for (const d of docs){
+        const fileId = d[P.Document.ID]; if (known.has(fileId)) continue;
+        const name = d[P.Document.NAME] || "file", type = d[P.Document.MIME_TYPE] || "", size = Number(d.sizeBytes) || 0;
+        const kind = libKind(type, name), id = uid("lib");
+        let t = null;
+        if (kind === "image" && size < 40 * 1024 * 1024){
+          try { t = await libThumbnail(await driveOriginalBlob({id:fileId, type}, true), kind); } catch (_) {}
+        }
+        state.library[id] = {id, name, type, size, kind, driveId:fileId, picked:true,
+          thumb:t?.thumb || null, w:t?.w || 0, h:t?.h || 0, addedAt:Date.now()};
+        added++;
+      }
+      if (added){ markDirty(); renderLibrary(); toast(added === 1 ? "Added to your Library." : added + " files added to your Library."); }
+    }).build().setVisible(true);
+}
+$("#libDrive").addEventListener("click", addFromGoogleDrive);
+
 
 /* ---- ordinary-file archive folder -------------------------------------
    A directory handle grants access to exactly one folder the user chose.
@@ -15585,13 +15881,14 @@ function syncLockedPlaceholder(c){
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
-    bugs:syncClone((ws.bugs || [])), settings:{}};
+    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
     if (!SYNC_DEVICE_SETTINGS.has(k)) out.settings[k] = syncClone((v ?? null));
   const keep = id => !priv.cards.has(id);
   for (const [bid, b] of Object.entries(ws.boards || {})){
     if (priv.boards.has(bid)) continue;
     const copy = syncClone((b));
+    delete copy.viewport;   /* where this device is looking is not shared */
     copy.cardIds = (b.cardIds || []).filter(keep);
     copy.unsortedIds = (b.unsortedIds || []).filter(keep);
     if (Array.isArray(b.connectors))
@@ -15695,6 +15992,7 @@ function syncMergeWorkspace(base, local, remote){
         if (sameFile) for (const f of SYNC_DEVICE_CARD_FIELDS) if (prior[f] !== undefined) merged[f] = prior[f];
         if (sameFile && merged.type === "file" && merged.driveRef && prior.dataUrl && merged.dataUrl === undefined) merged.dataUrl = prior.dataUrl;
       }
+      if (name === "boards") merged.viewport = prior?.viewport || merged.viewport || {panX:0, panY:0, zoom:1};
       if (name === "boards" && prior){
         /* the cloud copy of a public board omits its private cards; put them back */
         for (const k of ["cardIds","unsortedIds"])
@@ -15711,6 +16009,8 @@ function syncMergeWorkspace(base, local, remote){
   mergeMap("boards", id => priv.boards.has(id), () => localNewerWs);
   mergeMap("cards", id => priv.cards.has(id), (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   mergeMap("labels", () => false, () => localNewerWs);
+  /* the Library (Uploads) list: items are added and removed, rarely edited */
+  mergeMap("library", () => false, (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0));
 
   /* bugs: list of {id,...} */
   {
@@ -15858,6 +16158,14 @@ async function toggleBoardPrivate(bid){
 const BUILTIN_CLIENT_ID = "258973271030-ev22ft5gqlfdduku0h9724e3spjlrm2m.apps.googleusercontent.com";
 const BUILTIN_CLIENT_ORIGIN = "https://amarii-ship-it.github.io";
 function builtinClientId(){ return location.origin === BUILTIN_CLIENT_ORIGIN ? BUILTIN_CLIENT_ID : ""; }
+/* CORKBORK's sign-in helper (cloudflare/auth-worker.js). With it, Google
+   issues a long-lived refresh pass, so sync renews its hourly access in the
+   background with no Google window. Without it (or for a custom Client ID),
+   the hourly browser-only sign-in is used. */
+const AUTH_WORKER_URL = "";
+function authWorkerUrl(){
+  return AUTH_WORKER_URL && SYNC.clientId && SYNC.clientId === builtinClientId() ? AUTH_WORKER_URL.replace(/\/+$/, "") : "";
+}
 const SYNC = {
   get clientId(){ return SAFE_STORE.get("cb_clientId") || ""; },
   set clientId(v){ v ? SAFE_STORE.set("cb_clientId", v) : SAFE_STORE.del("cb_clientId"); },
@@ -15885,11 +16193,64 @@ function rememberedToken(){
     if (t?.token && t.client === SYNC.clientId && Date.now() < t.exp - 60000){ SYNC.token = t.token; SYNC.tokenExp = t.exp; }
   } catch (_) {}
 }
+function storeToken(token, expiresIn){
+  SYNC.token = token;
+  SYNC.tokenExp = Date.now() + (Number(expiresIn) || 3600) * 1000;
+  SAFE_STORE.set("cb_token", JSON.stringify({token:SYNC.token, exp:SYNC.tokenExp, client:SYNC.clientId}));
+  return token;
+}
+async function workerCall(path, body){
+  const r = await fetch(authWorkerUrl() + path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok){ const e = new Error(j.error || "sign-in helper error " + r.status); e.status = r.status; e.code = j.error; throw e; }
+  return j;
+}
+/* Silent renewal through the helper; null means "no silent way, ask Google" */
+async function workerRefresh(){
+  const rt = SAFE_STORE.get("cb_refresh"); if (!rt) return null;
+  try { const j = await workerCall("/refresh", {refresh_token:rt}); return storeToken(j.access_token, j.expires_in); }
+  catch (e){
+    if (e.code === "invalid_grant") SAFE_STORE.del("cb_refresh");   /* revoked or expired: sign in again */
+    else if (e instanceof TypeError) throw e;                        /* offline: let sync say so */
+    return null;
+  }
+}
+/* One Google window, once per device: returns a code the helper swaps for passes */
+function workerSignIn(){
+  return new Promise((res, rej) => {
+    const cc = google.accounts.oauth2.initCodeClient({
+      client_id: SYNC.clientId,
+      scope: "https://www.googleapis.com/auth/drive.file",
+      ux_mode: "popup",
+      login_hint: SAFE_STORE.get("cb_hint") || undefined,
+      callback: async r => {
+        if (!r.code){ rej(new Error(r.error || "Google didn't grant access.")); return; }
+        try {
+          const j = await workerCall("/exchange", {code:r.code});
+          if (j.refresh_token) SAFE_STORE.set("cb_refresh", j.refresh_token);
+          storeToken(j.access_token, j.expires_in);
+          if (!SAFE_STORE.get("cb_hint")) rememberAccountHint();
+          res(SYNC.token);
+        } catch (e){ rej(e); }
+      },
+      error_callback: e => rej(new Error(e.type || "Sign-in was closed."))
+    });
+    /* "consent" makes Google issue the refresh pass even if access was granted before */
+    cc.requestCode({prompt: SAFE_STORE.get("cb_refresh") ? "" : "consent"});
+  });
+}
 async function getToken(interactive){
   if (!SYNC.token) rememberedToken();
   if (SYNC.token && Date.now() < SYNC.tokenExp - 60000) return SYNC.token;
   if (tokenRequest) return tokenRequest;
   tokenRequest = (async () => {
+    if (authWorkerUrl()){
+      const silent = await workerRefresh();
+      if (silent) return silent;
+      await loadGIS();
+      try { return await workerSignIn(); }
+      catch (e){ if (!(e.status >= 500)) throw e; }   /* helper broken: fall back to hourly sign-in */
+    }
     await loadGIS();
     return new Promise((res, rej) => {
       const hint = SAFE_STORE.get("cb_hint") || undefined;
@@ -16074,7 +16435,7 @@ async function uploadOriginals(){
     catch (_) { continue; }   /* the archive folder needs permission again; try on the next sync */
     const src = cardUploadSource(c);
     const sha256 = await sha256Hex(blob);
-    let file = c.driveRef?.sha256 === sha256 ? {id:c.driveRef.id} : await driveFind("file:" + sha256, folder);
+    let file = c.driveRef?.sha256 === sha256 ? {id:c.driveRef.id} : await driveFind("file:" + sha256);
     if (!file){
       SYNC.detail = "Uploading " + (c.fileName || "file") + "…"; refreshSyncUI();
       file = await driveUploadBlob({name:c.fileName || "file", parents:[folder], appProperties:{corkbork:"file:" + sha256}}, blob,
@@ -16199,6 +16560,7 @@ async function latestRevisions(fileId){
 async function purgePrivateFromDrive(catalogue, meta){
   const priv = workspacePrivacy(); if (!priv.cards.size) return false;
   const publicFiles = new Set(Object.values(catalogue.cards).map(c => c.driveRef?.id).filter(Boolean));
+  for (const it of Object.values(state.library || {})) if (it.driveId) publicFiles.add(it.driveId);
   const publicAssets = new Set(collectAssetTokens(catalogue).keys());
   let purged = false;
   for (const id of priv.cards){
@@ -16262,6 +16624,7 @@ async function cloudSyncOnce(){
       base = remote;
     }
     let readBase = base, purged = false;
+    await uploadLibraryPending();
     await uploadOriginals();
     for (let attempt = 0; attempt < 3; attempt++){
       const catalogue = await cloudCatalogue(base);
@@ -16418,7 +16781,7 @@ $("#syncNow").addEventListener("click", async () => {
 });
 $("#syncOff").addEventListener("click", async () => {
   SYNC.clientId = ""; SYNC.token = null; SYNC.layout = null;
-  SAFE_STORE.del("cb_token"); SAFE_STORE.del("cb_hint");
+  SAFE_STORE.del("cb_token"); SAFE_STORE.del("cb_hint"); SAFE_STORE.del("cb_refresh");
   clearInterval(cloudPoll);
   try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); } catch (_) {}
   refreshSyncUI();
@@ -16507,6 +16870,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b87", [
+    "Library (rail, under Upload): drop a batch of images, videos or files onto it once; they're kept in Google Drive and show on every device as thumbnails. Click or drag one onto a board to use it — only then does it download.",
+    "Scrolling and zooming no longer trigger a Drive sync. Each board still remembers its position and zoom on each device."
+  ]],
   ["b86", [
     "Terms of service page, linked next to Privacy in Settings → Cloud sync."
   ]],
@@ -16547,10 +16914,6 @@ const PATCH_NOTES = [
   ["b78", [
     "The selected archive is now the master: original imports stream into Stored Files while the browser keeps a small catalogue and previews.",
     "Self-contained .corkbork copies, streamed large backups and legacy JSON restores all use that same master workspace."
-  ]],
-  ["b77", [
-    "Folders dragged from Explorer keep nested and empty folders; unknown file types are stored and archived byte-for-byte.",
-    "Large images, files and folders can be compressed to ZIP before import."
   ]]
 ];
 function renderPatchNotes(){
