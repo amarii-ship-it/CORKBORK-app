@@ -36,6 +36,7 @@ body{
   display:flex; flex-direction:column;
 }
 button{font:inherit; color:inherit; background:none; border:none; cursor:pointer;}
+#canvas:focus{outline:none;}
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible{
   outline:2px solid var(--accent); outline-offset:1px;
 }
@@ -95,6 +96,13 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
   padding:0 6px; border-radius:4px; font-size:9.5px; line-height:1; letter-spacing:.01em;}
 /* Fixed translucent blue stays recognisable without turning black on dark
    themes or bright teal on light ones. Opacity belongs to the box, not text. */
+#cloudChip{gap:7px; font-size:12px; font-weight:600; color:var(--text); max-width:190px;}
+#cloudChip .cc-text{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#cloudChip .cc-dot{width:9px; height:9px; border-radius:50%; flex:none; background:#8A8F98;}
+#cloudChip[data-state="ok"] .cc-dot{background:#3FB37F;}
+#cloudChip[data-state="syncing"] .cc-dot,#cloudChip[data-state="pending"] .cc-dot{background:#4C8DF6; animation:saveWarnPulse 1.2s ease-in-out infinite;}
+#cloudChip[data-state="reconnect"] .cc-dot{background:#E2A33B;}
+#cloudChip[data-state="error"] .cc-dot{background:#D2554A;}
 #topbar .backup-primary,#topbar .copy-primary{
   background:rgba(11,38,116,.8); color:#fff;
 }
@@ -2398,10 +2406,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>
   </button>
   <span class="barsep"></span>
-  <div class="backup-stack" aria-label="Backup controls">
-    <button class="barbtn backup-primary" id="btnBackupNow" title="Verify the current save and keep a restore point in local version history">Back up now</button>
-    <button class="barbtn copy-primary" id="btnSaveCopy" title="Save a self-contained dated CORKBORK package">Save a copy</button>
-  </div>
+  <button class="barbtn" id="cloudChip" data-state="local" title="Cloud save — click for sync settings and backups" aria-live="polite">
+    <span class="cc-dot"></span><span class="cc-text">On this device</span>
+  </button>
   <span class="barsep"></span>
   <button class="barbtn iconbtn" id="btnLabels" title="Labels — browse and filter by label">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
@@ -2501,6 +2508,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <div class="overlay" id="shortcutOverlay">
   <div class="panel" id="shortcutPanel" style="width:min(720px,100%);">
     <h2>Keyboard shortcuts</h2>
+    <div class="meta" id="keyCheck">Key check: press any key to see what CORKBORK receives.</div>
     <div class="shortcut-grid">
       <div class="shortcut-group"><h3>Create</h3>
         <div class="shortcut-row"><span>Note</span><kbd>N</kbd></div>
@@ -2626,7 +2634,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   </div>
 
 
-  <div id="canvas">
+  <div id="canvas" tabindex="-1">
     <div id="world"></div>
     <div id="emptyHint">This board is empty.<br>Drag a card from the left, or paste an image.</div>
     <div id="trashBar"><span id="trashCount"></span><button id="btnEmptyTrash">Empty Recycle Bin</button></div>
@@ -3235,8 +3243,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           </div>
         </details>
         <div id="syncSetup" style="display:none; flex-direction:column; gap:8px;">
-          <input id="syncClientId" type="text" placeholder="Paste your Google Client ID here">
           <button class="wide" id="syncConnect">Connect Google Drive</button>
+          <details id="syncOwnId" class="synchelp">
+            <summary>Use your own Google Client ID (advanced)</summary>
+            <input id="syncClientId" type="text" placeholder="Paste your Google Client ID here" style="margin-top:8px;">
+          </details>
         </div>
         <div id="syncActive" style="display:none; flex-direction:column; gap:8px;">
           <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
@@ -3340,7 +3351,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b83";
+window.BUILD = "b84";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3868,6 +3879,46 @@ function markDirty(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 500);
 }
+/* One tab at a time. Every tab holds the whole workspace in memory and saves
+   all of it, so two open tabs overwrote each other — the theme flipping back
+   and forth was the visible sign; edits could be lost the same way. The
+   newest tab takes over; older ones pause and offer to take it back, which
+   reloads them so they start from the latest saved copy. */
+let tabPaused = false;
+const TAB_ID = Math.random().toString(36).slice(2);
+const tabChannel = typeof BroadcastChannel === "function" ? new BroadcastChannel("corkbork-tabs") : null;
+async function pauseThisTab(){
+  if (tabPaused) return;
+  /* edits from the last half-second may not be saved yet: save them, then
+     tell the new tab to reload so it starts from them */
+  const unsaved = dirty;
+  if (unsaved){ clearTimeout(saveTimer); try { await saveNow(); } catch (_) {} }
+  tabPaused = true;
+  clearTimeout(saveTimer);
+  if (unsaved) tabChannel?.postMessage({type:"flushed", id:TAB_ID});
+  const shade = document.createElement("div");
+  shade.id = "tabPaused";
+  shade.style.cssText = "position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;" +
+    "background:rgba(0,0,0,.62);padding:16px;";
+  shade.innerHTML = '<div style="max-width:420px;background:var(--panel,#222);color:var(--text,#eee);border-radius:10px;' +
+    'padding:22px;box-shadow:0 10px 40px rgba(0,0,0,.5);font-size:14px;line-height:1.45;">' +
+    '<h2 style="margin:0 0 8px;font-size:17px;">CORKBORK is open somewhere else</h2>' +
+    '<p style="margin:0 0 16px;">It was opened in another tab or window. Only one can edit at a time, so no work is overwritten. ' +
+    'This one has paused; everything here was already saved.</p>' +
+    '<button id="tabClaim" class="primary" style="padding:8px 14px;border-radius:6px;background:var(--accent,#3a7);color:#fff;">Use it here instead</button></div>';
+  document.body.appendChild(shade);
+  shade.querySelector("#tabClaim").addEventListener("click", () => location.reload());
+}
+if (tabChannel){
+  const openedAt = Date.now();
+  tabChannel.onmessage = e => {
+    if (e.data?.id === TAB_ID) return;
+    if (e.data?.type === "claim") pauseThisTab();
+    /* the tab we took over saved late edits; pick them up if nothing was done here yet */
+    if (e.data?.type === "flushed" && !tabPaused && !dirty && Date.now() - openedAt < 10000) location.reload();
+  };
+  tabChannel.postMessage({type:"claim", id:TAB_ID});
+}
 let saveFailWarned = false;
 let saveBroken = false;          /* sticky: shown in the bar until a save works */
 let workspaceLoadFailure = null; /* never overwrite a stored copy that failed to hydrate */
@@ -3876,6 +3927,7 @@ let saveInFlight = null;
 /* A write that silently did not land is worse than one that threw, so the
    save is read back and checked before it is called a success. */
 async function saveNowOnce(){
+  if (tabPaused) return false;   /* another tab owns the workspace; see claimThisTab */
   try {
     if (workspaceLoadFailure) throw new Error("the stored workspace could not be loaded; import or restore a valid copy first");
     const integrity = validateWorkspace(state); lastIntegrityReport = integrity;
@@ -11215,6 +11267,27 @@ let pinchGesture = false;
   }, { passive:false });
 })();
 
+/* iPad: tapping the board does not take focus away from the last text box,
+   unlike a mouse click on a PC. The app then believed you were still typing
+   and ignored every shortcut (Cmd+Z, Delete, N…). Tapping anywhere that is
+   not itself editable now releases a stale text focus. The note editor
+   commits through its own pointerdown handler and is left alone here. */
+document.addEventListener("pointerdown", e => {
+  if (activeEditor) return;
+  const ae = document.activeElement;
+  const editable = el => !!el?.closest?.("input, textarea, select, [contenteditable]:not([contenteditable='false'])");
+  if (editable(e.target)) return;
+  if (ae && ae !== document.body && editable(ae) && !ae.contains(e.target)) ae.blur();
+  if (e.target.closest?.("#canvas") && document.activeElement !== canvasEl){
+    try { canvasEl.focus({preventScroll:true}); } catch (_) {}
+  }
+}, true);
+/* shows which keys actually reach the app — for diagnosing keyboards */
+document.addEventListener("keydown", e => {
+  const out = $("#keyCheck"); if (!out || !$("#shortcutOverlay").classList.contains("open")) return;
+  const mods = [e.metaKey && "Cmd", e.ctrlKey && "Ctrl", e.altKey && "Alt/Option", e.shiftKey && "Shift"].filter(Boolean);
+  out.textContent = "Key check: received " + [...mods, e.key === " " ? "Space" : e.key].join(" + ") + ".";
+}, true);
 /* wheel: pans by default; zooms if the toggle is on, or with Ctrl held */
 canvasEl.addEventListener("wheel", e => {
   e.preventDefault();
@@ -13059,8 +13132,10 @@ async function saveCopy(){
     toast("Self-contained copy downloaded: "+a.download); return true;
   } catch (err){ toast("Could not make a complete copy: "+(err?.message||"unknown error"),9000); return false; }
 }
-$("#btnBackupNow").addEventListener("click", backupNow);
-$("#btnSaveCopy").addEventListener("click", saveCopy);
+$("#cloudChip").addEventListener("click", () => {
+  openSettings();
+  document.querySelector('.setnav[data-sec="cloud"]')?.click();
+});
 $("#btnSaveCopy2").addEventListener("click", saveCopy);
 
 /* ---- ordinary-file archive folder -------------------------------------
@@ -14716,7 +14791,7 @@ async function renderSnapshots(){
   }
 }
 $("#snapNow").addEventListener("click", backupNow);
-$("#saveWarn").addEventListener("click", () => $("#btnSaveCopy").click());
+$("#saveWarn").addEventListener("click", () => saveCopy());
 $("#pdfDone").addEventListener("click", closePdfReader);
 $("#pdfAsNote").addEventListener("click", () => { const c = card(pdfReaderId); if (c) importStoredFileAsNote(c); });
 $("#pdfOcr").addEventListener("click", ocrPdfPage);
@@ -15422,7 +15497,9 @@ const SAFE_STORE = (() => {
    as sets; a field changed differently on both sides goes to the newer card,
    and long text that loses is kept in a conflict copy so nothing vanishes. */
 const SYNC_DEVICE_SETTINGS = new Set(["uiScale","uiAutoFit","firstRunDone","personalizationVersion",
-  "wheelZoom","boundedPan","backupHabit"]);
+  "wheelZoom","boundedPan","backupHabit",
+  /* appearance belongs to the screen it is on, not to the workspace */
+  "theme","themeEdits","customTheme","wordmark"]);
 const SYNC_DEVICE_CARD_FIELDS = ["archiveRef"];
 const SYNC_ID_LISTS = new Set(["cardIds","unsortedIds","childIds","attachedIds","labelIds"]);
 const SYNC_TEXT_FIELDS = new Set(["text","html","desc","title","caption","name"]);
@@ -15733,6 +15810,13 @@ async function toggleBoardPrivate(bid){
   markDirty(); renderAll();
   toast(making ? "Private. It stays on this device." : "Public. It will sync to Drive.");
 }
+/* CORKBORK's own Google app registration, so connecting is one button. A
+   Client ID is public by design (it is sent in every sign-in URL); it only
+   names the app to Google. Google accepts it only from the origins listed
+   in its console, so it is offered only on the hosted address. */
+const BUILTIN_CLIENT_ID = "";
+const BUILTIN_CLIENT_ORIGIN = "https://amarii-ship-it.github.io";
+function builtinClientId(){ return location.origin === BUILTIN_CLIENT_ORIGIN ? BUILTIN_CLIENT_ID : ""; }
 const SYNC = {
   get clientId(){ return SAFE_STORE.get("cb_clientId") || ""; },
   set clientId(v){ v ? SAFE_STORE.set("cb_clientId", v) : SAFE_STORE.del("cb_clientId"); },
@@ -16088,10 +16172,10 @@ function syncLooksOffline(e){
   return navigator.onLine === false || e instanceof TypeError || /Failed to fetch|Load failed|NetworkError|internet connection/i.test(e?.message || "");
 }
 async function cloudSyncOnce(){
-  if (workspaceLoadFailure || !validateWorkspace(state).ok) return false;
-  if (navigator.onLine === false){ SYNC.status = "offline"; refreshSyncUI(); return false; }
+  if (tabPaused || workspaceLoadFailure || !validateWorkspace(state).ok) return false;
+  if (navigator.onLine === false){ SYNC.status = "offline"; SYNC.pending = false; refreshSyncUI(); return false; }
   try {
-    SYNC.status = "syncing"; refreshSyncUI();
+    SYNC.status = "syncing"; SYNC.pending = false; refreshSyncUI();
     const layout = await driveLayout();
     const meta = await syncMeta();
     let base = await idbGetRaw(SYNC_BASE_KEY) || null;
@@ -16155,6 +16239,7 @@ async function cloudSyncOnce(){
 let cloudTimer = null, cloudPoll = null;
 function queueCloudPush(){
   if (!SYNC.clientId) return;
+  if (!SYNC.pending && SYNC.status !== "syncing"){ SYNC.pending = true; updateCloudChip(); }
   clearTimeout(cloudTimer);
   cloudTimer = setTimeout(requestCloudSync, 2500);
 }
@@ -16166,7 +16251,31 @@ function startCloudPolling(){
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && SYNC.clientId) requestCloudSync(); });
 addEventListener("online", () => { if (SYNC.clientId) requestCloudSync(); });
 
+/* Google sign-in needs a real web address; a file opened off disk has none */
+function syncAvailable(){ return location.protocol !== "file:"; }
+/* The toolbar's one-glance answer to "is my work safe, and is it in the cloud?" */
+function updateCloudChip(){
+  const chip = $("#cloudChip"); if (!chip) return;
+  let st = "local", text = "On this device", tip = "Saved on this device. Connect Google Drive in Settings to sync with your other devices.";
+  if (SYNC.clientId && syncAvailable()){
+    st = SYNC.status === "syncing" ? "syncing" : SYNC.pending ? "pending" : SYNC.status;
+    const t = SYNC.lastSync ? new Date(SYNC.lastSync).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) : "";
+    ({
+      syncing:  () => { text = "Syncing…"; tip = SYNC.detail || "Sending changes to Google Drive."; },
+      pending:  () => { text = "Saved · syncing soon"; tip = "Saved on this device. Sending to Drive in a moment."; },
+      ok:       () => { text = t ? "Synced " + t : "Synced"; tip = "Everything is saved on this device and in Google Drive."; },
+      offline:  () => { text = "Offline · saved here"; tip = "No internet. Everything is saved on this device and will sync when you're back online."; },
+      reconnect:() => { text = "Sign in to sync"; tip = "Saved on this device. Google needs a fresh sign-in — click, then Sync now."; },
+      error:    () => { text = "Sync problem"; tip = "Saved on this device, but Drive sync failed: " + (SYNC.lastError || "unknown error"); },
+      off:      () => { st = "pending"; text = "Connecting…"; tip = "Starting Google Drive sync."; }
+    }[st] || (() => { st = "ok"; text = "Synced"; }))();
+  }
+  chip.dataset.state = st;
+  chip.querySelector(".cc-text").textContent = text;
+  chip.title = tip + " Click for sync settings and backups.";
+}
 function refreshSyncUI(){
+  updateCloudChip();
   const st = $("#syncStatus"), setup = $("#syncSetup"), active = $("#syncActive");
   if (!st) return;
   const connected = !!SYNC.clientId;
@@ -16187,11 +16296,19 @@ function refreshSyncUI(){
   }
   setup.style.display = (connected || blocked) ? "none" : "flex";
   active.style.display = connected && !blocked ? "flex" : "none";
-  const help = $("#syncHelp"); if (help) help.style.display = connected ? "none" : "";
+  const builtin = !!builtinClientId();
+  const help = $("#syncHelp"); if (help) help.style.display = connected || builtin ? "none" : "";
+  const own = $("#syncOwnId");
+  if (own){
+    own.querySelector("summary").style.display = builtin ? "" : "none";
+    if (!builtin) own.open = true;
+  }
   if (!connected){
     st.textContent = blocked
       ? "Local saving and snapshots are unaffected — only Drive sync is unavailable here."
-      : "Not connected. Paste the Client ID from the setup guide and connect — the app only gets access to the CORKBORK folder it creates, never the rest of your Drive.";
+      : builtin
+        ? "Not connected. Press Connect and sign in with Google. CORKBORK only gets access to the CORKBORK folder it creates, never the rest of your Drive."
+        : "Not connected. Paste the Client ID from the setup guide and connect — the app only gets access to the CORKBORK folder it creates, never the rest of your Drive.";
   } else {
     const when = SYNC.lastSync ? " Last synced " + new Date(SYNC.lastSync).toLocaleTimeString() + "." : "";
     st.textContent = {
@@ -16209,7 +16326,7 @@ $("#syncConnect").addEventListener("click", async () => {
     toast("Google sign-in can't run from a file opened off disk — it needs the app's web address. See the setup guide.");
     return;
   }
-  const cid = $("#syncClientId").value.trim();
+  const cid = $("#syncClientId").value.trim() || builtinClientId();
   if (!cid){ toast("Paste the Client ID from the setup guide first."); return; }
   SYNC.clientId = cid;
   try {
@@ -16312,11 +16429,18 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
     : "Local storage is incomplete. Saving is blocked so CORKBORK cannot overwrite it. Restore or import a valid copy in Backup & data.", 12000), 300);
   if (!lastIntegrityReport.ok) setTimeout(() =>
     toast("Workspace integrity check failed. Saving is blocked; open Settings > Backup & data.", 10000), 300);
+  updateCloudChip();
   if (SYNC.clientId && location.protocol !== "file:"){ startCloudPolling(); requestCloudSync(); }
 })();
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b84", [
+    "The top bar shows cloud save status (Synced, Syncing, Offline, Sign in) where Back up now and Save a copy were; both moved to Settings → Backup & data.",
+    "iPad: keyboard shortcuts (Cmd+Z, Delete, N…) work after typing in a box — tapping the board now releases it. The shortcuts panel shows which key arrived.",
+    "Only one tab edits at a time; an older tab pauses with “Use it here instead”, so tabs no longer overwrite each other's theme or work.",
+    "Theme and appearance stay per device instead of syncing."
+  ]],
   ["b83", [
     "Works offline: after one online visit, the hosted CORKBORK opens with no internet and keeps saving to the device; sync catches up later and shows Offline meanwhile.",
     "Installable as an app (address-bar install on PC, Add to Home Screen on iPad), with the newest version downloaded in the background.",
@@ -16353,12 +16477,6 @@ const PATCH_NOTES = [
     "Each theme remembers its own colour edits; Enter saves dialogs and Escape cancels.",
     "Document cards are clearer, folders can be imported, and edited TXT files ask before closing.",
     "Archive setup is clearer, and the 1.0 plan now reflects current priorities."
-  ]],
-  ["b75", [
-    "Links keep creator attribution and can fetch titles, thumbnails and safe embeds without risking the source URL.",
-    "DOCX files gain Word-layout viewing; image and PDF-page OCR can create editable notes.",
-    "First-run personalization and reusable tutorials cover theme, sizing, storage and backups.",
-    "Columns collapse from their headers; monitor fitting follows window size; transparent images behave like stickers."
   ]]
 ];
 function renderPatchNotes(){
