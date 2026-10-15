@@ -2614,7 +2614,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <div class="shortcut-row"><span>Board</span><kbd>B</kbd></div>
         <div class="shortcut-row"><span>List</span><kbd>T</kbd></div>
         <div class="shortcut-row"><span>Heading</span><kbd>H</kbd></div>
-        <div class="shortcut-row"><span>Column / album</span><kbd>C / G</kbd></div>
+        <div class="shortcut-row"><span>Column / folder</span><kbd>C / G</kbd></div>
         <div class="shortcut-row"><span>Card / block</span><kbd>D / K</kbd></div>
         <div class="shortcut-row"><span>Spreadsheet / character sheet</span><kbd>E / R</kbd></div>
         <div class="shortcut-row"><span>Image / file / link</span><kbd>I / U / L</kbd></div>
@@ -2661,8 +2661,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
     <button class="tool" data-type="column" title="Column [C] — drag cards in to group them">
       <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z M6 9h12 M9 13h6 M9 16h6"/></svg>Column</button>
-    <button class="tool" data-type="grid" title="Album [G] — drag images in to group them">
-      <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Album</button>
+    <button class="tool" data-type="grid" title="Folder [G] — drag photos or boards in to organize them">
+      <svg viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z M3 11h18"/></svg>Folder</button>
     <button class="tool" data-type="table" title="Spreadsheet [E] — an editable grid with formulas">
       <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M4 15h16 M9.5 5v14 M15 5v14"/></svg>Sheet</button>
     <button class="tool" data-type="link" title="Link [L]">
@@ -3332,7 +3332,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <div class="tool-row"><b>Board</b><kbd>B</kbd><span>Creates an entirely new board/working canvas. Double-click to go inside.</span></div>
           <div class="tool-row"><b>List</b><kbd>T</kbd><span>A checklist, bulleted or numbered list.</span></div>
           <div class="tool-row"><b>Column</b><kbd>C</kbd><span>Groups cards in a vertical stack. Drag cards into it.</span></div>
-          <div class="tool-row"><b>Album</b><kbd>G</kbd><span>A grid for images. Drag pictures into it.</span></div>
+          <div class="tool-row"><b>Folder</b><kbd>G</kbd><span>Holds photos and boards in a tidy grid. Drag them in to organize; double-click one to open it.</span></div>
           <div class="tool-row"><b>Sheet</b><kbd>E</kbd><span>A spreadsheet with formulas.</span></div>
           <div class="tool-row"><b>Link</b><kbd>L</kbd><span>Saves a web address with its title and preview.</span></div>
           <div class="tool-row"><b>Heading</b><kbd>H</kbd><span>Big text for labelling parts of a board.</span></div>
@@ -3529,7 +3529,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b94";
+window.BUILD = "b95";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6580,7 +6580,7 @@ function buildGrid(c, el){
   }
   if (!(c.childIds || []).length){
     const hint = document.createElement("div"); hint.className = "ghint";
-    hint.textContent = "Drag images here — they'll tile into an album.";
+    hint.textContent = "Drag photos or boards here to organize them.";
     cells.appendChild(hint);
   }
   el.append(head, cells);
@@ -6625,7 +6625,7 @@ function openChildCtx(x, y, colId, kidId){
   if (k.type === "board") add("Open", () => openBoard(k.boardId));
   if (k.type === "board") add("Edit… (title, icon, color)", () => openBoardDialog(k));
   if (k.type === "link") add("Edit", () => openLinkDialog(k));
-  add(card(colId)?.type === "grid" ? "Remove from album" : "Remove from column", () => {
+  add(card(colId)?.type === "grid" ? "Remove from folder" : "Remove from column", () => {
     pushUndo();
     const col = card(colId);
     patchCard(colId, { childIds: col.childIds.filter(x => x !== kidId) });
@@ -6912,7 +6912,7 @@ function renderDrawer(){
     else if (c.type === "note") d.appendChild(document.createTextNode((c.text||"").split("\n")[0].slice(0,60) || "Empty note"));
     else if (c.type === "heading") d.appendChild(document.createTextNode((c.text||"Heading").split("\n")[0].slice(0,60)));
     else if (c.type === "column") d.appendChild(document.createTextNode(c.title || "Column"));
-    else if (c.type === "grid") d.appendChild(document.createTextNode(c.title || "Untitled album"));
+    else if (c.type === "grid") d.appendChild(document.createTextNode(c.title || "Untitled folder"));
     else if (c.type === "card") d.appendChild(document.createTextNode(c.name || "Unnamed card"));
     else if (c.type === "sheet") d.appendChild(document.createTextNode((c.sheet?.name || "New Character") + " (sheet)"));
     else if (c.type === "link") d.appendChild(document.createTextNode(c.title || c.url));
@@ -10768,7 +10768,7 @@ function duplicateBoard(srcCard, withContents){
 }
 
 /* ---- drag ghost ---- */
-const TYPE_LABELS = { todo:"to-do", grid:"album", sheet:"D&D sheet" };
+const TYPE_LABELS = { todo:"to-do", grid:"folder", sheet:"D&D sheet" };
 const typeLabel = t => TYPE_LABELS[t] || t || "card";
 function ghostShow(verb, type, iconSvg){
   const g = $("#ghost");
@@ -17417,6 +17417,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b95", [
+    "Album is now Folder, with a folder icon: drag photos or boards in to organize them."
+  ]],
   ["b94", [
     "Open CORKBORK in as many tabs and windows as you like: every one can edit, changes show in the others within a second, and nothing overwrites anything.",
     "Undo is per tab: it takes back only what you did in that tab."
