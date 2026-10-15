@@ -3529,7 +3529,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b92";
+window.BUILD = "b93";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17161,7 +17161,15 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   let recoveredSnapshot = 0;
   try {
     const saved = await idbGet("workspace");
-    if (saved && saved.schemaVersion && saved.schemaVersion <= 1) state = saved;
+    /* A record that exists but isn't a workspace we can open (garbage, or
+       written by a newer build) is a load failure, not a first run. */
+    if (saved != null){
+      const shaped = saved.schemaVersion && saved.schemaVersion <= 1
+        && saved.boards && typeof saved.boards === "object" && saved.cards && typeof saved.cards === "object"
+        && saved.boards[saved.rootBoardId];
+      if (!shaped) throw new Error("the stored workspace is unreadable");
+      state = saved;
+    }
   } catch(e){
     workspaceLoadFailure = e;
     /* A broken shared payload must never turn into an apparently fresh app
@@ -17219,6 +17227,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b93", [
+    "If the saved workspace on a device is ever damaged, CORKBORK opens the latest restore point and blocks saving, instead of opening blank."
+  ]],
   ["b92", [
     "Bug List → Send to developer: bugs and suggestions go straight to the developer (anyone can send). The tour points it out."
   ]],
