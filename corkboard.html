@@ -3410,7 +3410,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b88";
+window.BUILD = "b89";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -13428,7 +13428,7 @@ libPanel.addEventListener("drop", async e => {
 /* "From Google Drive": Google's own chooser. Whatever is picked there becomes
    reachable by CORKBORK, which is what drive.file allows. Needs a browser API
    key (public, limited to this site) — see SETUP.md. */
-const GOOGLE_PICKER_API_KEY = "";
+const GOOGLE_PICKER_API_KEY = "AIzaSyAVefnw0GPWhzdlX2jCu918ndUjnssV3tc";
 const GOOGLE_PROJECT_NUMBER = "258973271030";
 function librarySupportsPicker(){ return !!(GOOGLE_PICKER_API_KEY && syncAvailable() && SYNC.clientId === builtinClientId()); }
 function loadPickerApi(){
@@ -16871,7 +16871,8 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
   ["b88", [
-    "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup."
+    "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup.",
+    "Library → From Google Drive: pick files already in your Drive (select many at once) to add them to your Library."
   ]],
   ["b87", [
     "Library (rail, under Upload): drop a batch of images, videos or files onto it once; they're kept in Google Drive and show on every device as thumbnails. Click or drag one onto a board to use it — only then does it download.",
@@ -16913,10 +16914,6 @@ const PATCH_NOTES = [
   ]],
   ["b79", [
     "Archive setup uses simpler language in a slightly larger Settings window."
-  ]],
-  ["b78", [
-    "The selected archive is now the master: original imports stream into Stored Files while the browser keeps a small catalogue and previews.",
-    "Self-contained .corkbork copies, streamed large backups and legacy JSON restores all use that same master workspace."
   ]]
 ];
 function renderPatchNotes(){
