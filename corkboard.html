@@ -3410,7 +3410,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b87";
+window.BUILD = "b88";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -16162,7 +16162,7 @@ function builtinClientId(){ return location.origin === BUILTIN_CLIENT_ORIGIN ? B
    issues a long-lived refresh pass, so sync renews its hourly access in the
    background with no Google window. Without it (or for a custom Client ID),
    the hourly browser-only sign-in is used. */
-const AUTH_WORKER_URL = "";
+const AUTH_WORKER_URL = "https://corkborkbockc.hallelewis10.workers.dev";
 function authWorkerUrl(){
   return AUTH_WORKER_URL && SYNC.clientId && SYNC.clientId === builtinClientId() ? AUTH_WORKER_URL.replace(/\/+$/, "") : "";
 }
@@ -16870,6 +16870,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b88", [
+    "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup."
+  ]],
   ["b87", [
     "Library (rail, under Upload): drop a batch of images, videos or files onto it once; they're kept in Google Drive and show on every device as thumbnails. Click or drag one onto a board to use it — only then does it download.",
     "Scrolling and zooming no longer trigger a Drive sync. Each board still remembers its position and zoom on each device."
