@@ -1076,23 +1076,19 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
 #lbCaption{margin-top:14px; color:var(--text); font-size:14px; max-width:70vw; text-align:center;}
 #lbCaption:empty{display:none;}
 #lbCapInput{margin-top:14px; width:min(480px, 80vw); display:none; text-align:center; background:var(--surface-hi);}
-.lbArrow{
-  position:fixed; top:50%; transform:translateY(-50%); width:46px; height:46px;
-  display:flex; align-items:center; justify-content:center; border-radius:50%;
-  color:#fff; font-size:26px; background:rgba(255,255,255,.06);
-}
-.lbArrow:hover{background:rgba(255,255,255,.14);}
-#lbPrev{left:18px;} #lbNext{right:18px;}
 #lbBar{
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
   display:flex; gap:8px; background:var(--surface-hi); border:1px solid var(--border);
   border-radius:5px; padding:6px;
 }
+#lbBar{align-items:center; gap:2px;}
 #lbBar button{
-  padding:8px 14px; border-radius:6px; font-size:13px; color:var(--text); display:flex; align-items:center; gap:7px;
+  width:38px; height:36px; padding:0; border-radius:6px; color:var(--text); display:flex; align-items:center; justify-content:center;
 }
 #lbBar button:hover{background:var(--surface);}
-#lbBar button svg{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8;}
+#lbBar button:disabled{opacity:.35; pointer-events:none;}
+#lbBar button svg{width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+#lbBar .lbSep{width:1px; height:22px; background:var(--border); margin:0 5px;}
 #lbClose{position:fixed; top:14px; right:16px; width:38px; height:38px; border-radius:50%; color:#fff; font-size:19px; background:rgba(255,255,255,.06);}
 #lbClose:hover{background:rgba(255,255,255,.14);}
 
@@ -1528,6 +1524,13 @@ body.focus-mode #textBarWrap{display:none;}
 #ctx button{padding:7px 12px; text-align:left; font-size:13px;}
 #ctx button:hover{background:var(--surface);}
 #ctx button.danger:hover{color:#e0938d;}
+#ctx .ctxsub{display:flex; align-items:center; justify-content:space-between; gap:14px;}
+#ctx .ctxsub.on{background:var(--surface);}
+#ctx .ctxcaret{color:var(--text-dim); font-size:15px; line-height:1;}
+/* side menus: fixed, so the main menu's rounded clipping doesn't cut them off */
+#ctx .ctxpop{position:fixed; display:none; flex-direction:column; min-width:150px; background:var(--surface-hi);
+  border:1px solid var(--border); border-radius:6px; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.4);}
+#ctx .ctxpop.open{display:flex;}
 
 /* dialogs */
 /* z-index 160 puts dialogs above the fullscreen panels (#cardPage 150,
@@ -3036,22 +3039,25 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- image lightbox -->
 <div id="lightbox">
   <button id="lbClose" title="Close (Esc)">✕</button>
-  <button class="lbArrow" id="lbPrev" title="Previous image">‹</button>
-  <button class="lbArrow" id="lbNext" title="Next image">›</button>
   <div id="lbStage">
     <img id="lbImg" alt="">
     <div id="lbSel"></div>
   </div>
   <div id="lbCaption"></div>
   <input id="lbCapInput" type="text" placeholder="Write a caption…">
+  <!-- Icons, not words (like Milanote's viewer); each has a tooltip. -->
   <div id="lbBar">
-    <button id="lbDownload"><svg viewBox="0 0 24 24"><path d="M12 4v11 M7 11l5 5 5-5 M5 20h14"/></svg>Download</button>
-    <button id="lbNewTab"><svg viewBox="0 0 24 24"><path d="M14 4h6v6 M20 4l-9 9 M19 13v6H5V5h6"/></svg>New tab</button>
-    <button id="lbCapBtn"><svg viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h9"/></svg>Caption</button>
-    <button id="lbEditBtn"><svg viewBox="0 0 24 24"><path d="M8 4v4H4 M8 4h9a3 3 0 0 1 3 3v9 M16 20v-4h4 M16 20H7a3 3 0 0 1-3-3V8"/></svg>Crop/rotate</button>
-    <button id="lbRotate" style="display:none"><svg viewBox="0 0 24 24"><path d="M20 8a8 8 0 1 0 2 6 M20 3v5h-5"/></svg>Rotate 90°</button>
-    <button id="lbApply" style="display:none">Apply crop</button>
-    <button id="lbCancel" style="display:none">Done</button>
+    <button id="lbEditBtn" title="Crop or rotate" aria-label="Crop or rotate"><svg viewBox="0 0 24 24"><path d="M7 3v14h14 M3 7h14v14"/></svg></button>
+    <button id="lbCapBtn" title="Caption" aria-label="Caption"><svg viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h9"/></svg></button>
+    <span class="lbSep"></span>
+    <button id="lbPrev" title="Previous image (←)" aria-label="Previous image"><svg viewBox="0 0 24 24"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
+    <button id="lbNext" title="Next image (→)" aria-label="Next image"><svg viewBox="0 0 24 24"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>
+    <span class="lbSep"></span>
+    <button id="lbNewTab" title="Open in new tab" aria-label="Open in new tab"><svg viewBox="0 0 24 24"><path d="M14 4h6v6 M20 4l-9 9 M19 13v6H5V5h6"/></svg></button>
+    <button id="lbDownload" title="Download" aria-label="Download"><svg viewBox="0 0 24 24"><path d="M12 4v11 M7 11l5 5 5-5 M5 20h14"/></svg></button>
+    <button id="lbRotate" style="display:none" title="Rotate 90°" aria-label="Rotate 90°"><svg viewBox="0 0 24 24"><path d="M20 8a8 8 0 1 0 2 6 M20 3v5h-5"/></svg></button>
+    <button id="lbApply" style="display:none" title="Apply crop" aria-label="Apply crop"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+    <button id="lbCancel" style="display:none" title="Done" aria-label="Done"><svg viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
   </div>
 </div>
 <div id="toast"></div>
@@ -3529,7 +3535,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b96";
+window.BUILD = "b97";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -7504,12 +7510,18 @@ function renderBoardAfterPointer(){
   let finished = false;
   const finish = () => {
     if (finished) return; finished = true;
-    removeEventListener("pointerup", finish);
-    removeEventListener("pointercancel", finish);
+    removeEventListener("pointerup", finish, true);
+    removeEventListener("pointercancel", finish, true);
+    clearTimeout(timer);
     renderBoard();
   };
-  addEventListener("pointerup", finish);
-  addEventListener("pointercancel", finish);
+  /* capture phase, so no handler that stops the event can swallow it; and a
+     timer, because a phone can lose the end of a tap (keyboard closing,
+     a gesture taking over) — without a redraw the old note box stayed on
+     screen, looking editable, until a refresh */
+  addEventListener("pointerup", finish, true);
+  addEventListener("pointercancel", finish, true);
+  const timer = setTimeout(finish, 1500);
 }
 document.addEventListener("pointerdown", e => {
   if (!activeEditor || !activeEditor.commit) return;
@@ -7623,6 +7635,13 @@ function editNote(c, el){
     committed = true;
     editing = false; activeEditor = null;
     el.classList.remove("editing-note");
+    /* the box may stay on screen until the redraw: stop it taking typing and
+       let go of focus now, which also closes a phone's keyboard */
+    ed.setAttribute("contenteditable", "false");
+    if (document.activeElement === ed) ed.blur();
+    /* the redraw must rebuild this card: with nothing typed the card is
+       unchanged, so the cached element (typing box still inside) came back */
+    invalidateCardEls(c.id);
     if (!cancelled){
       const html = sanitizeHtml(ed.innerHTML);
       const cc = card(c.id);
@@ -8160,10 +8179,8 @@ function enterEdit(c){
   else if (isContainer(c))
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: c.type === "grid" ? v : (v || "Column") }));
   else if (c.type === "image"){
-    /* Double-click is "let me work on this", the same as it is for a note, so
-       on an image it unlocks free width/height resize and shows the edit
-       colour. Viewing full size moved to the right-click menu, which already
-       has Open image in new tab. */
+    /* Edit (right-click) unlocks free width/height resize and shows the edit
+       colour. Double-click opens the lightbox instead (see the dblclick handler). */
     pushUndo(); patchCard(c.id, { freeResize: !c.freeResize }); markDirty(); renderBoard();
     toast(c.freeResize ? "Proportions locked." : "Free resize — drag any corner.");
   }
@@ -10429,10 +10446,35 @@ async function downloadStoredImage(c){
 }
 function openCtx(x, y, c){
   ctx.innerHTML = "";
-  const add = (label, fn, cls) => {
+  const item = (into, label, fn, cls) => {
     const b = document.createElement("button"); b.textContent = label; if (cls) b.className = cls;
     b.addEventListener("click", () => { closeCtx(); fn(); });
-    ctx.appendChild(b);
+    /* hovering a plain row closes any open side menu */
+    if (into === ctx) b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") closeCtxSubs(); });
+    into.appendChild(b);
+  };
+  const add = (label, fn, cls) => item(ctx, label, fn, cls);
+  /* A row that opens a side menu: on hover with a mouse, on tap otherwise
+     (phones and iPads can't hover). Empty side menus aren't shown. */
+  const sub = (label, build) => {
+    const pop = document.createElement("div"); pop.className = "ctxpop";
+    build((l, fn, cls) => item(pop, l, fn, cls));
+    if (!pop.children.length) return;
+    const b = document.createElement("button"); b.className = "ctxsub";
+    b.textContent = label; const caret = document.createElement("span"); caret.className = "ctxcaret"; caret.textContent = "\u203A"; b.appendChild(caret);
+    const show = () => {
+      closeCtxSubs();
+      pop.classList.add("open"); b.classList.add("on");
+      const z = uiz(), r = b.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+      let left = r.right / z - 2;
+      if (left + pr.width / z > innerWidth / z - 4) left = r.left / z - pr.width / z + 2;
+      pop.style.left = Math.max(4, left) + "px";
+      pop.style.top = clamp(r.top / z - 5, 4, innerHeight / z - pr.height / z - 4) + "px";
+    };
+    b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") show(); });
+    /* always opens: with a mouse the hover already did, and a toggle would shut it */
+    b.addEventListener("click", e => { e.stopPropagation(); if (!pop.classList.contains("open")) show(); });
+    ctx.append(b, pop);
   };
   add(isFav(c.id) ? "★ Unfavourite" : "☆ Favourite", () => toggleFav(c.id));
   if (c.type === "board"){
@@ -10478,23 +10520,24 @@ function openCtx(x, y, c){
      turning a Writing block into a Timeline leaves everything else intact
      and switching back brings the prose with it. */
   if (c.type === "block") add("Change block kind…", () => pickBlockKind(c.id));
-  /* Same payload Ctrl+C writes, reachable without the keyboard. */
-  add("Copy", () => {
-    const ids = selection.has(c.id) && selection.size > 1 ? [...selection] : [c.id];
+  /* Same payload Ctrl+C writes, reachable without the keyboard. On a single
+     image it copies the picture itself, for pasting anywhere. */
+  add("Copy", async () => {
+    const many = selection.has(c.id) && selection.size > 1;
+    if (c.type === "image" && !many && cardCanOpen(c)){
+      try {
+        const blob = await cardSourceBlob(c);
+        await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
+        toast("Image copied."); return;
+      } catch (err){ /* fall back to copying the card */ }
+    }
+    const ids = many ? [...selection] : [c.id];
     setSelection(ids);
     /* clear any stray text selection first, or the copy handler defers to it */
     try { window.getSelection().removeAllRanges(); } catch(err){}
     document.execCommand("copy");
   });
-  /* Open in a new tab: an image at full size, a link at its destination. */
   if (c.type === "image") add("View full size", () => openLightbox(c.id));
-  if (c.type === "image" && cardCanOpen(c)) add("Download image", () => downloadStoredImage(c));
-  if (c.type === "image" && cardCanOpen(c)) add("OCR image as note", () => ocrImageCard(c));
-  if (c.type === "image" && cardCanOpen(c)) add("Open image in new tab", async () => {
-    const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
-    try { const url=await cardSourceUrl(c); w.location.replace(url); setTimeout(()=>URL.revokeObjectURL(url),60000); }
-    catch (err){ try { w.close(); } catch (_) {} toast("Could not open that image from the archive."); }
-  });
   if (c.type === "link"){
     const flip = (key, label) => add(
       (c[key] !== false ? "\u2713 " : "\u2003") + label,
@@ -10510,22 +10553,6 @@ function openCtx(x, y, c){
   }
   if (c.type === "link" && c.url) add("Open link in new tab",
     () => window.open(c.url, "_blank", "noopener"));
-  /* An image card can also hand the PICTURE to other apps, not just the card. */
-  if (c.type === "image" && cardCanOpen(c)) add("Copy image", async () => {
-    try {
-      const blob = await cardSourceBlob(c);
-      await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
-      toast("Image copied.");
-    } catch (err){ toast("This browser would not take the image."); }
-  });
-  add("Reset to default size", () => {
-    const d = defaultSize(c.type); if (!d) return;
-    pushUndo();
-    const patch = { w: d.w, h: d.h };
-    if (c.type === "note") patch.fontScale = 1;
-    if (c.type === "image") patch.freeResize = false;
-    patchCard(c.id, patch); markDirty(); renderAll();
-  });
   if (c.type !== "board" && !isContainer(c)) add("Duplicate", () => {
     pushUndo();
     const id = uid("c");
@@ -10534,23 +10561,44 @@ function openCtx(x, y, c){
     state.cards[id] = copy; cur().cardIds.push(id);
     markDirty(); renderAll();
   });
-  if (AUTO_H_TYPES[c.type] && c.autoH === false)
-    add("Fit to text", () => {
-      pushUndo(); patchCard(c.id, { autoH: true }); markDirty(); renderBoard();
-    });
   if (c.type === "column") add(c.collapsed ? "Expand column" : "Collapse column", () => {
     pushUndo(); patchCard(c.id, { collapsed:!c.collapsed }); markDirty(); renderBoard();
   });
-  add("Bring to front", () => { pushUndo(); patchCard(c.id, { z: maxZ()+1 }); markDirty(); renderBoard(); });
-  add("Send to back", () => { pushUndo(); patchCard(c.id, { z: minZ()-1 }); markDirty(); renderBoard(); });
-  if (cur().cardIds.includes(c.id))
-    add("Send to unsorted", () => {
+  sub("Send to", to => {
+    to("Front", () => { pushUndo(); patchCard(c.id, { z: maxZ()+1 }); markDirty(); renderBoard(); });
+    to("Back", () => { pushUndo(); patchCard(c.id, { z: minZ()-1 }); markDirty(); renderBoard(); });
+    if (cur().cardIds.includes(c.id))
+      to("Unsorted", () => {
+        pushUndo();
+        cur().cardIds = cur().cardIds.filter(x => x !== c.id);
+        cur().unsortedIds.push(c.id);
+        selection.delete(c.id);
+        markDirty(); renderAll();
+      });
+  });
+  sub("More", more => {
+    if (c.type === "image" && cardCanOpen(c)){
+      more("Download image", () => downloadStoredImage(c));
+      more("Open image in new tab", async () => {
+        const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
+        try { const url=await cardSourceUrl(c); w.location.replace(url); setTimeout(()=>URL.revokeObjectURL(url),60000); }
+        catch (err){ try { w.close(); } catch (_) {} toast("Could not open that image from the archive."); }
+      });
+      more("OCR image as note", () => ocrImageCard(c));
+    }
+    if (AUTO_H_TYPES[c.type] && c.autoH === false)
+      more("Fit to text", () => {
+        pushUndo(); patchCard(c.id, { autoH: true }); markDirty(); renderBoard();
+      });
+    more("Reset to default size", () => {
+      const d = defaultSize(c.type); if (!d) return;
       pushUndo();
-      cur().cardIds = cur().cardIds.filter(x => x !== c.id);
-      cur().unsortedIds.push(c.id);
-      selection.delete(c.id);
-      markDirty(); renderAll();
+      const patch = { w: d.w, h: d.h };
+      if (c.type === "note") patch.fontScale = 1;
+      if (c.type === "image") patch.freeResize = false;
+      patchCard(c.id, patch); markDirty(); renderAll();
     });
+  });
   const permanent = currentBoardId === TRASH_ID || !state.settings?.deleteToRecycle;
   add(permanent ? "Delete" : "Move to Trash",
       () => deleteCards(selection.has(c.id) ? [...selection] : [c.id]), "danger");
@@ -10559,7 +10607,11 @@ function openCtx(x, y, c){
   ctx.style.left = clamp(x/z, 4, innerWidth/z - r.width/z - 4) + "px";
   ctx.style.top  = clamp(y/z, 4, innerHeight/z - r.height/z - 4) + "px";
 }
-function closeCtx(){ ctx.classList.remove("open"); }
+function closeCtxSubs(){
+  for (const o of ctx.querySelectorAll(".ctxpop.open")) o.classList.remove("open");
+  for (const b of ctx.querySelectorAll(".ctxsub.on")) b.classList.remove("on");
+}
+function closeCtx(){ closeCtxSubs(); ctx.classList.remove("open"); }
 document.addEventListener("pointerdown", e => { if (!ctx.contains(e.target)) closeCtx(); }, true);
 
 /* ---- internal clipboard: Ctrl+C / Ctrl+X / Ctrl+V on cards ---- */
@@ -11623,6 +11675,8 @@ worldEl.addEventListener("dblclick", e => {
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "Block" }));
     return;
   }
+  /* an image opens big, with crop, download and the board's other images */
+  if (c.type === "image"){ e.stopPropagation(); openLightbox(c.id); return; }
   enterEdit(c);
 });
 
@@ -16180,11 +16234,10 @@ function lbRender(){
   }).catch(()=>{});}
   $("#lbCaption").textContent = c.caption || "";
   $("#lbCapInput").style.display = "none";
-  const many = LB.list.length > 1 && LB.mode === "view";
-  $("#lbPrev").style.display = many ? "flex" : "none";
-  $("#lbNext").style.display = many ? "flex" : "none";
   const edit = LB.mode === "edit";
-  for (const id of ["lbDownload","lbNewTab","lbCapBtn","lbEditBtn"]) $("#"+id).style.display = edit ? "none" : "flex";
+  $("#lbPrev").disabled = $("#lbNext").disabled = LB.list.length < 2;
+  for (const id of ["lbDownload","lbNewTab","lbCapBtn","lbEditBtn","lbPrev","lbNext"]) $("#"+id).style.display = edit ? "none" : "flex";
+  for (const sep of document.querySelectorAll("#lbBar .lbSep")) sep.style.display = edit ? "none" : "block";
   for (const id of ["lbRotate","lbApply","lbCancel"]) $("#"+id).style.display = edit ? "flex" : "none";
   $("#lbStage").classList.toggle("cropping", edit);
   $("#lbSel").style.display = "none";
@@ -17417,6 +17470,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b97", [
+    "Double-click an image to view it big: crop, caption, previous/next, open in a new tab and download, as icons.",
+    "Right-click menu is shorter: one Copy (copies the picture on images), and side menus for Send to (Front, Back, Unsorted) and More.",
+    "Phones: tapping out of a note now always closes it (the box could stay on screen if nothing was typed)."
+  ]],
   ["b96", [
     "Sheet moved into the ••• More tools menu (its key, E, still works)."
   ]],
@@ -17464,11 +17522,6 @@ const PATCH_NOTES = [
     "iPad: keyboard shortcuts (Cmd+Z, Delete, N…) work after typing in a box — tapping the board now releases it. The shortcuts panel shows which key arrived.",
     "Theme and appearance stay per device instead of syncing."
   ]],
-  ["b83", [
-    "Works offline: after one online visit, the hosted CORKBORK opens with no internet and keeps saving to the device; sync catches up later and shows Offline meanwhile.",
-    "Installable as an app (address-bar install on PC, Add to Home Screen on iPad), with the newest version downloaded in the background.",
-    "Original files from Drive download in the background so they open offline (Settings → Sync to turn off per device)."
-  ]]
 ];
 function renderPatchNotes(){
   const host = $("#patchNotes"); if (!host) return;
