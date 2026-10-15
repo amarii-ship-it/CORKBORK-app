@@ -3529,7 +3529,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b93";
+window.BUILD = "b94";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3719,10 +3719,26 @@ function snapshot(){
     boardId: currentBoardId
   };
 }
+/* Each entry is the state before an action; `after` is the state right
+   after it, filled in when the next action starts or another tab's changes
+   arrive. Undo reverses only the difference between the two, so changes
+   other tabs made meanwhile stay. */
 function pushUndo(){
-  undoStack.push(snapshot());
+  const s = snapshot(), top = undoStack[undoStack.length - 1];
+  if (top && !top.after) top.after = s;
+  undoStack.push(s);
   if (undoStack.length > UNDO_DEPTH) undoStack.shift();
   redoStack = [];
+}
+/* go from `entry.after` back to `entry`, on top of whatever is current */
+function undoTarget(entry, now){
+  const after = entry.after || now;
+  const ws = {rootBoardId:state.rootBoardId,
+    boards:tabMergeMap(after.boards, entry.boards, now.boards, () => true),
+    cards:tabMergeMap(after.cards, entry.cards, now.cards, () => true)};
+  syncRepairWorkspace(ws, new Set(Object.values(now.cards).filter(c => c.type === "board" && !c.shortcut).map(c => c.boardId)));
+  /* the live state edits boards in place; snapshots must not share them */
+  return {boards:JSON.parse(JSON.stringify(ws.boards)), cards:ws.cards, boardId:entry.boardId};
 }
 function restore(s){
   state.boards = s.boards; state.cards = s.cards;
@@ -3731,8 +3747,17 @@ function restore(s){
   selection = new Set([...selection].filter(id => state.cards[id]));
   markDirty(); renderAll();
 }
-function undo(){ if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); }
-function redo(){ if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); }
+function undo(){
+  if (!undoStack.length) return;
+  const now = snapshot(), target = undoTarget(undoStack.pop(), now);
+  redoStack.push(Object.assign(now, {after:snapshotOf(target)})); restore(target);
+}
+function redo(){
+  if (!redoStack.length) return;
+  const now = snapshot(), target = undoTarget(redoStack.pop(), now);
+  undoStack.push(Object.assign(now, {after:snapshotOf(target)})); restore(target);
+}
+function snapshotOf(t){ return {boards:JSON.parse(JSON.stringify(t.boards)), cards:Object.assign({}, t.cards), boardId:t.boardId}; }
 
 /* mutate helpers — always replace card objects, never edit in place */
 function patchCard(id, patch){
@@ -3952,7 +3977,10 @@ async function sharedAssetStats(){
   return { count:keys.length, bytes, avoided, references:[...refs.values()].reduce((a,b)=>a+b,0) };
 }
 let assetGcInFlight = null;
-async function garbageCollectStoredAssets(){
+/* Another tab may be halfway through a save (attachment stored, workspace
+   not yet), so cleanup takes the same turn as saving. */
+function garbageCollectStoredAssets(){ return withSaveLock(garbageCollectStoredAssetsLocked); }
+async function garbageCollectStoredAssetsLocked(){
   if (assetGcInFlight) return assetGcInFlight;
   assetGcInFlight = (async () => {
     const refs = await storedAssetReferences();
@@ -3970,15 +3998,17 @@ async function compactLocalStorage(saveFirst=true){
   if (assetCompactInFlight) return assetCompactInFlight;
   assetCompactInFlight = (async () => {
     if (saveFirst && !(await saveNow())) throw new Error("the current workspace could not be saved first");
-    const keys = (await idbKeys()).filter(k => k === "workspace" || (typeof k === "string" && k.startsWith("snap:")));
-    let migrated = 0;
-    for (const key of keys){
-      const raw = await idbGetRaw(key); if (!raw) continue;
-      if (raw._assetStorageVersion === ASSET_STORAGE_VERSION) continue;
-      const packed = await packWorkspaceForStorage(raw);
-      await idbSet(key, packed); migrated++;
-    }
-    const removed = await garbageCollectStoredAssets();
+    const {migrated, removed} = await withSaveLock(async () => {
+      const keys = (await idbKeys()).filter(k => k === "workspace" || (typeof k === "string" && k.startsWith("snap:")));
+      let migrated = 0;
+      for (const key of keys){
+        const raw = await idbGetRaw(key); if (!raw) continue;
+        if (raw._assetStorageVersion === ASSET_STORAGE_VERSION) continue;
+        const packed = await packWorkspaceForStorage(raw);
+        await idbSet(key, packed); migrated++;
+      }
+      return {migrated, removed:await garbageCollectStoredAssetsLocked()};
+    });
     return {migrated, removed, stats:await sharedAssetStats()};
   })();
   try { return await assetCompactInFlight; } finally { assetCompactInFlight = null; }
@@ -3998,20 +4028,29 @@ async function allSnapshots(){
   return keys.map(k => Number(k.slice(5))).filter(Boolean).sort((a, b) => b - a);
 }
 async function listSnapshots(){ return (await allSnapshots()).slice(0, SNAP_KEEP); }
-async function pruneSnapshots(){
+function pruneSnapshots(){ return withSaveLock(pruneSnapshotsLocked); }
+async function pruneSnapshotsLocked(){
   const all = await allSnapshots();
   for (const old of all.slice(SNAP_KEEP)) await idbDel(snapKey(old));
-  if (all.length > SNAP_KEEP) await garbageCollectStoredAssets();
+  if (all.length > SNAP_KEEP) await garbageCollectStoredAssetsLocked();
   return all.slice(0, SNAP_KEEP);
 }
-async function takeSnapshot(force){
+/* force: always. "recent": unless any tab took one in the last two minutes
+   (so opening several tabs doesn't push out older restore points).
+   Otherwise: at most every SNAP_EVERY, counted across all tabs. */
+function takeSnapshot(force){ return withSaveLock(() => takeSnapshotLocked(force)); }
+async function takeSnapshotLocked(force){
   const t = Date.now();
-  if (!force && t - lastSnapAt < SNAP_EVERY) return;
+  if (force !== true){
+    if (!force && t - lastSnapAt < SNAP_EVERY) return;
+    try { lastSnapAt = Math.max(lastSnapAt, (await allSnapshots())[0] || 0); } catch (_) {}
+    if (t - lastSnapAt < (force === "recent" ? 2 * 60 * 1000 : SNAP_EVERY)) return;
+  }
   lastSnapAt = t;
   try {
     const stable = cloneWorkspaceForSave(state);
     await idbSet(snapKey(t), await packWorkspaceForStorage(stable));
-    await pruneSnapshots();
+    await pruneSnapshotsLocked();
   } catch (err){ /* a snapshot failing must never break the real save */ }
 }
 async function restoreSnapshot(ts){
@@ -4066,45 +4105,176 @@ function markDirty(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 500);
 }
-/* One tab at a time. Every tab holds the whole workspace in memory and saves
-   all of it, so two open tabs overwrote each other — the theme flipping back
-   and forth was the visible sign; edits could be lost the same way. The
-   newest tab takes over; older ones pause and offer to take it back, which
-   reloads them so they start from the latest saved copy. */
-let tabPaused = false;
+/* ---- several tabs at once ----------------------------------------------
+   Every tab can edit. Each tab remembers the copy it last read or wrote
+   (tabBase). Before writing, it checks whether another tab saved since; if
+   so it merges the two field by field, the way Drive sync merges devices,
+   and then writes. Saves take turns through a browser lock, and each save
+   tells the other tabs, which pull it in a moment later. Only one tab talks
+   to Google Drive at a time. */
+let tabBase = null;
+let tabPaused = false;   /* only when an older CORKBORK, which can't share, is open too */
 const TAB_ID = Math.random().toString(36).slice(2);
 const tabChannel = typeof BroadcastChannel === "function" ? new BroadcastChannel("corkbork-tabs") : null;
-async function pauseThisTab(){
+/* Web Locks are not re-entrant: code holding "corkbork-save" calls the
+   *Locked variants, never the public wrappers. */
+function withLock(name, fn){ return navigator.locks?.request ? navigator.locks.request(name, () => fn()) : fn(); }
+function withSaveLock(fn){ return withLock("corkbork-save", fn); }
+function tabSame(a, b){
+  if (a === b) return true;
+  if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a).filter(k => a[k] !== undefined), kb = Object.keys(b).filter(k => b[k] !== undefined);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (!tabSame(a[k], b[k])) return false;
+  return true;
+}
+/* Three-way merge of one id-keyed map. Records this tab didn't change keep
+   their object (so nothing re-renders); records taken from the other side are
+   copied, because boards are edited in place and must not share arrays with
+   the base. */
+function tabMergeMap(B, L, R, newer){
+  B = B || {}; L = L || {}; R = R || {};
+  const out = {};
+  for (const id of new Set([...Object.keys(L), ...Object.keys(R), ...Object.keys(B)])){
+    const b = B[id], l = L[id], r = R[id];
+    let next;
+    if (tabSame(l, r) || tabSame(b, r)) next = l;
+    else if (tabSame(b, l)) next = r === undefined ? undefined : syncClone(r);
+    else if (l === undefined || r === undefined) next = l !== undefined ? l : syncClone(r);   /* deleted vs edited: keep the edit */
+    else next = syncClone(syncMergeRecord(b, l, r, newer(l, r), []));
+    if (next !== undefined) out[id] = next;
+  }
+  return out;
+}
+/* base: what this tab last read/wrote; local: this tab now; remote: what
+   another tab saved. Same-device tabs share everything, private boards and
+   device settings included. */
+function tabMergeWorkspace(base, local, remote){
+  base = base || {};
+  const out = {...local};
+  const byTime = (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0);
+  out.boards = tabMergeMap(base.boards, local.boards, remote.boards, () => true);
+  /* where each tab is looking is its own business */
+  for (const [id, b] of Object.entries(out.boards))
+    if (b !== local.boards?.[id] && local.boards?.[id]?.viewport) b.viewport = local.boards[id].viewport;
+  out.cards = tabMergeMap(base.cards, local.cards, remote.cards, byTime);
+  out.labels = tabMergeMap(base.labels, local.labels, remote.labels, () => true);
+  if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
+  {
+    const key = x => x?.id ?? JSON.stringify(x);
+    const toMap = list => new Map((list || []).map(x => [key(x), x]));
+    const B = toMap(base.bugs), L = toMap(local.bugs), R = toMap(remote.bugs);
+    const merged = [];
+    for (const [k, l] of L){
+      if (B.has(k) && !R.has(k) && tabSame(B.get(k), l)) continue;
+      merged.push(R.has(k) && tabSame(B.get(k), l) ? syncClone(R.get(k)) : l);
+    }
+    for (const [k, r] of R) if (!L.has(k) && !B.has(k)) merged.push(syncClone(r));
+    out.bugs = merged;
+  }
+  const take = (target, B, L, R) => {
+    for (const k of new Set([...Object.keys(R), ...Object.keys(B)])){
+      if (tabSame(L[k], R[k]) || !tabSame(B[k], L[k])) continue;
+      if (R[k] === undefined) delete target[k]; else target[k] = syncClone(R[k]);
+    }
+  };
+  out.settings = {...(local.settings || {})};
+  take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
+  const handled = new Set(["boards","cards","labels","library","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
+  take(out, pick(base), pick(local), pick(remote));
+  out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
+  const openedBefore = new Set(Object.values(local.cards || {}).filter(c => c.type === "board" && !c.shortcut).map(c => c.boardId));
+  syncRepairWorkspace(out, openedBefore);
+  return out;
+}
+/* Put a merged workspace in place without disturbing this tab: same board,
+   same view, undo still works (see undo), and nothing is redrawn under an
+   open editor or a drag. */
+let tabRenderPending = false, tabRenderTimer = null;
+function tabApply(merged){
+  const look = s => JSON.stringify([s?.theme, s?.themeEdits, s?.customTheme, s?.wordmark]);
+  const lookBefore = look(state.settings);
+  const top = undoStack[undoStack.length - 1];
+  if (top && !top.after) top.after = snapshot();
+  state = merged;
+  entityIdxCache = null; privacyCache = null;
+  if (!state.boards[currentBoardId]) currentBoardId = state.rootBoardId;
+  selection = new Set([...selection].filter(id => state.cards[id]));
+  if (look(state.settings) !== lookBefore && typeof applyTheme === "function"){ try { applyTheme(); } catch (_) {} }
+  tabRenderPending = true; tabFlushRender();
+}
+function tabFlushRender(){
+  clearTimeout(tabRenderTimer);
+  if (!tabRenderPending) return;
+  if (syncUserBusy()){ tabRenderTimer = setTimeout(tabFlushRender, 400); return; }
+  tabRenderPending = false; renderAll();
+}
+/* token -> picture we already hold, so pulling in another tab's save only
+   reads attachments that are new to this tab */
+function tabAssetMemo(){
+  const memo = new Map();
+  for (const [dataUrl, token] of assetTokenCache) memo.set(token, dataUrl);
+  return memo;
+}
+/* Pull in what another tab saved since this tab last read or wrote.
+   Call with the save lock held. */
+async function tabAbsorbLocked(raw){
+  if (!tabBase) return false;
+  raw = raw === undefined ? await idbGetRaw("workspace") : raw;
+  if (!raw || raw.saveRevision === tabBase.saveRevision) return false;
+  if (!raw.boards || !raw.cards || !raw.boards[raw.rootBoardId]) throw new Error("another tab saved a copy this tab can't read");
+  const theirs = await mapStoredAssets(raw, "unpack", tabAssetMemo());
+  const merged = tabMergeWorkspace(tabBase, state, theirs);
+  const integrity = validateWorkspace(merged);
+  if (!integrity.ok) throw new Error("combining another tab's changes failed: " + integrity.errors[0]);
+  tabBase = theirs;
+  tabApply(merged);
+  return true;
+}
+let tabAbsorbTimer = null;
+function tabQueueAbsorb(delay=120){
+  clearTimeout(tabAbsorbTimer);
+  tabAbsorbTimer = setTimeout(async () => {
+    if (tabPaused || workspaceLoadFailure || !tabBase) return;
+    /* a save in this tab pulls changes in itself; mid-drag or mid-typing, wait */
+    if (saveInFlight || syncUserBusy()){ tabQueueAbsorb(500); return; }
+    try { await withSaveLock(() => tabAbsorbLocked()); }
+    catch (e){ console.warn("Couldn't pull in another tab's changes yet:", e); tabQueueAbsorb(3000); }
+  }, delay);
+}
+/* An older CORKBORK (before b94) assumes it's alone and saves over
+   everything, so this tab pauses while one is open. */
+function pauseThisTab(){
   if (tabPaused) return;
-  /* edits from the last half-second may not be saved yet: save them, then
-     tell the new tab to reload so it starts from them */
-  const unsaved = dirty;
-  if (unsaved){ clearTimeout(saveTimer); try { await saveNow(); } catch (_) {} }
   tabPaused = true;
   clearTimeout(saveTimer);
-  if (unsaved) tabChannel?.postMessage({type:"flushed", id:TAB_ID});
   const shade = document.createElement("div");
   shade.id = "tabPaused";
   shade.style.cssText = "position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;" +
     "background:rgba(0,0,0,.62);padding:16px;";
-  shade.innerHTML = '<div style="max-width:420px;background:var(--panel,#222);color:var(--text,#eee);border-radius:10px;' +
+  shade.innerHTML = '<div style="max-width:420px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;' +
     'padding:22px;box-shadow:0 10px 40px rgba(0,0,0,.5);font-size:14px;line-height:1.45;">' +
-    '<h2 style="margin:0 0 8px;font-size:17px;">CORKBORK is open somewhere else</h2>' +
-    '<p style="margin:0 0 16px;">It was opened in another tab or window. Only one can edit at a time, so no work is overwritten. ' +
-    'This one has paused; everything here was already saved.</p>' +
-    '<button id="tabClaim" class="primary" style="padding:8px 14px;border-radius:6px;background:var(--accent,#3a7);color:#fff;">Use it here instead</button></div>';
+    '<h2 style="margin:0 0 8px;font-size:17px;color:var(--text);">An older CORKBORK is open in another tab</h2>' +
+    '<p style="margin:0 0 16px;color:var(--text);">That version can’t share with other tabs, so this one has paused to keep your work safe. ' +
+    'Everything here was already saved. Reload the other tab to update it, then continue here.</p>' +
+    '<button id="tabClaim" class="primary" style="padding:8px 14px;border-radius:6px;">Continue here</button></div>';
   document.body.appendChild(shade);
   shade.querySelector("#tabClaim").addEventListener("click", () => location.reload());
 }
 if (tabChannel){
-  const openedAt = Date.now();
   tabChannel.onmessage = e => {
-    if (e.data?.id === TAB_ID) return;
-    if (e.data?.type === "claim") pauseThisTab();
-    /* the tab we took over saved late edits; pick them up if nothing was done here yet */
-    if (e.data?.type === "flushed" && !tabPaused && !dirty && Date.now() - openedAt < 10000) location.reload();
+    const m = e.data || {};
+    if (m.id === TAB_ID) return;
+    if (m.type === "saved" || m.type === "flushed") tabQueueAbsorb();
+    else if (m.type === "claim" && !m.multi) pauseThisTab();
+    else if (m.type === "sync" && !syncRunning && typeof updateCloudChip === "function"){
+      Object.assign(SYNC, {status:m.status, lastSync:m.lastSync, lastError:m.lastError, pending:false});
+      updateCloudChip();
+    }
   };
-  tabChannel.postMessage({type:"claim", id:TAB_ID});
+  /* "multi" tells new tabs this one shares; older tabs pause on any claim */
+  tabChannel.postMessage({type:"claim", id:TAB_ID, multi:true, build:window.BUILD});
 }
 let saveFailWarned = false;
 let saveBroken = false;          /* sticky: shown in the bar until a save works */
@@ -4113,10 +4283,16 @@ let lastSaveVerifiedAt = 0;
 let saveInFlight = null;
 /* A write that silently did not land is worse than one that threw, so the
    save is read back and checked before it is called a success. */
+let savedModified = 0;   /* lastModified of the copy the latest save wrote */
 async function saveNowOnce(){
-  if (tabPaused) return false;   /* another tab owns the workspace; see claimThisTab */
+  if (tabPaused) return false;   /* an older build is open in another tab */
+  return withSaveLock(() => saveNowLocked(false));
+}
+async function saveNowLocked(retried){
   try {
     if (workspaceLoadFailure) throw new Error("the stored workspace could not be loaded; import or restore a valid copy first");
+    /* another tab may have saved since this one last read or wrote */
+    await tabAbsorbLocked();
     const integrity = validateWorkspace(state); lastIntegrityReport = integrity;
     if (!integrity.ok) throw new Error("workspace integrity failed: " + integrity.errors[0]);
     const revision = uid("save");
@@ -4137,14 +4313,20 @@ async function saveNowOnce(){
     for (const id of refs){
       if (!await idbHas(ASSET_KEY_PREFIX + id)) throw new Error("a shared attachment is missing from local storage");
     }
+    tabBase = stable; savedModified = stable.lastModified || 0;
+    tabChannel?.postMessage({type:"saved", id:TAB_ID, rev:revision});
     dirty = false; saveFailWarned = false;
     if (cloudDirty){ cloudDirty = false; queueCloudPush(); }
     lastSaveVerifiedAt = Date.now();
     if (saveBroken){ saveBroken = false; refreshSaveHealth(); toast("Saving is working again."); }
-    await takeSnapshot(false);
+    await takeSnapshotLocked(false);
     return true;
   }
   catch(e){
+    /* this tab remembered an attachment as stored, but it was cleaned up
+       (e.g. by another tab after its last restore point let go of it):
+       forget what we remembered and store it again */
+    if (!retried && /attachment is missing/.test(e.message)){ assetTokenCache.clear(); return saveNowLocked(true); }
     /* Every action retriggers autosave, so one toast per failure would be an
        endless popup. The BAR carries the state instead — a warning you cannot
        miss and that does not go away while the problem is real. */
@@ -4166,11 +4348,11 @@ async function saveNow(){
     const first = await saveInFlight;
     return dirty ? saveNow() : first;
   }
-  const modifiedAtStart = state?.lastModified || 0;
   saveInFlight = saveNowOnce();
   const result = await saveInFlight;
   saveInFlight = null;
-  if (result && (state?.lastModified || 0) !== modifiedAtStart){
+  /* edited while the write was in flight: write again */
+  if (result && (state?.lastModified || 0) !== savedModified){
     dirty = true;
     return saveNow();
   }
@@ -16942,7 +17124,8 @@ function requestCloudSync(){
   if (syncRunning){ syncAgain = true; return syncRunning; }
   syncRunning = (async () => {
     let result = false;
-    do { syncAgain = false; result = await cloudSyncOnce(); } while (syncAgain && result);
+    /* one tab talks to Drive at a time; the others wait their turn */
+    do { syncAgain = false; result = await withLock("corkbork-cloud", cloudSyncOnce); } while (syncAgain && result);
     return result;
   })();
   return syncRunning.finally(() => { syncRunning = null; });
@@ -16954,7 +17137,9 @@ async function cloudSyncOnce(){
   if (tabPaused || workspaceLoadFailure || !validateWorkspace(state).ok) return false;
   if (navigator.onLine === false){ SYNC.status = "offline"; SYNC.pending = false; refreshSyncUI(); return false; }
   try {
-    SYNC.status = "syncing"; SYNC.pending = false; refreshSyncUI();
+    SYNC.status = "syncing"; SYNC.pending = false; refreshSyncUI(); tabShareSync();
+    /* start from everything every tab has saved */
+    await withSaveLock(() => tabAbsorbLocked());
     const layout = await driveLayout();
     const meta = await syncMeta();
     let base = await idbGetRaw(SYNC_BASE_KEY) || null;
@@ -17009,12 +17194,16 @@ async function cloudSyncOnce(){
     await setSyncMeta({rev:readRev, assets:meta.assets, at:Date.now()});
     setTimeout(async () => { if (!await mirrorCloudFilesToArchive()) keepOriginalsOffline(); }, 0);
     SYNC.status = "ok"; SYNC.lastError = ""; SYNC.lastSync = Date.now();
-    refreshSyncUI(); return true;
+    refreshSyncUI(); tabShareSync(); return true;
   } catch (e){
     SYNC.status = syncLooksOffline(e) ? "offline" : SYNC.token ? "error" : "reconnect";
     SYNC.lastError = e.message; SYNC.detail = "";
-    refreshSyncUI(); return false;
+    refreshSyncUI(); tabShareSync(); return false;
   }
+}
+/* other tabs show the same cloud status as the tab doing the syncing */
+function tabShareSync(){
+  tabChannel?.postMessage({type:"sync", id:TAB_ID, status:SYNC.status, lastSync:SYNC.lastSync, lastError:SYNC.lastError});
 }
 let cloudTimer = null, cloudPoll = null;
 function queueCloudPush(){
@@ -17206,12 +17395,13 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   currentBoardId = state.rootBoardId;
   lastIntegrityReport = validateWorkspace(state);
   if (!lastIntegrityReport.ok) saveBroken = true;
+  if (!workspaceLoadFailure) tabBase = cloneWorkspaceForSave(state);
   renderAll();
   if (firstRun && !state.settings.firstRunDone) setTimeout(showWelcomeBar, 400);
   else if (!workspaceLoadFailure && personalizationIsDue()) openPersonalization();
   /* Snapshot what we LOADED, before any edit can touch it. If this session
      goes wrong, the state you opened with is always recoverable. */
-  if (!workspaceLoadFailure && lastIntegrityReport.ok) await takeSnapshot(true);
+  if (!workspaceLoadFailure && lastIntegrityReport.ok) await takeSnapshot("recent");
   if (!workspaceLoadFailure) applyBugAudit();
   refreshSaveHealth();
   if (!workspaceLoadFailure) setTimeout(migrateSharedAssetStorage, 500);
@@ -17227,6 +17417,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b94", [
+    "Open CORKBORK in as many tabs and windows as you like: every one can edit, changes show in the others within a second, and nothing overwrites anything.",
+    "Undo is per tab: it takes back only what you did in that tab."
+  ]],
   ["b93", [
     "If the saved workspace on a device is ever damaged, CORKBORK opens the latest restore point and blocks saving, instead of opening blank."
   ]],
@@ -17262,7 +17456,6 @@ const PATCH_NOTES = [
   ["b84", [
     "The top bar shows cloud save status (Synced, Syncing, Offline, Sign in) where Back up now and Save a copy were; both moved to Settings → Backup & data.",
     "iPad: keyboard shortcuts (Cmd+Z, Delete, N…) work after typing in a box — tapping the board now releases it. The shortcuts panel shows which key arrived.",
-    "Only one tab edits at a time; an older tab pauses with “Use it here instead”, so tabs no longer overwrite each other's theme or work.",
     "Theme and appearance stay per device instead of syncing."
   ]],
   ["b83", [
