@@ -1608,6 +1608,10 @@ body.focus-mode #textBarWrap{display:none;}
 .patchrow li{font-size:12px; line-height:1.5; color:var(--text-dim);}
 .bugdock textarea{flex:none; min-height:76px; font-family:inherit; font-size:13px; padding:6px; resize:vertical;
   background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px;}
+.bugdock .bd-row{display:flex; gap:6px;}
+.bugdock .bd-row button{flex:1;}
+.bugdock #bugName{padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:12.5px;}
+.bugdock .bd-send{background:#2F6FE4 !important; border-color:#2F6FE4 !important; color:#fff !important; font-weight:600;}
 .bugdock .bd-add{background:var(--surface); border:1px solid var(--border); padding:6px; cursor:pointer; border-radius:4px; color:var(--text);}
 .bugdock .bd-add:hover{background:var(--accent);}
 .bugdock .bd-list{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; padding-top:6px; border-top:1px solid var(--border);}
@@ -3168,11 +3172,15 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- settings -->
 <div class="bugdock" id="bugOverlay">
   <div class="bd-head" id="bugDragBar">
-    <span>🐛 Bug List</span>
+    <span>🐛 Bugs &amp; suggestions</span>
     <button id="bugClose" class="bd-x" title="Close">✕</button>
   </div>
-  <textarea id="bugInput" placeholder="describe the bug, press Add" rows="4"></textarea>
-  <button id="bugAdd" class="bd-add">Add</button>
+  <textarea id="bugInput" placeholder="Describe a bug or a suggestion" rows="4"></textarea>
+  <input id="bugName" type="text" placeholder="Your name (optional)" maxlength="60">
+  <div class="bd-row">
+    <button id="bugSend" class="bd-add bd-send">Send to developer</button>
+    <button id="bugAdd" class="bd-add" title="Keep it in your own list only">Keep private</button>
+  </div>
   <div id="bugList" class="bd-list"></div>
   <div class="bd-foot">
     <button id="bugCopyAll" class="bd-btn">Copy all as text</button>
@@ -3521,7 +3529,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b91";
+window.BUILD = "b92";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -14845,12 +14853,19 @@ function renderBugs(){
       try { await navigator.clipboard.writeText(bug.text); toast("Copied."); }
       catch (err){ toast("Could not reach the clipboard."); }
     });
+    const sendOne = bug.sent ? null : mini("Send", "Send this to the developer");
+    if (sendOne) sendOne.addEventListener("click", async () => {
+      sendOne.disabled = true;
+      try { await sendBugReport(bug); toast("Sent. Thank you!"); } catch (e){ toast("Couldn't send: " + e.message, 7000); }
+      renderBugs();
+    });
+    if (bug.sent) txt.textContent += "\n\u2713 sent";
     const del = mini("✕", "Delete this entry");
     del.addEventListener("click", () => {
       state.bugs = state.bugs.filter(b => b.id !== bug.id);
       markDirty(); renderBugs();
     });
-    row.append(txt, cp, del); box.appendChild(row);
+    row.append(txt, ...(sendOne ? [sendOne] : []), cp, del); box.appendChild(row);
   });
 }
 /* ---------------- modal dialogs (settings, bug list, and friends) ----------------
@@ -15324,6 +15339,31 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && noteFullId){ e.stopPropagation(); closeNoteFull(); }
 }, true);
 $("#bugClose").addEventListener("click", () => closeOverlay($("#bugOverlay")));
+/* Reports travel through CORKBORK's Cloudflare helper, which appends them to
+   BUG-REPORTS.md in the CORKBORK repo. Only works from the hosted address. */
+function bugReportUrl(){ return location.origin === BUILTIN_CLIENT_ORIGIN && AUTH_WORKER_URL ? AUTH_WORKER_URL.replace(/\/+$/, "") + "/bug" : ""; }
+async function sendBugReport(bug){
+  const url = bugReportUrl(); if (!url) throw new Error("reports can only be sent from the CORKBORK website");
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+    text:bug.text, name:SAFE_STORE.get("cb_bugName") || "", build:window.BUILD || "",
+    device:(navigator.userAgentData?.platform || navigator.platform || "") + " · " + innerWidth + "×" + innerHeight})});
+  if (!r.ok){ let why = ""; try { why = (await r.json()).error || ""; } catch (_) {} throw new Error(why || "server error " + r.status); }
+  const live = state.bugs.find(b => b.id === bug.id);
+  if (live){ live.sent = Date.now(); markDirty(); }
+}
+/* SAFE_STORE is defined further down this script, so read it once the page has run */
+setTimeout(() => { $("#bugName").value = SAFE_STORE.get("cb_bugName") || ""; }, 0);
+$("#bugName").addEventListener("input", e => SAFE_STORE.set("cb_bugName", e.target.value.trim()));
+$("#bugName").addEventListener("keydown", e => e.stopPropagation());
+$("#bugSend").addEventListener("click", async () => {
+  const v = $("#bugInput").value.trim(); if (!v) return;
+  const bug = {id:uid("bug"), text:v, ts:Date.now(), sent:0};
+  state.bugs.push(bug); $("#bugInput").value = ""; markDirty(); renderBugs();
+  const btn = $("#bugSend"); btn.disabled = true; btn.textContent = "Sending…";
+  try { await sendBugReport(bug); toast("Sent. Thank you!"); }
+  catch (e){ toast("Couldn't send (" + e.message + "). It's kept in your list — press Send on it to try again.", 8000); }
+  finally { btn.disabled = false; btn.textContent = "Send to developer"; renderBugs(); }
+});
 $("#bugAdd").addEventListener("click", () => {
   const v = $("#bugInput").value.trim(); if (!v) return;
   state.bugs.push({ id: uid("bug"), text: v, ts: Date.now() });
@@ -15468,6 +15508,8 @@ const TOUR_STEPS = [
     text:"Pretty self-explanatory. Finds any board, card or note. Shortcut: <b>Ctrl+K</b>."},
   {target:"#cloudWrap", place:"down", title:"Google Drive cloud save",
     text:"Shows whether your work is backed up via Google Drive. Click it for Sync now, Back up now and Save a copy."},
+  {target:"#btnBugs", place:"down", title:"Bug reports",
+    text:"PLEASE PLEASE PLEASE if you encounter a bug (or have a suggestion), send them here! Your suggestions help shape the future of CORKBORK."},
   {title:"That's the basics", text:"An explanation of ALL tools can be found under <b>Settings → Tools</b>. Happy BORKing!"}
 ];
 let tourAt = -1;
@@ -17177,6 +17219,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b92", [
+    "Bug List → Send to developer: bugs and suggestions go straight to the developer (anyone can send). The tour points it out."
+  ]],
   ["b91", [
     "Tour rewritten; new Settings → Tools page explains every tool and its key (also from the ? panel).",
     "On phones and narrow windows, top-bar buttons that don't fit fold into a ••• menu instead of falling off the edge."
@@ -17213,13 +17258,6 @@ const PATCH_NOTES = [
     "Works offline: after one online visit, the hosted CORKBORK opens with no internet and keeps saving to the device; sync catches up later and shows Offline meanwhile.",
     "Installable as an app (address-bar install on PC, Add to Home Screen on iPad), with the newest version downloaded in the background.",
     "Original files from Drive download in the background so they open offline (Settings → Sync to turn off per device)."
-  ]],
-  ["b82", [
-    "Google Drive is now the master copy shared by every device: boards, notes and original files sync to a CORKBORK folder in your Drive, every minute and after each edit.",
-    "Edits made on two devices merge card by card. If both changed the same thing, the newer edit wins and the other is kept as a conflict copy beside it.",
-    "Private boards: right-click a board → Make private. It and everything inside it stay on that device, anything already uploaded is deleted from Drive, and other devices see a locked placeholder.",
-    "iPad and phone: original files download from Drive when you open them; a computer with an archive folder copies them into it.",
-    "Runs on iPad Chrome: archive-folder controls are hidden where browsers can't use folders, and trackpad or touch pinch zooms the board."
   ]]
 ];
 function renderPatchNotes(){
