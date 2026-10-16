@@ -428,6 +428,20 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #updateBar .primary{padding:7px 14px; border-radius:9px;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
+/* sticking to blocks */
+.card.stick-target{box-shadow:0 0 0 3px color-mix(in srgb, #A98BD6 75%, transparent), 0 6px 18px rgba(0,0,0,.12) !important;}
+.card.stuck-pulse{animation:stuckPulse .5s ease-out;}
+@keyframes stuckPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, #A98BD6 80%, transparent);} 100%{box-shadow:0 0 0 10px transparent;}}
+.card.unstuck-pop{animation:unstuckPop .4s ease-out;}
+@keyframes unstuckPop{0%{transform:scale(1.04);} 100%{transform:scale(1);}}
+.sticklink{position:absolute; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:#A98BD6; color:#fff; box-shadow:0 3px 10px rgba(0,0,0,.25); transform-origin:center; padding:0;}
+.sticklink svg{width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round;}
+.sticklink:hover{background:#DD4337;}
+.card.is-pinned .rsz{display:none !important;}
+.pinbadge{position:absolute; top:5px; right:5px; z-index:7; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--text) 14%, var(--surface)); color:var(--text); pointer-events:auto; opacity:.85;}
+.pinbadge svg{width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.2;}
 /* tools that appear for a selection (Color): a cool blue wash, readable on any theme */
 .railtemp{border-top:none;}
 .railtemp .tool{--hue:#3B9ED0; color:var(--text);}
@@ -3409,7 +3423,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <div class="tool-row"><b>Arrow</b><kbd>—</kbd><span>Connects two cards. Click one card, then another.</span></div>
           <div class="tool-row"><b>Board</b><kbd>B</kbd><span>Creates an entirely new board/working canvas. Double-click to go inside.</span></div>
           <div class="tool-row"><b>List</b><kbd>T</kbd><span>A checklist, bulleted or numbered list.</span></div>
-          <div class="tool-row"><b>Block</b><kbd>K</kbd><span>A titled panel (writing, timeline, list…); anything stuck to its edges moves with it. Click it, then Edit to change its type.</span></div>
+          <div class="tool-row"><b>Block</b><kbd>K</kbd><span>A titled panel (writing, timeline, list…). Drop cards against its edge to stick them on; they move with it. Select it to see chain links — tap one to unstick. Click it, then Edit to change its type.</span></div>
           <div class="tool-row"><b>Column</b><kbd>C</kbd><span>Groups cards in a vertical stack. Drag cards into it.</span></div>
           <div class="tool-row"><b>Folder</b><kbd>G</kbd><span>Holds photos and boards in a tidy grid. Drag them in to organize; double-click one to open it.</span></div>
           <div class="tool-row"><b>Link</b><kbd>L</kbd><span>Saves a web address with its title and preview.</span></div>
@@ -3439,6 +3453,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
           <input type="checkbox" id="snapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
           Snap to cork grid when a card is released — hold Ctrl instead to align with other cards
+        </label>
+        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
+          <input type="checkbox" id="blockSnapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
+          Stick cards to blocks: a card dropped right against a block's edge snaps on (drop it a little further away to keep a gap)
         </label>
         <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
           <input type="checkbox" id="deleteToRecycleToggle" style="accent-color:var(--accent); width:15px; height:15px;">
@@ -3607,7 +3625,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b103";
+window.BUILD = "b104";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4854,6 +4872,7 @@ function renderBoard(){
   applyViewport(false);
   drawConnectors();
   requestAnimationFrame(fitAutoHeights);
+  renderStickLinks();
 }
 
 /* ---------------- auto height ----------------
@@ -4938,6 +4957,12 @@ function buildCardEl(c){
   if (c.type === "board" && c.importedFolder) el.classList.add("imported-folder");
   if (c.type === "column" && c.collapsed) el.classList.add("collapsed-column");
   el.dataset.id = c.id;
+  if (c.pinned){
+    el.classList.add("is-pinned");
+    const pin = document.createElement("span"); pin.className = "pinbadge"; pin.title = "Locked in place \u2014 unlock from the right-click menu";
+    pin.innerHTML = '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    el.appendChild(pin);
+  }
   el.style.left = c.x+"px"; el.style.top = c.y+"px";
   el.style.width = c.w+"px"; el.style.height = c.h+"px";
   if ((c.type === "column" && !c.collapsed) || c.type === "grid") el.style.minHeight = c.h+"px";
@@ -5592,7 +5617,7 @@ function buildBlock(c, el){
   if (kind === "text"){
     const body = document.createElement("div");
     body.className = "cp-rich bk-body";
-    body.setAttribute("contenteditable", "true");   /* attribute, so it survives serialisation */
+    body.setAttribute("contenteditable", c.pinned ? "false" : "true");   /* attribute, so it survives serialisation */
     body.dataset.ph = "Write anything here…";
     body.innerHTML = sanitizeHtml(c.html || "");
     body.classList.toggle("is-empty", !body.textContent.trim());
@@ -7472,6 +7497,7 @@ function setSelection(ids){
     el.classList.toggle("selected", selection.has(el.dataset.id)));
   raiseSelection();
   updateRail();
+  renderStickLinks();
 }
 
 /* Selecting brings to front — normal click and marquee both come through
@@ -8246,6 +8272,7 @@ function enterEdit(c){
   const el = worldEl.querySelector(`.card[data-id="${c.id}"]`);
   if (!el) return;
   if (c.locked){ toast("This board is private on another device. Open it there."); return; }
+  if (c.pinned){ toast("Locked in place. Right-click (or long-press) it and choose Unlock to change it."); return; }
   if (c.type === "note" || c.type === "heading") editNote(c, el);
   else if (c.type === "board") openBoard(c.boardId);
   else if (c.type === "link") openLinkDialog(c);
@@ -8560,7 +8587,95 @@ function blockRiders(id){
     boxes[cid] = { x:k.x, y:k.y, w:k.w, h:k.h };
   }
   if (!boxes[id]) return [];
-  return attachedChain(id, boxes);
+  return attachedChain(id, boxes).filter(k => !card(k)?.pinned);
+}
+/* ---- sticking to blocks, made visible ----------------------------------
+   Dropping a card within a few screen pixels of a block's edge snaps it flush
+   (the edge glows first, so you can see it coming); drop it further away and
+   it keeps its gap. When a block or something stuck to one is selected, a
+   chain link sits on each seam; tapping it breaks that seam by sliding the
+   card a little away. Nothing is stored: stuck simply means touching. */
+const STICK_SNAP_PX = 12, STICK_GAP = 18;
+function stickSnapOn(){ return state?.settings?.blockSnap !== false; }
+/* offset that makes `box` flush with the nearest eligible card, or null */
+function blockSnapOffset(box, movingIds, movingIsBlock){
+  const t = STICK_SNAP_PX / (zoom || 1), skip = new Set(movingIds);
+  let best = null;
+  for (const cid of cur().cardIds){
+    if (skip.has(cid)) continue;
+    const o = card(cid); if (!o) continue;
+    if (!(movingIsBlock || o.type === "block")) continue;
+    const xOv = box.x < o.x + o.w && o.x < box.x + box.w, yOv = box.y < o.y + o.h && o.y < box.y + box.h;
+    const cands = [];
+    if (yOv){ cands.push({dx:o.x - (box.x + box.w), dy:0}); cands.push({dx:(o.x + o.w) - box.x, dy:0}); }
+    if (xOv){ cands.push({dx:0, dy:o.y - (box.y + box.h)}); cands.push({dx:0, dy:(o.y + o.h) - box.y}); }
+    for (const c of cands){
+      const d = Math.abs(c.dx) + Math.abs(c.dy);
+      if (d > t || (best && d >= best.d)) continue;
+      /* line the other edge up too when it is close (stacked blocks share a left edge) */
+      let ax = 0, ay = 0;
+      if (c.dx === 0){ const e = [o.x - box.x, (o.x + o.w) - (box.x + box.w)].find(v => Math.abs(v) <= t); if (e !== undefined) ax = e; }
+      else { const e = [o.y - box.y, (o.y + o.h) - (box.y + box.h)].find(v => Math.abs(v) <= t); if (e !== undefined) ay = e; }
+      best = {dx:c.dx + ax, dy:c.dy + ay, d, target:cid};
+    }
+  }
+  return best;
+}
+/* every touching pair inside the group a block carries */
+function stickGroupFor(id){
+  const c = card(id); if (!c) return null;
+  let root = c.type === "block" ? id : null;
+  if (!root) for (const cid of cur().cardIds){
+    if (card(cid)?.type === "block" && blockRiders(cid).includes(id)){ root = cid; break; }
+  }
+  if (!root) return null;
+  const members = [root, ...blockRiders(root)];
+  const pairs = [];
+  for (let i = 0; i < members.length; i++) for (let j = i + 1; j < members.length; j++){
+    const a = card(members[i]), b = card(members[j]);
+    if (a && b && boxesTouch(a, b)) pairs.push([members[i], members[j]]);
+  }
+  return {root, members, pairs};
+}
+function renderStickLinks(){
+  for (const el of worldEl.querySelectorAll(".sticklink")) el.remove();
+  if (selection.size !== 1 || drag || inCardPage?.()) return;
+  const g = stickGroupFor([...selection][0]); if (!g || !g.pairs.length) return;
+  for (const [aId, bId] of g.pairs){
+    const a = card(aId), b = card(bId), t = CP_ATTACH_TOL;
+    let x, y;
+    if (Math.abs((a.y + a.h) - b.y) <= t || Math.abs((b.y + b.h) - a.y) <= t){
+      x = (Math.max(a.x, b.x) + Math.min(a.x + a.w, b.x + b.w)) / 2; y = Math.abs((a.y + a.h) - b.y) <= t ? b.y : a.y;
+    } else {
+      y = (Math.max(a.y, b.y) + Math.min(a.y + a.h, b.y + b.h)) / 2; x = Math.abs((a.x + a.w) - b.x) <= t ? b.x : a.x;
+    }
+    const btn = document.createElement("button"); btn.className = "sticklink"; btn.title = "Stuck together \u2014 tap to unstick";
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
+    btn.style.left = x + "px"; btn.style.top = y + "px"; btn.style.zIndex = 99999;
+    btn.style.transform = "translate(-50%,-50%) scale(" + (1 / (zoom || 1)) + ")";
+    btn.addEventListener("pointerdown", e => e.stopPropagation());
+    btn.addEventListener("click", e => { e.stopPropagation(); unstickPair(aId, bId, g.root); });
+    worldEl.appendChild(btn);
+  }
+}
+/* move the card farther from the block (never the block the group hangs on) */
+function unstickPair(aId, bId, root){
+  const mover = aId === root ? bId : bId === root ? aId : bId, still = mover === aId ? bId : aId;
+  const m = card(mover), o = card(still); if (!m || !o) return;
+  const t = CP_ATTACH_TOL, patch = {};
+  if (Math.abs(m.y - (o.y + o.h)) <= t) patch.y = m.y + STICK_GAP;
+  else if (Math.abs((m.y + m.h) - o.y) <= t) patch.y = m.y - STICK_GAP;
+  else if (Math.abs(m.x - (o.x + o.w)) <= t) patch.x = m.x + STICK_GAP;
+  else patch.x = m.x - STICK_GAP;
+  pushUndo(); patchCard(mover, patch); markDirty(); renderBoard();
+  const el = worldEl.querySelector(`.card[data-id="${mover}"]`);
+  if (el){ el.classList.add("unstuck-pop"); setTimeout(() => el.classList.remove("unstuck-pop"), 420); }
+}
+function stickPulse(ids){
+  for (const id of ids){
+    const el = worldEl.querySelector(`.card[data-id="${id}"]`); if (!el) continue;
+    el.classList.add("stuck-pulse"); setTimeout(() => el.classList.remove("stuck-pulse"), 520);
+  }
 }
 /* Identity is the card's anchor: dragging it carries whatever is stuck to it.
    Dragging any OTHER block moves only that block, so a section can always be
@@ -10698,6 +10813,13 @@ function openCtx(x, y, c){
   if (c.type === "column") add(c.collapsed ? "Expand column" : "Collapse column", () => {
     pushUndo(); patchCard(c.id, { collapsed:!c.collapsed }); markDirty(); renderBoard();
   });
+  add(c.pinned ? "\u{1F513} Unlock" : "\u{1F512} Lock in place", () => {
+    const ids = selection.has(c.id) && selection.size > 1 ? [...selection] : [c.id];
+    pushUndo();
+    for (const id of ids){ const k = card(id); if (k) patchCard(id, { pinned: !c.pinned || undefined }); }
+    markDirty(); renderBoard();
+    toast(c.pinned ? "Unlocked." : "Locked in place: it won't move or change until you unlock it.");
+  });
   sub("Send to", to => {
     to("Front", () => { pushUndo(); patchCard(c.id, { z: maxZ()+1 }); markDirty(); renderBoard(); });
     to("Back", () => { pushUndo(); patchCard(c.id, { z: minZ()-1 }); markDirty(); renderBoard(); });
@@ -11427,6 +11549,18 @@ function startCardDrag(e, cardEl){
 
   const sx = e.clientX, sy = e.clientY;
   let memberIds = isShiftRemove ? [] : startSel;
+  /* locked in place: select it (and offer the menu on a long press), never move it */
+  memberIds = memberIds.filter(mid => !card(mid)?.pinned);
+  if (!isShiftRemove && c.pinned){
+    setSelection(startSel);
+    if (e.pointerType === "touch"){
+      const lp = setTimeout(() => openCtx(e.clientX, e.clientY, c), 550);
+      const stop = () => { clearTimeout(lp); removeEventListener("pointerup", stop, true); removeEventListener("pointermove", far, true); };
+      const far = ev => { if (Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 8) stop(); };
+      addEventListener("pointerup", stop, true); addEventListener("pointermove", far, true);
+    }
+    return;
+  }
   /* A block card carries whatever is stuck to it, the way Identity does on a
      card page — that is what makes a block a container you can arrange things
      against rather than just another box. Alt drags it alone. */
@@ -11460,6 +11594,7 @@ function startCardDrag(e, cardEl){
     }
     if (!drag.moved) return;
     drag.snapPos = null;
+    for (const el of worldEl.querySelectorAll(".sticklink")) el.remove();
     /* Ctrl held → live alignment to other cards, with faint guides.
        Otherwise → move freely; cards settle onto cork points when released.
        This is the OPPOSITE convention from snapOn() (default-on, ctrl
@@ -11482,6 +11617,23 @@ function startCardDrag(e, cardEl){
       } else clearGuides();
       el.style.left = px + "px";
       el.style.top  = py + "px";
+    }
+    /* stick to a block's edge: the target edge glows, and the drop lands flush */
+    drag.blockSnap = null;
+    for (const el of worldEl.querySelectorAll(".stick-target")) el.classList.remove("stick-target");
+    const lead = drag.members.find(m => m.id === drag.id) || drag.members[0];
+    const lc = lead && card(lead.id);
+    if (stickSnapOn() && !alignOn && lc && !(ev.ctrlKey || ev.metaKey)){
+      const ids = drag.members.map(m => m.id);
+      const hit = blockSnapOffset({x:lead.x + dx/zoom, y:lead.y + dy/zoom, w:lc.w, h:lc.h}, ids, drag.members.some(m => card(m.id)?.type === "block"));
+      if (hit){
+        drag.blockSnap = hit;
+        for (const m of drag.members){
+          const el = drag.els.get(m.id); if (!el) continue;
+          el.style.left = (m.x + dx/zoom + hit.dx) + "px"; el.style.top = (m.y + dy/zoom + hit.dy) + "px";
+        }
+        worldEl.querySelector(`.card[data-id="${hit.target}"]`)?.classList.add("stick-target");
+      }
     }
     updateConnectorsDuringDrag();
     $("#drawer").classList.toggle("droptarget", overDrawer(ev));
@@ -11568,8 +11720,11 @@ function startCardDrag(e, cardEl){
       const z = uiz();
       const dx = (ev.clientX - sx)/(z*zoom), dy = (ev.clientY - sy)/(z*zoom);
       const gridOn = state?.settings?.snap !== false && !(ev.ctrlKey || ev.metaKey);
+      const bs = drag.blockSnap;
       for (const m of drag.members){
-        if (drag.snapPos && drag.snapPos.id === m.id){
+        if (bs){
+          patchCard(m.id, { x: Math.round(m.x + dx + bs.dx), y: Math.round(m.y + dy + bs.dy) });
+        } else if (drag.snapPos && drag.snapPos.id === m.id){
           patchCard(m.id, { x: Math.round(drag.snapPos.x), y: Math.round(drag.snapPos.y) });
         } else {
           let px = m.x + dx, py = m.y + dy;
@@ -11579,7 +11734,10 @@ function startCardDrag(e, cardEl){
       }
     }
     clearGuides();
+    for (const el of worldEl.querySelectorAll(".stick-target")) el.classList.remove("stick-target");
+    const stuck = drag.blockSnap ? [drag.id, drag.blockSnap.target] : null;
     drag = null; markDirty(); renderAll();
+    if (stuck) stickPulse(stuck);
   };
   const cancel = () => {
     cardEl.removeEventListener("pointermove", move);
@@ -11602,7 +11760,7 @@ function overDrawer(ev){
 function startResize(e, cardEl){
   e.stopPropagation();
   const id = cardEl.dataset.id, c = card(id);
-  if (!c) return;
+  if (!c || c.pinned) return;
   if (selection.size > 1 && selection.has(id)){ startGroupResize(e, id); return; }
   /* Flipped per request: blue (just selected) = box only, the common case.
      Yellow (editing — double-click to enter) = text scales with the box.
@@ -12003,7 +12161,12 @@ document.addEventListener("keydown", e => {
      "> 150ms" test was always false and an internal paste never ran. Whatever
      was last on the system clipboard — a URL, usually — won every time. */
   if (e.key === "Delete" || e.key === "Backspace"){
-    if (selection.size){ e.preventDefault(); deleteCards([...selection]); } return;
+    if (selection.size){
+      e.preventDefault();
+      const ids = [...selection].filter(id => !card(id)?.pinned);
+      if (ids.length < selection.size) toast("Locked cards stay put. Unlock them to delete.");
+      if (ids.length) deleteCards(ids);
+    } return;
   }
   if (e.key === "Escape"){
     if (arrowMode){ arrowMode = false; arrowFrom = null; $("#toolArrow").classList.remove("armed"); canvasEl.style.cursor = ""; }
@@ -15147,6 +15310,10 @@ $("#boundedPanToggle").addEventListener("change", e => {
   state.settings = Object.assign({}, state.settings, { boundedPan: e.target.checked });
   markDirty(); applyViewport();
 });
+$("#blockSnapToggle").addEventListener("change", e => {
+  state.settings = Object.assign({}, state.settings, { blockSnap: e.target.checked });
+  markDirty();
+});
 $("#deleteToRecycleToggle").addEventListener("change", e => {
   state.settings = Object.assign({}, state.settings, { deleteToRecycle: e.target.checked });
   markDirty();
@@ -15956,7 +16123,7 @@ const TOUR_STEPS = [
   {target:'#railTools .tool[data-type="board"]', place:"right", title:"Boards inside boards",
     text:"Creates an entirely new board/working canvas. Double-click to go inside. Shortcut: <b>B</b>."},
   {target:'#railTools .tool[data-type="block"]', place:"right", title:"Blocks",
-    text:"A titled panel for writing, timelines, lists and more. Anything you stick to its edges moves with it. Click a block, then <b>Edit</b> to change what kind of block it is. Shortcut: <b>K</b>."},
+    text:"A titled panel for writing, timelines, lists and more. Drop a card right against a block's edge and it sticks (the edge glows first). Stuck cards move with the block; select it to see the chain links, and tap one to unstick. Click a block, then <b>Edit</b> to change its type. Shortcut: <b>K</b>."},
   {target:"#crumbs", place:"down", title:"Navigation",
     text:"Used to navigate your boards. Click any part of the trail to go back up."},
   {target:"#canvas", place:"center", title:"Move around",
@@ -16050,6 +16217,7 @@ function fillSettings(){
   $("#snapToggle").checked = state.settings?.snap !== false;
   syncSnapUi();
   $("#deleteToRecycleToggle").checked = !!state.settings?.deleteToRecycle;
+  $("#blockSnapToggle").checked = state.settings?.blockSnap !== false;
   $("#boundedPanToggle").checked = state.settings?.boundedPan !== false;
   refreshSyncUI();
   const bytes = JSON.stringify(state).length;
@@ -17750,6 +17918,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b104", [
+    "Blocks: drop a card right against a block's edge and it snaps on (the edge glows first; drop a little further away to keep a gap). Select a block to see chain links on each seam; tap one to unstick. Works on iPad.",
+    "Right-click → Lock in place: the card can't be moved, resized, edited or deleted until you unlock it."
+  ]],
   ["b103", [
     "Block moved out of More to the main toolbar, under List, in lilac. Click a block and an Edit button appears to change its type. The tour now explains blocks."
   ]],
@@ -17790,10 +17962,6 @@ const PATCH_NOTES = [
   ]],
   ["b92", [
     "Bug List → Send to developer: bugs and suggestions go straight to the developer (anyone can send). The tour points it out."
-  ]],
-  ["b91", [
-    "Tour rewritten; new Settings → Tools page explains every tool and its key (also from the ? panel).",
-    "On phones and narrow windows, top-bar buttons that don't fit fold into a ••• menu instead of falling off the edge."
   ]],
 ];
 function renderPatchNotes(){
