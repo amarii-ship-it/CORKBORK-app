@@ -1431,6 +1431,10 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
 /* same bar height in both contexts now, so no per-context offset is needed */
 #cpMain > #rail{z-index:30;}
 body.focus-mode #textBarWrap{display:none;}
+/* No always-on tab: the bar appears while you edit text and goes away after.
+   The top bar's text button still pins it open on purpose. */
+#tbHandle{display:none !important;}
+#textBarWrap:not(.open){pointer-events:none;}
 #tbHandle{
   width:26px; height:32px; flex:none; display:flex; align-items:center; justify-content:center;
   color:var(--text-dim); background:var(--surface-hi);
@@ -3537,7 +3541,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b98";
+window.BUILD = "b99";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17472,6 +17476,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b99", [
+    "The text formatting bar no longer leaves an arrow tab on screen: it shows while you edit text and hides after."
+  ]],
   ["b98", [
     "Left toolbar: Column and Folder sit together in their own group, both green; Link moved below Heading; icons are bolder."
   ]],
@@ -17516,11 +17523,6 @@ const PATCH_NOTES = [
   ]],
   ["b86", [
     "Terms of service page, linked next to Privacy in Settings → Cloud sync."
-  ]],
-  ["b85", [
-    "Connect Google Drive is one button: CORKBORK now brings its own Google app ID.",
-    "Google's sign-in window no longer flashes on every reload: the sign-in is kept on the device until Google's one-hour limit, and Google can close the window by itself.",
-    "The cloud status in the top bar opens a menu with Sync now, Back up now and Save a copy."
   ]],
 ];
 function renderPatchNotes(){
