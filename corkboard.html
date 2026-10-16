@@ -2552,7 +2552,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <button class="barbtn iconbtn small" id="btnRecenter" title="Center the view on this board's content">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3.2 M12 18.3v3.2 M2.5 12h3.2 M18.3 12h3.2"/></svg>
   </button>
-  <button class="barbtn iconbtn" id="btnSnap" title="Snap to grid — hold Ctrl while dragging to override">
+  <button class="barbtn iconbtn" id="btnSnap" title="Snapping — cards line up with each other and the grid (Ctrl while dragging overrides)">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9h16 M4 15h16 M9 4v16 M15 4v16"/></svg>
   </button>
   <div id="zoomCtl">
@@ -3452,7 +3452,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <div class="setsec" data-sec="canvas" style="display:none;">
         <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
           <input type="checkbox" id="snapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Snap to cork grid when a card is released — hold Ctrl instead to align with other cards
+          Snapping: cards line up with other cards (guides show while dragging) and settle on the cork grid. Same as the # button; hold Ctrl to override for one drag
         </label>
         <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
           <input type="checkbox" id="blockSnapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
@@ -3625,7 +3625,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b104";
+window.BUILD = "b105";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11340,9 +11340,9 @@ function computeResizeSnap(id, x, y, w, h){
   }
   return { w: nw, h: nh };
 }
-function computeSnap(dragIds, nx, ny, w, h){
+function computeSnap(dragIds, nx, ny, w, h, px=7){
   clearGuides();
-  const T = 7 / zoom;
+  const T = px / zoom;
   const others = cur().cardIds.filter(id => !dragIds.includes(id)).map(id => card(id)).filter(Boolean);
   if (!others.length) return { x: nx, y: ny };
   let bestX = null, bestY = null;
@@ -11595,39 +11595,35 @@ function startCardDrag(e, cardEl){
     if (!drag.moved) return;
     drag.snapPos = null;
     for (const el of worldEl.querySelectorAll(".sticklink")) el.remove();
-    /* Ctrl held → live alignment to other cards, with faint guides.
-       Otherwise → move freely; cards settle onto cork points when released.
-       This is the OPPOSITE convention from snapOn() (default-on, ctrl
-       disables) because the grid-snap-on-release path below needs ctrl to
-       mean "skip the grid and align to cards instead", not "disable
-       snapping" — checking ctrl directly here keeps the two mutually
-       exclusive instead of alignOn silently winning every drag and starving
-       the grid-snap fallback at drop time. */
-    const ctrlHeld = !!(ev.ctrlKey || ev.metaKey);
-    const alignOn = ctrlHeld && state?.settings?.snap !== false && drag.members.length === 1;
-    for (const m of drag.members){
-      const el = drag.els.get(m.id); if (!el) continue;
-      let px = m.x + dx/zoom, py = m.y + dy/zoom;
-      if (alignOn){
-        const cc = card(m.id);
-        if (!cc) continue;
-        const sn = computeSnap([m.id], px, py, cc.w, cc.h);
-        px = sn.x; py = sn.y;
-        drag.snapPos = { id: m.id, x: px, y: py };
-      } else clearGuides();
-      el.style.left = px + "px";
-      el.style.top  = py + "px";
-    }
-    /* stick to a block's edge: the target edge glows, and the drop lands flush */
-    drag.blockSnap = null;
-    for (const el of worldEl.querySelectorAll(".stick-target")) el.classList.remove("stick-target");
+    /* Snap on (the # button) → line up with other cards' edges and centres
+       while dragging, with guides; anything not lined up settles onto the
+       cork grid when dropped. Ctrl/Cmd flips it for one drag. No modifier is
+       needed, so it works on an iPad. A whole selection moves by the lead
+       card's correction. */
+    const alignOn = snapOn(ev);
     const lead = drag.members.find(m => m.id === drag.id) || drag.members[0];
     const lc = lead && card(lead.id);
-    if (stickSnapOn() && !alignOn && lc && !(ev.ctrlKey || ev.metaKey)){
+    let offX = 0, offY = 0;
+    drag.align = null;
+    if (alignOn && lc){
+      const nx = lead.x + dx/zoom, ny = lead.y + dy/zoom;
+      const sn = computeSnap(drag.members.map(m => m.id), nx, ny, lc.w, lc.h, ev.pointerType === "touch" ? 11 : 7);
+      offX = sn.x - nx; offY = sn.y - ny;
+      drag.align = {dx:offX, dy:offY, ax:Math.abs(offX) > 1e-6, ay:Math.abs(offY) > 1e-6};
+    } else clearGuides();
+    for (const m of drag.members){
+      const el = drag.els.get(m.id); if (!el) continue;
+      el.style.left = (m.x + dx/zoom + offX) + "px";
+      el.style.top  = (m.y + dy/zoom + offY) + "px";
+    }
+    /* stick to a block's edge: the target edge glows, and the drop lands flush (wins over alignment) */
+    drag.blockSnap = null;
+    for (const el of worldEl.querySelectorAll(".stick-target")) el.classList.remove("stick-target");
+    if (stickSnapOn() && lc && !(ev.ctrlKey || ev.metaKey)){
       const ids = drag.members.map(m => m.id);
       const hit = blockSnapOffset({x:lead.x + dx/zoom, y:lead.y + dy/zoom, w:lc.w, h:lc.h}, ids, drag.members.some(m => card(m.id)?.type === "block"));
       if (hit){
-        drag.blockSnap = hit;
+        drag.blockSnap = hit; clearGuides();
         for (const m of drag.members){
           const el = drag.els.get(m.id); if (!el) continue;
           el.style.left = (m.x + dx/zoom + hit.dx) + "px"; el.style.top = (m.y + dy/zoom + hit.dy) + "px";
@@ -11719,18 +11715,20 @@ function startCardDrag(e, cardEl){
     } else {
       const z = uiz();
       const dx = (ev.clientX - sx)/(z*zoom), dy = (ev.clientY - sy)/(z*zoom);
-      const gridOn = state?.settings?.snap !== false && !(ev.ctrlKey || ev.metaKey);
-      const bs = drag.blockSnap;
+      const gridOn = snapOn(ev);
+      const bs = drag.blockSnap, al = drag.align;
+      /* grid only on an axis the alignment didn't already settle, computed once
+         for the lead card so a selection keeps its shape */
+      const lead = drag.members.find(m => m.id === drag.id) || drag.members[0];
+      let gx = 0, gy = 0;
+      if (!bs && gridOn && lead){
+        const lx = lead.x + dx + (al?.dx || 0), ly = lead.y + dy + (al?.dy || 0), g = snapToCorks(lx, ly);
+        if (!al?.ax) gx = g.x - lx;
+        if (!al?.ay) gy = g.y - ly;
+      }
       for (const m of drag.members){
-        if (bs){
-          patchCard(m.id, { x: Math.round(m.x + dx + bs.dx), y: Math.round(m.y + dy + bs.dy) });
-        } else if (drag.snapPos && drag.snapPos.id === m.id){
-          patchCard(m.id, { x: Math.round(drag.snapPos.x), y: Math.round(drag.snapPos.y) });
-        } else {
-          let px = m.x + dx, py = m.y + dy;
-          if (gridOn){ const g = snapToCorks(px, py); px = g.x; py = g.y; }
-          patchCard(m.id, { x: Math.round(px), y: Math.round(py) });
-        }
+        if (bs) patchCard(m.id, { x: Math.round(m.x + dx + bs.dx), y: Math.round(m.y + dy + bs.dy) });
+        else patchCard(m.id, { x: Math.round(m.x + dx + (al?.dx || 0) + gx), y: Math.round(m.y + dy + (al?.dy || 0) + gy) });
       }
     }
     clearGuides();
@@ -15289,7 +15287,7 @@ function setSnap(on, announce){
   if (announce){
     let f = $("#snapFlash");
     if (!f){ f = document.createElement("div"); f.id = "snapFlash"; document.body.appendChild(f); }
-    f.textContent = on ? "Snapping on — hold Ctrl to override" : "Snapping off";
+    f.textContent = on ? "Snapping on — cards line up with each other" : "Snapping off";
     f.classList.add("show");
     clearTimeout(f._t); f._t = setTimeout(() => f.classList.remove("show"), 1400);
   }
@@ -17918,6 +17916,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b105", [
+    "Snapping (the # button) now lines cards up with each other's edges and centres while you drag, with guide lines — no Ctrl needed, so it works on iPad. Ctrl still overrides on a computer."
+  ]],
   ["b104", [
     "Blocks: drop a card right against a block's edge and it snaps on (the edge glows first; drop a little further away to keep a gap). Select a block to see chain links on each seam; tap one to unstick. Works on iPad.",
     "Right-click → Lock in place: the card can't be moved, resized, edited or deleted until you unlock it."
@@ -17959,9 +17960,6 @@ const PATCH_NOTES = [
   ]],
   ["b93", [
     "If the saved workspace on a device is ever damaged, CORKBORK opens the latest restore point and blocks saving, instead of opening blank."
-  ]],
-  ["b92", [
-    "Bug List → Send to developer: bugs and suggestions go straight to the developer (anyone can send). The tour points it out."
   ]],
 ];
 function renderPatchNotes(){
