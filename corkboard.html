@@ -280,7 +280,7 @@ body.cardpage-open #cpCrumbs{display:flex; align-items:center; gap:2px; overflow
      letter-spacing is what actually reads as "friendly" at 54px wide — the
      rounded face alone was too subtle a change at this size. */
   font-family:"Segoe UI Rounded", ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size:10px; font-weight:700; letter-spacing:.01em;
+  font-size:10px; font-weight:800; letter-spacing:.01em;
   touch-action:none; user-select:none; -webkit-user-select:none; flex:none;
   transition:transform .12s ease;
 }
@@ -301,7 +301,7 @@ input[type=checkbox]{accent-color:var(--accent);}
 .primary:hover{filter:brightness(1.08);}
 .cpb-bar:active{box-shadow:inset 2px 0 0 var(--cpaccent, var(--accent));}
 #zoomBtn:hover{color:var(--accent);}
-.tool svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.9;
+.tool svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2.4;
   stroke-linecap:round; stroke-linejoin:round; margin-bottom:1px;
   /* the per-type strokes below are fixed hex, so lift them all at once here
      rather than editing eleven colours and keeping them in step by hand.
@@ -367,7 +367,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .tool[data-type="heading"] svg{stroke:#C9B24C;}/* warm yellow */
 .tool[data-type="column"] svg{stroke:#9CB051;} /* olive green */
 .tool[data-type="link"] svg{stroke:#5CA98F;}   /* warm teal   */
-.tool[data-type="grid"] svg{stroke:#A97CB0;}   /* warm plum   */
+.tool[data-type="grid"] svg{stroke:#6FA868;}   /* leaf green: organizes, like Column */
 .tool[data-type="todo"] svg{stroke:#C7738D;}   /* warm rose   */
 .tool[data-type="block"] svg{stroke:#C08457;}  /* terracotta  */
 .tool[data-type="sheet"] svg{stroke:#B07B4E;}  /* leather     */
@@ -2662,14 +2662,16 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><rect class="boardwin" x="6.5" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="6.5" y="13.2" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="13.2" width="4.3" height="4.3" rx="1.1"/></svg>Board</button>
     <button class="tool" data-type="todo" title="List [T] — checklist, bulleted or numbered">
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
+    <button class="tool" data-type="heading" title="Heading [H]">
+      <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
+    <button class="tool" data-type="link" title="Link [L]">
+      <svg viewBox="0 0 24 24"><path d="M9 15l6-6 M8 12l-2.5 2.5a3.5 3.5 0 0 0 5 5L13 17 M16 12l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7"/></svg>Link</button>
+    <div class="railDivider"></div>
+    <!-- organizing tools, grouped -->
     <button class="tool" data-type="column" title="Column [C] — drag cards in to group them">
       <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z M6 9h12 M9 13h6 M9 16h6"/></svg>Column</button>
     <button class="tool" data-type="grid" title="Folder [G] — drag photos or boards in to organize them">
       <svg viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z M3 11h18"/></svg>Folder</button>
-    <button class="tool" data-type="link" title="Link [L]">
-      <svg viewBox="0 0 24 24"><path d="M9 15l6-6 M8 12l-2.5 2.5a3.5 3.5 0 0 0 5 5L13 17 M16 12l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7"/></svg>Link</button>
-    <button class="tool" data-type="heading" title="Heading [H]">
-      <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
     <div class="railDivider"></div>
     <!-- Less-used tools tuck behind one button instead of eating three rail
          slots. Block is pulled back out into this main list whenever a card
@@ -3535,7 +3537,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b97";
+window.BUILD = "b98";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17470,6 +17472,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b98", [
+    "Left toolbar: Column and Folder sit together in their own group, both green; Link moved below Heading; icons are bolder."
+  ]],
   ["b97", [
     "Double-click an image to view it big: crop, caption, previous/next, open in a new tab and download, as icons.",
     "Right-click menu is shorter: one Copy (copies the picture on images), and side menus for Send to (Front, Back, Unsorted) and More.",
@@ -17516,11 +17521,6 @@ const PATCH_NOTES = [
     "Connect Google Drive is one button: CORKBORK now brings its own Google app ID.",
     "Google's sign-in window no longer flashes on every reload: the sign-in is kept on the device until Google's one-hour limit, and Google can close the window by itself.",
     "The cloud status in the top bar opens a menu with Sync now, Back up now and Save a copy."
-  ]],
-  ["b84", [
-    "The top bar shows cloud save status (Synced, Syncing, Offline, Sign in) where Back up now and Save a copy were; both moved to Settings → Backup & data.",
-    "iPad: keyboard shortcuts (Cmd+Z, Delete, N…) work after typing in a box — tapping the board now releases it. The shortcuts panel shows which key arrived.",
-    "Theme and appearance stay per device instead of syncing."
   ]],
 ];
 function renderPatchNotes(){
