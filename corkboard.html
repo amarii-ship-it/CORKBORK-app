@@ -434,10 +434,12 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 @keyframes stuckPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, #A98BD6 80%, transparent);} 100%{box-shadow:0 0 0 10px transparent;}}
 .card.unstuck-pop{animation:unstuckPop .4s ease-out;}
 @keyframes unstuckPop{0%{transform:scale(1.04);} 100%{transform:scale(1);}}
-.sticklink{position:absolute; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  background:#A98BD6; color:#fff; box-shadow:0 3px 10px rgba(0,0,0,.25); transform-origin:center; padding:0;}
-.sticklink svg{width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round;}
-.sticklink:hover{background:#DD4337;}
+.sticklink{position:absolute; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--text) 12%, var(--surface)); color:var(--text-dim); box-shadow:0 2px 6px rgba(0,0,0,.18); transform-origin:center; padding:0;}
+.sticklink svg{width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round;}
+.sticklink:hover{color:var(--text); background:color-mix(in srgb, var(--text) 20%, var(--surface));}
+/* a finger needs more than 22px to hit: invisible padding around it */
+.sticklink::before{content:""; position:absolute; inset:-9px; border-radius:50%;}
 .card.is-pinned .rsz{display:none !important;}
 .pinbadge{position:absolute; top:5px; right:5px; z-index:7; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center;
   background:color-mix(in srgb, var(--text) 14%, var(--surface)); color:var(--text); pointer-events:auto; opacity:.85;}
@@ -3625,7 +3627,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b105";
+window.BUILD = "b106";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17916,6 +17918,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b106", [
+    "The chain link on stuck cards is smaller and grey (still easy to tap)."
+  ]],
   ["b105", [
     "Snapping (the # button) now lines cards up with each other's edges and centres while you drag, with guide lines — no Ctrl needed, so it works on iPad. Ctrl still overrides on a computer."
   ]],
@@ -17957,9 +17962,6 @@ const PATCH_NOTES = [
   ["b94", [
     "Open CORKBORK in as many tabs and windows as you like: every one can edit, changes show in the others within a second, and nothing overwrites anything.",
     "Undo is per tab: it takes back only what you did in that tab."
-  ]],
-  ["b93", [
-    "If the saved workspace on a device is ever damaged, CORKBORK opens the latest restore point and blocks saving, instead of opening blank."
   ]],
 ];
 function renderPatchNotes(){
