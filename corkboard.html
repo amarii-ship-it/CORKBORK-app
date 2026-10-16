@@ -50,8 +50,8 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
    sets bar / barText / barDim and only the bar changes. */
 #topbar{
   display:flex; align-items:center; gap:8px; height:var(--topbar-h); padding:0 10px;
-  background:var(--bar-bg, var(--surface-hi)); color:var(--bar-text, var(--text));
-  border-bottom:1px solid var(--bar-border, var(--border)); flex:none;
+  background:var(--bar-bg, var(--chrome, var(--surface-hi))); color:var(--bar-text, var(--text));
+  border-bottom:2px solid var(--bar-border, var(--chrome-line, var(--border))); flex:none;
 }
 #topbar .barbtn, #topbar #crumbs button, #topbar #buildStamp, #topbar #brand{
   color:var(--bar-dim, var(--text-dim));
@@ -60,9 +60,9 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
    crowded action row at smaller desktop widths. Actions remain above it and
    paint the bar background, so no real control becomes unclickable. */
 #barCentre{z-index:1;}
-#topbar > .barbtn{position:relative; z-index:2; background:var(--bar-bg, var(--surface-hi));}
+#topbar > .barbtn{position:relative; z-index:2; background:var(--bar-bg, var(--chrome, var(--surface-hi)));}
 #topbar .barbtn:hover, #topbar #crumbs button:hover{
-  background:var(--bar-hover, var(--surface)); color:var(--bar-text, var(--text));
+  background:var(--bar-hover, color-mix(in srgb, var(--text) 9%, var(--chrome, var(--surface-hi)))); color:var(--bar-text, var(--text));
 }
 #topbar #crumbs button.current, #topbar #barTitle{color:var(--bar-text, var(--text));}
 /* Was a hardcoded pale grey, which is why the bar icons vanished on every
@@ -373,6 +373,62 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .tool[data-type="sheet"] svg{stroke:#B07B4E;}  /* leather     */
 #toolUpload svg{stroke:#C6A374;}               /* warm sand   */
 .tool[data-type="table"] svg{stroke:#8FA86B;}  /* warm sage   */
+
+/* ---- layered look (b100) -----------------------------------------------
+   applyTheme mixes every chrome colour from the theme's board, text and
+   accent (see layeredTokens): toolbars a shade darker than the board, cards
+   and panels lighter, lines and dim text from the text colour. Each tool
+   sits on a faint wash of its own hue (--hue at --tint) and its icon is that
+   hue pulled toward the text colour, so it reads on every theme. Legacy
+   themes (Eautiphen) set no --chrome and keep their own look. */
+:root{--rail-w:72px;}
+#rail{background:var(--chrome, var(--surface-hi)); border-right:none;}
+.tool{--hue:var(--text-dim); width:56px; height:44px; border-radius:11px;
+  background:color-mix(in srgb, var(--hue) var(--tint, 0%), transparent);}
+.tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 0%) + 12%), transparent); box-shadow:none;}
+.tool svg, .tool:hover svg{width:22px; height:22px; margin-bottom:2px; filter:none;}
+#rail .tool[data-type] svg, #morePop .tool[data-type] svg, #railMore svg, #toolArrow svg, #toolUpload svg, #toolLibrary svg{
+  stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
+#rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:color-mix(in srgb, var(--hue) 62%, var(--text));}
+.tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi));}
+.tool[data-type="note"]{--hue:#FFFFFF;}
+:root[data-theme="light"] .tool[data-type="note"]{background:color-mix(in srgb, #FFFFFF 85%, transparent);}
+:root[data-theme="light"] #rail .tool[data-type="note"] svg{stroke:var(--text);}
+.tool[data-type="board"]{--hue:#E0913A;}
+.tool[data-type="todo"]{--hue:#D9667F;}
+.tool[data-type="heading"]{--hue:#C9A23A;}
+.tool[data-type="link"]{--hue:#3FAF62;}
+.tool[data-type="column"], .tool[data-type="grid"]{--hue:#4F6FD0;}   /* warm cobalt: the organizing pair */
+.tool[data-type="image"]{--hue:#E0694F;}
+#toolUpload{--hue:#C99A5B;} #toolLibrary{--hue:#7E86C9;}
+.tool[data-type="table"]{--hue:#8FA86B;} .tool[data-type="card"]{--hue:#C9894F;}
+.tool[data-type="sheet"]{--hue:#B07B4E;} .tool[data-type="block"]{--hue:#C08457;}
+/* Recycle (cyan) and Trash (red) must be unmistakable: solid colour, white icon and label */
+#toolTrash{--hue:#12A9BD;} #toolDelete{--hue:#DD4337;}
+#toolTrash, #toolDelete{background:var(--hue); color:#FFFFFF;}
+#toolTrash:hover, #toolDelete:hover{background:color-mix(in srgb, var(--hue) 85%, #FFFFFF);}
+#toolTrash svg, #toolDelete svg{stroke:#FFFFFF !important; filter:none;}
+.railDivider{width:44px; height:2px; border-radius:2px; background:color-mix(in srgb, var(--text) 12%, transparent);}
+.tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
+/* cards lighter than the board, lifted by a shadow instead of an outline */
+.card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
+  border-color:transparent; border-radius:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.07), 0 6px 18px rgba(0,0,0,var(--lift-shadow, .09));}
+.card.is-fav{box-shadow:0 0 0 1px color-mix(in srgb, #E8C46A 55%, transparent), 0 6px 18px rgba(0,0,0,var(--lift-shadow, .09));}
+/* free resize shows its outline only while the image is selected */
+.card.type-image.free-resize:not(.selected){outline:none;}
+/* windows: no hairline, a soft shadow */
+.panel{border:none; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.25);}
+.themegroup{grid-column:1 / -1; margin:10px 0 2px; font-size:12px; color:var(--text-dim);}
+.themegroup b{color:var(--text); font-size:13px; margin-right:6px;}
+#brandmark{width:26px; height:26px;}
+#rcLabels{display:none !important;}
+/* tools that appear for a selection (Color): a cool blue wash, readable on any theme */
+.railtemp{border-top:none;}
+.railtemp .tool{--hue:#3B9ED0; color:var(--text);}
+#rail .railtemp .tool svg, #rail .railtemp .tool:hover svg{stroke:color-mix(in srgb, var(--hue) 70%, var(--text)); filter:none;}
+/* something is selected: the top bar Labels button labels it */
+#topbar #btnLabels.can-label{color:var(--accent); background:color-mix(in srgb, var(--accent) 20%, transparent); border-radius:8px; opacity:1;}
 /* character sheet card */
 .card.type-sheet{background:#F4ECDD; border-color:#C9B08A;}
 :root[data-theme="light"] .card.type-sheet{background:#F4ECDD;}
@@ -576,7 +632,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 
 /* rail popups (color / text style) */
 .railpop{
-  position:fixed; left:62px; top:60px; z-index:108; background:var(--surface-hi);
+  position:fixed; left:calc(var(--rail-w) + 6px); top:60px; z-index:108; background:var(--surface-hi);
   border:1px solid var(--border); border-radius:5px; padding:10px; display:none;
   flex-direction:column; gap:8px; width:220px; box-shadow:0 8px 24px rgba(0,0,0,.45);
 }
@@ -1017,16 +1073,15 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
 #zoomCtl{position:relative; flex:none; z-index:170;}
 /* Active state has to be obvious at a glance — this is a mode, not an action,
    and it opens no panel, so the button itself has to carry the state. */
-#topbar #btnSnap.on{color:var(--edit); background:color-mix(in srgb, var(--edit) 18%, transparent);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--edit) 55%, transparent);}
+#topbar #btnSnap.on{color:var(--edit); background:color-mix(in srgb, var(--edit) 22%, transparent);}
 #topbar #btnSnap.on svg{stroke:var(--edit);}
 /* Zoom and Snap are MODES, not actions: they carry state and should not look
    like the plain buttons beside them. */
 #topbar #btnSnap, #topbar #zoomBtn{opacity:1; padding:7px 10px;}
 #topbar #btnSnap svg, #topbar #zoomBtn svg{width:21px; height:21px;}
 #topbar #btnSnap, #topbar #zoomCtl{
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--border) 90%, transparent);
-  border-radius:6px;
+  background:color-mix(in srgb, var(--text) 7%, transparent);
+  border-radius:8px;
 }
 #topbar #zoomBtn{font-weight:600;}
 #snapFlash{
@@ -3541,7 +3596,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b99";
+window.BUILD = "b100";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -10129,6 +10184,13 @@ const inCardPage = () => !!$("#cardPage") && $("#cardPage").classList.contains("
 
 let railMode = "tools";
 function updateRail(){
+  /* the top bar's Labels button lights up when there is something to label */
+  const lb = $("#btnLabels");
+  if (lb){
+    lb.classList.toggle("can-label", selection.size > 0);
+    lb.title = selection.size ? "Label the " + (selection.size === 1 ? "selected card" : selection.size + " selected cards")
+      : "Labels \u2014 browse and filter by label";
+  }
   const onCard = inCardPage();
   let mode = "tools";
   /* Typing used to switch the rail into a "text" mode with its own Bold/
@@ -10435,7 +10497,7 @@ function execOnEditor(fn){
 document.addEventListener("pointerdown", e => {
   if (!$("#colorPop").contains(e.target) && e.target !== $("#rcColor") && !$("#rcColor").contains(e.target))
     $("#colorPop").classList.remove("open");
-  if (!$("#labelPop").contains(e.target) && e.target !== $("#rcLabels") && !$("#rcLabels").contains(e.target))
+  if (!$("#labelPop").contains(e.target) && !e.target.closest?.("#rcLabels, #btnLabels"))
     $("#labelPop").classList.remove("open");
 }, true);
 
@@ -13331,6 +13393,17 @@ $("#btnTags").addEventListener("click", () => {
   if (!was){ renderTagPanel(); p.classList.add("open"); }
 });
 $("#btnLabels").addEventListener("click", () => {
+  /* with cards selected, this labels all of them at once */
+  if (selection.size){
+    const lp = $("#labelPop"), was = lp.classList.contains("open");
+    closeTopPanels(); closeSearch();
+    if (was){ lp.classList.remove("open"); return; }
+    renderLabelPop(); lp.classList.add("open");
+    const z = uiz(), r = $("#btnLabels").getBoundingClientRect(), w = lp.getBoundingClientRect().width / z;
+    lp.style.left = Math.max(4, Math.min(r.left / z, innerWidth / z - w - 8)) + "px";
+    lp.style.top = (r.bottom / z + 6) + "px";
+    return;
+  }
   const p = $("#labelPanel"); const was = p.classList.contains("open");
   closeTopPanels(); closeSearch();
   if (!was){ renderLabelBrowse(); p.classList.add("open"); }
@@ -14725,8 +14798,61 @@ async function deleteSavedTheme(id){
 /* the resolved token map actually in force: theme + the user's overrides */
 function activeThemeTokens(){
   const t = themeDef(state.settings?.theme);
-  return Object.assign({}, t.tokens, themeEditsFor());
+  const tokens = Object.assign({}, t.tokens, themeEditsFor());
+  return isLegacyTheme(t) ? tokens : layeredTokens(tokens, t.base);
 }
+/* ---- layered themes -----------------------------------------------------
+   A theme is its board colour, text colour and accent (plus the editing
+   highlight). Everything else is mixed from those, so every theme follows
+   the same value rule: toolbars a shade darker than the board, cards and
+   panels lighter, lines and dim text drawn from the text colour. A theme
+   whose look can't be described that way (a gradient wash) is legacy and
+   keeps its hand-set tokens. */
+const LAYER_KEYS = ["canvas", "text", "accent", "edit"];
+function isLegacyTheme(def){ return !!(def && (def.wash || def.legacy)); }
+function hexRgb(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim()); if (!m) return null;
+  const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(a, b, t){
+  const x = hexRgb(a), y = hexRgb(b); if (!x || !y) return a;
+  return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
+}
+function hexLum(hex){
+  const c = hexRgb(hex); if (!c) return 0;
+  const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+  return .2126 * r + .7152 * g + .0722 * b;
+}
+function hexContrast(a, b){ const x = hexLum(a), y = hexLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+/* dim text mixed toward the board, but never so far it drops below 3.5:1 on the bars or the board */
+function readableDim(ink, bg, chrome, t){
+  let dim = mixHex(ink, bg, t);
+  while (t > 0 && (hexContrast(dim, chrome) < 3.5 || hexContrast(dim, bg) < 3.5)){ t = Math.max(0, t - .04); dim = mixHex(ink, bg, t); }
+  return dim;
+}
+function layeredTokens(tokens, base){
+  const bg = tokens.canvas || "#1B1D1F", ink = tokens.text || "#E8E6E3", L = hexLum(bg);
+  const out = {canvas:bg, text:ink, accent:tokens.accent, edit:tokens.edit};
+  if (base === "light"){
+    const lift = L > .7 ? .85 : .6;
+    Object.assign(out, {
+      surface:mixHex(bg, "#FFFFFF", lift), "surface-hi":mixHex(bg, "#FFFFFF", lift - .08),
+      grid:mixHex(bg, ink, .1), border:mixHex(bg, ink, .14),
+      "text-dim":readableDim(ink, bg, mixHex(bg, "#000000", .06), .42),
+      chrome:mixHex(bg, "#000000", .06), "chrome-line":mixHex(bg, "#000000", .13), tint:"16%", "lift-shadow":".09"});
+  } else {
+    /* lift cards toward white, but stop before light text on them gets hard to read */
+    let lift = L < .02 ? .09 : L < .1 ? .12 : .16;
+    while (lift > .04 && hexContrast(ink, mixHex(bg, "#FFFFFF", lift)) < 4.6) lift -= .02;
+    const chrome = mixHex(bg, "#000000", .32);
+    Object.assign(out, {
+      surface:mixHex(bg, "#FFFFFF", lift), "surface-hi":mixHex(bg, "#FFFFFF", lift + .04),
+      grid:mixHex(bg, ink, .09), border:mixHex(bg, ink, .16), "text-dim":readableDim(ink, bg, chrome, .38),
+      chrome, "chrome-line":mixHex(chrome, ink, .14), tint:"24%", "lift-shadow":".28"});
+  }
+  return out;
+}
+const LAYER_DERIVED = ["chrome", "chrome-line", "tint", "lift-shadow"];
 
 /* hue-clamp a colour into the yellow-orange band, preserving lightness */
 function warmEditColour(hex){
@@ -14766,6 +14892,10 @@ function applyTheme(){
     if (v) root.style.setProperty("--" + key, v);
     else root.style.removeProperty("--" + key);
   }
+  for (const key of LAYER_DERIVED){
+    if (tokens[key]) root.style.setProperty("--" + key, tokens[key]);
+    else root.style.removeProperty("--" + key);
+  }
   /* optional gradient wash — a theme property, not a token, so the colour
      editor doesn't try to offer it as a single swatch */
   if (def.wash) root.style.setProperty("--canvas-wash", def.wash);
@@ -14787,12 +14917,22 @@ function buildThemeGallery(){
   const all = Object.entries(THEMES).concat(
     Object.entries(savedThemes()).map(([id, t]) =>
       [id, { name: t.name, base: t.base, tokens: t.tokens, saved: true }]));
-  for (const [id, def] of all){
+  /* themes the layered system can't express go last, under their own heading */
+  const legacy = all.filter(([, d]) => isLegacyTheme(d));
+  const ordered = all.filter(([, d]) => !isLegacyTheme(d));
+  if (legacy.length) ordered.push(["__legacy", null], ...legacy);
+  for (const [id, def] of ordered){
+    if (!def){
+      const h = document.createElement("div"); h.className = "themegroup";
+      h.innerHTML = "<b>Legacy</b> <span>Older themes that keep their own colours instead of following the new look.</span>";
+      wrap.appendChild(h); continue;
+    }
     const b = document.createElement("button");
     b.className = "themecard" + (id === current ? " sel" : "");
     b.title = def.name;
     const strip = document.createElement("div"); strip.className = "themestrip";
-    const previewTokens = Object.assign({}, def.tokens, themeEditsFor(id));
+    const raw = Object.assign({}, def.tokens, themeEditsFor(id));
+    const previewTokens = isLegacyTheme(def) ? raw : layeredTokens(raw, def.base);
     for (const k of ["canvas","surface-hi","accent","text","edit"]){
       const sw = document.createElement("span");
       sw.style.background = previewTokens[k];
@@ -14854,7 +14994,13 @@ function buildThemeEditor(){
   bar.append(save, reset); wrap.appendChild(bar);
   const tokens = activeThemeTokens();
   const custom = themeEditsFor();
-  for (const { key, label } of THEME_TOKENS){
+  const layered = !isLegacyTheme(def);
+  if (layered){
+    const m = document.createElement("div"); m.className = "meta";
+    m.textContent = "Pick the board, text and accent colours; bars, cards, lines and dim text are mixed from them.";
+    wrap.appendChild(m);
+  }
+  for (const { key, label } of THEME_TOKENS.filter(t => !layered || LAYER_KEYS.includes(t.key))){
     const row = document.createElement("label"); row.className = "themerow";
     const inp = document.createElement("input");
     inp.type = "color"; inp.value = tokens[key] || "#000000";
@@ -17476,6 +17622,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b100", [
+    "New look: wider left toolbar with softly coloured tools; Recycle (cyan) and Trash (red) stand out; cards lift off the board; top bar is a flat darker band with a line under it; windows lose their outline; bigger frog icon.",
+    "Every theme now mixes its bars, cards and lines from three colours (board, text, accent), so they all follow the same light/dark rule. Eautiphen moved to a Legacy section.",
+    "Labels: select cards, then click Labels in the top bar (it lights up) to label them all at once."
+  ]],
   ["b99", [
     "The text formatting bar no longer leaves an arrow tab on screen: it shows while you edit text and hides after."
   ]],
@@ -17520,9 +17671,6 @@ const PATCH_NOTES = [
   ["b87", [
     "Library (rail, under Upload): drop a batch of images, videos or files onto it once; they're kept in Google Drive and show on every device as thumbnails. Click or drag one onto a board to use it — only then does it download.",
     "Scrolling and zooming no longer trigger a Drive sync. Each board still remembers its position and zoom on each device."
-  ]],
-  ["b86", [
-    "Terms of service page, linked next to Privacy in Settings → Cloud sync."
   ]],
 ];
 function renderPatchNotes(){
