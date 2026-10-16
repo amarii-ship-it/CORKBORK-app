@@ -1628,6 +1628,8 @@ body.focus-mode #textBarWrap{display:none;}
 #askMsg{font-size:13px; line-height:1.5; color:var(--text); white-space:pre-wrap;}
 #askMsg .sub{display:block; margin-top:7px; font-size:12px; color:var(--text-dim);}
 #askBody input[type=text]{width:100%;}
+#askBody .metagrid{display:grid; grid-template-columns:auto 1fr; gap:8px 12px; align-items:center; min-width:min(440px, 80vw);}
+#askBody .metagrid label{font-size:12.5px; color:var(--text-dim); white-space:nowrap;}
 .askdanger{background:#7E3B36 !important; color:#fff !important;}
 .askdanger:hover{background:#93453F !important;}
 /* searchable picker: replaces the numbered prompt() the relationship
@@ -3596,7 +3598,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b100";
+window.BUILD = "b101";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4956,7 +4958,7 @@ function buildCardEl(c){
   }
   else if (c.type === "image"){
     el.classList.toggle("free-resize", !!c.freeResize);
-    const img = document.createElement("img"); img.className="pic"; img.src = c.dataUrl; img.alt = c.caption || "";
+    const img = document.createElement("img"); img.className="pic"; img.src = c.dataUrl; img.alt = c.alt || c.caption || "";
     img.loading = "lazy"; img.decoding = "async";
     el.appendChild(img);
     const cap = document.createElement("div"); cap.className="caption"; cap.textContent = c.caption || "";
@@ -10512,6 +10514,55 @@ async function downloadStoredImage(c){
   }
   return downloadCardSource(c, "corkboard-image");
 }
+/* Where the picture lives on the web: the page it was dragged from (or the
+   link typed into Edit metadata), else its Google Drive copy. */
+function imageAddress(c){
+  if (c?.sourceUrl) return c.sourceUrl;
+  if (c?.driveRef?.id) return "https://drive.google.com/file/d/" + c.driveRef.id + "/view";
+  return "";
+}
+async function copyImageAddress(c){
+  const addr = imageAddress(c);
+  if (!addr){ toast("This image has no web address yet. Add a source link in Edit metadata."); return false; }
+  try { await navigator.clipboard.writeText(addr); toast("Image address copied."); return true; }
+  catch (err){ toast("The browser wouldn't copy it: " + addr, 7000); return false; }
+}
+/* The details kept with an image. Name is also what it downloads as. */
+const IMAGE_META_FIELDS = [["fileName","Name"], ["caption","Caption"], ["alt","Description (alt text)"],
+  ["sourceUrl","Source link"], ["credit","Credit / author"]];
+async function editImageMetadata(c){
+  if (!c || c.type !== "image") return false;
+  const res = await askOpen({
+    title:"Edit metadata",
+    build(body){
+      const inputs = {};
+      const grid = document.createElement("div"); grid.className = "metagrid";
+      for (const [k, label] of IMAGE_META_FIELDS){
+        const l = document.createElement("label"); l.textContent = label;
+        const inp = document.createElement("input"); inp.type = "text"; inp.value = c[k] || ""; inp.dataset.key = k;
+        if (k === "sourceUrl") inp.placeholder = "https://\u2026";
+        inputs[k] = inp; grid.append(l, inp);
+      }
+      const info = document.createElement("div"); info.className = "meta";
+      const kb = c.fileSize ? (c.fileSize > 1048576 ? (c.fileSize / 1048576).toFixed(1) + " MB" : Math.round(c.fileSize / 1024) + " KB") : "";
+      info.textContent = [c.naturalW && c.naturalH ? c.naturalW + " \u00d7 " + c.naturalH + " px" : "", c.fileType || "", kb,
+        c.createdAt ? "added " + new Date(c.createdAt).toLocaleDateString() : ""].filter(Boolean).join(" \u00b7 ");
+      body.append(grid, info);
+      return { focus:() => inputs.fileName.focus(),
+        read:() => Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value.trim()])) };
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
+  });
+  if (!res || typeof res !== "object") return false;
+  if (res.sourceUrl && !/^[a-z][a-z0-9+.-]*:/i.test(res.sourceUrl)) res.sourceUrl = "https://" + res.sourceUrl;
+  if (res.sourceUrl){ try { new URL(res.sourceUrl); } catch (_){ toast("That source link isn't a web address, so it wasn't saved."); res.sourceUrl = c.sourceUrl || ""; } }
+  const now0 = card(c.id); if (!now0) return false;
+  const patch = {};
+  for (const [k] of IMAGE_META_FIELDS) if (res[k] !== (now0[k] || "")) patch[k] = res[k];
+  if (!Object.keys(patch).length) return true;
+  pushUndo(); patchCard(c.id, patch); markDirty(); renderBoard(); toast("Metadata saved.");
+  return true;
+}
 function openCtx(x, y, c){
   ctx.innerHTML = "";
   const item = (into, label, fn, cls) => {
@@ -10606,6 +10657,7 @@ function openCtx(x, y, c){
     document.execCommand("copy");
   });
   if (c.type === "image") add("View full size", () => openLightbox(c.id));
+  if (c.type === "image" && cardCanOpen(c)) add("Download image", () => downloadStoredImage(c));
   if (c.type === "link"){
     const flip = (key, label) => add(
       (c[key] !== false ? "\u2713 " : "\u2003") + label,
@@ -10645,8 +10697,9 @@ function openCtx(x, y, c){
       });
   });
   sub("More", more => {
+    if (c.type === "image") more("Copy image address", () => copyImageAddress(c));
+    if (c.type === "image") more("Edit metadata\u2026", () => editImageMetadata(c));
     if (c.type === "image" && cardCanOpen(c)){
-      more("Download image", () => downloadStoredImage(c));
       more("Open image in new tab", async () => {
         const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
         try { const url=await cardSourceUrl(c); w.location.replace(url); setTimeout(()=>URL.revokeObjectURL(url),60000); }
@@ -13044,7 +13097,10 @@ async function handleExternalDrop(e, toUnsorted){
     await addChosenFile(docs[i], p ? p.x + i * 24 : 0, p ? p.y + i * 24 : 0, !p);
   if (!imgs.length) return;
   if (p && imgs.length === 1){
-    await addImageCard(imgs[0], p.x, p.y, false);
+    /* dragged out of a web page: the browser hands over the address too */
+    const from = (e.dataTransfer.getData("text/uri-list") || "").split("\n").map(x => x.trim()).find(x => /^https?:/i.test(x));
+    const made = await addImageCard(imgs[0], p.x, p.y, false);
+    if (made && from){ patchCard(made.id, { sourceUrl: from }); markDirty(); }
   } else {
     for (const f of imgs) await addImageCard(f, 0, 0, true);
     toast(imgs.length + (imgs.length === 1 ? " image" : " images") + " added to Unsorted.");
@@ -17622,6 +17678,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b101", [
+    "Image right-click: Download image is back at the top; More has Copy image address and a new Edit metadata (name, caption, alt text, source link, credit). Images dragged in from a web page remember where they came from."
+  ]],
   ["b100", [
     "New look: wider left toolbar with softly coloured tools; Recycle (cyan) and Trash (red) stand out; cards lift off the board; top bar is a flat darker band with a line under it; windows lose their outline; bigger frog icon.",
     "Every theme now mixes its bars, cards and lines from three colours (board, text, accent), so they all follow the same light/dark rule. Eautiphen moved to a Legacy section.",
@@ -17667,10 +17726,6 @@ const PATCH_NOTES = [
   ["b88", [
     "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup.",
     "Library → From Google Drive: pick files already in your Drive (select many at once) to add them to your Library."
-  ]],
-  ["b87", [
-    "Library (rail, under Upload): drop a batch of images, videos or files onto it once; they're kept in Google Drive and show on every device as thumbnails. Click or drag one onto a board to use it — only then does it download.",
-    "Scrolling and zooming no longer trigger a Drive sync. Each board still remembers its position and zoom on each device."
   ]],
 ];
 function renderPatchNotes(){
