@@ -382,8 +382,8 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
    hue pulled toward the text colour, so it reads on every theme. Legacy
    themes (Eautiphen) set no --chrome and keep their own look. */
 :root{--rail-w:72px;}
-#rail{background:var(--chrome, var(--surface-hi)); border-right:none;}
-.tool{--hue:var(--text-dim); width:56px; height:44px; border-radius:11px;
+#rail{background:var(--chrome, var(--surface-hi)); border-right:none; gap:2px;}
+.tool{--hue:var(--text-dim); width:56px; height:42px; border-radius:11px;
   background:color-mix(in srgb, var(--hue) var(--tint, 0%), transparent);}
 .tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 0%) + 12%), transparent); box-shadow:none;}
 .tool svg, .tool:hover svg{width:22px; height:22px; margin-bottom:2px; filter:none;}
@@ -402,13 +402,13 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .tool[data-type="image"]{--hue:#E0694F;}
 #toolUpload{--hue:#C99A5B;} #toolLibrary{--hue:#7E86C9;}
 .tool[data-type="table"]{--hue:#8FA86B;} .tool[data-type="card"]{--hue:#C9894F;}
-.tool[data-type="sheet"]{--hue:#B07B4E;} .tool[data-type="block"]{--hue:#C08457;}
+.tool[data-type="sheet"]{--hue:#B07B4E;} .tool[data-type="block"]{--hue:#A98BD6;}   /* lilac */
 /* Recycle (cyan) and Trash (red) must be unmistakable: solid colour, white icon and label */
 #toolTrash{--hue:#12A9BD;} #toolDelete{--hue:#DD4337;}
 #toolTrash, #toolDelete{background:var(--hue); color:#FFFFFF;}
 #toolTrash:hover, #toolDelete:hover{background:color-mix(in srgb, var(--hue) 85%, #FFFFFF);}
 #toolTrash svg, #toolDelete svg{stroke:#FFFFFF !important; filter:none;}
-.railDivider{width:44px; height:2px; border-radius:2px; background:color-mix(in srgb, var(--text) 12%, transparent);}
+.railDivider{width:44px; height:2px; border-radius:2px; margin:3px 0; background:color-mix(in srgb, var(--text) 12%, transparent);}
 .tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
 /* cards lighter than the board, lifted by a shadow instead of an outline */
 .card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
@@ -2487,6 +2487,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .card.type-block .bk-grip{color:var(--text-dim); font-size:11px; flex:none; cursor:grab;}
+.card.type-block .bk-edit{display:none; flex:none; padding:2px 10px; border-radius:7px; font-size:11.5px; font-weight:700;
+  background:color-mix(in srgb, var(--blkaccent, var(--accent)) 22%, transparent); color:var(--text);}
+.card.type-block .bk-edit:hover{background:color-mix(in srgb, var(--blkaccent, var(--accent)) 34%, transparent);}
+.card.type-block.selected .bk-edit{display:block;}
 .card.type-block .bk-body{
   flex:1; min-height:0; overflow-y:auto; padding:9px 11px;
   font-family:var(--font-ui); font-size:13.5px; line-height:1.55;
@@ -2728,6 +2732,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><rect class="boardwin" x="6.5" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="6.5" y="13.2" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="13.2" width="4.3" height="4.3" rx="1.1"/></svg>Board</button>
     <button class="tool" data-type="todo" title="List [T] — checklist, bulleted or numbered">
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
+    <button class="tool" data-type="block" title="Block [K] — a titled panel. Anything stuck to its edges moves with it.">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="1.6"/><path d="M3.5 8.5h17"/></svg>Block</button>
     <button class="tool" data-type="heading" title="Heading [H]">
       <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
     <button class="tool" data-type="link" title="Link [L]">
@@ -2773,8 +2779,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
         <svg viewBox="0 0 24 24"><rect x="7" y="3.5" width="10" height="17" rx="1.6"/></svg>Card</button>
       <button class="tool" data-type="sheet" title="Character Sheet [R] — a fillable D&D 5e character sheet">
         <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z M14 3v4h4 M9 12h6 M9 15h6 M9 18h4"/></svg><span style="font-size:9.5px; letter-spacing:-.2px;">D&amp;D sheet</span></button>
-      <button class="tool" data-type="block" title="Block [K] — a titled panel. Anything stuck to its edges moves with it.">
-        <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="1.6"/><path d="M3.5 8.5h17"/></svg>Block</button>
       </div>
     </div>
     <div id="railCard" class="railset railtemp" style="display:none">
@@ -3405,6 +3409,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <div class="tool-row"><b>Arrow</b><kbd>—</kbd><span>Connects two cards. Click one card, then another.</span></div>
           <div class="tool-row"><b>Board</b><kbd>B</kbd><span>Creates an entirely new board/working canvas. Double-click to go inside.</span></div>
           <div class="tool-row"><b>List</b><kbd>T</kbd><span>A checklist, bulleted or numbered list.</span></div>
+          <div class="tool-row"><b>Block</b><kbd>K</kbd><span>A titled panel (writing, timeline, list…); anything stuck to its edges moves with it. Click it, then Edit to change its type.</span></div>
           <div class="tool-row"><b>Column</b><kbd>C</kbd><span>Groups cards in a vertical stack. Drag cards into it.</span></div>
           <div class="tool-row"><b>Folder</b><kbd>G</kbd><span>Holds photos and boards in a tidy grid. Drag them in to organize; double-click one to open it.</span></div>
           <div class="tool-row"><b>Link</b><kbd>L</kbd><span>Saves a web address with its title and preview.</span></div>
@@ -3415,7 +3420,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
           <div class="tool-row"><b>Sheet</b><kbd>E</kbd><span>(Under More.) A spreadsheet with formulas.</span></div>
           <div class="tool-row"><b>Card</b><kbd>D</kbd><span>(Under More.) A character, item or place. Mentions of its name link to it in notes.</span></div>
           <div class="tool-row"><b>D&amp;D sheet</b><kbd>R</kbd><span>(Under More.) A fillable D&amp;D 5e character sheet.</span></div>
-          <div class="tool-row"><b>Block</b><kbd>K</kbd><span>(Under More.) A titled panel; anything stuck to its edges moves with it.</span></div>
         </div>
         <div class="meta"><b>Everywhere:</b> <kbd>Ctrl+K</kbd> search · <kbd>Ctrl+Z</kbd> undo · <kbd>Delete</kbd> remove ·
           <kbd>Z</kbd> fit everything · <kbd>S</kbd> snap to grid · <kbd>F</kbd> focus mode · <kbd>?</kbd> all shortcuts.
@@ -3603,7 +3607,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b102";
+window.BUILD = "b103";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5566,7 +5570,12 @@ function buildBlock(c, el){
   t.title = "Double-click to rename";
   const grip = document.createElement("span"); grip.className = "bk-grip"; grip.textContent = "⠿";
   grip.title = "Drag — anything stuck to this block comes with it";
-  bar.append(t, grip);
+  /* shows while the block is selected: change what kind of block it is */
+  const edit = document.createElement("button"); edit.className = "bk-edit"; edit.textContent = "Edit";
+  edit.title = "Change this block's type";
+  edit.addEventListener("pointerdown", e => e.stopPropagation());
+  edit.addEventListener("click", e => { e.stopPropagation(); pickBlockKind(c.id); });
+  bar.append(t, edit, grip);
 
   const kind = c.blockKind || "text";
   if (kind !== "text"){
@@ -11073,6 +11082,7 @@ document.addEventListener("pointerdown", e => {
    a few lines up). Moving the real node keeps its one set of listeners. */
 let blockToolHome = null;
 function placeBlockTool(onCard){
+  return;   /* b103: Block lives in the main rail, so it no longer moves */
   const btn = document.querySelector('.tool[data-type="block"]');
   const railTools = $("#railTools");
   if (!btn || !railTools) return;
@@ -15945,6 +15955,8 @@ const TOUR_STEPS = [
     text:"Click or drag a tool to add it to the canvas. Look under <b>?</b> in the top right to view each tool's keybind."},
   {target:'#railTools .tool[data-type="board"]', place:"right", title:"Boards inside boards",
     text:"Creates an entirely new board/working canvas. Double-click to go inside. Shortcut: <b>B</b>."},
+  {target:'#railTools .tool[data-type="block"]', place:"right", title:"Blocks",
+    text:"A titled panel for writing, timelines, lists and more. Anything you stick to its edges moves with it. Click a block, then <b>Edit</b> to change what kind of block it is. Shortcut: <b>K</b>."},
   {target:"#crumbs", place:"down", title:"Navigation",
     text:"Used to navigate your boards. Click any part of the trail to go back up."},
   {target:"#canvas", place:"center", title:"Move around",
@@ -17738,6 +17750,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b103", [
+    "Block moved out of More to the main toolbar, under List, in lilac. Click a block and an Edit button appears to change its type. The tour now explains blocks."
+  ]],
   ["b102", [
     "Updates: a bar with a Refresh button appears when a new version is ready, and stays until you use it. The app checks each time you come back to it, which fixes phones that never picked up updates."
   ]],
@@ -17779,12 +17794,6 @@ const PATCH_NOTES = [
   ["b91", [
     "Tour rewritten; new Settings → Tools page explains every tool and its key (also from the ? panel).",
     "On phones and narrow windows, top-bar buttons that don't fit fold into a ••• menu instead of falling off the edge."
-  ]],
-  ["b90", [
-    "First visit shows a small welcome bar (Run setup, Open tutorial, or ✕) instead of a window in the way.",
-    "New guided tour points at each main tool. First time setup covers Drive, a computer folder, installing and personalizing; both reopen from Settings → Help.",
-    "Settings trimmed to five sections; cloud sync and backups now share one Your data page.",
-    "In narrow windows the board title steps aside instead of running into the buttons."
   ]],
 ];
 function renderPatchNotes(){
