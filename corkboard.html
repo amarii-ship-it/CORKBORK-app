@@ -422,6 +422,11 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .themegroup{grid-column:1 / -1; margin:10px 0 2px; font-size:12px; color:var(--text-dim);}
 .themegroup b{color:var(--text); font-size:13px; margin-right:6px;}
 #brandmark{width:26px; height:26px;}
+#updateBar{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:400; display:flex; align-items:center; gap:10px;
+  padding:9px 10px 9px 16px; border-radius:14px; background:var(--surface-hi); color:var(--text); font-size:13.5px;
+  box-shadow:0 10px 32px rgba(0,0,0,.28); max-width:calc(100vw - 24px);}
+#updateBar .primary{padding:7px 14px; border-radius:9px;}
+#updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
 /* tools that appear for a selection (Color): a cool blue wash, readable on any theme */
 .railtemp{border-top:none;}
@@ -3598,7 +3603,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b101";
+window.BUILD = "b102";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17595,10 +17600,65 @@ $("#syncKeepOffline").addEventListener("change", e => {
 /* Offline app: a service worker keeps a copy of CORKBORK on the device, so
    the hosted address opens with no connection (sw.js). Not possible from a
    file opened off disk, which is offline already. */
+/* ---- updates ------------------------------------------------------------
+   Phones rarely restart an installed app: reopening it wakes the copy that is
+   already in memory, so "it opens next time" could mean never. So the app
+   also asks the server for its build number whenever it comes back to the
+   screen, and a newer one gets a bar with a Refresh button that stays until
+   used. Refresh saves, puts the new file in the offline copy, then reloads. */
+const APP_FILE = "corkboard.html";
+let updateBuild = "";
+async function checkForUpdate(){
+  if (!/^https?:$/.test(location.protocol) || navigator.onLine === false) return false;
+  try {
+    const r = await fetch(APP_FILE + "?fresh=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) return false;
+    const m = /window\.BUILD = "([^"]+)"/.exec(await r.text());
+    if (m && m[1] !== window.BUILD){ showUpdateBar(m[1]); return true; }
+  } catch (_) {}
+  return false;
+}
+function showUpdateBar(build){
+  updateBuild = build || updateBuild;
+  let bar = $("#updateBar");
+  if (!bar){
+    bar = document.createElement("div"); bar.id = "updateBar";
+    bar.innerHTML = '<span>A new version of CORKBORK is ready.</span>' +
+      '<button id="updateNow" class="primary">Refresh</button><button id="updateLater" title="Later">\u2715</button>';
+    document.body.appendChild(bar);
+    bar.querySelector("#updateNow").addEventListener("click", applyUpdate);
+    bar.querySelector("#updateLater").addEventListener("click", () => bar.remove());
+  }
+}
+async function applyUpdate(){
+  const btn = $("#updateNow"); if (btn){ btn.disabled = true; btn.textContent = "Updating\u2026"; }
+  try { if (dirty) await saveNow(); } catch (_) {}
+  try {
+    const fresh = await fetch(APP_FILE + "?fresh=" + Date.now(), {cache:"no-store"});
+    if (fresh.ok && "caches" in window){
+      /* keep the server's version tags, or the offline worker sees a change that isn't one */
+      const text = await fresh.text(), headers = {"Content-Type":"text/html; charset=utf-8"};
+      for (const h of ["etag", "last-modified"]) if (fresh.headers.get(h)) headers[h] = fresh.headers.get(h);
+      for (const key of await caches.keys()){
+        if (!key.startsWith("corkbork-shell")) continue;
+        const cache = await caches.open(key);
+        for (const path of [APP_FILE, "./", "index.html"]){
+          const req = new Request(new URL(path, location.href).href);
+          if (path === APP_FILE || await cache.match(req)) await cache.put(req, new Response(text, {headers}));
+        }
+      }
+    }
+  } catch (_) {}
+  location.reload();
+}
+if (/^https?:$/.test(location.protocol)){
+  addEventListener("load", () => setTimeout(checkForUpdate, 3000));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+  setInterval(() => { if (document.visibilityState === "visible") checkForUpdate(); }, 30 * 60 * 1000);
+}
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   navigator.serviceWorker.addEventListener("message", e => {
-    if (e.data?.type === "corkbork-updated")
-      toast("A newer CORKBORK was downloaded. It opens next time, or reload now to use it.", 8000);
+    if (e.data?.type === "corkbork-updated") checkForUpdate();
   });
   addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("Offline copy unavailable:", err));
@@ -17678,6 +17738,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b102", [
+    "Updates: a bar with a Refresh button appears when a new version is ready, and stays until you use it. The app checks each time you come back to it, which fixes phones that never picked up updates."
+  ]],
   ["b101", [
     "Image right-click: Download image is back at the top; More has Copy image address and a new Edit metadata (name, caption, alt text, source link, credit). Images dragged in from a web page remember where they came from."
   ]],
@@ -17722,10 +17785,6 @@ const PATCH_NOTES = [
     "New guided tour points at each main tool. First time setup covers Drive, a computer folder, installing and personalizing; both reopen from Settings → Help.",
     "Settings trimmed to five sections; cloud sync and backups now share one Your data page.",
     "In narrow windows the board title steps aside instead of running into the buttons."
-  ]],
-  ["b88", [
-    "Stay signed in: after one Google sign-in per device, sync renews in the background with no Google popup.",
-    "Library → From Google Drive: pick files already in your Drive (select many at once) to add them to your Library."
   ]],
 ];
 function renderPatchNotes(){

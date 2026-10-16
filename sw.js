@@ -48,6 +48,9 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
 
+  /* the app's own update check: always ask the network */
+  if (url.origin === self.location.origin && url.searchParams.has("fresh")) return;
+
   if (url.origin === self.location.origin){
     event.respondWith((async () => {
       const cache = await caches.open(SHELL);
