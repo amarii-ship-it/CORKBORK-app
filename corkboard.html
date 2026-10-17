@@ -429,6 +429,48 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #updateBar .primary{padding:7px 14px; border-radius:9px;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
+/* mood tracker: each face's bubble carries the colour it will be in the log */
+.wd-body.wd-mood{align-items:stretch; justify-content:flex-start; gap:7px; padding-top:9px; text-align:left;}
+.md-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+.md-q{font-weight:800; font-size:13px; color:var(--text);}
+.md-date{font-size:11px; color:var(--text-dim); font-weight:700;}
+.md-faces{display:flex; justify-content:space-between; gap:5px;}
+.md-face{flex:1; height:40px; border-radius:13px; font-size:21px; background:color-mix(in srgb, var(--mcol) 22%, var(--surface)); transition:transform .1s;}
+.md-face:hover{background:color-mix(in srgb, var(--mcol) 42%, var(--surface)); transform:scale(1.05);}
+.md-face.sel{background:color-mix(in srgb, var(--mcol) 70%, var(--surface)); box-shadow:0 0 0 3px var(--mcol); transform:scale(1.07);}
+.md-note{width:100%; font-size:12px; padding:6px 9px; border-radius:10px; border:none; background:color-mix(in srgb, var(--text) 6%, transparent);}
+.md-week{display:flex; gap:4px;}
+.md-day{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:0;}
+.md-day small{font-size:9.5px; font-weight:700; color:var(--text-dim);}
+.md-day span{width:100%; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text-dim);}
+.md-day.today span{box-shadow:0 0 0 2px var(--whue);}
+.md-day.future{opacity:.4; cursor:default;}
+.md-look{align-self:center; margin-top:1px; font-size:11.5px; font-weight:800; padding:4px 11px; border-radius:99px; background:color-mix(in srgb, var(--whue) 22%, transparent); color:var(--text);}
+#moodDayPop{position:fixed; z-index:400; display:none; flex-direction:column; gap:8px; width:250px; padding:12px; border-radius:16px; background:var(--surface-hi); box-shadow:0 10px 32px rgba(0,0,0,.28);}
+#moodDayPop.open{display:flex;}
+.md-panel{width:min(760px, 96vw) !important; max-height:90vh; overflow:auto; gap:12px !important;}
+.md-ptop{display:flex; align-items:center; gap:10px;} .md-ptop b{font-size:16px; font-weight:900;}
+.md-tabs{display:flex; gap:4px; margin-left:auto;}
+.md-tabs button{padding:5px 12px; border-radius:99px; font-weight:800; font-size:12px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+.md-tabs button.on{background:#E8B93A; color:#fff;}
+.md-x{padding:4px 9px; color:var(--text-dim);}
+.md-lookwrap{display:flex; gap:24px; flex-wrap:wrap;}
+.md-ltitle{display:flex; align-items:center; gap:8px; font-weight:900; font-size:14px; margin-bottom:6px;}
+.md-ltitle button{padding:2px 8px; border-radius:8px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+.md-yrow{display:flex; align-items:center; gap:2px; margin-bottom:2px;}
+.md-yrow span{width:12px; font-size:10px; color:var(--text-dim); font-weight:700;}
+.md-px{width:11px; height:11px; border-radius:3px; padding:0; background:color-mix(in srgb, var(--text) 8%, transparent);}
+.md-px.future{opacity:.35; cursor:default;} .md-px.today{box-shadow:0 0 0 1.5px var(--text);}
+.md-mgrid{display:grid; grid-template-columns:repeat(7, 44px); gap:4px;}
+.md-mgrid small{font-size:10px; text-align:center; color:var(--text-dim); font-weight:700;}
+.md-mday{height:44px; border-radius:11px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; padding:0; background:color-mix(in srgb, var(--text) 6%, transparent);}
+.md-mday small{font-size:9.5px; color:var(--text-dim); font-weight:700;}
+.md-mday.future{opacity:.35; cursor:default;} .md-mday.today{box-shadow:0 0 0 2px #E8B93A;}
+.md-sum{flex:1; min-width:180px; display:flex; flex-direction:column; gap:6px;}
+.md-mostly{font-size:24px; font-weight:900;}
+.md-sub2{font-size:12px; color:var(--text-dim);}
+.md-legend{display:flex; gap:8px; flex-wrap:wrap; font-size:12px;}
+.md-legend b{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:3px; vertical-align:middle;}
 /* widgets: one look — rounded card, soft strip in the widget's colour, big bold numbers */
 .card.type-widget{border:none; border-radius:20px; background:var(--surface); overflow:hidden;
   box-shadow:0 2px 3px rgba(0,0,0,.06), 0 10px 26px rgba(0,0,0,var(--lift-shadow, .10));}
@@ -3703,7 +3745,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b110";
+window.BUILD = "b111";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4334,6 +4376,7 @@ function tabMergeWorkspace(base, local, remote){
   out.cards = tabMergeMap(base.cards, local.cards, remote.cards, byTime);
   out.labels = tabMergeMap(base.labels, local.labels, remote.labels, () => true);
   if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
+  if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
   {
     const key = x => x?.id ?? JSON.stringify(x);
     const toMap = list => new Map((list || []).map(x => [key(x), x]));
@@ -4354,7 +4397,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -4382,7 +4425,9 @@ function tabFlushRender(){
   clearTimeout(tabRenderTimer);
   if (!tabRenderPending) return;
   if (syncUserBusy()){ tabRenderTimer = setTimeout(tabFlushRender, 400); return; }
-  tabRenderPending = false; renderAll();
+  tabRenderPending = false;
+  for (const c of Object.values(state.cards)) if (c.type === "widget" && c.widget === "mood") invalidateCardEls(c.id);
+  renderAll();
 }
 /* token -> picture we already hold, so pulling in another tab's save only
    reads attachments that are new to this tab */
@@ -15712,7 +15757,8 @@ $("#sprintReset").addEventListener("click", () => { stopSprint(); sprintLeft = s
 const WIDGET_KINDS = {
   clock:    {name:"Clock",     hue:"#A98BD6", icon:"\u{1F552}", size:{w:200, h:160}},
   timer:    {name:"Timer",     hue:"#3FAF62", icon:"⏱",    size:{w:210, h:196}},
-  countdown:{name:"Countdown", hue:"#E2673F", icon:"⏳",    size:{w:200, h:178}}
+  countdown:{name:"Countdown", hue:"#E2673F", icon:"⏳",    size:{w:200, h:178}},
+  mood:     {name:"Mood",      hue:"#E8B93A", icon:"\u{1F642}", size:{w:300, h:248}}
 };
 const WIDGET_ZONES = ["", "UTC", "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "America/Sao_Paulo",
   "Europe/London", "Europe/Paris", "Europe/Berlin", "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney"];
@@ -15766,6 +15812,8 @@ function buildWidget(c, el){
     btn(c.endAt ? "Pause" : (c.done ? "Again" : "Start"), () => timerToggle(c.id), true);
     btn("Reset", () => timerReset(c.id));
     body.append(big, bar, row);
+  } else if (c.widget === "mood"){
+    buildMoodWidget(c, body); el.append(strip, body); return;
   } else if (c.widget === "countdown"){
     const n = countdownDays(c);
     const big = document.createElement("div"); big.className = "wd-big wd-accent";
@@ -15797,6 +15845,7 @@ setInterval(() => {
     if (el.dataset.part === "bar") el.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%";
     else { const t = widgetLiveText(c, el.dataset.part); if (el.textContent !== t) el.textContent = t; }
   }
+  if (moodTodayKey !== moodDayKey()){ moodTodayKey = moodDayKey(); if (worldEl.querySelector(".wd-mood")) refreshMoodWidgets(); }
   /* timers anywhere in the workspace, not just this board */
   let finished = false;
   for (const c of Object.values(state.cards)){
@@ -15820,6 +15869,7 @@ async function editWidget(c){
       field("label", "Label", text(c.label, c.widget === "countdown" ? "e.g. Midterm" : c.widget === "timer" ? "e.g. Study" : "e.g. Home"));
       if (c.widget === "timer"){ const i = document.createElement("input"); i.type = "number"; i.min = 1; i.max = 600; i.value = Math.round((c.duration || 1500) / 60); field("minutes", "Minutes", i); }
       if (c.widget === "countdown"){ const i = document.createElement("input"); i.type = "date"; i.value = c.target || ""; field("target", "Date", i); }
+      if (c.widget === "mood"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Moods are shared by every Mood widget. Tap a day in the week, or Look back, to change past days."; body.appendChild(m); }
       if (c.widget === "clock"){
         const sel = document.createElement("select");
         for (const z of WIDGET_ZONES){ const o = document.createElement("option"); o.value = z; o.textContent = z ? z.replace(/_/g, " ") : "None"; if ((c.zone || "") === z) o.selected = true; sel.appendChild(o); }
@@ -15852,7 +15902,178 @@ function addWidget(kind){
   if (kind === "countdown") editWidget(card(c.id));
   return card(c.id);
 }
-/* the Widget tool's picker: short names; time widgets share one entry */
+/* ---- mood tracker --------------------------------------------------------
+   One log for the whole workspace (state.mood, keyed by local date), synced
+   like everything else. Today's widget shows today; at midnight it moves on
+   and yesterday stays in the log. Any past day can be filled in or changed
+   from the week row or the look-back; nobody types a date. */
+const MOODS = [
+  {v:1, face:"\u{1F623}", name:"Awful", col:"#E06363"},
+  {v:2, face:"\u{1F641}", name:"Bad",   col:"#F0A07A"},
+  {v:3, face:"\u{1F610}", name:"Okay",  col:"#F2D16B"},
+  {v:4, face:"\u{1F642}", name:"Good",  col:"#A9D88B"},
+  {v:5, face:"\u{1F604}", name:"Great", col:"#5DBB63"}
+];
+const moodOf = v => MOODS.find(m => m.v === v);
+function moodDayKey(d=new Date()){ return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+let moodTodayKey = moodDayKey();
+function moodEntry(key){ return state.mood?.[key] || null; }
+/* the log lives outside the card, so a mood widget's cached element must be rebuilt */
+function refreshMoodWidgets(){
+  for (const c of Object.values(state.cards)) if (c.type === "widget" && c.widget === "mood") invalidateCardEls(c.id);
+  renderBoard();
+}
+function setMood(key, patch){
+  const next = Object.assign({}, moodEntry(key) || {}, patch, {updatedAt:Date.now()});
+  state.mood = Object.assign({}, state.mood || {});
+  if (!next.m && !next.note) delete state.mood[key]; else state.mood[key] = next;
+  markDirty(); refreshMoodWidgets();
+  if ($("#moodLook")?.classList.contains("open")) renderMoodLook();
+}
+function moodFaces(key, onPick){
+  const row = document.createElement("div"); row.className = "md-faces";
+  const cur0 = moodEntry(key)?.m;
+  for (const m of MOODS){
+    const b = document.createElement("button"); b.className = "md-face" + (cur0 === m.v ? " sel" : "");
+    b.style.setProperty("--mcol", m.col); b.textContent = m.face; b.title = m.name;
+    b.addEventListener("pointerdown", e => e.stopPropagation());
+    b.addEventListener("click", e => { e.stopPropagation(); onPick(cur0 === m.v ? null : m.v); });
+    row.appendChild(b);
+  }
+  return row;
+}
+function buildMoodWidget(c, body){
+  body.classList.add("wd-mood");
+  const key = moodDayKey();
+  const q = document.createElement("div"); q.className = "md-q"; q.textContent = "How are you today?";
+  const date = document.createElement("div"); date.className = "md-date"; date.textContent = new Date().toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"});
+  const note = document.createElement("input"); note.type = "text"; note.className = "md-note"; note.placeholder = "Add a note… (optional)";
+  note.value = moodEntry(key)?.note || "";
+  note.addEventListener("pointerdown", e => e.stopPropagation());
+  note.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") note.blur(); });
+  note.addEventListener("change", () => setMood(key, {note:note.value.trim()}));
+  /* this week, Monday first; empty past days show + to fill in */
+  const week = document.createElement("div"); week.className = "md-week";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  for (let i = 0; i < 7; i++){
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    const k = moodDayKey(d), e = moodEntry(k), m = e?.m && moodOf(e.m), future = d > today;
+    const cell = document.createElement("button"); cell.className = "md-day" + (k === key ? " today" : "") + (future ? " future" : "");
+    cell.dataset.day = k;
+    cell.innerHTML = "<small>" + "MTWTFSS"[i] + "</small><span>" + (m ? m.face : future ? "" : "+") + "</span>";
+    if (m) cell.querySelector("span").style.background = m.col;
+    cell.title = d.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
+    cell.addEventListener("pointerdown", ev => ev.stopPropagation());
+    if (!future) cell.addEventListener("click", ev => { ev.stopPropagation(); openMoodDay(k, cell); });
+    week.appendChild(cell);
+  }
+  const look = document.createElement("button"); look.className = "md-look"; look.textContent = "Look back";
+  look.addEventListener("pointerdown", e => e.stopPropagation());
+  look.addEventListener("click", e => { e.stopPropagation(); openMoodLook(); });
+  const head = document.createElement("div"); head.className = "md-head"; head.append(q, date);
+  body.append(head, moodFaces(key, v => setMood(key, {m:v})), note, week, look);
+}
+/* a small editor for any one day */
+function openMoodDay(key, anchor){
+  let pop = $("#moodDayPop");
+  if (!pop){
+    pop = document.createElement("div"); pop.id = "moodDayPop"; document.body.appendChild(pop);
+    document.addEventListener("pointerdown", e => { if (pop.classList.contains("open") && !pop.contains(e.target)) pop.classList.remove("open"); }, true);
+  }
+  const [y, mo, d] = key.split("-").map(Number);
+  pop.innerHTML = "";
+  const t = document.createElement("div"); t.className = "md-q"; t.textContent = new Date(y, mo - 1, d).toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"});
+  const note = document.createElement("input"); note.type = "text"; note.className = "md-note"; note.placeholder = "Note (optional)"; note.value = moodEntry(key)?.note || "";
+  note.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter"){ setMood(key, {note:note.value.trim()}); pop.classList.remove("open"); } });
+  note.addEventListener("change", () => setMood(key, {note:note.value.trim()}));
+  pop.append(t, moodFaces(key, v => { setMood(key, {m:v}); pop.classList.remove("open"); }), note);
+  pop.classList.add("open");
+  const z = uiz(), r = anchor.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+  pop.style.left = Math.max(8, Math.min(r.left / z, innerWidth / z - pr.width / z - 8)) + "px";
+  pop.style.top = Math.max(8, Math.min(r.bottom / z + 6, innerHeight / z - pr.height / z - 8)) + "px";
+}
+/* looking back: a year of squares or a month of faces, plus a short summary */
+let moodLookMode = "year", moodLookMonth = null;
+function openMoodLook(){
+  let ov = $("#moodLook");
+  if (!ov){
+    ov = document.createElement("div"); ov.id = "moodLook"; ov.className = "overlay";
+    ov.innerHTML = '<div class="panel md-panel"><div class="md-ptop"><b>Mood</b><span class="md-tabs"><button data-m="month">Month</button><button data-m="year">Year</button></span><button class="md-x" title="Close">✕</button></div><div id="moodLookBody"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("pointerdown", e => { if (e.target === ov) closeOverlay(ov); });
+    ov.querySelector(".md-x").addEventListener("click", () => closeOverlay(ov));
+    for (const b of ov.querySelectorAll(".md-tabs button")) b.addEventListener("click", () => { moodLookMode = b.dataset.m; renderMoodLook(); });
+  }
+  moodLookMonth = moodLookMonth || new Date();
+  openOverlay(ov);
+  renderMoodLook();
+}
+function renderMoodLook(){
+  const body = $("#moodLookBody"); if (!body) return;
+  for (const b of document.querySelectorAll("#moodLook .md-tabs button")) b.classList.toggle("on", b.dataset.m === moodLookMode);
+  body.innerHTML = "";
+  const wrap = document.createElement("div"); wrap.className = "md-lookwrap";
+  const left = document.createElement("div"), right = document.createElement("div"); right.className = "md-sum";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const cellFor = (d, cls) => {
+    const k = moodDayKey(d), e = moodEntry(k), m = e?.m && moodOf(e.m), future = d > today;
+    const b = document.createElement("button"); b.className = cls + (future ? " future" : "") + (k === moodDayKey() ? " today" : "");
+    b.dataset.day = k;
+    if (m) b.style.background = m.col;
+    b.title = d.toLocaleDateString([], {month:"short", day:"numeric"}) + (m ? " · " + m.name : "") + (e?.note ? " — " + e.note : "");
+    if (!future) b.addEventListener("click", () => openMoodDay(k, b));
+    return {b, m};
+  };
+  let shown = [];
+  if (moodLookMode === "year"){
+    const y = today.getFullYear();
+    const title = document.createElement("div"); title.className = "md-ltitle"; title.textContent = String(y); left.appendChild(title);
+    for (let mo = 0; mo < 12; mo++){
+      const r = document.createElement("div"); r.className = "md-yrow";
+      const lab = document.createElement("span"); lab.textContent = new Date(y, mo, 1).toLocaleDateString([], {month:"narrow"}); r.appendChild(lab);
+      const days = new Date(y, mo + 1, 0).getDate();
+      for (let d = 1; d <= days; d++){ const {b, m} = cellFor(new Date(y, mo, d), "md-px"); r.appendChild(b); if (m && mo === today.getMonth()) shown.push(m); }
+      left.appendChild(r);
+    }
+  } else {
+    const base = new Date(moodLookMonth.getFullYear(), moodLookMonth.getMonth(), 1);
+    const nav = document.createElement("div"); nav.className = "md-ltitle";
+    const prev = document.createElement("button"); prev.textContent = "‹";
+    const next = document.createElement("button"); next.textContent = "›";
+    prev.addEventListener("click", () => { moodLookMonth = new Date(base.getFullYear(), base.getMonth() - 1, 1); renderMoodLook(); });
+    next.addEventListener("click", () => { moodLookMonth = new Date(base.getFullYear(), base.getMonth() + 1, 1); renderMoodLook(); });
+    const t = document.createElement("span"); t.textContent = base.toLocaleDateString([], {month:"long", year:"numeric"});
+    nav.append(prev, t, next); left.appendChild(nav);
+    const grid = document.createElement("div"); grid.className = "md-mgrid";
+    for (const h of "MTWTFSS"){ const s2 = document.createElement("small"); s2.textContent = h; grid.appendChild(s2); }
+    for (let i = 0; i < (base.getDay() + 6) % 7; i++) grid.appendChild(document.createElement("i"));
+    const days = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= days; d++){
+      const {b, m} = cellFor(new Date(base.getFullYear(), base.getMonth(), d), "md-mday");
+      b.innerHTML = "<small>" + d + "</small>" + (m ? m.face : ""); grid.appendChild(b); if (m) shown.push(m);
+    }
+    left.appendChild(grid);
+  }
+  const h = document.createElement("div"); h.className = "md-q"; h.textContent = moodLookMode === "year" ? "This month" : "This month in view";
+  right.appendChild(h);
+  if (shown.length){
+    const counts = new Map(); for (const m of shown) counts.set(m.v, (counts.get(m.v) || 0) + 1);
+    const top = moodOf([...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0]);
+    const big = document.createElement("div"); big.className = "md-mostly"; big.textContent = "Mostly " + top.face; right.appendChild(big);
+    const avg = shown.reduce((n, m) => n + m.v, 0) / shown.length;
+    const sub = document.createElement("div"); sub.className = "md-sub2";
+    sub.textContent = shown.length + (shown.length === 1 ? " day logged" : " days logged") + " · average " + moodOf(Math.round(avg)).name.toLowerCase();
+    right.appendChild(sub);
+  } else { const e = document.createElement("div"); e.className = "md-sub2"; e.textContent = "Nothing logged yet."; right.appendChild(e); }
+  const leg = document.createElement("div"); leg.className = "md-legend";
+  for (const m of MOODS){ const s2 = document.createElement("span"); s2.innerHTML = "<b style='background:" + m.col + "'></b>" + m.face; leg.appendChild(s2); }
+  right.appendChild(leg);
+  const tip = document.createElement("div"); tip.className = "md-sub2"; tip.textContent = "Tap any day to log or change it."; right.appendChild(tip);
+  wrap.append(left, right); body.appendChild(wrap);
+}
+/* the Widget tool's picker: one row per widget, short names */
+
 function openWidgetPicker(){
   const pop = $("#widgetPop");
   if (pop.classList.contains("open")){ pop.classList.remove("open"); return; }
@@ -15864,15 +16085,8 @@ function openWidgetPicker(){
     const t = document.createElement("span"); t.textContent = name;
     b.append(i, t); b.addEventListener("click", onClick); pop.appendChild(b); return b;
   };
-  const time = row("⏱", "#3FAF62", "Clock & timers", () => { chips.style.display = chips.style.display === "flex" ? "none" : "flex"; });
-  const chips = document.createElement("div"); chips.className = "wp-chips";
-  for (const kind of ["clock", "timer", "countdown"]){
-    const ch = document.createElement("button"); ch.className = "wp-chip"; ch.style.setProperty("--whue", WIDGET_KINDS[kind].hue);
-    ch.textContent = WIDGET_KINDS[kind].icon + " " + WIDGET_KINDS[kind].name;
-    ch.addEventListener("click", () => { pop.classList.remove("open"); addWidget(kind); });
-    chips.appendChild(ch);
-  }
-  pop.appendChild(chips);
+  for (const [kind, name] of [["clock", "Clock"], ["timer", "Timer"], ["countdown", "Countdown"], ["mood", "Mood tracker"]])
+    row(WIDGET_KINDS[kind].icon, WIDGET_KINDS[kind].hue, name, () => { pop.classList.remove("open"); addWidget(kind); });
   const r = $("#toolWidget").getBoundingClientRect(), z = uiz();
   pop.style.top = Math.min(r.top / z, innerHeight / z - 200) + "px";
   pop.classList.add("open");
@@ -17411,7 +17625,7 @@ function syncLockedPlaceholder(c){
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
-    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {}))};
+    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
     if (!SYNC_DEVICE_SETTINGS.has(k)) out.settings[k] = syncClone((v ?? null));
   const keep = id => !priv.cards.has(id);
@@ -17541,6 +17755,8 @@ function syncMergeWorkspace(base, local, remote){
   mergeMap("labels", () => false, () => localNewerWs);
   /* the Library (Uploads) list: items are added and removed, rarely edited */
   mergeMap("library", () => false, (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0));
+  /* the mood log: one entry per day, newest edit of a day wins */
+  mergeMap("mood", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
 
   /* bugs: list of {id,...} */
   {
@@ -18473,6 +18689,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b111", [
+    "Mood tracker widget: one tap a day (each face shows its colour), an optional note, this week at a glance, and Look back by month or year. Tap any past day to fill it in. Syncs across devices.",
+    "The Widget picker is a simple list again."
+  ]],
   ["b110", [
     "Widgets (toolbar, above More): Clock (with a second time zone), Timer and Countdown. Timers keep running on other boards and after closing the app, and tell you when time's up. Double-click or Edit to change one."
   ]],
@@ -18509,9 +18729,6 @@ const PATCH_NOTES = [
     "New look: wider left toolbar with softly coloured tools; Recycle (cyan) and Trash (red) stand out; cards lift off the board; top bar is a flat darker band with a line under it; windows lose their outline; bigger frog icon.",
     "Every theme now mixes its bars, cards and lines from three colours (board, text, accent), so they all follow the same light/dark rule. Eautiphen moved to a Legacy section.",
     "Labels: select cards, then click Labels in the top bar (it lights up) to label them all at once."
-  ]],
-  ["b99", [
-    "The text formatting bar no longer leaves an arrow tab on screen: it shows while you edit text and hides after."
   ]],
 ];
 function renderPatchNotes(){
