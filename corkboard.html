@@ -555,6 +555,23 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .md-day span{width:100%; height:24px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text-dim);}
 .md-day.today span{box-shadow:0 0 0 2px var(--whue);}
 .md-day.future{opacity:.4; cursor:default;}
+.md-vtabs{display:flex; gap:2px; padding:2px; border-radius:7px; align-self:center; background:color-mix(in srgb, var(--text) 7%, transparent);}
+.md-vtabs button{padding:3px 10px; border-radius:5px; font-size:11px; font-weight:700; color:var(--text-dim);}
+.md-vtabs button.on{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.12);}
+.md-wlabel{font-family:var(--font-serif); font-weight:700; font-size:13px; text-align:center; margin-bottom:3px;}
+.md-wgrid{display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px;}
+.md-wgrid small{font-size:9px; text-align:center; color:var(--text-dim); font-weight:700;}
+.md-wday{padding:0; display:flex; flex-direction:column; align-items:center; gap:1px;}
+.md-wday small{font-size:8.5px; color:var(--text-dim); font-weight:700; font-family:var(--font-ui);}
+.md-wday span{width:100%; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-dim);
+  background:color-mix(in srgb, var(--text) 6%, transparent); font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",var(--font-ui);}
+.md-wday.today span{box-shadow:0 0 0 2px var(--whue);}
+.md-wday.future{opacity:.4; cursor:default;}
+.md-wyear{display:flex; flex-direction:column; gap:2px;}
+.md-wyrow{display:flex; align-items:center; gap:1.5px;}
+.md-wyrow span{width:10px; flex:none; font-size:8.5px; font-weight:700; color:var(--text-dim);}
+.md-wpx{flex:1; min-width:0; height:9px; padding:0; border-radius:2px; background:color-mix(in srgb, var(--text) 8%, transparent);}
+.md-wpx.future{opacity:.35; cursor:default;} .md-wpx.today{box-shadow:0 0 0 1.5px var(--text);}
 .md-look{align-self:center; margin-top:1px; font-size:11.5px; font-weight:800; padding:4px 11px; border-radius:99px; background:color-mix(in srgb, var(--whue) 22%, transparent); color:var(--text);}
 #moodDayPop{position:fixed; z-index:400; display:none; flex-direction:column; gap:8px; width:250px; padding:12px; border-radius:16px; background:var(--surface-hi); box-shadow:0 10px 32px rgba(0,0,0,.28);}
 #moodDayPop.open{display:flex;}
@@ -3931,7 +3948,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b119";
+window.BUILD = "b120";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11951,19 +11968,41 @@ let spaceDown = false;
 const activePointers = new Map();   // for pinch
 let pinch = null;
 
+/* Two-finger pinch. The second finger takes over completely: whatever the
+   first finger started (a pan, a card drag or resize, a long-press) stops
+   and the card goes back where it was. Before b120 the first finger's pan
+   kept running, resetting the view to where it began on every move, so the
+   pinch and the pan fought and the board jumped about. Fingers are tracked
+   in the capture phase, so a finger on a widget button still counts. */
+let gestureGen = 0;
+function pinchPoints(){
+  const pts = [...activePointers.values()].slice(0, 2);
+  return {d:Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx:(pts[0].x + pts[1].x) / 2, my:(pts[0].y + pts[1].y) / 2};
+}
+function startPinch(){
+  gestureGen++;
+  pinch = pinchPoints();
+  if (drag){
+    clearTimeout(drag.longpress);
+    drag.els && drag.els.forEach(el => el.classList.remove("dragging"));
+    drag = null; clearGuides(); renderBoard();
+  }
+  if (marq){ marq = null; $("#marquee").style.display = "none"; }
+  canvasEl.classList.remove("panning");
+}
+canvasEl.addEventListener("pointerdown", e => {
+  if (e.pointerType !== "touch") return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activePointers.size >= 2){
+    if (!pinch) startPinch();
+    e.stopPropagation(); e.preventDefault();
+  }
+}, true);
 canvasEl.addEventListener("pointerdown", onCanvasPointerDown);
 function onCanvasPointerDown(e){
   const cardEl = e.target.closest(".card");
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-  /* two-finger pinch / pan */
-  if (e.pointerType === "touch" && activePointers.size === 2){
-    const pts = [...activePointers.values()];
-    pinch = { d: Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y),
-              mx: (pts[0].x+pts[1].x)/2, my: (pts[0].y+pts[1].y)/2 };
-    drag = null; marq = null;
-    return;
-  }
+  if (pinch) return;
 
   if (cardEl){
     if (e.target.classList.contains("rsz")) startResize(e, cardEl);
@@ -11975,27 +12014,29 @@ function onCanvasPointerDown(e){
   else if (e.button === 0){ startMarquee(e); }
 }
 
-canvasEl.addEventListener("pointermove", e => {
-  if (activePointers.has(e.pointerId))
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pinch && activePointers.size === 2){
-    const pts = [...activePointers.values()];
-    const d = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
-    const mx = (pts[0].x+pts[1].x)/2, my = (pts[0].y+pts[1].y)/2;
+addEventListener("pointermove", e => {
+  if (!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && activePointers.size >= 2){
+    const {d, mx, my} = pinchPoints();
     if (pinch.d > 0) zoomAt(mx, my, d / pinch.d);
     const z = uiz();
     panX += (mx - pinch.mx)/z; panY += (my - pinch.my)/z; applyViewport();
     pinch = { d, mx, my };
   }
-});
-canvasEl.addEventListener("pointerup", e => { activePointers.delete(e.pointerId); if (activePointers.size < 2) pinch = null; });
-canvasEl.addEventListener("pointercancel", e => { activePointers.delete(e.pointerId); if (activePointers.size < 2) pinch = null; });
+}, true);
+const pointerGone = e => {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size < 2) pinch = null;
+};
+addEventListener("pointerup", pointerGone, true);
+addEventListener("pointercancel", pointerGone, true);
 
 /* pan */
 function startPan(e){
   canvasEl.classList.add("panning");
-  const sx = e.clientX, sy = e.clientY, px = panX, py = panY;
-  const move = ev => { const z = uiz(); panX = px + (ev.clientX - sx)/z; panY = py + (ev.clientY - sy)/z; applyViewport(); };
+  const sx = e.clientX, sy = e.clientY, px = panX, py = panY, gen = gestureGen;
+  const move = ev => { if (gen !== gestureGen) return up(); const z = uiz(); panX = px + (ev.clientX - sx)/z; panY = py + (ev.clientY - sy)/z; applyViewport(); };
   const up = () => {
     canvasEl.classList.remove("panning");
     removeEventListener("pointermove", move); removeEventListener("pointerup", up);
@@ -12320,7 +12361,14 @@ function startResize(e, cardEl){
   const isCol = c.type === "column" || c.type === "grid";
   const minW = isCol ? 160 : 120;
   cardEl.setPointerCapture(e.pointerId);
+  const gen = gestureGen;
   const move = ev => {
+    /* a second finger turned this into a pinch: drop the resize */
+    if (gen !== gestureGen){
+      try { cardEl.releasePointerCapture(ev.pointerId); } catch (_) {}
+      cardEl.removeEventListener("pointermove", move); cardEl.removeEventListener("pointerup", up);
+      cardEl._w = cardEl._h = cardEl._fscale = undefined; clearGuides(); renderBoard(); return;
+    }
     const z = uiz();
     let w = Math.max(minW, w0 + (ev.clientX - sx)/(z*zoom));
     let h = Math.max(60,  h0 + (ev.clientY - sy)/(z*zoom));
@@ -12359,10 +12407,11 @@ function startResize(e, cardEl){
     cardEl._w = w; cardEl._h = h;
   };
   const up = ev => {
-    cardEl.releasePointerCapture(ev.pointerId);
+    try { cardEl.releasePointerCapture(ev.pointerId); } catch (_) {}
     cardEl.removeEventListener("pointermove", move);
     cardEl.removeEventListener("pointerup", up);
     clearGuides();
+    if (gen !== gestureGen) return;
     if (cardEl._w){
       pushUndo();
       const patch = { w: Math.round(cardEl._w), h: Math.round(cardEl._h) };
@@ -16132,7 +16181,8 @@ function buildWidget(c, el){
   const ed = document.createElement("button"); ed.className = "wd-edit"; ed.textContent = "Edit"; ed.title = "Change this widget";
   ed.addEventListener("pointerdown", e => e.stopPropagation());
   ed.addEventListener("click", e => { e.stopPropagation(); editWidget(card(c.id)); });
-  strip.append(ic, tl, ed);
+  strip.append(ic, tl);
+  if (c.widget !== "mood" && c.widget !== "calendar") strip.appendChild(ed);
   const body = document.createElement("div"); body.className = "wd-body";
   const live = (cls, part) => { const d = document.createElement("div"); d.className = cls + " wd-live"; d.dataset.part = part || ""; d.textContent = widgetLiveText(c, part); return d; };
   if (c.widget === "clock"){
@@ -16161,6 +16211,7 @@ function buildWidget(c, el){
   } else if (c.widget === "calendar"){
     buildCalendarWidget(c, body); el.append(strip, body); return;
   } else if (c.widget === "countdown"){
+    el.classList.add("wd-clean");
     const n = countdownDays(c);
     const big = document.createElement("div"); big.className = "wd-big wd-accent";
     const sub = document.createElement("div"); sub.className = "wd-sub";
@@ -16309,28 +16360,66 @@ function buildMoodWidget(c, body){
   note.addEventListener("pointerdown", e => e.stopPropagation());
   note.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") note.blur(); });
   note.addEventListener("change", () => setMood(key, {note:note.value.trim()}));
-  /* this week, Monday first; empty past days show + to fill in */
-  const week = document.createElement("div"); week.className = "md-week";
+  /* the widget shows a week, a month or a year of moods, as chosen; tap any past day to fill it in */
+  const view = ["week", "month", "year"].includes(c.moodView) ? c.moodView : "week";
+  const tabs = document.createElement("div"); tabs.className = "md-vtabs";
+  for (const [v, name] of [["week", "Week"], ["month", "Month"], ["year", "Year"]]){
+    const b = document.createElement("button"); b.textContent = name; b.dataset.v = v; if (v === view) b.className = "on";
+    b.addEventListener("pointerdown", e => e.stopPropagation());
+    b.addEventListener("click", e => {
+      e.stopPropagation(); if (v === view) return;
+      const min = MOOD_VIEW_SIZE[v], cc = card(c.id);
+      patchCard(c.id, {moodView:v, w:Math.max(cc.w, min.w), h:Math.max(cc.h, min.h)}); markDirty(); renderBoard();
+    });
+    tabs.appendChild(b);
+  }
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  for (let i = 0; i < 7; i++){
-    const d = new Date(monday); d.setDate(monday.getDate() + i);
+  const dayCell = (d, cls, label) => {
     const k = moodDayKey(d), e = moodEntry(k), m = e?.m && moodOf(e.m), future = d > today;
-    const cell = document.createElement("button"); cell.className = "md-day" + (k === key ? " today" : "") + (future ? " future" : "");
+    const cell = document.createElement("button"); cell.className = cls + (k === key ? " today" : "") + (future ? " future" : "");
     cell.dataset.day = k;
-    cell.innerHTML = "<small>" + "MTWTFSS"[i] + "</small><span>" + (m ? m.face : future ? "" : "+") + "</span>";
-    if (m) cell.querySelector("span").style.background = m.col;
-    cell.title = d.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
+    if (label != null) cell.innerHTML = "<small>" + label + "</small><span>" + (m ? m.face : future ? "" : "+") + "</span>";
+    if (m) (cell.querySelector("span") || cell).style.background = m.col;
+    cell.title = d.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"}) + (m ? " \u00b7 " + m.name : "") + (e?.note ? " \u2014 " + e.note : "");
     cell.addEventListener("pointerdown", ev => ev.stopPropagation());
     if (!future) cell.addEventListener("click", ev => { ev.stopPropagation(); openMoodDay(k, cell); });
-    week.appendChild(cell);
+    return cell;
+  };
+  let range;
+  if (view === "week"){
+    /* this week, Monday first; empty past days show + to fill in */
+    range = document.createElement("div"); range.className = "md-week";
+    const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    for (let i = 0; i < 7; i++){ const d = new Date(monday); d.setDate(monday.getDate() + i); range.appendChild(dayCell(d, "md-day", "MTWTFSS"[i])); }
+  } else if (view === "month"){
+    range = document.createElement("div"); range.className = "md-wmonth";
+    const t = document.createElement("div"); t.className = "md-wlabel"; t.textContent = today.toLocaleDateString([], {month:"long", year:"numeric"}); range.appendChild(t);
+    const g = document.createElement("div"); g.className = "md-wgrid";
+    for (const h of "MTWTFSS"){ const s2 = document.createElement("small"); s2.textContent = h; g.appendChild(s2); }
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    for (let i = 0; i < (first.getDay() + 6) % 7; i++) g.appendChild(document.createElement("i"));
+    const len = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    for (let n = 1; n <= len; n++) g.appendChild(dayCell(new Date(today.getFullYear(), today.getMonth(), n), "md-wday", n));
+    range.appendChild(g);
+  } else {
+    range = document.createElement("div"); range.className = "md-wyear";
+    const t = document.createElement("div"); t.className = "md-wlabel"; t.textContent = String(today.getFullYear()); range.appendChild(t);
+    for (let mo = 0; mo < 12; mo++){
+      const r = document.createElement("div"); r.className = "md-wyrow";
+      const lab = document.createElement("span"); lab.textContent = new Date(today.getFullYear(), mo, 1).toLocaleDateString([], {month:"narrow"}); r.appendChild(lab);
+      const len = new Date(today.getFullYear(), mo + 1, 0).getDate();
+      for (let n = 1; n <= len; n++) r.appendChild(dayCell(new Date(today.getFullYear(), mo, n), "md-wpx"));
+      range.appendChild(r);
+    }
   }
+  const week = range;
   const look = document.createElement("button"); look.className = "md-look"; look.textContent = "Look back";
   look.addEventListener("pointerdown", e => e.stopPropagation());
   look.addEventListener("click", e => { e.stopPropagation(); openMoodLook(); });
   const head = document.createElement("div"); head.className = "md-head"; head.append(q, date);
-  body.append(head, moodFaces(key, v => setMood(key, {m:v})), note, week, look);
+  body.append(head, moodFaces(key, v => setMood(key, {m:v})), note, tabs, week, look);
 }
+const MOOD_VIEW_SIZE = {week:{w:300, h:280}, month:{w:300, h:430}, year:{w:340, h:410}};
 /* a small editor for any one day */
 function openMoodDay(key, anchor){
   let pop = $("#moodDayPop");
@@ -19850,6 +19939,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b120", [
+    "Pinch to zoom on phones and iPads is smooth: the first finger no longer keeps dragging the board (or a card) while you pinch.",
+    "Countdown sits bare like the clock. The Mood tracker can show this week, this month or the whole year, and neither it nor the Calendar has an Edit button now (right-click → Edit still works)."
+  ]],
   ["b119", [
     "Edit board is simpler: the tile shows exactly how the board will look as you change it; then Name, every Jewel colour and gradient, a small scrolling icon grid with search (or Automatic, which follows the name), and Tags.",
     "On phones and iPads each list item shows its calendar button, so you can give it a due date without hovering."
@@ -19895,10 +19988,7 @@ const PATCH_NOTES = [
   ["b108", [
     "New folder button in the top bar: shows where this board's folder is on your computer (Copy path, then paste into File Explorer), lists its files with Open buttons, and offers Update archive."
   ]],
-  ["b107", [
-    "Arrows: right-click to switch each arrowhead on or off (both off = a plain line); new arrows use your last choice, and the Arrow tool keeps linking from the last card you clicked.",
-    "Timer: type any length (1 to 600 minutes). Export all images on a board as a .zip from the bottom-right button or a board's right-click menu."
-  ]],
+
 
 
 
