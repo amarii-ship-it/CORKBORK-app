@@ -2240,6 +2240,9 @@ select.cp-pill{appearance:none; padding-right:22px;
 .cp-colors button{width:18px; height:18px; border-radius:50%; border:2px solid transparent; flex:none;}
 .cp-colors button.sel{border-color:var(--text); transform:scale(1.15);}
 .cp-colors .cpcolor-any{width:18px; height:18px;}
+.cp-colors .cpcolor-pick{display:flex; align-items:center; gap:7px; width:auto; height:auto; padding:3px 9px 3px 4px; border:none; border-radius:7px; font-size:12px; color:var(--text);}
+.cp-colors .cpcolor-pick:hover{background:color-mix(in srgb, var(--text) 7%, transparent);}
+.cp-colors .cpcolor-pick i{width:20px; height:20px; border-radius:6px; flex:none;}
 .cp-colors .cpcolor-clear{
   width:18px; height:18px; margin-left:6px; font-size:10px;
   border-radius:50%; opacity:.55;
@@ -2610,6 +2613,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   background:var(--surface-hi); border:1px solid var(--border); border-radius:9px;
   box-shadow:0 12px 40px rgba(0,0,0,.4); padding:10px 12px 14px;
 }
+.cpk-none{display:flex; align-items:center; gap:8px; width:100%; padding:5px 6px; margin-bottom:8px; border-radius:7px; font-size:13px; text-align:left;}
+.cpk-none:hover, .cpk-none.sel{background:color-mix(in srgb, var(--text) 7%, transparent);}
+.cpk-none i{width:22px; height:22px; border-radius:6px; border:1.5px solid var(--border); flex:none;
+  background:linear-gradient(to top right, transparent calc(50% - 1px), #E06363 calc(50% - 1px), #E06363 calc(50% + 1px), transparent calc(50% + 1px));}
 .cpk-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
 .cpk-head span{font-weight:600; font-size:14px;}
 .cpk-x{background:none; border:0; cursor:pointer; color:var(--text-dim); font-size:14px;}
@@ -3869,7 +3876,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b115";
+window.BUILD = "b116";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5394,8 +5401,8 @@ function buildCardEl(c){
 }
 
 /* ---- entity cards ---- */
-const KIND_COLORS = { Character:"#7A9DBB", Place:"#8FAF8F", Item:"#B9AB77",
-  Faction:"#C08078", Event:"#A392BE", Lore:"#9AA0A6", Other:"#9AA0A6" };
+const KIND_COLORS = { Character:"#4770C1", Place:"#3F9A62", Item:"#D9822B",
+  Faction:"#D63F68", Event:"#7B4DB5", Lore:"#2F9A9A", Other:"#8A8F98" };
 const GENDER_GLYPH = { female:"♀", male:"♂", nonbinary:"⚧", other:"◇", "":"" };
 function entAccent(c){ return c.accent || KIND_COLORS[c.kind] || KIND_COLORS.Other; }
 /* A block on the BOARD. Same idea as a card-page block — a titled container
@@ -6094,7 +6101,7 @@ function buildTodo(c, el){
   });
   const dot = document.createElement("button"); dot.className = "list-color" + (c.color ? " set" : "");
   dot.title = "List colour (also its colour on the calendar)"; stop(dot);
-  dot.addEventListener("click", e => { e.stopPropagation(); openColorPicker({current:c.color || "", onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}); });
+  dot.addEventListener("click", e => { e.stopPropagation(); openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}); });
   head.append(t, dot);
   if ((c.items || []).some(it => it.due)){
     const on = c.calOn !== false;
@@ -7108,7 +7115,10 @@ const GRADIENTS = [
 /* Board setup should be plug-and-play: every Jewel colour and a useful set of
    bright gradients are visible immediately. The full library still lives in
    More, but a new board never requires opening it for the common choices. */
-const QUICK_GRADIENT_NAMES = new Set(["Ember","Dusk","Meadow","Orchid","Gold","Periwinkle","Neon sunset","Prism"]);
+/* deep, rich gradients: a new board gets one of these at random */
+const JEWEL_GRADIENT_NAMES = ["Plum", "Midnight", "Glacier", "Evergreen", "Crimson night", "Emerald", "Berry dusk", "Violet tide", "Lagoon", "Terracotta"];
+const jewelGradient = () => { const n = JEWEL_GRADIENT_NAMES[Math.floor(Math.random() * JEWEL_GRADIENT_NAMES.length)]; return GRADIENTS.find(g => g.name === n).css; };
+const QUICK_GRADIENT_NAMES = new Set(JEWEL_GRADIENT_NAMES);
 const QUICK_BOARD_COLOURS = [
   ...PALETTES.find(p => p.name === "Jewel").colors.map(css => ({ css, title:css })),
   ...GRADIENTS.filter(g => QUICK_GRADIENT_NAMES.has(g.name))
@@ -7165,7 +7175,7 @@ function coloursInUse(){
   return [...seen].slice(0, 16);
 }
 function openColorPicker(opts){
-  const { current, allowGradient, onPick } = opts || {};
+  const { current, allowGradient, allowNone, noneLabel, onPick } = opts || {};
   const old = $("#colorPicker"); if (old) old.remove();
   const pop = document.createElement("div"); pop.id = "colorPicker";
 
@@ -7176,6 +7186,13 @@ function openColorPicker(opts){
   head.append(ttl, x); pop.appendChild(head);
 
   const choose = v => { onPick && onPick(v); pop.remove(); };
+  /* taking the colour off again: a crossed-out swatch first in line */
+  if (allowNone){
+    const none = document.createElement("button"); none.className = "cpk-none" + (!current ? " sel" : "");
+    none.innerHTML = "<i></i>"; none.append(noneLabel || "No colour");
+    none.addEventListener("click", () => choose(null));
+    pop.appendChild(none);
+  }
 
   /* hex + system picker + eyedropper */
   const row = document.createElement("div"); row.className = "cpk-row";
@@ -7230,7 +7247,7 @@ function openColorPicker(opts){
     del.addEventListener("click", e => {
       e.stopPropagation();
       deleteCustomPalette(id);
-      const keep = { current, allowGradient, onPick };
+      const keep = { current, allowGradient, allowNone, noneLabel, onPick };
       pop.remove(); openColorPicker(keep);
     });
     h.appendChild(del);
@@ -7241,7 +7258,8 @@ function openColorPicker(opts){
   for (const pal of PALETTES)
     section(pal.name, pal.colors, v => swatch(v, v, v));
   if (allowGradient){
-    section("Gradients", GRADIENTS, g => swatch(g.css, g.name, g.css));
+    section("Jewel gradients", GRADIENTS.filter(g => JEWEL_GRADIENT_NAMES.includes(g.name)), g => swatch(g.css, g.name, g.css));
+    section("More gradients", GRADIENTS.filter(g => !JEWEL_GRADIENT_NAMES.includes(g.name)), g => swatch(g.css, g.name, g.css));
     const h = document.createElement("div"); h.className = "cpk-lbl"; h.textContent = "Special";
     const g2 = document.createElement("div"); g2.className = "cpk-grid";
     const sh = swatch(SHINY_CSS, "Shiny", SHINY_CSS);
@@ -7659,7 +7677,7 @@ function addCard(type, wx, wy, extra={}, toUnsorted=false){
     c.boardId = bid; c.title = state.boards[bid].title;
     /* autoAccent hashes the TITLE, so every "Untitled board" came out the
        same yellow. A new board picks at random; renaming no longer recolours. */
-    c.accent = c.accent ?? ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
+    c.accent = c.accent ?? jewelGradient();
     c.icon = c.icon ?? null;
   }
   state.cards[id] = c;
@@ -9800,35 +9818,16 @@ function renderCardPage(){
   }
   else port.textContent = (c.name || "?").charAt(0).toUpperCase();
 
+  /* one button with the card's colour; the full picker opens from it */
   const cols = $("#cpColors"); cols.innerHTML = "";
-  for (const col of CARD_ACCENTS){
-    const b = document.createElement("button"); b.style.background = col;
-    if ((c.accent || "") === col) b.classList.add("sel");
-    b.addEventListener("click", () => { cpSet({ accent: col }); renderCardPage(); });
-    cols.appendChild(b);
-  }
-  /* Full colour wheel alongside the presets. <input type=color> is the OS
-     picker — no library, no network, and it is the control people already
-     know. The presets stay because most of the time you want one of eight,
-     not a wheel. */
   {
-    const custom = c.accent && !CARD_ACCENTS.includes(c.accent) ? c.accent : null;
-    const wrap = document.createElement("label");
-    wrap.className = "cpcolor-any" + (custom ? " sel" : "");
-    wrap.title = "Any colour…";
-    const inp = document.createElement("input");
-    inp.type = "color"; inp.value = custom || entAccent(c) || "#7A9DBB";
-    inp.addEventListener("input", () => { cpSet({ accent: inp.value }); applyCpAccent(); });
-    inp.addEventListener("change", () => { cpSet({ accent: inp.value }); renderCardPage(); });
-    if (custom) wrap.style.background = custom;
-    wrap.appendChild(inp);
-    cols.appendChild(wrap);
-
-    const clr = document.createElement("button");
-    clr.className = "cpcolor-clear"; clr.textContent = "✕";
-    clr.title = "Back to the colour for this type";
-    clr.addEventListener("click", () => { cpSet({ accent: null }); renderCardPage(); });
-    cols.appendChild(clr);
+    const b = document.createElement("button"); b.className = "cpcolor-pick";
+    b.innerHTML = "<i></i>"; b.querySelector("i").style.background = entAccent(c);
+    b.append(c.accent ? "Colour" : "Colour (automatic)");
+    b.title = "Change this card's colour";
+    b.addEventListener("click", () => openColorPicker({current:c.accent || "", allowNone:true, noneLabel:"Automatic (the colour for its type)",
+      onPick:v => { cpSet({accent:v || null}); renderCardPage(); }}));
+    cols.appendChild(b);
   }
 
   /* aliases */
@@ -11046,7 +11045,7 @@ function openCtx(x, y, c){
      and switching back brings the prose with it. */
   if (c.type === "block") add("Change block kind…", () => pickBlockKind(c.id));
   if (c.type === "todo"){
-    add("List colour…", () => openColorPicker({current:c.color || "", onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
+    add("List colour…", () => openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
     add(c.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(c.id, c.calOn === false));
   }
   /* Same payload Ctrl+C writes, reachable without the keyboard. On a single
@@ -12606,7 +12605,6 @@ document.addEventListener("keydown", e => {
       const c = addCard(map[k], p.x, p.y);
       setSelection([c.id]);
       if (map[k] === "note" || map[k] === "heading") enterEdit(c);
-      else if (map[k] === "board") openBoardDialog(c);
       else if (map[k] === "card") openEntityDialog(c);
       else if (map[k] === "sheet") openSheet(c.id);
       return;
@@ -12766,9 +12764,7 @@ function createFromTool(type, p){
      instant you let go of the mouse. */
   /* card placed: open the entity dialog for first-time setup, NOT the full page */
   if (type === "card"){ setTimeout(() => { const el=worldEl.querySelector(`.card[data-id="${c.id}"]`); if(el) el.classList.add('new-card'); }, 0); }
-  /* a fresh board is "Untitled" in a random colour — ask once, right away,
-     rather than leaving a wall of identical untitled tiles to sort out later */
-  if (type === "board") setTimeout(() => openBoardDialog(c), 0);
+  /* a fresh board just appears, in a jewel gradient; Edit is on its right-click menu */
   if (type === "todo"){ focusAddTodo = c.id; renderBoard(); }
 }
 
@@ -16961,15 +16957,15 @@ function renderCalPanel(){
     if (!rows.length && empty) body.appendChild(mk("div", "cal-hint", empty));
     for (const r of rows) body.appendChild(r);
   };
-  const swatch = (color, onPick) => {
+  const swatch = (color, onPick, allowNone) => {
     const b = mk("button", "cal-swatch"); b.style.background = color; b.title = "Colour";
-    b.addEventListener("click", () => openColorPicker({current:color, onPick:v => { if (v && !isGradient(v)) onPick(v); }}));
+    b.addEventListener("click", () => openColorPicker({current:color, allowNone:allowNone, onPick:v => { if (!v ? allowNone : !isGradient(v)) onPick(v); }}));
     return b;
   };
-  const row = (color, onColor, name, sub, extra) => {
+  const row = (color, onColor, name, sub, extra, allowNone) => {
     const r = mk("div", "cal-prow2");
     const txt = mk("div", "cal-pname"); txt.append(name); if (sub) txt.appendChild(mk("small", "", sub));
-    r.append(swatch(color, onColor), txt, ...extra); return r;
+    r.append(swatch(color, onColor, allowNone), txt, ...extra); return r;
   };
   const own = calOwnCats().map(k => {
     const name = mk("input", "cal-rename"); name.value = k.name; name.title = "Rename";
@@ -16998,7 +16994,7 @@ function renderCalPanel(){
     cb.addEventListener("change", () => setListOnCalendar(c.id, cb.checked));
     sw.append(cb, mk("span"));
     sw.title = "Show this list on the calendar";
-    return row(c.color || CAL_LIST_COLOR, v => setListColor(c.id, v), c.title || "List", n + (n === 1 ? " dated item" : " dated items"), [sw]);
+    return row(c.color || CAL_LIST_COLOR, v => setListColor(c.id, v), c.title || "List", n + (n === 1 ? " dated item" : " dated items"), [sw], true);
   });
   section("Lists", lists, "Give a list item a due date and its list shows up here.");
   const acts = mk("div", "cal-acts");
@@ -19691,6 +19687,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b116", [
+    "New boards appear straight away in a jewel gradient, with no setup window. Right-click a board → Edit to change it. A board's letter or auto icon follows its name when you rename it.",
+    "Colour picker: No colour at the top (lists can lose their colour again), and Jewel gradients come first. Character cards use the same picker and brighter colours for each type."
+  ]],
   ["b115", [
     "New fonts: titles stay in the logo's Georgia, and everything else uses Verdana, which was designed as Georgia's partner. The rounded toolbar font is gone.",
     "Tools and widgets have squarer corners."
@@ -19734,20 +19734,6 @@ const PATCH_NOTES = [
   ["b104", [
     "Blocks: drop a card right against a block's edge and it snaps on (the edge glows first; drop a little further away to keep a gap). Select a block to see chain links on each seam; tap one to unstick. Works on iPad.",
     "Right-click → Lock in place: the card can't be moved, resized, edited or deleted until you unlock it."
-  ]],
-  ["b103", [
-    "Block moved out of More to the main toolbar, under List, in lilac. Click a block and an Edit button appears to change its type. The tour now explains blocks."
-  ]],
-  ["b102", [
-    "Updates: a bar with a Refresh button appears when a new version is ready, and stays until you use it. The app checks each time you come back to it, which fixes phones that never picked up updates."
-  ]],
-  ["b101", [
-    "Image right-click: Download image is back at the top; More has Copy image address and a new Edit metadata (name, caption, alt text, source link, credit). Images dragged in from a web page remember where they came from."
-  ]],
-  ["b100", [
-    "New look: wider left toolbar with softly coloured tools; Recycle (cyan) and Trash (red) stand out; cards lift off the board; top bar is a flat darker band with a line under it; windows lose their outline; bigger frog icon.",
-    "Every theme now mixes its bars, cards and lines from three colours (board, text, accent), so they all follow the same light/dark rule. Eautiphen moved to a Legacy section.",
-    "Labels: select cards, then click Labels in the top bar (it lights up) to label them all at once."
   ]],
 ];
 function renderPatchNotes(){
