@@ -1194,6 +1194,18 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
   display:none; flex-direction:column; z-index:106; box-shadow:0 8px 24px rgba(0,0,0,.45); padding-bottom:6px;
 }
 .toppanel.open{display:flex;}
+#folderPanel{width:min(380px, calc(100vw - 16px));}
+#folderBody{padding:0 12px 6px; display:flex; flex-direction:column; gap:8px; font-size:13px; overflow-y:auto;}
+#folderBody .fpath{font-family:ui-monospace,Consolas,monospace; font-size:11.5px; word-break:break-all; padding:7px 9px; border-radius:8px;
+  background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+#folderBody .frow{display:flex; gap:6px; flex-wrap:wrap;}
+#folderBody .frow button{padding:6px 11px; border-radius:8px; background:color-mix(in srgb, var(--text) 8%, transparent);}
+#folderBody .frow button.primary{background:var(--accent); color:var(--canvas);}
+#folderBody .fgroup{font-size:11px; font-weight:700; color:var(--text-dim); margin-top:2px;}
+#folderBody .ffile{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:3px 0;}
+#folderBody .ffile span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+#folderBody .ffile button{flex:none; padding:3px 9px; border-radius:7px; font-size:12px; background:color-mix(in srgb, var(--text) 8%, transparent);}
+#folderBody input{width:100%;}
 .toplist{overflow-y:auto; padding:0 6px; display:flex; flex-direction:column;}
 .toppanel .snone{padding:10px 12px;}
 .lmrow{display:flex; flex-direction:column;}
@@ -2599,6 +2611,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     </div>
   </div>
   <span class="barsep"></span>
+  <button class="barbtn iconbtn" id="btnBoardFolder" title="This board's folder on your computer">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/></svg>
+  </button>
   <button class="barbtn iconbtn" id="btnLabels" title="Labels — browse and filter by label">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
   </button>
@@ -2685,6 +2700,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <div id="tagPanel" class="toppanel">
   <div class="shead">Cards</div>
   <div id="tagList" class="toplist"></div>
+</div>
+<div id="folderPanel" class="toppanel">
+  <div class="shead">Board folder</div>
+  <div id="folderBody"></div>
 </div>
 <div id="labelPanel" class="toppanel">
   <div class="shead">Labels</div>
@@ -3636,7 +3655,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b107";
+window.BUILD = "b108";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -10264,8 +10283,8 @@ function fitBarTitle(){
 }
 /* Least-needed first. Settings, the bug list, zoom and the cloud status
    always stay in the bar. */
-const BAR_FOLD_ORDER = ["#btnTags", "#btnLabels", "#btnShortcuts", "#btnRecenter", "#btnTextBar", "#btnSnap", "#btnFavs", "#btnSearch"];
-const BAR_LABELS = {btnRecenter:"Center view", btnSnap:"Snap to grid", btnTextBar:"Text formatting", btnFavs:"Favourites", btnSearch:"Search"};
+const BAR_FOLD_ORDER = ["#btnTags", "#btnBoardFolder", "#btnLabels", "#btnShortcuts", "#btnRecenter", "#btnTextBar", "#btnSnap", "#btnFavs", "#btnSearch"];
+const BAR_LABELS = {btnBoardFolder:"Board folder", btnRecenter:"Center view", btnSnap:"Snap to grid", btnTextBar:"Text formatting", btnFavs:"Favourites", btnSearch:"Search"};
 function barItemLabel(el){
   if (BAR_LABELS[el.id]) return BAR_LABELS[el.id];
   return (el.getAttribute("aria-label") || el.title || el.textContent || "").split(/ \u2014 | \(| — /)[0].trim();
@@ -13531,7 +13550,7 @@ function rescueFavorites(ids){
   toast(saved.length + " favourite" + (saved.length!==1?"s":"") + " moved to Home's Unsorted instead of being deleted.");
   return saved;
 }
-function closeTopPanels(){ $("#tagPanel").classList.remove("open"); $("#labelPanel").classList.remove("open"); }
+function closeTopPanels(){ $("#tagPanel").classList.remove("open"); $("#labelPanel").classList.remove("open"); $("#folderPanel")?.classList.remove("open"); }
 function renderTagPanel(){
   const box = $("#tagList"); box.innerHTML = "";
   const ents = Object.values(state.cards).filter(c => c.type === "card")
@@ -13653,6 +13672,112 @@ $("#btnTags").addEventListener("click", () => {
   closeTopPanels(); closeSearch();
   if (!was){ renderTagPanel(); p.classList.add("open"); }
 });
+/* ---- this board's folder ------------------------------------------------
+   A web page can't open File Explorer, so this is the next best thing: the
+   folder's exact location to paste into Explorer's address bar (Win+E,
+   Ctrl+L, paste), its files with Open buttons, and Update archive when the
+   board hasn't been written yet. Where the CORKBORK folder sits on the disk
+   isn't visible to a web page either; type it once and the path is complete. */
+const FOLDER_BASE_KEY = "cb_archiveBase";
+function boardFolderSegments(bid){
+  const chain = [];
+  for (let b = board(bid), hops = 0; b && hops < 200; b = b.parentId ? board(b.parentId) : null, hops++) chain.unshift(b);
+  const segs = ["Boards"];
+  chain.forEach((b, i) => { if (i) segs.push("Boards"); segs.push(archiveSafeName(b.title || "Untitled") + " [" + archiveId(b.id) + "]"); });
+  return segs;
+}
+async function boardFolderInfo(bid){
+  const handle = await archiveHandle();
+  if (!handle) return {handle:null};
+  let isRoot = false;
+  try { await handle.getFileHandle("CORKBORK-workspace.json"); isRoot = true; } catch (_) {}
+  const segs = [...(isRoot ? [] : ["CORKBORK Archive"]), ...boardFolderSegments(bid)];
+  return {handle, segs, rel:[handle.name, ...segs].join("\\")};
+}
+async function openBoardFolderPanel(){
+  const p = $("#folderPanel"), body = $("#folderBody");
+  const was = p.classList.contains("open");
+  closeTopPanels(); closeSearch?.();
+  if (was) return;
+  body.innerHTML = '<div class="meta">Looking\u2026</div>';
+  p.classList.add("open");
+  await renderBoardFolder();
+}
+async function renderBoardFolder(){
+  const body = $("#folderBody"); if (!body) return;
+  body.innerHTML = "";
+  const note = t => { const d = document.createElement("div"); d.className = "meta"; d.textContent = t; body.appendChild(d); return d; };
+  const row = () => { const r = document.createElement("div"); r.className = "frow"; body.appendChild(r); return r; };
+  const btn = (r, label, fn, primary) => { const b = document.createElement("button"); b.textContent = label; if (primary) b.className = "primary"; b.addEventListener("click", fn); r.appendChild(b); return b; };
+  if (typeof showDirectoryPicker !== "function"){
+    note("Board folders live in an archive folder on a computer, which needs Chrome or Edge on Windows or Mac. On this device your boards are saved in the app and in Google Drive.");
+    return;
+  }
+  const info = await boardFolderInfo(currentBoardId);
+  if (!info.handle){
+    note("Choose a folder on your computer and CORKBORK will keep every board there as ordinary folders and files.");
+    btn(row(), "Choose a folder\u2026", () => { closeTopPanels(); $("#archiveChoose").click(); }, true);
+    return;
+  }
+  const base = (SAFE_STORE.get(FOLDER_BASE_KEY) || "").replace(/[\\/]+$/, "");
+  const full = base ? base + "\\" + info.segs.join("\\") : info.rel;
+  const path = document.createElement("div"); path.className = "fpath"; path.textContent = full; body.appendChild(path);
+  btn(row(), "Copy path", async () => {
+    try { await navigator.clipboard.writeText(full); toast(base ? "Path copied. In File Explorer press Ctrl+L, paste, then Enter." : "Copied. Add where your CORKBORK folder is (below) to get the full path.", 7000); }
+    catch (_) { toast("The browser wouldn't copy it. Select the path above and copy it."); }
+  }, true);
+  /* where the chosen folder is on disk, typed once per device */
+  const where = document.createElement("label"); where.className = "meta";
+  where.textContent = "Where is the \u201c" + info.handle.name + "\u201d folder? (once, for the full path)";
+  const inp = document.createElement("input"); inp.type = "text"; inp.placeholder = "e.g. C:\\Users\\you\\Documents\\" + info.handle.name;
+  inp.value = base ? base.replace(/[\\/][^\\/]*$/, "") + "\\" + info.handle.name : "";
+  inp.addEventListener("keydown", e => e.stopPropagation());
+  inp.addEventListener("change", () => {
+    let v = inp.value.trim().replace(/^"|"$/g, "").replace(/[\\/]+$/, "");
+    if (v && !v.toLowerCase().endsWith(info.handle.name.toLowerCase())) v = v + "\\" + info.handle.name;
+    SAFE_STORE.set(FOLDER_BASE_KEY, v); renderBoardFolder();
+  });
+  where.appendChild(inp); body.appendChild(where);
+  /* the folder's own files */
+  let dir = null;
+  if (await archivePermission(info.handle, false)){
+    try { dir = info.handle; for (const sgm of info.segs) dir = await dir.getDirectoryHandle(sgm); } catch (_) { dir = null; }
+  } else {
+    note("CORKBORK needs permission to read the folder again.");
+    btn(row(), "Allow", async () => { if (await archivePermission(info.handle, true)) renderBoardFolder(); }, true);
+    return;
+  }
+  if (!dir){
+    note("This board hasn't been written to the folder yet.");
+    btn(row(), "Update archive", async e => { e.target.disabled = true; e.target.textContent = "Updating\u2026"; await updateArchiveFolder(null, true); renderBoardFolder(); }, true);
+    return;
+  }
+  let any = false;
+  for (const group of ["Notes", "Images", "Files", "Links"]){
+    let sub; try { sub = await dir.getDirectoryHandle(group); } catch (_) { continue; }
+    const files = [];
+    for await (const [name, h] of sub.entries()) if (h.kind === "file") files.push([name, h]);
+    if (!files.length) continue;
+    any = true;
+    const g = document.createElement("div"); g.className = "fgroup"; g.textContent = group + " (" + files.length + ")"; body.appendChild(g);
+    files.sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [name, h] of files.slice(0, 40)){
+      const r = document.createElement("div"); r.className = "ffile";
+      const nm = document.createElement("span"); nm.textContent = name; nm.title = name;
+      const open = document.createElement("button"); open.textContent = "Open";
+      open.addEventListener("click", async () => {
+        const w = window.open("about:blank", "_blank");
+        try { const url = URL.createObjectURL(await h.getFile()); if (w) w.location.replace(url); else window.open(url, "_blank"); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+        catch (_) { try { w?.close(); } catch (e) {} toast("Couldn't open that file."); }
+      });
+      r.append(nm, open); body.appendChild(r);
+    }
+    if (files.length > 40) note("\u2026and " + (files.length - 40) + " more in File Explorer.");
+  }
+  if (!any) note("Nothing stored for this board yet (sub-boards have their own folders).");
+  btn(row(), "Update archive", async e => { e.target.disabled = true; e.target.textContent = "Updating\u2026"; await updateArchiveFolder(null, true); renderBoardFolder(); });
+}
+$("#btnBoardFolder").addEventListener("click", openBoardFolderPanel);
 $("#btnLabels").addEventListener("click", () => {
   /* with cards selected, this labels all of them at once */
   if (selection.size){
@@ -13670,7 +13795,7 @@ $("#btnLabels").addEventListener("click", () => {
   if (!was){ renderLabelBrowse(); p.classList.add("open"); }
 });
 document.addEventListener("pointerdown", e => {
-  for (const [pid, bid] of [["#tagPanel","#btnTags"],["#labelPanel","#btnLabels"]]){
+  for (const [pid, bid] of [["#tagPanel","#btnTags"],["#labelPanel","#btnLabels"],["#folderPanel","#btnBoardFolder"]]){
     const p = $(pid), b = $(bid);
     if (p.classList.contains("open") && !p.contains(e.target) && !b.contains(e.target) && e.target !== b)
       p.classList.remove("open");
@@ -18004,6 +18129,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b108", [
+    "New folder button in the top bar: shows where this board's folder is on your computer (Copy path, then paste into File Explorer), lists its files with Open buttons, and offers Update archive."
+  ]],
   ["b107", [
     "Arrows: right-click to switch each arrowhead on or off (both off = a plain line); new arrows use your last choice, and the Arrow tool keeps linking from the last card you clicked.",
     "Timer: type any length (1 to 600 minutes). Export all images on a board as a .zip from the bottom-right button or a board's right-click menu."
@@ -18042,9 +18170,6 @@ const PATCH_NOTES = [
     "Double-click an image to view it big: crop, caption, previous/next, open in a new tab and download, as icons.",
     "Right-click menu is shorter: one Copy (copies the picture on images), and side menus for Send to (Front, Back, Unsorted) and More.",
     "Phones: tapping out of a note now always closes it (the box could stay on screen if nothing was typed)."
-  ]],
-  ["b96", [
-    "Sheet moved into the ••• More tools menu (its key, E, still works)."
   ]],
 ];
 function renderPatchNotes(){
