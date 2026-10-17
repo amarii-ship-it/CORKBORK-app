@@ -392,21 +392,24 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:color-mix(in srgb, var(--hue) 62%, var(--text));}
 .tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi));}
 .tool[data-type="note"], .tool[data-type="block"]{--hue:#FFFFFF;}
-#toolWidget{--hue:#E5709B;} #toolWidget svg{stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
-:root[data-theme="light"] .tool[data-type="note"], :root[data-theme="light"] .tool[data-type="block"]{background:color-mix(in srgb, #FFFFFF 85%, transparent);}
+#toolWidget{--hue:oklch(72% .13 355);} #toolWidget svg{stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
+:root[data-theme="light"] .tool[data-type="note"], :root[data-theme="light"] .tool[data-type="block"]{background:color-mix(in srgb, #FFFFFF 52%, transparent);}
 :root[data-theme="light"] #rail .tool[data-type="note"] svg, :root[data-theme="light"] #rail .tool[data-type="block"] svg{stroke:var(--text);}
 /* Image and Upload: a pink-cream button, like Note's white one */
 .tool[data-type="image"], #toolUpload{--hue:#F2C6C0;}
-:root[data-theme="light"] .tool[data-type="image"], :root[data-theme="light"] #toolUpload{background:color-mix(in srgb, #FBE4DE 92%, transparent);}
+:root[data-theme="light"] .tool[data-type="image"], :root[data-theme="light"] #toolUpload{background:color-mix(in srgb, #FBE4DE 70%, transparent);}
 :root[data-theme="light"] #rail .tool[data-type="image"] svg, :root[data-theme="light"] #rail #toolUpload svg{stroke:#B8645A;}
-.tool[data-type="board"]{--hue:#E0913A;}
-.tool[data-type="todo"]{--hue:#E5709B;}   /* same pink as Widgets */
-.tool[data-type="heading"]{--hue:#C9A23A;}
-.tool[data-type="link"]{--hue:#3FAF62;}
-.tool[data-type="column"], .tool[data-type="grid"]{--hue:#7B9BEA;}   /* light warm blue: the organizing pair */
-#toolLibrary{--hue:#4BB4EE;}   /* bright warm sky blue */
-.tool[data-type="table"]{--hue:#8FA86B;} .tool[data-type="card"]{--hue:#C9894F;}
-.tool[data-type="sheet"]{--hue:#B07B4E;} 
+/* every tool colour has the same lightness and strength; only the hue
+   changes, so the rainbow reads as one set */
+#toolArrow{--hue:oklch(72% .13 305);}
+.tool[data-type="board"]{--hue:oklch(72% .13 60);}
+.tool[data-type="todo"]{--hue:oklch(72% .13 355);}   /* same pink as Widgets */
+.tool[data-type="heading"]{--hue:oklch(72% .13 92);}
+.tool[data-type="link"]{--hue:oklch(72% .13 150);}
+.tool[data-type="column"], .tool[data-type="grid"]{--hue:oklch(72% .13 268);}   /* light warm blue: the organizing pair */
+#toolLibrary{--hue:oklch(72% .13 228);}   /* bright warm sky blue */
+.tool[data-type="table"]{--hue:oklch(72% .13 125);} .tool[data-type="card"]{--hue:oklch(72% .13 40);}
+.tool[data-type="sheet"]{--hue:oklch(72% .13 75);} 
 /* Recycle (cyan) and Trash (red) must be unmistakable: solid colour, white icon and label */
 #toolTrash{--hue:#12A9BD;} #toolDelete{--hue:#DD4337;}
 #toolTrash, #toolDelete{background:var(--hue); color:#FFFFFF;}
@@ -580,9 +583,14 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .md-sub2{font-size:12px; color:var(--text-dim);}
 .md-legend{display:flex; gap:8px; flex-wrap:wrap; font-size:12px;}
 .md-legend b{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:3px; vertical-align:middle;}
+/* titles and headers use the logo's serif, so the app keeps the CORKBORK voice */
+.card-title, .bk-t, .card.type-board .btitle, .panel h2, #askTitle, .sethead, #tourTitle, .shortcut-group h3,
+.wd-title, .cal-title, .cal-ptitle, .cal-sec, .cal-mname, .md-q, .md-ptop b, .md-ltitle, #widgetPop .wp-head{
+  font-family:var(--font-serif); letter-spacing:.01em;}
+.wd-title, .card-title, .bk-t{font-weight:700;}
 /* widgets: one look — rounded card, soft strip in the widget's colour, big bold numbers */
 /* the frame follows the colour profile (theme accent); only the icon keeps each widget's own colour */
-.card.type-widget{--whue:var(--accent); border:1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius:20px; background:var(--surface); overflow:hidden;
+.card.type-widget{--whue:var(--accent); border:1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius:14px; background:var(--surface); overflow:hidden;
   box-shadow:0 2px 3px rgba(0,0,0,.06), 0 10px 26px rgba(0,0,0,var(--lift-shadow, .10));}
 .wd-strip{display:flex; align-items:center; gap:8px; padding:9px 12px; font-weight:800; font-size:13px;
   background:color-mix(in srgb, var(--whue) 18%, var(--surface)); color:color-mix(in srgb, var(--whue) 70%, var(--text));}
@@ -594,6 +602,8 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .wd-big{font-size:40px; font-weight:900; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums;}
 .wd-accent{color:var(--whue); font-size:48px;}
 .wd-done{color:var(--whue);}
+.wd-big.wd-tap{cursor:pointer; border-radius:12px; padding:0 8px;}
+.wd-big.wd-tap:hover{background:color-mix(in srgb, var(--whue) 12%, transparent);}
 .wd-sub{font-size:13px; font-weight:700; color:var(--text-dim);}
 .wd-tiny{font-size:11.5px; color:var(--text-dim); margin-top:3px;}
 .wd-bar{width:100%; height:8px; border-radius:99px; background:color-mix(in srgb, var(--whue) 16%, var(--surface)); margin:8px 0 9px; overflow:hidden;}
@@ -2968,6 +2978,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><rect class="boardwin" x="6.5" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="6.5" y="13.2" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="13.2" width="4.3" height="4.3" rx="1.1"/></svg>Board</button>
     <button class="tool" data-type="todo" title="List [T] — checklist, bulleted or numbered">
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
+    <button class="tool" id="toolWidget" title="Widgets — clock, timer, countdown, mood, calendar">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widget</button>
     <button class="tool" data-type="heading" title="Heading [H]">
       <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
     <button class="tool" id="toolArrow" title="Arrow — click one card, then another, to connect them">
@@ -2985,8 +2997,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          slots. Block is pulled back out into this main list whenever a card
          page is open — see placeBlockTool() — since it is one of the few
          tools that still work inside a card. -->
-    <button class="tool" id="toolWidget" title="Widgets — clock, timer, countdown, mood, calendar">
-      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widget</button>
     <button class="tool" id="railMore" title="More tools">
       <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>More</button>
     <div class="railDivider"></div>
@@ -3855,7 +3865,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b113";
+window.BUILD = "b114";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11507,12 +11517,16 @@ function saveRailLayout(){ SAFE_STORE.set(RAIL_LAYOUT_KEY, JSON.stringify(readRa
 /* b113 reordered the top of the toolbar; a saved toolbar that still has the
    old run of tools unchanged takes the new order, anything rearranged by hand stays */
 const RAIL_OLD_RUN = ["note", "toolArrow", "board", "todo", "block", "heading", "link"];
-const RAIL_NEW_RUN = ["note", "block", "board", "todo", "heading", "toolArrow", "link"];
+const RAIL_B113_RUN = ["note", "block", "board", "todo", "heading", "toolArrow", "link"];
+const RAIL_NEW_RUN = ["note", "block", "board", "todo", "toolWidget", "heading", "toolArrow", "link"];   /* b114: Widget under List */
 function railUpgrade(saved){
   const m = saved?.main; if (!Array.isArray(m)) return saved;
   const i = m.indexOf("note");
-  if (i < 0 || RAIL_OLD_RUN.some((k, n) => m[i + n] !== k)) return saved;
-  return Object.assign({}, saved, {main:[...m.slice(0, i), ...RAIL_NEW_RUN, ...m.slice(i + RAIL_OLD_RUN.length)]});
+  const run = [RAIL_OLD_RUN, RAIL_B113_RUN].find(r => i >= 0 && r.every((k, n) => m[i + n] === k));
+  if (!run) return saved;
+  const inMore = (saved.more || []).includes("toolWidget");
+  const head = m.slice(0, i).filter(k => k !== "toolWidget"), tail = m.slice(i + run.length).filter(k => k !== "toolWidget");
+  return Object.assign({}, saved, {main:[...head, ...RAIL_NEW_RUN.filter(k => !inMore || k !== "toolWidget"), ...tail]});
 }
 function loadRailLayout(){
   railDefault = readRailLayout();
@@ -15965,6 +15979,12 @@ function buildWidget(c, el){
     if (c.zone) body.append(live("wd-tiny", "zone"));
   } else if (c.widget === "timer"){
     const big = live("wd-big", "timer"); if (c.done) big.classList.add("wd-done");
+    /* tap the time to change the length (not while it's running) */
+    if (!c.endAt){
+      big.classList.add("wd-tap"); big.title = "Tap to change the length";
+      big.addEventListener("pointerdown", e => e.stopPropagation());
+      big.addEventListener("click", e => { e.stopPropagation(); editWidget(card(c.id), "length"); });
+    }
     const bar = document.createElement("div"); bar.className = "wd-bar"; const fill = document.createElement("div"); fill.className = "wd-fill wd-live"; fill.dataset.part = "bar";
     fill.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%"; bar.appendChild(fill);
     const row = document.createElement("div"); row.className = "wd-row";
@@ -16020,7 +16040,16 @@ setInterval(() => {
   }
   if (finished){ markDirty(); renderBoard(); }
 }, 1000);
-async function editWidget(c){
+/* "25" = 25 minutes; "25:00" = minutes:seconds; "1:30:00" = hours:minutes:seconds */
+function parseTimerLength(v){
+  const t = String(v || "").trim(); if (!t) return null;
+  let sec;
+  if (/^\d+(\.\d+)?$/.test(t)) sec = Math.round(Number(t) * 60);
+  else if (/^\d+(:\d{1,2}){1,2}$/.test(t)){ const p = t.split(":").map(Number); sec = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]; }
+  else return null;
+  return sec >= 1 && sec <= 36000 ? sec : null;
+}
+async function editWidget(c, focusField){
   if (!c || c.type !== "widget") return;
   const k = WIDGET_KINDS[c.widget] || WIDGET_KINDS.clock;
   const res = await askOpen({
@@ -16030,7 +16059,7 @@ async function editWidget(c){
       const field = (key, label, input) => { const l = document.createElement("label"); l.textContent = label; input.dataset.key = key; inputs[key] = input; grid.append(l, input); };
       const text = (v, ph) => { const i = document.createElement("input"); i.type = "text"; i.value = v || ""; if (ph) i.placeholder = ph; return i; };
       field("label", "Label", text(c.label, c.widget === "countdown" ? "e.g. Midterm" : c.widget === "timer" ? "e.g. Study" : "e.g. Home"));
-      if (c.widget === "timer"){ const i = document.createElement("input"); i.type = "number"; i.min = 1; i.max = 600; i.value = Math.round((c.duration || 1500) / 60); field("minutes", "Minutes", i); }
+      if (c.widget === "timer"){ const i = text(fmtTimer(c.duration || 1500), "25 or 25:00 or 1:30:00"); field("length", "Length", i); }
       if (c.widget === "countdown"){ const i = document.createElement("input"); i.type = "date"; i.value = c.target || ""; field("target", "Date", i); }
       if (c.widget === "calendar"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Every Calendar widget shows the same calendar. Tap the coloured chips to choose what this one shows; \u2699 opens colours, Google import and export."; body.appendChild(m); }
       if (c.widget === "mood"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Moods are shared by every Mood widget. Tap a day in the week, or Look back, to change past days."; body.appendChild(m); }
@@ -16040,15 +16069,16 @@ async function editWidget(c){
         field("zone", "Second time zone", sel);
       }
       body.appendChild(grid);
-      return { focus:() => inputs.label.focus(), read:() => Object.fromEntries(Object.entries(inputs).map(([key, i]) => [key, i.value.trim()])) };
+      return { focus:() => { const f = (focusField && inputs[focusField]) || inputs.label; f.focus(); f.select?.(); }, read:() => Object.fromEntries(Object.entries(inputs).map(([key, i]) => [key, i.value.trim()])) };
     },
     buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
   });
   if (!res || typeof res !== "object") return;
   const patch = {label:res.label || ""};
   if (c.widget === "timer"){
-    const min = Math.round(Number(res.minutes));
-    if (Number.isFinite(min) && min >= 1 && min <= 600 && min * 60 !== c.duration) Object.assign(patch, {duration:min * 60, remaining:min * 60, endAt:null, done:false});
+    const sec = parseTimerLength(res.length);
+    if (sec == null) toast("Timer length not changed: type minutes (25), minutes:seconds (2:30) or hours:minutes:seconds (1:30:00), up to 10 hours.", 7000);
+    else if (sec !== c.duration) Object.assign(patch, {duration:sec, remaining:sec, endAt:null, done:false});
   }
   if (c.widget === "countdown") patch.target = res.target || "";
   if (c.widget === "clock") patch.zone = res.zone || "";
@@ -19657,6 +19687,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b114", [
+    "Titles and headings (cards, blocks, widgets, windows) use the CORKBORK logo's serif again. Toolbar colours now all share one brightness, Widget sits under List, and Note and Block are a softer white.",
+    "Timer: tap the time to change it. Type 25, 2:30 or 1:30:00. Widgets are a little less rounded."
+  ]],
   ["b113", [
     "Toolbar: Note and Block are white, with Block under Note and Board under Block; Arrow sits above Link. List and Widgets share one pink, Column and Folder are a lighter warm blue, Image and Upload are pink-cream, Library is sky blue.",
     "Widgets take the colour of your theme for their frame; each keeps its own coloured icon. New theme: Blush dark, the warm dark version of Blush (Blush stays the default)."
