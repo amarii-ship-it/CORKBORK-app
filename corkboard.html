@@ -1154,6 +1154,21 @@ input.inline-title{
 .card.type-card .emeta{font-size:11px; color:var(--text-dim); margin-top:1px;}
 /* labels row on any card */
 .lchips{display:flex; gap:5px; flex-wrap:wrap; padding:4px 9px 6px; flex:none;}
+.card.type-board .lchips{justify-content:center; padding-top:2px;}
+/* filtering by a tag: everything else on the board fades back */
+body.tag-filtering .card:not(.tag-hit){opacity:.18; filter:grayscale(.5);}
+body.tag-filtering .card.tag-hit{box-shadow:0 0 0 2px var(--accent), 0 8px 22px rgba(0,0,0,.12);}
+#tagFilterBar{position:fixed; top:54px; left:50%; transform:translateX(-50%); z-index:120; display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px;
+  border-radius:10px; background:var(--surface-hi); color:var(--text); box-shadow:0 6px 20px rgba(0,0,0,.18); font-size:13px; white-space:nowrap;}
+#tagFilterBar b{width:10px; height:10px; border-radius:50%; flex:none;}
+#tagFilterBar button{padding:4px 9px; border-radius:7px; background:color-mix(in srgb, var(--text) 8%, transparent);}
+.tag-back{font-size:12.5px; color:var(--text-dim); padding:6px 10px;}
+.tag-dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px;}
+.bd-tags{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:4px;}
+.bd-tagchips{display:contents;}
+.bd-tagchip{max-width:none; padding:2px 4px 2px 8px; border-radius:99px; background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text); font-size:12px;}
+.bd-tagchip button{padding:0 4px; color:var(--text-dim);}
+#bdTagInput{flex:1; min-width:160px;}
 .lchip{display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--text-dim); max-width:110px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
 .lchip::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--dot, var(--accent)); flex:none;}
 /* compact entity in columns */
@@ -2835,10 +2850,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <button class="barbtn iconbtn" id="btnBoardFolder" title="This board's folder on your computer">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/></svg>
   </button>
-  <button class="barbtn iconbtn" id="btnLabels" title="Labels — browse and filter by label">
+  <button class="barbtn iconbtn" id="btnLabels" title="Tags — browse, filter and colour your tags">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
   </button>
-  <button class="barbtn iconbtn" id="btnTags" title="Tags — jump to any card by name">
+  <button class="barbtn iconbtn" id="btnTags" title="Cards — jump to any character, place or item card">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="10.5" r="2"/><path d="M5.5 16c.4-1.6 1.4-2.4 2.5-2.4s2.1.8 2.5 2.4 M14 9.5h4 M14 13h4"/></svg>
   </button>
   <button class="barbtn iconbtn small" id="btnShortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -2928,9 +2943,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div id="folderBody"></div>
 </div>
 <div id="labelPanel" class="toppanel">
-  <div class="shead">Labels</div>
+  <div class="shead" id="labelPanelHead">Tags</div>
   <div id="labelBrowse" class="toplist"></div>
-  <input id="labelCreate" type="text" placeholder="New label, press Enter" style="margin:8px 10px 4px;">
+  <input id="labelCreate" type="text" placeholder="New tag, press Enter" style="margin:8px 10px 4px;">
 </div>
 
 <div id="searchPanel">
@@ -3049,7 +3064,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button class="tool" id="rcColor" title="Note color">
         <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M5 9h14"/></svg>Color</button>
       <button class="tool" id="rcLabels" title="Labels">
-        <svg viewBox="0 0 24 24"><path d="M4 11V5a1 1 0 0 1 1-1h6l9 9-7 7-9-9z"/><circle cx="8.5" cy="8.5" r="1.3"/></svg>Labels</button>
+        <svg viewBox="0 0 24 24"><path d="M4 11V5a1 1 0 0 1 1-1h6l9 9-7 7-9-9z"/><circle cx="8.5" cy="8.5" r="1.3"/></svg>Tags</button>
     </div>
     <!-- Card-page tools. Deliberately EMPTY in the markup: at boot the
          buttons are MOVED here from #cpRail (see adoptCardPageRail). Moving
@@ -3193,9 +3208,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 
 <!-- labels popup (rail) -->
 <div id="labelPop" class="railpop">
-  <div class="poplabel">Labels</div>
+  <div class="poplabel">Tags</div>
+  <input id="labelNew" type="text" placeholder="Find or add a tag, press Enter">
   <div id="labelList" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;"></div>
-  <input id="labelNew" type="text" placeholder="New label, press Enter">
 </div>
 
 <!-- world tree overlay -->
@@ -3315,7 +3330,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
                 <div id="cpColors" class="cp-colors"></div>
               </div>
               <div class="cp-row">
-                <span class="cp-lbl">Tags</span>
+                <span class="cp-lbl">Also called</span>
                 <div id="cpAliases" class="chipbox"></div>
                 <input id="cpAliasInput" class="cp-pill" placeholder="Add a name, press Enter" style="flex:1; min-width:110px;">
               </div>
@@ -3508,6 +3523,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <div class="emoji-grid" id="bdEmojiGrid"></div>
     </div>
     <label>Color <div class="swatches" id="bdSwatches"></div></label>
+    <label>Tags
+      <div class="bd-tags"><span id="bdTagChips" class="bd-tagchips"></span><input id="bdTagInput" type="text" list="bdTagList" placeholder="Add a tag, press Enter"></div>
+      <datalist id="bdTagList"></datalist>
+    </label>
     <div class="row">
       <button id="bdCancel">Cancel</button>
       <button id="bdOk" class="primary">Save</button>
@@ -3881,7 +3900,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b117";
+window.BUILD = "b118";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5134,6 +5153,7 @@ function renderBoard(){
   drawConnectors();
   requestAnimationFrame(fitAutoHeights);
   renderStickLinks();
+  if (tagFilter || document.body.classList.contains("tag-filtering")) applyTagFilter();
 }
 
 /* ---------------- auto height ----------------
@@ -5377,7 +5397,7 @@ function buildCardEl(c){
     wrap.append(tile, t, n); el.appendChild(wrap);
   }
 
-  if (["note","image","link","todo","card"].includes(c.type) && c.labelIds?.length){
+  if (TAGGABLE.has(c.type) && c.labelIds?.length){
     const row = document.createElement("div"); row.className = "lchips";
     for (const lid of c.labelIds){
       const l = state.labels?.[lid]; if (!l) continue;
@@ -8369,6 +8389,20 @@ function symbolSearch(q){
 function symbolGlyph(entry){ return entry.split(" ")[0]; }
 function symbolWords(entry){ return entry.split(" ").slice(1).join(", "); }
 let boardEditingId = null, bdAccent = null, bdIconSel = null, bdTone = "normal";   // bdIconSel: null = Auto
+let bdTags = [], bdNewTags = [];   /* tag ids, and names typed here that don't exist yet */
+function bdRenderTags(){
+  const box = $("#bdTagChips"); if (!box) return;
+  box.innerHTML = "";
+  const chip = (name, color, onRemove) => {
+    const ch = document.createElement("span"); ch.className = "lchip bd-tagchip"; ch.style.setProperty("--dot", color); ch.textContent = name;
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "\u2715"; x.title = "Remove"; x.addEventListener("click", onRemove);
+    ch.appendChild(x); box.appendChild(ch);
+  };
+  for (const id of bdTags){ const l = state.labels[id]; if (l) chip(l.name, l.color, () => { bdTags = bdTags.filter(t => t !== id); bdRenderTags(); }); }
+  for (const n of bdNewTags) chip(n, "var(--text-dim)", () => { bdNewTags = bdNewTags.filter(t => t !== n); bdRenderTags(); });
+  const dl = $("#bdTagList"); dl.innerHTML = "";
+  for (const l of Object.values(state.labels || {})){ const o = document.createElement("option"); o.value = l.name; dl.appendChild(o); }
+}
 function bdRefreshIconUI(){
   $("#bdIconAuto").classList.toggle("sel", bdIconSel === null);
   $("#bdEmojiGrid").querySelectorAll("button").forEach(b =>
@@ -8376,6 +8410,8 @@ function bdRefreshIconUI(){
 }
 function openBoardDialog(c){
   boardEditingId = c.id;
+  bdTags = [...(c.labelIds || [])].filter(id => state.labels?.[id]); bdNewTags = [];
+  bdRenderTags();
   $("#bdTitle").value = c.title || "";
   bdIconSel = c.icon || null;
   bdTone = c.iconTone || "normal";
@@ -8487,12 +8523,24 @@ function openBoardDialog(c){
   $("#bdTitle").focus(); $("#bdTitle").select();
 }
 $("#bdIconAuto").addEventListener("click", () => { bdIconSel = null; bdRefreshIconUI(); });
+$("#bdTagInput").addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== ",") return;
+  const v = e.target.value.trim().replace(/,$/, ""); if (!v) return;
+  e.preventDefault(); e.stopPropagation();
+  const hit = findTagByName(v);
+  if (hit){ if (!bdTags.includes(hit.id)) bdTags.push(hit.id); }
+  else if (!bdNewTags.some(n => n.toLowerCase() === v.toLowerCase())) bdNewTags.push(v);
+  e.target.value = ""; bdRenderTags();
+});
 $("#bdCancel").addEventListener("click", () => $("#boardOverlay").classList.remove("open"));
 $("#bdOk").addEventListener("click", () => {
   const c = card(boardEditingId); if (!c) return;
   pushUndo();
   const title = $("#bdTitle").value.trim() || "Untitled board";
-  patchCard(c.id, { title, icon: bdIconSel, iconTone: bdTone, accent: bdAccent || autoAccent(title) });
+  const pending = $("#bdTagInput").value.trim(); if (pending){ const h = findTagByName(pending); if (h){ if (!bdTags.includes(h.id)) bdTags.push(h.id); } else bdNewTags.push(pending); }
+  $("#bdTagInput").value = "";
+  const tagIds = [...new Set([...bdTags, ...bdNewTags.map(n => addLabel(n))])];
+  patchCard(c.id, { title, icon: bdIconSel, iconTone: bdTone, accent: bdAccent || autoAccent(title), labelIds: tagIds.length ? tagIds : undefined });
   state.boards[c.boardId].title = title;   // board title is authoritative
   $("#boardOverlay").classList.remove("open");
   markDirty(); renderAll();
@@ -10247,8 +10295,16 @@ $("#entOk").addEventListener("click", () => {
   markDirty(); renderAll();
 });
 
-/* ---- labels ---- */
+/* ---- tags (stored as state.labels / card.labelIds, the names they had before b118) ----
+   One tag per name: adding a name that exists reuses it. */
+const TAGGABLE = new Set(["note","image","link","todo","card","board","block","file","table","column","grid","heading","sheet"]);
+function findTagByName(name){
+  const n = String(name || "").trim().toLowerCase();
+  return Object.values(state.labels || {}).find(l => (l.name || "").trim().toLowerCase() === n) || null;
+}
+function tagCount(lid){ return labelUseCount(lid); }
 function addLabel(name){
+  const hit = findTagByName(name); if (hit) return hit.id;
   const id = uid("l");
   let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   state.labels[id] = { id, name, color: ACCENTS[h % ACCENTS.length] };
@@ -10258,9 +10314,10 @@ function addLabel(name){
 function renderLabelPop(){
   const box = $("#labelList"); box.innerHTML = "";
   const ids = [...selection];
-  const labels = Object.values(state.labels || {}).sort((a, b) => a.name.localeCompare(b.name));
+  const q = ($("#labelNew")?.value || "").trim().toLowerCase();
+  const labels = Object.values(state.labels || {}).sort((a, b) => a.name.localeCompare(b.name)).filter(l => !q || l.name.toLowerCase().includes(q));
   if (!labels.length){
-    const m = document.createElement("div"); m.className = "meta"; m.textContent = "No labels yet — type one below.";
+    const m = document.createElement("div"); m.className = "meta"; m.textContent = q ? "Press Enter to add \u201c" + $("#labelNew").value.trim() + "\u201d." : "No tags yet. Type one above.";
     box.appendChild(m);
   }
   for (const l of labels){
@@ -10284,9 +10341,12 @@ function renderLabelPop(){
     box.appendChild(row);
   }
 }
+$("#labelNew").addEventListener("input", () => renderLabelPop());
 $("#labelNew").addEventListener("keydown", e => {
   e.stopPropagation();
+  if (e.key === "Escape"){ $("#labelPop").classList.remove("open"); return; }
   if (e.key === "Enter" && e.target.value.trim()){
+    pushUndo();
     const id = addLabel(e.target.value.trim());
     e.target.value = "";
     for (const cid of selection){
@@ -10599,8 +10659,8 @@ function updateRail(){
   const lb = $("#btnLabels");
   if (lb){
     lb.classList.toggle("can-label", selection.size > 0);
-    lb.title = selection.size ? "Label the " + (selection.size === 1 ? "selected card" : selection.size + " selected cards")
-      : "Labels \u2014 browse and filter by label";
+    lb.title = selection.size ? "Tag the " + (selection.size === 1 ? "selected card" : selection.size + " selected cards")
+      : "Tags \u2014 browse, filter and colour your tags";
   }
   const onCard = inCardPage();
   let mode = "tools";
@@ -11049,6 +11109,16 @@ function openCtx(x, y, c){
      turning a Writing block into a Timeline leaves everything else intact
      and switching back brings the prose with it. */
   if (c.type === "block") add("Change block kind…", () => pickBlockKind(c.id));
+  /* images keep a short menu: their Tags… lives under More */
+  const openTagsFor = () => {
+    if (!selection.has(c.id)) setSelection([c.id]);
+    const p = $("#labelPop"); $("#labelNew").value = ""; renderLabelPop(); p.classList.add("open");
+    const z = uiz(), w = p.getBoundingClientRect().width / z;
+    p.style.left = Math.max(4, Math.min(x / z, innerWidth / z - w - 8)) + "px";
+    p.style.top = Math.max(4, Math.min(y / z, innerHeight / z - 320)) + "px";
+    $("#labelNew").focus();
+  };
+  if (TAGGABLE.has(c.type) && c.type !== "image") add("Tags…", openTagsFor);
   if (c.type === "todo"){
     add("List colour…", () => openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
     add(c.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(c.id, c.calOn === false));
@@ -11120,6 +11190,7 @@ function openCtx(x, y, c){
   sub("More", more => {
     if (c.type === "image") more("Copy image address", () => copyImageAddress(c));
     if (c.type === "image") more("Edit metadata\u2026", () => editImageMetadata(c));
+    if (c.type === "image") more("Tags\u2026", openTagsFor);
     if (c.type === "image" && cardCanOpen(c)){
       more("Open image in new tab", async () => {
         const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
@@ -13957,6 +14028,49 @@ function renderTagPanel(){
     box.appendChild(row);
   }
 }
+/* ---- filtering by one tag: the board fades everything else, the panel lists every match ---- */
+let tagFilter = null;
+function cardHasTag(c, lid){
+  if (!c) return false;
+  if (c.labelIds?.includes(lid)) return true;
+  return [...(c.childIds || []), ...(c.attachedIds || [])].some(k => card(k)?.labelIds?.includes(lid));
+}
+function applyTagFilter(){
+  const l = tagFilter && state.labels?.[tagFilter];
+  if (tagFilter && !l) tagFilter = null;
+  document.body.classList.toggle("tag-filtering", !!l);
+  for (const el of worldEl.querySelectorAll(".card")) el.classList.toggle("tag-hit", !!l && cardHasTag(card(el.dataset.id), tagFilter));
+  let bar = $("#tagFilterBar");
+  if (!l){ bar?.remove(); return; }
+  if (!bar){ bar = document.createElement("div"); bar.id = "tagFilterBar"; document.body.appendChild(bar); }
+  const here = cur().cardIds.filter(id => cardHasTag(card(id), tagFilter)).length, all = tagCount(tagFilter);
+  bar.innerHTML = "";
+  const dot = document.createElement("b"); dot.style.background = l.color;
+  const t = document.createElement("span"); t.textContent = l.name + " \u00b7 " + here + " on this board" + (all > here ? ", " + all + " in all" : "");
+  const list = document.createElement("button"); list.textContent = "See all"; list.addEventListener("click", () => { $("#labelPanel").classList.add("open"); renderTagMatches(l.id); });
+  const x = document.createElement("button"); x.textContent = "\u2715"; x.title = "Stop filtering"; x.addEventListener("click", () => setTagFilter(null));
+  bar.append(dot, t, list, x);
+}
+function setTagFilter(lid){ tagFilter = lid || null; applyTagFilter(); }
+function renderTagMatches(lid){
+  const l = state.labels?.[lid], box = $("#labelBrowse"); if (!l || !box) return;
+  box.innerHTML = "";
+  const back = document.createElement("button"); back.className = "srow tag-back";
+  back.textContent = "\u2039 All tags"; back.addEventListener("click", () => renderLabelBrowse());
+  box.appendChild(back);
+  const head = document.createElement("div"); head.className = "shead"; head.innerHTML = "<b class='tag-dot'></b>";
+  head.querySelector("b").style.background = l.color; head.append(l.name);
+  box.appendChild(head);
+  const boards = Object.values(state.cards).filter(c => c.type === "board" && !c.shortcut && c.labelIds?.includes(lid));
+  const cards = Object.values(state.cards).filter(c => c.type !== "board" && c.labelIds?.includes(lid));
+  for (const c of [...boards, ...cards]){
+    const r = cardRow(c); if (!r) continue;
+    if (c.type === "board") r.addEventListener("click", () => { closeTopPanels(); openBoard(c.boardId); });
+    else r.addEventListener("click", () => closeTopPanels());
+    box.appendChild(r);
+  }
+  if (!boards.length && !cards.length){ const m = document.createElement("div"); m.className = "snone"; m.textContent = "Nothing has this tag yet."; box.appendChild(m); }
+}
 function labelUseCount(lid){
   let n = 0;
   for (const c of Object.values(state.cards)) if (c.labelIds?.includes(lid)) n++;
@@ -13967,7 +14081,7 @@ function renderLabelBrowse(){
   const labels = Object.values(state.labels || {}).sort((a,b) => a.name.localeCompare(b.name));
   if (!labels.length){
     const m = document.createElement("div"); m.className = "snone";
-    m.textContent = "No labels yet — type one below, or select a card and use Labels in the left rail.";
+    m.textContent = "No tags yet. Type one below, or select cards and press this Tags button to tag them.";
     box.appendChild(m); return;
   }
   for (const l of labels){
@@ -13975,35 +14089,21 @@ function renderLabelBrowse(){
     const row = document.createElement("div"); row.className = "srow";
     const dot = document.createElement("button"); dot.className = "lmdot"; dot.title = "Change color";
     dot.style.background = l.color;
-    const main = document.createElement("button"); main.className = "smain lmmain"; main.title = "Filter by this label";
+    const main = document.createElement("button"); main.className = "smain lmmain"; main.title = "Show everything with this tag";
     const t = document.createElement("div"); t.className = "stitle"; t.textContent = l.name;
     const n = labelUseCount(l.id);
     const p = document.createElement("div"); p.className = "spath";
     p.textContent = n + (n === 1 ? " card" : " cards");
     main.append(t, p);
     const ed = document.createElement("button"); ed.className = "lmbtn"; ed.textContent = "✎"; ed.title = "Rename";
-    const rm = document.createElement("button"); rm.className = "lmbtn"; rm.textContent = "✕"; rm.title = "Delete label";
+    const rm = document.createElement("button"); rm.className = "lmbtn"; rm.textContent = "✕"; rm.title = "Delete tag";
     row.append(dot, main, ed, rm); wrap.appendChild(row);
-    main.addEventListener("click", () => {
-      closeTopPanels(); openSearch();
-      $("#searchInput").value = l.name; searchShown = 100; renderSearch(l.name);
-    });
-    dot.addEventListener("click", () => {
-      let sw = wrap.querySelector(".lmswatches");
-      if (sw){ sw.remove(); return; }
-      sw = document.createElement("div"); sw.className = "lmswatches";
-      for (const col of ACCENTS){
-        const b = document.createElement("button"); b.className = "popswatch";
-        b.style.background = col;
-        b.addEventListener("click", () => {
-          pushUndo();
-          state.labels[l.id] = { ...l, color: col };
-          markDirty(); renderBoard(); renderLabelBrowse();
-        });
-        sw.appendChild(b);
-      }
-      wrap.appendChild(sw);
-    });
+    main.addEventListener("click", () => { setTagFilter(l.id); renderTagMatches(l.id); });
+    dot.addEventListener("click", () => openColorPicker({current:l.color, onPick:v => {
+      if (!v || isGradient(v)) return;
+      pushUndo(); state.labels[l.id] = { ...state.labels[l.id], color:v };
+      markDirty(); renderBoard(); renderLabelBrowse();
+    }}));
     ed.addEventListener("click", () => {
       const inp = document.createElement("input"); inp.type = "text"; inp.value = l.name;
       inp.style.cssText = "flex:1;min-width:0;";
@@ -14026,10 +14126,10 @@ function renderLabelBrowse(){
     });
     rm.addEventListener("click", async () => {
       const n2 = labelUseCount(l.id);
-      if (!await askConfirm({ title:"Delete this label?",
+      if (!await askConfirm({ title:"Delete this tag?",
         message:`\u201c${l.name}\u201d will be removed from ${n2} card${n2!==1?"s":""}.`,
         detail:"The cards themselves are not deleted.",
-        okLabel:"Delete label", danger:true })) return;
+        okLabel:"Delete tag", danger:true })) return;
       pushUndo();
       delete state.labels[l.id];
       for (const c of Object.values(state.cards))
@@ -14326,8 +14426,12 @@ function renderSearch(q){
     for (const b of recents) out.appendChild(boardRow(b.id));
     return;
   }
-  const bhits = Object.values(state.boards).filter(b => b.id !== TRASH_ID && (b.title||"").toLowerCase().includes(q));
-  const chits = Object.values(state.cards).filter(c => cardSearchText(c).includes(q));
+  /* "#school" finds what carries the tag School, not every mention of the word */
+  const tagQ = q.startsWith("#") && q.length > 1 ? Object.values(state.labels || {}).filter(l => l.name.toLowerCase().startsWith(q.slice(1))).map(l => l.id) : null;
+  const tagged = c => tagQ.some(id => c.labelIds?.includes(id));
+  const bhits = tagQ ? Object.values(state.boards).filter(b => b.id !== TRASH_ID && tagged(boardCardFor(b.id) || {}))
+    : Object.values(state.boards).filter(b => b.id !== TRASH_ID && (b.title||"").toLowerCase().includes(q));
+  const chits = tagQ ? Object.values(state.cards).filter(c => c.type !== "board" && tagged(c)) : Object.values(state.cards).filter(c => cardSearchText(c).includes(q));
   summary.textContent = bhits.length + " board" + (bhits.length===1?"":"s") + " · " +
     chits.length + " card" + (chits.length===1?"":"s");
   if (bhits.length){
@@ -19694,6 +19798,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b118", [
+    "Labels are now Tags. Click a tag in the Tags panel to see everything that has it, and the board fades the rest. Search #name to find a tag. Any card, block or board can be tagged (right-click → Tags…, or in Edit board), and each name is one tag.",
+    "The old top-bar Tags button is now Cards (it jumps to character, place and item cards). On a character card, Tags is now Also called."
+  ]],
   ["b117", [
     "Clock widget sits on the board like a heading: just the time, date and second time zone, no frame or icon. Click it to see the frame and Edit."
   ]],
@@ -19738,9 +19846,7 @@ const PATCH_NOTES = [
   ["b106", [
     "The chain link on stuck cards is smaller and grey (still easy to tap)."
   ]],
-  ["b105", [
-    "Snapping (the # button) now lines cards up with each other's edges and centres while you drag, with guide lines — no Ctrl needed, so it works on iPad. Ctrl still overrides on a computer."
-  ]],
+
 
 ];
 function renderPatchNotes(){
