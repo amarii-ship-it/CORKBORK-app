@@ -156,6 +156,14 @@ body.lib-open #tbHandle{visibility:hidden;}
   padding:7px 9px; background:var(--surface);}
 #buildStamp{font-size:9px; color:var(--text-dim); opacity:.5; flex:none; align-self:flex-end; padding-bottom:6px; user-select:none;}
 #crumbs{display:flex; align-items:center; gap:2px; overflow:hidden; flex:0 1 auto; min-width:0;}
+/* phones and narrow windows: the board path moves into its own bar under the top bar */
+#navBar{display:none;}
+body.narrow-nav #navBar{display:flex; align-items:center; flex:none; height:38px; padding:0 max(8px, env(safe-area-inset-left, 0px)); gap:2px;
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:none; background:var(--chrome, var(--surface-hi)); border-bottom:1px solid var(--chrome-line, var(--border));}
+body.narrow-nav #navBar::-webkit-scrollbar{display:none;}
+/* (#crumbs and #cpCrumbs are moved into #navBar while narrow-nav is on) */
+body.narrow-nav #crumbs, body.narrow-nav #cpCrumbs{overflow:visible; flex:none;}
+body.narrow-nav #crumbs button, body.narrow-nav #cpCrumbs button{max-width:160px; font-size:13.5px; padding:6px 8px;}
 /* Centred title. Absolutely positioned so it is centred on the WINDOW, not
    on whatever space the flex row happens to leave — otherwise it drifts as
    breadcrumbs get longer. pointer-events:none so it never eats a click. */
@@ -3028,6 +3036,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div id="favScroll"></div>
 </div>
 
+<!-- small screens: the board path gets its own row under the top bar -->
+<div id="navBar" aria-label="Boards"></div>
 <div id="main">
   <div id="rail">
     <div id="railTools" class="railset">
@@ -3948,7 +3958,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b120";
+window.BUILD = "b121";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4983,13 +4993,13 @@ function wireScrollbar(el, axis){
 }
 wireScrollbar($("#scrollV"), "v");
 wireScrollbar($("#scrollH"), "h");
-function zoomAt(sx, sy, factor){
+function zoomAt(sx, sy, factor, persist=true){
   const r = canvasEl.getBoundingClientRect(), z = uiz();
   const cx = (sx - r.left)/z, cy = (sy - r.top)/z;
   const nz = clamp(zoom * factor, 0.25, 2);
   const wx = (cx - panX) / zoom, wy = (cy - panY) / zoom;
   panX = cx - wx * nz; panY = cy - wy * nz; zoom = nz;
-  applyViewport();
+  applyViewport(persist);
 }
 function viewCenterWorld(){
   const r = canvasEl.getBoundingClientRect();
@@ -5055,7 +5065,25 @@ document.addEventListener("pointerdown", e => {
       !pop.contains(e.target) && !e.target.closest(".crumbmore")) pop.classList.remove("open");
 }, true);
 
+const NARROW_NAV = matchMedia("(max-width: 700px)");
+let crumbHome = null;
+function placeNav(){
+  const nav = $("#navBar"), cr = $("#crumbs"), cp = $("#cpCrumbs"); if (!nav || !cr) return;
+  if (!crumbHome) crumbHome = {cr:[cr.parentNode, cr.nextSibling], cp:cp ? [cp.parentNode, cp.nextSibling] : null};
+  const narrow = NARROW_NAV.matches;
+  document.body.classList.toggle("narrow-nav", narrow);
+  if (narrow && cr.parentNode !== nav){ nav.appendChild(cr); if (cp) nav.appendChild(cp); }
+  else if (!narrow && cr.parentNode === nav){
+    crumbHome.cr[0].insertBefore(cr, crumbHome.cr[1]);
+    if (cp && crumbHome.cp) crumbHome.cp[0].insertBefore(cp, crumbHome.cp[1]);
+  }
+  if (narrow) requestAnimationFrame(() => { nav.scrollLeft = nav.scrollWidth; });
+  if (typeof queueFitTopbar === "function") queueFitTopbar();
+}
+NARROW_NAV.addEventListener?.("change", placeNav);
 function renderCrumbs(){
+  if (!crumbHome) placeNav();
+  else if (NARROW_NAV.matches) requestAnimationFrame(() => { const nav = $("#navBar"); if (nav) nav.scrollLeft = nav.scrollWidth; });
   const el = $("#crumbs"); el.innerHTML = "";
   const chain = [];
   for (let b = cur(); b; b = b.parentId ? board(b.parentId) : null) chain.unshift(b);
@@ -12014,20 +12042,32 @@ function onCanvasPointerDown(e){
   else if (e.button === 0){ startMarquee(e); }
 }
 
+/* Fingers report far more often than the screen redraws. Moving the board
+   on every report made it stutter; it now moves once per frame, from the
+   one zoom and one shift the fingers made since the last frame, in a
+   single step (zooming about the old centre, then following it), and is
+   saved once when the pinch ends. */
+let pinchFrame = 0;
+function pinchStep(){
+  pinchFrame = 0;
+  if (!pinch || activePointers.size < 2) return;
+  const {d, mx, my} = pinchPoints();
+  const r = canvasEl.getBoundingClientRect(), z = uiz();
+  const nz = pinch.d > 0 ? clamp(zoom * d / pinch.d, 0.25, 2) : zoom;
+  /* the board point under the old centre ends up under the new centre */
+  const wx = ((pinch.mx - r.left) / z - panX) / zoom, wy = ((pinch.my - r.top) / z - panY) / zoom;
+  zoom = nz; panX = (mx - r.left) / z - wx * nz; panY = (my - r.top) / z - wy * nz;
+  applyViewport(false);
+  pinch = { d, mx, my };
+}
 addEventListener("pointermove", e => {
   if (!activePointers.has(e.pointerId)) return;
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pinch && activePointers.size >= 2){
-    const {d, mx, my} = pinchPoints();
-    if (pinch.d > 0) zoomAt(mx, my, d / pinch.d);
-    const z = uiz();
-    panX += (mx - pinch.mx)/z; panY += (my - pinch.my)/z; applyViewport();
-    pinch = { d, mx, my };
-  }
+  if (pinch && activePointers.size >= 2 && !pinchFrame) pinchFrame = requestAnimationFrame(pinchStep);
 }, true);
 const pointerGone = e => {
   activePointers.delete(e.pointerId);
-  if (activePointers.size < 2) pinch = null;
+  if (activePointers.size < 2 && pinch){ pinch = null; cancelAnimationFrame(pinchFrame); pinchFrame = 0; applyViewport(); }
 };
 addEventListener("pointerup", pointerGone, true);
 addEventListener("pointercancel", pointerGone, true);
@@ -19939,6 +19979,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b121", [
+    "Pinch zoom on phones is smooth: the board follows your fingers once per screen frame instead of jumping, and no longer snaps when you let go.",
+    "On phones and narrow windows the path of boards (Home › …) has its own bar under the top bar, so you can always see where you are and go back up."
+  ]],
   ["b120", [
     "Pinch to zoom on phones and iPads is smooth: the first finger no longer keeps dragging the board (or a card) while you pinch.",
     "Countdown sits bare like the clock. The Mood tracker can show this week, this month or the whole year, and neither it nor the Calendar has an Edit button now (right-click → Edit still works)."
@@ -19985,9 +20029,7 @@ const PATCH_NOTES = [
   ["b109", [
     "Edit the left toolbar: right-click it (or Settings → Tools) → Edit toolbar. Drag tools to reorder them or into More, add or remove dividers, Reset any time. Saved per device."
   ]],
-  ["b108", [
-    "New folder button in the top bar: shows where this board's folder is on your computer (Copy path, then paste into File Explorer), lists its files with Open buttons, and offers Update archive."
-  ]],
+
 
 
 
