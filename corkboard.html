@@ -592,6 +592,11 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .wd-btn, .cal-pbtn, .cal-views, .cal-row, .cal-date, .md-note, .md-mday, #widgetPop .wp-row{border-radius:7px !important;}
 .cal-views button, .wd-ic, .wd-edit, .cal-nav, .cal-today, #widgetPop .wp-ic, .md-day span{border-radius:5px !important;}
 .md-face, .wd-big.wd-tap, .cal-prow2{border-radius:8px !important;}
+/* the clock sits on the board like a heading; selecting it shows the usual frame and Edit */
+.card.type-widget.wd-clean:not(.selected){background:transparent; border-color:transparent; box-shadow:none;}
+.card.type-widget.wd-clean:not(.selected) .wd-strip{visibility:hidden;}
+.wd-clean .wd-big{font-family:var(--font-serif); font-weight:700; font-size:46px; letter-spacing:.01em;}
+.wd-clean .wd-sub, .wd-clean .wd-tiny{font-family:var(--font-serif); font-size:14px;}
 /* widgets: one look — rounded card, soft strip in the widget's colour, big bold numbers */
 /* the frame follows the colour profile (theme accent); only the icon keeps each widget's own colour */
 .card.type-widget{--whue:var(--accent); border:1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius:9px; background:var(--surface); overflow:hidden;
@@ -3876,7 +3881,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b116";
+window.BUILD = "b117";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -15975,6 +15980,8 @@ function buildWidget(c, el){
   const body = document.createElement("div"); body.className = "wd-body";
   const live = (cls, part) => { const d = document.createElement("div"); d.className = cls + " wd-live"; d.dataset.part = part || ""; d.textContent = widgetLiveText(c, part); return d; };
   if (c.widget === "clock"){
+    /* a bare clock, like a heading: no frame or icon until it's selected */
+    el.classList.add("wd-clean");
     body.append(live("wd-big", "time"), live("wd-sub", "date"));
     if (c.zone) body.append(live("wd-tiny", "zone"));
   } else if (c.widget === "timer"){
@@ -19687,6 +19694,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b117", [
+    "Clock widget sits on the board like a heading: just the time, date and second time zone, no frame or icon. Click it to see the frame and Edit."
+  ]],
   ["b116", [
     "New boards appear straight away in a jewel gradient, with no setup window. Right-click a board → Edit to change it. A board's letter or auto icon follows its name when you rename it.",
     "Colour picker: No colour at the top (lists can lose their colour again), and Jewel gradients come first. Character cards use the same picker and brighter colours for each type."
@@ -19731,10 +19741,7 @@ const PATCH_NOTES = [
   ["b105", [
     "Snapping (the # button) now lines cards up with each other's edges and centres while you drag, with guide lines — no Ctrl needed, so it works on iPad. Ctrl still overrides on a computer."
   ]],
-  ["b104", [
-    "Blocks: drop a card right against a block's edge and it snaps on (the edge glows first; drop a little further away to keep a gap). Select a block to see chain links on each seam; tap one to unstick. Works on iPad.",
-    "Right-click → Lock in place: the card can't be moved, resized, edited or deleted until you unlock it."
-  ]],
+
 ];
 function renderPatchNotes(){
   const host = $("#patchNotes"); if (!host) return;
