@@ -719,6 +719,11 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #sprintPanel.open{display:flex;}
 #sprintDisplay{font-family:var(--font-serif); font-size:34px; font-weight:700; text-align:center; letter-spacing:.02em;}
 #sprintControls{display:flex; gap:5px;}
+#sprintCustom{display:flex; gap:5px; align-items:center; margin-top:6px;}
+#sprintCustom input{flex:1; min-width:0; padding:5px 7px; font-size:12px; border-radius:6px;}
+#sprintCustom span{font-size:12px; color:var(--text-dim);}
+#sprintCustom button{padding:5px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px;}
+#sprintCustom button:hover{background:var(--surface); border-color:var(--accent);}
 #sprintControls button{flex:1; padding:5px 0; border:1px solid var(--border); border-radius:6px; font-size:12px;}
 #sprintControls button:hover, #sprintControls button.sel{background:var(--surface); border-color:var(--accent);}
 .sprintRow{display:flex; gap:6px;}
@@ -2855,7 +2860,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button id="mbTimer" title="Writing sprint timer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V9 M9 2h6 M18 6l1.5-1.5"/></svg>
       </button>
-      <button id="mbExport" class="disabled" disabled title="Export — temporarily disabled while it's reworked">
+      <button id="mbExport" title="Export all images on this board (.zip)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4 M8 8l4-4 4 4 M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
       </button>
     </div>
@@ -2863,6 +2868,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <div id="sprintDisplay">25:00</div>
       <div id="sprintControls">
         <button data-min="15">15m</button><button data-min="25">25m</button><button data-min="45">45m</button>
+      </div>
+      <div id="sprintCustom">
+        <input id="sprintMin" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="Custom" aria-label="Custom minutes">
+        <span>min</span><button id="sprintSet">Set</button>
       </div>
       <div class="sprintRow">
         <button id="sprintStart">Start</button>
@@ -3627,7 +3636,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b106";
+window.BUILD = "b107";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -10730,6 +10739,7 @@ function openCtx(x, y, c){
   if (c.type === "board"){
     add("Open", () => openBoard(c.boardId));
     add("Create shortcut", () => createShortcut(c));
+    add("Export images (.zip)", () => exportBoardImages(c.boardId));
     add("Edit… (title, icon, color)", () => openBoardDialog(c));
     if (board(c.boardId)) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
       : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
@@ -11131,7 +11141,8 @@ const connectorSvg = document.createElementNS(SVGNS, "svg");
 connectorSvg.id = "connectors";
 connectorSvg.style.cssText = "position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:0;";
 const connDefs = document.createElementNS(SVGNS, "defs");
-connDefs.innerHTML = '<marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker>';
+connDefs.innerHTML = '<marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker>' +
+  '<marker id="arrowtail" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker>';
 connectorSvg.appendChild(connDefs);
 function cardCenter(id){
   const c = card(id); if (!c) return null;
@@ -11161,7 +11172,10 @@ function drawConnectors(){
     line.setAttribute("x2", p2.x); line.setAttribute("y2", p2.y);
     line.setAttribute("stroke", con.color || "var(--accent)");
     line.setAttribute("stroke-width", 2);
-    line.setAttribute("marker-end", "url(#arrowhead)");
+    /* heads: "end" (default), "both", "start" or "none" (a plain line) */
+    const heads = con.heads || "end";
+    if (heads === "end" || heads === "both") line.setAttribute("marker-end", "url(#arrowhead)");
+    if (heads === "start" || heads === "both") line.setAttribute("marker-start", "url(#arrowtail)");
     line.style.pointerEvents = "stroke"; line.style.cursor = "pointer";
     line.addEventListener("pointerdown", e => { e.stopPropagation(); openConnectorMenu(e.clientX, e.clientY, con.id); });
     g.appendChild(line);
@@ -11228,9 +11242,11 @@ function arrowClickCard(id){
   if (arrowFrom === id){ arrowFrom = null; return; }
   pushUndo();
   const b = cur(); b.connectors = b.connectors || [];
-  b.connectors.push({ id: uid("cn"), from: arrowFrom, to: id, color: null, label: "" });
-  arrowFrom = null; markDirty(); renderBoard();
-  toast("Connected. Click another card, or Esc to stop.");
+  const heads = state.settings?.arrowHeads || "end";
+  b.connectors.push({ id: uid("cn"), from: arrowFrom, to: id, color: null, label: "", heads });
+  /* keep going from here, so a row of notes links up click after click */
+  arrowFrom = id; markDirty(); renderBoard();
+  toast("Connected. Click another card to keep linking from this one, or Esc to stop.");
 }
 function openConnectorMenu(x, y, cid){
   const con = (cur().connectors || []).find(c => c.id === cid); if (!con) return;
@@ -11253,6 +11269,17 @@ function openConnectorMenu(x, y, cid){
       ctx.appendChild(b);
     }
   });
+  /* each end's arrowhead switches on and off; both off is a plain line.
+     New arrows use whatever was chosen last. */
+  const heads = con.heads || "end";
+  const hasStart = heads === "start" || heads === "both", hasEnd = heads === "end" || heads === "both";
+  const setHeads = (s, e) => {
+    pushUndo(); con.heads = s && e ? "both" : s ? "start" : e ? "end" : "none";
+    state.settings = Object.assign({}, state.settings, { arrowHeads: con.heads });
+    markDirty(); renderBoard();
+  };
+  add((hasStart ? "\u2713 " : "\u2003") + "Arrowhead at start", () => setHeads(!hasStart, hasEnd));
+  add((hasEnd ? "\u2713 " : "\u2003") + "Arrowhead at end", () => setHeads(hasStart, !hasEnd));
   add("Reverse direction", () => { pushUndo(); [con.from, con.to] = [con.to, con.from]; markDirty(); renderBoard(); });
   add("Delete arrow", () => { pushUndo(); cur().connectors = cur().connectors.filter(c => c.id !== cid); markDirty(); renderBoard(); }, "danger");
   ctx.classList.add("open");
@@ -12515,7 +12542,7 @@ async function createZipFile(files,name,directoryPaths=[]){
     parts.push(local.bytes,packed); if(descriptor) parts.push(descriptor.bytes);
     central.push({entry,nameBytes,dt,crc,method,flags,packedSize:packed.size,offset});
     offset+=local.bytes.length+packed.size+(descriptor?descriptor.bytes.length:0);
-    if (files.length>2 && !entry.directory) toast("Compressingâ€¦ "+(i+1)+"/"+entries.length,5000);
+    if (files.length>2 && !entry.directory) toast("Compressing… "+(i+1)+"/"+entries.length,5000);
   }
   const centralStart=offset;
   for (const item of central){
@@ -12588,7 +12615,7 @@ async function offerLargeImportZip(files,label,isFolder=false,directoryPaths=[],
     detail:"Enter: Compress. Escape: No.",okLabel:"Compress",cancelLabel:"No"
   });
   if(!compress) return null;
-  toast("Compressing "+(label||kind)+"â€¦",8000);
+  toast("Compressing "+(label||kind)+"…",8000);
   try{
     const zipped=await createZipFile(files,(label||"archive").replace(/\.zip$/i,"")+".zip",directoryPaths);
     largeImportChecked.add(zipped); return zipped;
@@ -12970,7 +12997,7 @@ async function importFolderFiles(files, mode, point, options={}){
     const bid = ensureDirectory(parts.join("/"));
     try { await importFileIntoBoard(file, bid, counters); imported++; }
     catch (err){ errors.push(file.name + ": " + (err?.message || "could not read")); }
-    if (files.length > 30 && imported % 25 === 0) toast("Importing " + rootName + "â€¦ " + imported + "/" + files.length, 5000);
+    if (files.length > 30 && imported % 25 === 0) toast("Importing " + rootName + "… " + imported + "/" + files.length, 5000);
   }
   markDirty(); renderAll(); setSelection([root.cardId]);
   toast("Imported " + imported + " file" + (imported === 1 ? "" : "s") + " from “" + rootName + "”" +
@@ -13182,8 +13209,8 @@ async function readDroppedFolders(dataTransfer){
   for (const source of captured){
     let node = source.entry;
     if (!node && source.handle) try { node = await source.handle; } catch (_) {}
-    if (node?.isDirectory){ toast("Reading folder " + (node.name || "") + "â€¦",5000); folders.push(await collectLegacyFolder(node)); }
-    else if (node?.kind === "directory"){ toast("Reading folder " + (node.name || "") + "â€¦",5000); folders.push(await collectModernFolder(node)); }
+    if (node?.isDirectory){ toast("Reading folder " + (node.name || "") + "…",5000); folders.push(await collectLegacyFolder(node)); }
+    else if (node?.kind === "directory"){ toast("Reading folder " + (node.name || "") + "…",5000); folders.push(await collectModernFolder(node)); }
     else if (node?.isFile){ try { looseFiles.push(await legacyEntryFile(node)); } catch (_) {} }
     else if (node?.kind === "file"){ try { looseFiles.push(await node.getFile()); } catch (_) {} }
     else {
@@ -15339,7 +15366,10 @@ $("#focusExitBtn").addEventListener("click", () => setFocusMode(false));
 
 /* ---- writing sprint timer ---- */
 let sprintDur = 25*60, sprintLeft = 25*60, sprintTimer = null;
-function fmtClock(s){ const m = Math.floor(s/60), ss = s%60; return m + ":" + String(ss).padStart(2,"0"); }
+function fmtClock(s){
+  const h = Math.floor(s/3600), m = Math.floor(s/60) % 60, ss = s%60;
+  return (h ? h + ":" + String(m).padStart(2,"0") : Math.floor(s/60)) + ":" + String(ss).padStart(2,"0");
+}
 function paintSprint(){ $("#sprintDisplay").textContent = fmtClock(sprintLeft); }
 function stopSprint(){ clearInterval(sprintTimer); sprintTimer = null; $("#sprintStart").textContent = "Start"; }
 $("#mbTimer").addEventListener("click", () => {
@@ -15352,6 +15382,20 @@ document.querySelectorAll("#sprintControls button").forEach(b => {
     sprintDur = Number(b.dataset.min) * 60; sprintLeft = sprintDur;
     stopSprint(); $("#sprintDisplay").classList.remove("done"); paintSprint();
   });
+});
+/* any length from 1 minute to 10 hours */
+function setSprintMinutes(min){
+  min = Math.round(Number(min));
+  if (!Number.isFinite(min) || min < 1 || min > 600){ toast("Pick between 1 and 600 minutes."); return false; }
+  document.querySelectorAll("#sprintControls button").forEach(x => x.classList.toggle("sel", Number(x.dataset.min) === min));
+  sprintDur = min * 60; sprintLeft = sprintDur;
+  stopSprint(); $("#sprintDisplay").classList.remove("done"); paintSprint();
+  return true;
+}
+$("#sprintSet").addEventListener("click", () => { if (setSprintMinutes($("#sprintMin").value)) $("#sprintMin").blur(); });
+$("#sprintMin").addEventListener("keydown", e => {
+  e.stopPropagation();
+  if (e.key === "Enter" && setSprintMinutes(e.target.value)) e.target.blur();
 });
 $("#sprintStart").addEventListener("click", () => {
   if (sprintTimer){ stopSprint(); return; }
@@ -15370,6 +15414,48 @@ $("#sprintStart").addEventListener("click", () => {
 });
 $("#sprintReset").addEventListener("click", () => { stopSprint(); sprintLeft = sprintDur; $("#sprintDisplay").classList.remove("done"); paintSprint(); });
 
+/* ---- export every image on a board, originals, in one .zip ----
+   Includes images sitting in columns and folders on that board, not those
+   inside sub-boards. Each keeps its own format (PNG, JPEG, GIF…) and name. */
+function boardImageCards(boardId){
+  const b = board(boardId); if (!b) return [];
+  const out = [], seen = new Set();
+  const walk = id => {
+    const c = card(id); if (!c || seen.has(id)) return; seen.add(id);
+    if (c.type === "image") out.push(c);
+    for (const k of c.childIds || []) walk(k);
+  };
+  for (const id of [...(b.cardIds || []), ...(b.unsortedIds || [])]) walk(id);
+  return out;
+}
+async function exportBoardImages(boardId){
+  const b = board(boardId); if (!b) return false;
+  const imgs = boardImageCards(boardId);
+  if (!imgs.length){ toast("There are no images on this board."); return false; }
+  toast("Collecting " + imgs.length + (imgs.length === 1 ? " image\u2026" : " images\u2026"), 6000);
+  const files = [], used = new Set(); let skipped = 0;
+  for (const c of imgs){
+    try {
+      const blob = await cardSourceBlob(c);
+      const ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg").replace("svg+xml", "svg");
+      let base = String(c.fileName || c.caption || "image").replace(/\.[a-z0-9]{2,5}$/i, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "image";
+      let name = base + "." + ext, n = 2;
+      while (used.has(name.toLowerCase())) name = base + " (" + (n++) + ")." + ext;
+      used.add(name.toLowerCase());
+      files.push(new File([blob], name, {type:blob.type, lastModified:c.updatedAt || Date.now()}));
+    } catch (_) { skipped++; }
+  }
+  if (!files.length){ toast("None of the images could be read (their originals may be offline)."); return false; }
+  try {
+    const title = String(b.title || "Board").replace(/[\\/:*?"<>|]+/g, "_");
+    const zip = await createZipFile(files, title + " images.zip");
+    const url = URL.createObjectURL(zip), a = document.createElement("a");
+    a.href = url; a.download = zip.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast("Exported " + files.length + (files.length === 1 ? " image" : " images") + (skipped ? " (" + skipped + " couldn't be read)" : "") + ".");
+    return true;
+  } catch (err){ toast("Could not make the zip: " + err.message, 8000); return false; }
+}
 /* ---- export current board as PNG ---- */
 async function exportBoardPNG(){
   const b = cur();
@@ -15425,7 +15511,7 @@ async function exportBoardPNG(){
     toast("Export failed — some images may block canvas export. Try again.");
   }
 }
-$("#mbExport").addEventListener("click", exportBoardPNG);
+$("#mbExport").addEventListener("click", () => exportBoardImages(currentBoardId));
 
 /* ---- bug list: intentionally plain, just a quick jot-and-report tool ---- */
 /* =====================================================================
@@ -17918,6 +18004,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b107", [
+    "Arrows: right-click to switch each arrowhead on or off (both off = a plain line); new arrows use your last choice, and the Arrow tool keeps linking from the last card you clicked.",
+    "Timer: type any length (1 to 600 minutes). Export all images on a board as a .zip from the bottom-right button or a board's right-click menu."
+  ]],
   ["b106", [
     "The chain link on stuck cards is smaller and grey (still easy to tap)."
   ]],
@@ -17955,13 +18045,6 @@ const PATCH_NOTES = [
   ]],
   ["b96", [
     "Sheet moved into the ••• More tools menu (its key, E, still works)."
-  ]],
-  ["b95", [
-    "Album is now Folder, with a folder icon: drag photos or boards in to organize them."
-  ]],
-  ["b94", [
-    "Open CORKBORK in as many tabs and windows as you like: every one can edit, changes show in the others within a second, and nothing overwrites anything.",
-    "Undo is per tab: it takes back only what you did in that tab."
   ]],
 ];
 function renderPatchNotes(){
