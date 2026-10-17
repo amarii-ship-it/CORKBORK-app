@@ -429,6 +429,112 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #updateBar .primary{padding:7px 14px; border-radius:9px;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
+/* calendar widget */
+.wd-body.wd-cal{align-items:stretch; justify-content:flex-start; gap:6px; padding:4px 10px 10px; text-align:left; min-height:0; overflow:hidden;}
+.cal-bar{display:flex; align-items:center; gap:4px; flex:none;}
+.cal-title{flex:1; min-width:0; font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;}
+.cal-nav{width:26px; height:26px; border-radius:9px; font-size:17px; font-weight:900; line-height:1; background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+.cal-today{padding:4px 9px; border-radius:9px; font-size:11.5px; font-weight:800; background:color-mix(in srgb, var(--whue) 20%, transparent); color:var(--text);}
+.cal-views{display:flex; gap:2px; padding:2px; border-radius:10px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+.cal-views button{min-width:24px; padding:3px 6px; border-radius:8px; font-size:11px; font-weight:800; color:var(--text-dim);}
+.cal-views button.on{background:var(--whue); color:#fff;}
+.cal-chips{display:flex; gap:4px; flex:none; overflow:hidden; flex-wrap:wrap; max-height:52px;}
+.cal-chip{display:flex; align-items:center; gap:5px; padding:3px 9px 3px 6px; border-radius:99px; font-size:11px; font-weight:800; color:var(--text);
+  background:color-mix(in srgb, var(--ec) 18%, transparent); max-width:140px;}
+.cal-chip b{width:9px; height:9px; border-radius:50%; background:var(--ec); flex:none;}
+.cal-chip span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cal-chip.off{background:transparent; color:var(--text-dim); text-decoration:line-through;}
+.cal-chip.off b{background:transparent; box-shadow:inset 0 0 0 2px var(--ec);}
+.cal-chip.cal-manage{padding:3px 8px; background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text-dim);}
+.cal-grid{flex:1; min-height:0; overflow:hidden;}
+.cal-grid.cal-month{display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:2px;}
+.cal-wd{text-align:center; font-size:9.5px; font-weight:800; color:var(--text-dim);}
+.cal-cell{min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:1px; padding:2px; border-radius:7px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.cal-cell.other{opacity:.45;}
+.cal-dnum{align-self:flex-start; min-width:18px; height:17px; padding:0 4px; border-radius:99px; font-size:10.5px; font-weight:800; color:var(--text); line-height:17px;}
+.cal-dnum:hover{background:color-mix(in srgb, var(--text) 10%, transparent);}
+.cal-dnum.today{background:var(--whue); color:#fff;}
+.cal-ev{display:flex; align-items:center; gap:3px; width:100%; min-width:0; padding:1px 5px 1px 6px; border-radius:5px; font-size:10.5px; line-height:13px; text-align:left; color:var(--text);
+  background:color-mix(in srgb, var(--ec) 16%, transparent); box-shadow:inset 3px 0 0 var(--ec);}
+.cal-ev.allday{background:var(--ec); box-shadow:none; color:#fff; font-weight:700;}
+.cal-ev i{font-style:normal; font-weight:800; color:var(--text-dim); flex:none;}
+.cal-ev span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+.cal-ev.done{opacity:.55;} .cal-ev.done span{text-decoration:line-through;}
+.cal-ev:not(.compact){padding:5px 8px; font-size:12.5px; line-height:16px; border-radius:8px;}
+.cal-more{display:flex; gap:2px; align-items:center; font-size:10px; font-weight:800; color:var(--text-dim); padding:0 4px; text-align:left;}
+.cal-more b{width:6px; height:6px; border-radius:50%;}
+.cal-grid.cal-week{display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px;}
+.cal-wcol{display:flex; flex-direction:column; gap:2px; min-width:0; overflow:hidden; padding:2px; border-radius:8px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.cal-whead{display:flex; flex-direction:column; align-items:center; gap:1px; margin-bottom:2px;}
+.cal-whead small{font-size:9.5px; font-weight:800; color:var(--text-dim);}
+.cal-whead .cal-dnum{align-self:center;}
+.cal-week .cal-ev{flex-direction:column; align-items:flex-start; gap:0;}
+.cal-week .cal-ev span{width:100%;}
+.cal-grid.cal-day{display:flex; flex-direction:column; gap:4px; overflow-y:auto;}
+.cal-row{display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:10px; background:color-mix(in srgb, var(--ec) 14%, transparent); box-shadow:inset 4px 0 0 var(--ec);}
+.cal-row input{accent-color:var(--ec); flex:none;}
+.cal-when{flex:none; min-width:52px; font-size:11.5px; font-weight:800; color:var(--text-dim);}
+.cal-rtitle{flex:1; min-width:0; text-align:left; font-weight:700; font-size:13px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cal-row.done .cal-rtitle{text-decoration:line-through; color:var(--text-dim);}
+.cal-rcat{flex:none; max-width:35%; font-size:10.5px; font-weight:700; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cal-empty{padding:10px 4px; font-size:12.5px; color:var(--text-dim);}
+.cal-add{align-self:flex-start; padding:5px 11px; border-radius:99px; font-size:12px; font-weight:800; background:color-mix(in srgb, var(--whue) 20%, transparent); color:var(--text);}
+.cal-grid.cal-3month{display:flex; flex-wrap:wrap; gap:10px; align-content:flex-start;}
+.cal-mini{flex:1 1 112px; min-width:0;}
+.cal-mname{font-size:12px; font-weight:900; margin-bottom:3px;}
+.cal-mgrid{display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:1px;}
+.cal-mgrid small{text-align:center; font-size:9px; font-weight:800; color:var(--text-dim);}
+.cal-mday{position:relative; height:22px; padding:0; border-radius:6px; font-size:10.5px; font-weight:700; color:var(--text); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:2px;}
+.cal-mday:hover{background:color-mix(in srgb, var(--text) 8%, transparent);}
+.cal-mday.today{background:var(--whue); color:#fff;}
+.cal-dots{display:flex; gap:1px; margin-top:1px;}
+.cal-dots b{width:4px; height:4px; border-radius:50%;}
+#calPop{position:fixed; z-index:400; display:none; flex-direction:column; gap:6px; width:270px; max-height:70vh; overflow:auto; padding:12px; border-radius:16px; background:var(--surface-hi); color:var(--text); box-shadow:0 10px 32px rgba(0,0,0,.28);}
+#calPop.open{display:flex;}
+.cal-ptitle{font-weight:900; font-size:14px;}
+.cal-pline{font-size:12.5px; color:var(--text-dim); display:flex; align-items:center; gap:6px; white-space:pre-wrap; word-break:break-word;}
+.cal-pline.cal-notes{max-height:120px; overflow:auto; display:block;}
+.cal-pline.cal-ro{font-size:11.5px; display:block;}
+.cal-dot{width:10px; height:10px; border-radius:50%; background:var(--ec); flex:none;}
+.cal-prow{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;}
+.cal-pbtn{padding:6px 12px; border-radius:11px; font-weight:800; font-size:12.5px; background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text);}
+.cal-pbtn.main{background:#4C8DF6; color:#fff; box-shadow:0 3px 0 color-mix(in srgb, #4C8DF6 60%, #000);}
+.cal-date{font-size:14px; padding:6px 8px; border-radius:10px;}
+.cal-hint{font-size:11.5px; color:var(--text-dim);}
+.cal-panel .md-x{margin-left:auto;}
+.cal-panel{width:min(520px, 96vw) !important; max-height:90vh; overflow:auto; gap:8px !important;}
+.cal-sec{font-weight:900; font-size:13px; margin-top:6px;}
+.cal-prow2{display:flex; align-items:center; gap:10px; padding:5px 6px; border-radius:12px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.cal-swatch{width:24px; height:24px; border-radius:8px; flex:none;}
+.cal-pname{flex:1; min-width:0; display:flex; flex-direction:column; font-weight:800; font-size:13px;}
+.cal-pname small{font-weight:600; font-size:11px; color:var(--text-dim);}
+.cal-rename{font-weight:800; font-size:13px; padding:2px 6px; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--text); width:100%;}
+.cal-rename:hover, .cal-rename:focus{border-color:var(--border); background:var(--surface);}
+.cal-del{padding:4px 8px; color:var(--text-dim); border-radius:8px;}
+.cal-del:hover{color:#E06363;}
+.cal-switch{position:relative; width:38px; height:22px; flex:none; cursor:pointer;}
+.cal-switch input{position:absolute; opacity:0; inset:0; margin:0; cursor:pointer;}
+.cal-switch span{position:absolute; inset:0; border-radius:99px; background:color-mix(in srgb, var(--text) 18%, transparent); transition:background .15s; pointer-events:none;}
+.cal-switch span::after{content:""; position:absolute; left:3px; top:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .15s;}
+.cal-switch input:checked + span{background:#3FAF62;}
+.cal-switch input:checked + span::after{transform:translateX(16px);}
+.cal-acts{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+.cal-help{font-size:12px; line-height:1.5; color:var(--text-dim); margin-top:4px;}
+.cal-help b{color:var(--text);}
+/* lists: colour dot, calendar switch, due dates */
+.list-color{width:14px; height:14px; border-radius:50%; flex:none; padding:0; box-shadow:inset 0 0 0 2px var(--text-dim); opacity:0; transition:opacity .12s;}
+.list-color.set{background:var(--lcol); box-shadow:none; opacity:1;}
+.card.type-todo:hover .list-color, .card.type-todo.selected .list-color{opacity:1;}
+.list-cal{font-size:13px; padding:0 2px; flex:none; filter:grayscale(1); opacity:.45;}
+.list-cal.on{filter:none; opacity:1;}
+.todo-item label{flex:1; min-width:0;}
+.todo-due{flex:none; margin-top:1px; padding:0 7px; border-radius:99px; font-size:11px; font-weight:800; line-height:18px; color:var(--text);
+  background:color-mix(in srgb, var(--lcol, var(--edit)) 20%, transparent);}
+.todo-due.late{background:color-mix(in srgb, #E06363 22%, transparent); color:#C94848;}
+.todo-item.done .todo-due{opacity:.5;}
+.due-btn{flex:none; font-size:12px; padding:0 3px; visibility:hidden; filter:grayscale(1); opacity:.6;}
+.todo-item:hover .due-btn, .card.type-todo.selected .due-btn{visibility:visible;}
+.due-btn:hover{filter:none; opacity:1;}
 /* mood tracker: each face's bubble carries the colour it will be in the log */
 .wd-body.wd-mood{align-items:stretch; justify-content:flex-start; gap:7px; padding-top:9px; text-align:left;}
 .md-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
@@ -3745,7 +3851,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b111";
+window.BUILD = "b112";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4377,6 +4483,7 @@ function tabMergeWorkspace(base, local, remote){
   out.labels = tabMergeMap(base.labels, local.labels, remote.labels, () => true);
   if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
   if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
+  for (const k of ["calCats", "calEvents"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   {
     const key = x => x?.id ?? JSON.stringify(x);
     const toMap = list => new Map((list || []).map(x => [key(x), x]));
@@ -4397,7 +4504,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","mood","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","calCats","calEvents","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -4979,7 +5086,8 @@ function renderBoard(){
        cards therefore carry the count they were drawn with. */
     const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") :
       (c.type === "column" || c.type === "grid")
-        ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") : null;
+        ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") :
+      c.type === "widget" && c.widget === "calendar" ? calSignature(id) : null;
     if (hit && hit.el && (hit.ref === c || id === editingId) && hit.dependency === dependency){
       el = hit.el;
       el.classList.remove("dragging", "drag-src", "droptarget", "new-card");
@@ -5952,6 +6060,8 @@ function buildTodo(c, el){
   const head = document.createElement("div"); head.className = "list-head";
   const t = document.createElement("div"); t.className = "card-title"; t.textContent = c.title || "List";
   t.title = "Double-click to rename";
+  /* the list's colour: its title here, its items on the calendar */
+  if (c.color){ t.style.color = c.color; el.style.setProperty("--lcol", c.color); }
   const cyc = document.createElement("button"); cyc.className = "list-mode";
   const def = LIST_MODES.find(m => m.id === mode) || LIST_MODES[0];
   cyc.textContent = def.glyph;
@@ -5964,7 +6074,18 @@ function buildTodo(c, el){
     patchCard(c.id, { listMode: LIST_MODES[(i + 1) % LIST_MODES.length].id });
     markDirty(); renderBoard();
   });
-  head.append(t, cyc);
+  const dot = document.createElement("button"); dot.className = "list-color" + (c.color ? " set" : "");
+  dot.title = "List colour (also its colour on the calendar)"; stop(dot);
+  dot.addEventListener("click", e => { e.stopPropagation(); openColorPicker({current:c.color || "", onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}); });
+  head.append(t, dot);
+  if ((c.items || []).some(it => it.due)){
+    const on = c.calOn !== false;
+    const cal = document.createElement("button"); cal.className = "list-cal" + (on ? " on" : "");
+    cal.textContent = "\u{1F4C5}"; cal.title = on ? "On the calendar \u2014 click to hide it there" : "Hidden from the calendar \u2014 click to show it"; stop(cal);
+    cal.addEventListener("click", e => { e.stopPropagation(); setListOnCalendar(c.id, !on); });
+    head.appendChild(cal);
+  }
+  head.appendChild(cyc);
   el.appendChild(head);
   const list = document.createElement("div"); list.className = "todo-items mode-" + mode;
 
@@ -6003,6 +6124,16 @@ function buildTodo(c, el){
       e.stopPropagation(); clearTimeout(clickTimer);
       editTodoItem(c, it, row, cb, lb);
     });
+    /* due date: a chip when set, a small button on hover when not */
+    const due = document.createElement("button"); due.className = it.due ? "todo-due" : "due-btn";
+    if (it.due){
+      due.textContent = dueLabel(it.due);
+      const late = it.due < calKeyOf(new Date()) && !(it.done && mode === "check");
+      if (late) due.classList.add("late");
+      due.title = "Due " + it.due + " \u2014 click to change";
+    } else { due.textContent = "\u{1F4C5}"; due.title = "Add a due date"; }
+    stop(due);
+    due.addEventListener("click", e => { e.stopPropagation(); pickDueDate(c.id, it.id, due); });
     const rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "✕"; rm.title = "Remove item";
     stop(rm);
     rm.addEventListener("click", () => {
@@ -6010,7 +6141,7 @@ function buildTodo(c, el){
       patchCard(c.id, { items: card(c.id).items.filter(x => x.id !== it.id) });
       markDirty(); renderBoard();
     });
-    row.append(cb, lb, rm); list.appendChild(row);
+    row.append(cb, lb, due, rm); list.appendChild(row);
   }
 
   const addWrap = document.createElement("div"); stop(addWrap);
@@ -10896,6 +11027,10 @@ function openCtx(x, y, c){
      turning a Writing block into a Timeline leaves everything else intact
      and switching back brings the prose with it. */
   if (c.type === "block") add("Change block kind…", () => pickBlockKind(c.id));
+  if (c.type === "todo"){
+    add("List colour…", () => openColorPicker({current:c.color || "", onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
+    add(c.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(c.id, c.calOn === false));
+  }
   /* Same payload Ctrl+C writes, reachable without the keyboard. On a single
      image it copies the picture itself, for pasting anywhere. */
   add("Copy", async () => {
@@ -13454,6 +13589,12 @@ function dragImageUrl(dt){
 }
 async function handleExternalDrop(e, toUnsorted){
   e.preventDefault();
+  /* calendar files (.ics, Google's .ical.zip) go into the calendar */
+  const calFiles = [...(e.dataTransfer?.files || [])];
+  if (calFiles.length && calFiles.every(calIsFile)){
+    await calImportAndReport(calFiles, toUnsorted || inCardPage() ? viewCenterWorld() : screenToWorld(e.clientX, e.clientY));
+    return;
+  }
   const libId = e.dataTransfer?.getData("text/x-corkbork-lib");
   if (libId && state.library?.[libId]){
     const at = toUnsorted || inCardPage() ? viewCenterWorld() : screenToWorld(e.clientX, e.clientY);
@@ -15758,7 +15899,8 @@ const WIDGET_KINDS = {
   clock:    {name:"Clock",     hue:"#A98BD6", icon:"\u{1F552}", size:{w:200, h:160}},
   timer:    {name:"Timer",     hue:"#3FAF62", icon:"⏱",    size:{w:210, h:196}},
   countdown:{name:"Countdown", hue:"#E2673F", icon:"⏳",    size:{w:200, h:178}},
-  mood:     {name:"Mood",      hue:"#E8B93A", icon:"\u{1F642}", size:{w:300, h:248}}
+  mood:     {name:"Mood",      hue:"#E8B93A", icon:"\u{1F642}", size:{w:300, h:248}},
+  calendar: {name:"Calendar",  hue:"#4C8DF6", icon:"\u{1F4C5}", size:{w:460, h:420}}
 };
 const WIDGET_ZONES = ["", "UTC", "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "America/Sao_Paulo",
   "Europe/London", "Europe/Paris", "Europe/Berlin", "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney"];
@@ -15814,6 +15956,8 @@ function buildWidget(c, el){
     body.append(big, bar, row);
   } else if (c.widget === "mood"){
     buildMoodWidget(c, body); el.append(strip, body); return;
+  } else if (c.widget === "calendar"){
+    buildCalendarWidget(c, body); el.append(strip, body); return;
   } else if (c.widget === "countdown"){
     const n = countdownDays(c);
     const big = document.createElement("div"); big.className = "wd-big wd-accent";
@@ -15845,7 +15989,7 @@ setInterval(() => {
     if (el.dataset.part === "bar") el.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%";
     else { const t = widgetLiveText(c, el.dataset.part); if (el.textContent !== t) el.textContent = t; }
   }
-  if (moodTodayKey !== moodDayKey()){ moodTodayKey = moodDayKey(); if (worldEl.querySelector(".wd-mood")) refreshMoodWidgets(); }
+  if (moodTodayKey !== moodDayKey()){ moodTodayKey = moodDayKey(); if (worldEl.querySelector(".wd-mood, .wd-cal")) refreshMoodWidgets(); }
   /* timers anywhere in the workspace, not just this board */
   let finished = false;
   for (const c of Object.values(state.cards)){
@@ -15869,6 +16013,7 @@ async function editWidget(c){
       field("label", "Label", text(c.label, c.widget === "countdown" ? "e.g. Midterm" : c.widget === "timer" ? "e.g. Study" : "e.g. Home"));
       if (c.widget === "timer"){ const i = document.createElement("input"); i.type = "number"; i.min = 1; i.max = 600; i.value = Math.round((c.duration || 1500) / 60); field("minutes", "Minutes", i); }
       if (c.widget === "countdown"){ const i = document.createElement("input"); i.type = "date"; i.value = c.target || ""; field("target", "Date", i); }
+      if (c.widget === "calendar"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Every Calendar widget shows the same calendar. Tap the coloured chips to choose what this one shows; \u2699 opens colours, Google import and export."; body.appendChild(m); }
       if (c.widget === "mood"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Moods are shared by every Mood widget. Tap a day in the week, or Look back, to change past days."; body.appendChild(m); }
       if (c.widget === "clock"){
         const sel = document.createElement("select");
@@ -15890,9 +16035,9 @@ async function editWidget(c){
   if (c.widget === "clock") patch.zone = res.zone || "";
   pushUndo(); patchCard(c.id, patch); markDirty(); renderBoard();
 }
-function addWidget(kind){
+function addWidget(kind, at){
   const k = WIDGET_KINDS[kind]; if (!k) return null;
-  const p = viewCenterWorld();
+  const p = at || viewCenterWorld();
   const extra = {widget:kind, label:""};
   if (kind === "timer") Object.assign(extra, {duration:1500, remaining:1500});
   if (kind === "countdown"){ const d = new Date(Date.now() + 7 * 86400000); extra.target = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -16072,6 +16217,806 @@ function renderMoodLook(){
   const tip = document.createElement("div"); tip.className = "md-sub2"; tip.textContent = "Tap any day to log or change it."; right.appendChild(tip);
   wrap.append(left, right); body.appendChild(wrap);
 }
+/* ---- calendar ------------------------------------------------------------
+   One calendar for the whole workspace. Events live in state.calEvents and
+   their calendars ("Bio 101", "Personal", an imported Google calendar) in
+   state.calCats, both synced like the mood log. Lists are calendars too:
+   every dated item of a list that is shown on the calendar appears in its
+   colour. Each Calendar widget picks which of them it shows.
+   Imported calendars are a copy, read only here: change them where they
+   came from and import again. Times are kept as the wall clock of the zone
+   they were written in, so a weekly 9:00 class stays at 9:00 across DST. */
+const CAL_COLORS = ["#4C8DF6", "#E2673F", "#3FAF62", "#A98BD6", "#E8B93A", "#E0609A", "#2BB3C0", "#C0803F"];
+const CAL_LIST_COLOR = "#8A8F98";
+const CAL_KEEP_DAYS = 365;      /* imported one-off events older than this are left out */
+const calNav = new Map();       /* widget id -> the day it is looking at (this tab only) */
+const calPad = n => String(n).padStart(2, "0");
+const calKeyOf = d => d.getFullYear() + "-" + calPad(d.getMonth() + 1) + "-" + calPad(d.getDate());
+const calDay0 = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const calAddDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const calMonday = d => calAddDays(calDay0(d), -((d.getDay() + 6) % 7));
+function calParts(s){
+  const m = /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?)?$/.exec(s || "");
+  return m ? m.slice(1).filter(x => x !== undefined).map(Number) : null;
+}
+const calTzFmt = new Map();
+/* minutes the wall clock in tz is ahead of UTC at instant ms */
+function calTzOffset(ms, tz){
+  let f = calTzFmt.get(tz);
+  if (!f){
+    f = new Intl.DateTimeFormat("en-US", {timeZone:tz, hourCycle:"h23", year:"numeric", month:"numeric", day:"numeric", hour:"numeric", minute:"numeric", second:"numeric"});
+    calTzFmt.set(tz, f);
+  }
+  const p = {}; for (const x of f.formatToParts(new Date(ms))) p[x.type] = +x.value;
+  return (Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - Math.floor(ms / 1000) * 1000) / 60000;
+}
+/* wall clock [y, mo, d, h, mi, s] in tz ("" = this device) -> instant */
+function calWallMs(w, tz){
+  const [y, mo, d, h = 0, mi = 0, s = 0] = w;
+  if (!tz) return new Date(y, mo - 1, d, h, mi, s).getTime();
+  const guess = Date.UTC(y, mo - 1, d, h, mi, s);
+  if (tz === "UTC") return guess;
+  try {
+    const t = guess - calTzOffset(guess, tz) * 60000;
+    return guess - calTzOffset(t, tz) * 60000;
+  } catch (_) { return new Date(y, mo - 1, d, h, mi, s).getTime(); }   /* a zone this browser doesn't know */
+}
+const CAL_WD = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+function calRule(s){
+  const r = {};
+  for (const kv of String(s || "").split(";")){ const i = kv.indexOf("="); if (i > 0) r[kv.slice(0, i).toUpperCase()] = kv.slice(i + 1).toUpperCase(); }
+  return r;
+}
+const calYmd = (y, mo, d) => { const x = new Date(Date.UTC(y, mo - 1, d)); return [x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()]; };
+const calWeekday = (y, mo, d) => new Date(Date.UTC(y, mo - 1, d)).getUTCDay();
+/* the days of one month a monthly/yearly rule lands on */
+function calMonthDays(y, mo, r, day){
+  const len = new Date(Date.UTC(y, mo, 0)).getUTCDate(), out = [];
+  if (r.BYMONTHDAY){
+    for (const v of r.BYMONTHDAY.split(",").map(Number)){ const d = v < 0 ? len + 1 + v : v; if (d >= 1 && d <= len) out.push(d); }
+  } else if (r.BYDAY){
+    for (const part of r.BYDAY.split(",")){
+      const m = /^([+-]?\d+)?(SU|MO|TU|WE|TH|FR|SA)$/.exec(part); if (!m) continue;
+      const wd = CAL_WD.indexOf(m[2]), all = [];
+      for (let d = 1; d <= len; d++) if (calWeekday(y, mo, d) === wd) all.push(d);
+      if (!m[1]) out.push(...all);
+      else { const n = +m[1], d = n > 0 ? all[n - 1] : all[all.length + n]; if (d) out.push(d); }
+    }
+  } else if (day <= len) out.push(day);
+  return [...new Set(out)].sort((a, b) => a - b);
+}
+/* each start (instant) of an event that overlaps [from, to) */
+function calStarts(ev, from, to){
+  const p = calParts(ev.start); if (!p) return [];
+  const allDay = p.length === 3, tz = allDay ? "" : (ev.tz || "");
+  const t = allDay ? [0, 0, 0] : p.slice(3);
+  const at = (y, mo, d) => calWallMs([y, mo, d, ...t], tz);
+  const span = Math.max(1, allDay ? (ev.days || 1) * 86400000 : (ev.dur || 0));
+  const first = at(p[0], p[1], p[2]);
+  if (!ev.rrule) return first < to && first + span > from ? [first] : [];
+  const r = calRule(ev.rrule), step = Math.max(1, +r.INTERVAL || 1), count = +r.COUNT || Infinity;
+  let until = Infinity;
+  if (r.UNTIL){ const u = calIcsTime(r.UNTIL, {}); if (u) until = u.allDay ? calWallMs([...u.parts, 23, 59, 59], "") : calWallMs(u.parts, u.tz || tz); }
+  const ex = new Set(ev.ex || []), out = [];
+  let n = 0, stop = false;
+  const take = ([y, mo, d]) => {
+    const s = at(y, mo, d);
+    if (s < first) return;
+    if (s > until || n >= count || s >= to){ stop = true; return; }
+    n++;
+    if (!ex.has(s) && s + span > from) out.push(s);
+  };
+  const days = r.BYDAY ? r.BYDAY.split(",").map(x => CAL_WD.indexOf(x.slice(-2))).filter(x => x >= 0) : null;
+  for (let k = 0; k < 40000 && !stop; k++){
+    if (r.FREQ === "DAILY"){
+      const d = calYmd(p[0], p[1], p[2] + k * step);
+      if (!days || days.includes(calWeekday(...d))) take(d);
+    } else if (r.FREQ === "WEEKLY"){
+      const mon = p[2] - ((calWeekday(p[0], p[1], p[2]) + 6) % 7) + k * 7 * step;
+      const list = (days || [calWeekday(p[0], p[1], p[2])]).map(w => (w + 6) % 7).sort((a, b) => a - b);
+      for (const off of list){ take(calYmd(p[0], p[1], mon + off)); if (stop) break; }
+    } else if (r.FREQ === "MONTHLY" || r.FREQ === "YEARLY"){
+      const months = r.FREQ === "MONTHLY" ? [(p[1] - 1) + k * step] :
+        (r.BYMONTH ? r.BYMONTH.split(",").map(Number) : [p[1]]).sort((a, b) => a - b).map(m => (p[0] + k * step) * 12 + m - 1 - p[0] * 12);
+      for (const mi of months){
+        const y = p[0] + Math.floor(mi / 12), mo = ((mi % 12) + 12) % 12 + 1;
+        if (at(y, mo, 1) >= to && at(y, mo, 1) > first){ stop = true; break; }
+        const rr = r.FREQ === "YEARLY" && !r.BYMONTH && !r.BYDAY && !r.BYMONTHDAY ? {} : r;
+        for (const d of calMonthDays(y, mo, rr, p[2])){ take([y, mo, d]); if (stop) break; }
+        if (stop) break;
+      }
+    } else break;
+  }
+  return out;
+}
+/* ---- reading .ics files (Google, Apple, Outlook all write these) ---- */
+function calUnescape(s){ return String(s || "").replace(/\\([\;,nN])/g, (m, ch) => ch === "n" || ch === "N" ? "\n" : ch); }
+function calIcsTime(value, params){
+  const m = /^(\d{4})(\d\d)(\d\d)(?:T(\d\d)(\d\d)(\d\d)?(Z)?)?$/.exec(String(value || "").trim());
+  if (!m) return null;
+  const parts = [+m[1], +m[2], +m[3]];
+  if (!m[4] || params.VALUE === "DATE") return {allDay:true, parts};
+  parts.push(+m[4], +m[5], +(m[6] || 0));
+  return {allDay:false, parts, tz:m[7] ? "UTC" : (params.TZID || "").replace(/^"|"$/g, "")};
+}
+function calIcsDuration(v){
+  const m = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(v || "").trim());
+  if (!m) return null;
+  return (m[1] === "-" ? -1 : 1) * ((+m[2] || 0) * 604800 + (+m[3] || 0) * 86400 + (+m[4] || 0) * 3600 + (+m[5] || 0) * 60 + (+m[6] || 0)) * 1000;
+}
+function calParseIcs(text){
+  const lines = String(text).replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n");
+  const stack = [], raw = []; let name = "", defTz = "", ev = null;
+  for (const line of lines){
+    const i = line.indexOf(":"); if (i < 0) continue;
+    const head = line.slice(0, i), value = line.slice(i + 1);
+    const [prop0, ...ps] = head.split(";"), prop = prop0.trim().toUpperCase();
+    const params = {};
+    for (const p of ps){ const j = p.indexOf("="); if (j > 0) params[p.slice(0, j).toUpperCase()] = p.slice(j + 1); }
+    if (prop === "BEGIN"){
+      const what = value.trim().toUpperCase(); stack.push(what);
+      if (what === "VEVENT") ev = {ex:[]};
+      continue;
+    }
+    if (prop === "END"){ if (stack.pop() === "VEVENT" && ev){ raw.push(ev); ev = null; } continue; }
+    const top = stack[stack.length - 1];
+    if (top === "VCALENDAR"){
+      if (prop === "X-WR-CALNAME") name = calUnescape(value).trim();
+      if (prop === "X-WR-TIMEZONE") defTz = value.trim();
+      continue;
+    }
+    if (!ev || top !== "VEVENT") continue;
+    if (prop === "UID") ev.uid = value.trim();
+    else if (prop === "SUMMARY") ev.title = calUnescape(value).trim();
+    else if (prop === "LOCATION") ev.loc = calUnescape(value).trim();
+    else if (prop === "DESCRIPTION") ev.notes = calUnescape(value).trim();
+    else if (prop === "STATUS") ev.status = value.trim().toUpperCase();
+    else if (prop === "RRULE") ev.rrule = value.trim();
+    else if (prop === "DTSTART") ev.start = calIcsTime(value, params);
+    else if (prop === "DTEND") ev.end = calIcsTime(value, params);
+    else if (prop === "DURATION") ev.duration = calIcsDuration(value);
+    else if (prop === "RECURRENCE-ID") ev.recur = calIcsTime(value, params);
+    else if (prop === "EXDATE") for (const v of value.split(",")){ const x = calIcsTime(v, params); if (x) ev.ex.push(x); }
+  }
+  return {name, defTz, raw};
+}
+const calStr = t => t.parts.slice(0, 3).map((v, i) => i ? calPad(v) : v).join("-") + (t.allDay ? "" : "T" + t.parts.slice(3).map(calPad).join(":"));
+const calInstant = (t, tz) => t.allDay ? calWallMs(t.parts, "") : calWallMs(t.parts, t.tz || tz);
+function calHash(s){
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++){ const ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
+}
+/* parsed .ics -> event records for one calendar; repeats keep their rule,
+   moved or cancelled single dates become exceptions */
+function calRecords(parsed, catId, keepFrom){
+  const out = [], masters = new Map(); let old = 0;
+  const floatTz = t => !t || t.allDay || t.tz ? t : Object.assign({}, t, {tz:parsed.defTz || ""});
+  const evs = parsed.raw.map(e => Object.assign({}, e, {start:floatTz(e.start), end:floatTz(e.end), recur:floatTz(e.recur), ex:e.ex.map(floatTz)}));
+  for (const e of evs){
+    if (!e.start || e.recur) continue;
+    const id = "e" + calHash(catId + "|" + (e.uid || calStr(e.start) + (e.title || "")));
+    const rec = {id, cat:catId, title:(e.title || "").slice(0, 300), allDay:e.start.allDay, start:calStr(e.start),
+      tz:e.start.allDay ? "" : (e.start.tz || ""), loc:(e.loc || "").slice(0, 300), notes:(e.notes || "").slice(0, 2000),
+      uid:e.uid || "", ro:true, updatedAt:Date.now()};
+    const s0 = calInstant(e.start, rec.tz);
+    if (e.start.allDay){
+      rec.days = e.end ? Math.max(1, Math.round((Date.UTC(e.end.parts[0], e.end.parts[1] - 1, e.end.parts[2]) - Date.UTC(...[e.start.parts[0], e.start.parts[1] - 1, e.start.parts[2]])) / 86400000))
+        : Math.max(1, Math.round((e.duration || 86400000) / 86400000));
+    } else rec.dur = Math.max(0, e.end ? calInstant(e.end, rec.tz) - s0 : (e.duration != null ? e.duration : 0));
+    if (e.rrule){
+      rec.rrule = e.rrule;
+      rec.ex = e.ex.map(x => calInstant(x, rec.tz));
+      const until = calRule(e.rrule).UNTIL, u = until && calIcsTime(until, {});
+      if (u && calInstant(u, rec.tz) < keepFrom){ old++; continue; }
+    } else if (s0 + (rec.dur || (rec.days || 1) * 86400000) < keepFrom){ old++; continue; }
+    if (e.status === "CANCELLED") continue;
+    if (e.uid) masters.set(e.uid, rec);
+    out.push(rec);
+  }
+  /* one date of a repeating event that was moved or cancelled */
+  for (const e of evs){
+    if (!e.start || !e.recur) continue;
+    const m = masters.get(e.uid);
+    if (m && m.rrule) m.ex = [...(m.ex || []), calInstant(e.recur, m.tz)];
+    if (e.status === "CANCELLED") continue;
+    const id = "e" + calHash(catId + "|" + e.uid + "|" + calStr(e.recur));
+    const rec = {id, cat:catId, title:(e.title || m?.title || "").slice(0, 300), allDay:e.start.allDay, start:calStr(e.start),
+      tz:e.start.allDay ? "" : (e.start.tz || ""), loc:(e.loc || "").slice(0, 300), notes:(e.notes || "").slice(0, 2000),
+      uid:e.uid || "", ro:true, updatedAt:Date.now()};
+    const s0 = calInstant(e.start, rec.tz);
+    if (rec.allDay) rec.days = e.end ? Math.max(1, Math.round((calWallMs(e.end.parts, "") - s0) / 86400000)) : 1;
+    else rec.dur = Math.max(0, e.end ? calInstant(e.end, rec.tz) - s0 : (e.duration != null ? e.duration : (m?.dur || 0)));
+    if (s0 + (rec.dur || (rec.days || 1) * 86400000) < keepFrom){ old++; continue; }
+    out.push(rec);
+  }
+  return {events:out, old};
+}
+/* "Bio 101_c_8f…@group.calendar.google.com.ics" -> "Bio 101" */
+function calNameFromFile(n){
+  return String(n || "Calendar").split("/").pop().replace(/\.ics$/i, "").replace(/_[^_]*@(group|import)\.calendar\.google\.com$/i, "")
+    .replace(/@group\.calendar\.google\.com$/i, "").trim() || "Calendar";
+}
+function calIsFile(f){ return /\.ics$/i.test(f.name || "") || f.type === "text/calendar" || /\.ical\.zip$/i.test(f.name || ""); }
+async function calReadFiles(files){
+  const out = [];
+  for (const f of files){
+    if (/\.zip$/i.test(f.name || "")){
+      const entries = await readZipDirectory(f);
+      for (const e of entries.values())
+        if (!e.directory && /\.ics$/i.test(e.path)) out.push({name:e.path, text:await (await readZipEntry(f, e)).text()});
+    } else out.push({name:f.name, text:await f.text()});
+  }
+  return out;
+}
+async function calImportFiles(files){
+  const texts = await calReadFiles(files);
+  const keepFrom = Date.now() - CAL_KEEP_DAYS * 86400000;
+  const cats = Object.assign({}, state.calCats || {}), events = Object.assign({}, state.calEvents || {});
+  const res = {calendars:0, events:0, old:0, names:[]};
+  for (const {name, text} of texts){
+    if (!/BEGIN:VCALENDAR/i.test(text) && !/BEGIN:VEVENT/i.test(text)) continue;
+    const parsed = calParseIcs(text);
+    const title = (parsed.name || calNameFromFile(name)).slice(0, 120);
+    /* importing the same calendar again replaces the old copy */
+    let cat = Object.values(cats).find(k => k.source === "ics" && k.name.toLowerCase() === title.toLowerCase());
+    if (cat){ for (const [id, e] of Object.entries(events)) if (e.cat === cat.id) delete events[id]; }
+    else {
+      const used = new Set(Object.values(cats).map(k => k.color));
+      cat = {id:uid("k"), name:title, color:CAL_COLORS.find(c => !used.has(c)) || CAL_COLORS[Object.keys(cats).length % CAL_COLORS.length], source:"ics", createdAt:Date.now()};
+    }
+    const {events:recs, old} = calRecords(parsed, cat.id, keepFrom);
+    cats[cat.id] = Object.assign({}, cat, {importedAt:Date.now(), count:recs.length, updatedAt:Date.now()});
+    for (const r of recs) events[r.id] = r;
+    res.calendars++; res.events += recs.length; res.old += old; res.names.push(title);
+  }
+  if (!res.calendars) return res;
+  state.calCats = cats; state.calEvents = events;
+  markDirty(); refreshCalendarWidgets();
+  return res;
+}
+/* ---- writing .ics: this workspace's own events and dated list items ---- */
+function calExportIcs(){
+  const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CORKBORK//Calendar//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:CORKBORK"];
+  const esc = s => String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const day = s => s.slice(0, 10).replace(/-/g, "");
+  const nextDay = (s, n) => { const [y, m, d] = calParts(s); return calKeyOf(new Date(y, m - 1, d + n)).replace(/-/g, ""); };
+  let n = 0;
+  const cats = calAllCats();
+  for (const e of Object.values(state.calEvents || {})){
+    const cat = cats[e.cat]; if (!cat || cat.source === "ics") continue;
+    L.push("BEGIN:VEVENT", "UID:corkbork-" + e.id, "DTSTAMP:" + stamp, "SUMMARY:" + esc(e.title));
+    if (e.allDay) L.push("DTSTART;VALUE=DATE:" + day(e.start), "DTEND;VALUE=DATE:" + nextDay(e.start, e.days || 1));
+    else {
+      const w = e.start.replace(/[-:]/g, "");
+      L.push(zone && !e.tz ? "DTSTART;TZID=" + zone + ":" + w : e.tz === "UTC" ? "DTSTART:" + w + "Z" : e.tz ? "DTSTART;TZID=" + e.tz + ":" + w : "DTSTART:" + w,
+        "DURATION:PT" + Math.max(0, Math.round((e.dur || 0) / 60000)) + "M");
+    }
+    if (e.rrule) L.push("RRULE:" + e.rrule);
+    if (e.loc) L.push("LOCATION:" + esc(e.loc));
+    if (e.notes) L.push("DESCRIPTION:" + esc(e.notes));
+    L.push("CATEGORIES:" + esc(cat.name), "END:VEVENT"); n++;
+  }
+  for (const c of calListCards()) for (const it of c.items || []){
+    if (!it.due) continue;
+    L.push("BEGIN:VEVENT", "UID:corkbork-" + c.id + "-" + it.id, "DTSTAMP:" + stamp, "SUMMARY:" + esc((it.done ? "\u2713 " : "") + it.text),
+      "DTSTART;VALUE=DATE:" + day(it.due), "DTEND;VALUE=DATE:" + nextDay(it.due, 1), "CATEGORIES:" + esc(c.title || "List"),
+      "DESCRIPTION:" + esc("From the list \u201c" + (c.title || "List") + "\u201d in CORKBORK"), "END:VEVENT"); n++;
+  }
+  L.push("END:VCALENDAR");
+  /* lines longer than 75 bytes are folded, never inside a character */
+  const enc = new TextEncoder();
+  const fold = line => {
+    const out = []; let cur0 = "", bytes = 0;
+    for (const ch of line){
+      const b = enc.encode(ch).length;
+      if (bytes + b > 74){ out.push(cur0); cur0 = " "; bytes = 1; }
+      cur0 += ch; bytes += b;
+    }
+    out.push(cur0); return out.join("\r\n");
+  };
+  return {text:L.map(fold).join("\r\n") + "\r\n", count:n};
+}
+function calDownloadIcs(){
+  const {text, count} = calExportIcs();
+  if (!count){ toast("Nothing to export yet: add an event, or give a list item a due date."); return false; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/calendar"})); a.download = "CORKBORK calendar.ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast("Exported " + count + (count === 1 ? " event" : " events") + ". Import the file into Google, Apple or Outlook. It's a one-time copy.", 7000);
+  return true;
+}
+/* lists on the calendar: on unless switched off, never from the Recycle Bin */
+function calListCards(){
+  const trash = collectSubtree(TRASH_ID, {boards:new Set(), cards:new Set()}).cards;
+  return Object.values(state.cards).filter(c => c.type === "todo" && c.calOn !== false && !trash.has(c.id) && (c.items || []).some(it => it.due));
+}
+function calAllCats(){
+  const out = {};
+  for (const k of Object.values(state.calCats || {}).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))) out[k.id] = k;
+  for (const c of calListCards()) out["list:" + c.id] = {id:"list:" + c.id, name:c.title || "List", color:c.color || CAL_LIST_COLOR, list:c.id};
+  return out;
+}
+/* what a calendar widget draws from; its element is rebuilt when this changes */
+const calObjIds = new WeakMap(); let calObjNext = 1;
+const calObjId = o => { if (!o) return 0; if (!calObjIds.has(o)) calObjIds.set(o, calObjNext++); return calObjIds.get(o); };
+function calSignature(id){
+  const lists = Object.values(state.cards).filter(c => c.type === "todo" && (c.items || []).some(it => it.due)).map(c => c.id + ":" + (c.updatedAt || 0)).join(",");
+  return [calObjId(state.calEvents), calObjId(state.calCats), lists, calNav.get(id)?.getTime() || 0, calKeyOf(new Date())].join("|");
+}
+function refreshCalendarWidgets(){
+  for (const c of Object.values(state.cards)) if (c.type === "widget" && c.widget === "calendar") invalidateCardEls(c.id);
+  renderBoard();
+  if ($("#calPanel")?.classList.contains("open")) renderCalPanel();
+}
+/* everything on the calendar between two days, hidden calendars left out */
+function calOccurrences(from, to, hidden){
+  const cats = calAllCats(), out = [];
+  for (const ev of Object.values(state.calEvents || {})){
+    const cat = cats[ev.cat]; if (!cat || hidden.has(ev.cat)) continue;
+    for (const s of calStarts(ev, +from, +to)){
+      const start = new Date(s);
+      out.push({ev, cat, start, end:ev.allDay ? calAddDays(start, ev.days || 1) : new Date(s + (ev.dur || 0)),
+        allDay:!!ev.allDay, title:ev.title || "(no title)", key:ev.id + "@" + s});
+    }
+  }
+  for (const c of calListCards()){
+    const cat = cats["list:" + c.id]; if (hidden.has(cat.id)) continue;
+    for (const it of c.items || []){
+      const p = calParts(it.due); if (!p) continue;
+      const start = new Date(p[0], p[1] - 1, p[2]);
+      if (start < from || start >= to) continue;
+      out.push({list:c, item:it, cat, start, end:calAddDays(start, 1), allDay:true, title:it.text || "(item)", done:!!it.done, key:c.id + ":" + it.id});
+    }
+  }
+  return out.sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start) || a.title.localeCompare(b.title));
+}
+const calTime = d => d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}).replace(/:00(?=\s|$)/, "").replace(/\s?([AP])M/i, (m, x) => x.toLowerCase());
+function calOnDay(occ, day){ const a = +day, b = +calAddDays(day, 1); return occ.filter(o => o.start < b && (o.allDay ? o.end > a : o.start >= a)); }
+const CAL_VIEWS = [["day", "Day"], ["week", "Week"], ["month", "Month"], ["3month", "3 months"]];
+function calRange(view, at){
+  if (view === "day") return [calDay0(at), calAddDays(calDay0(at), 1)];
+  if (view === "week"){ const m = calMonday(at); return [m, calAddDays(m, 7)]; }
+  const first = new Date(at.getFullYear(), at.getMonth(), 1);
+  if (view === "3month") return [first, new Date(at.getFullYear(), at.getMonth() + 3, 1)];
+  const start = calMonday(first), last = new Date(at.getFullYear(), at.getMonth() + 1, 0);
+  return [start, calAddDays(calMonday(last), 7)];
+}
+function calStep(view, at, dir){
+  if (view === "day") return calAddDays(at, dir);
+  if (view === "week") return calAddDays(at, 7 * dir);
+  return new Date(at.getFullYear(), at.getMonth() + dir * (view === "3month" ? 3 : 1), 1);
+}
+function calGo(id, at){ calNav.set(id, calDay0(at)); invalidateCardEls(id); renderBoard(); }
+function calChip(o, compact){
+  const b = document.createElement("button");
+  b.className = "cal-ev" + (o.allDay ? " allday" : "") + (o.done ? " done" : "") + (compact ? " compact" : "");
+  b.style.setProperty("--ec", o.cat.color);
+  b.innerHTML = (o.allDay ? "" : "<i>" + calTime(o.start) + "</i>") + "<span></span>";
+  b.querySelector("span").textContent = (o.item ? (o.done ? "\u2713 " : "\u25CB ") : "") + o.title;
+  b.title = o.title + (o.allDay ? "" : " \u00b7 " + calTime(o.start)) + " \u00b7 " + o.cat.name;
+  b.addEventListener("pointerdown", e => e.stopPropagation());
+  b.addEventListener("click", e => { e.stopPropagation(); openCalEvent(o, b); });
+  return b;
+}
+function buildCalendarWidget(c, body){
+  body.classList.add("wd-cal");
+  const view = CAL_VIEWS.some(v => v[0] === c.view) ? c.view : "month";
+  const at = calNav.get(c.id) || calDay0(new Date());
+  const hidden = new Set(c.hide || []);
+  const cats = calAllCats();
+  const stop = x => x.addEventListener("pointerdown", e => e.stopPropagation());
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; };
+  /* top: back, title, forward · Today · views */
+  const bar = mk("div", "cal-bar");
+  const prev = mk("button", "cal-nav", "\u2039"), next = mk("button", "cal-nav", "\u203A"), today = mk("button", "cal-today", "Today");
+  prev.title = "Back"; next.title = "Forward";
+  const [from, to] = calRange(view, at);
+  const title = mk("span", "cal-title",
+    view === "day" ? at.toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}) :
+    view === "week" ? from.toLocaleDateString([], {month:"short", day:"numeric"}) + " \u2013 " + calAddDays(to, -1).toLocaleDateString([], {month:from.getMonth() === calAddDays(to, -1).getMonth() ? undefined : "short", day:"numeric"}) :
+    view === "3month" ? from.toLocaleDateString([], {month:"short"}) + " \u2013 " + calAddDays(to, -1).toLocaleDateString([], {month:"short", year:"numeric"}) :
+    at.toLocaleDateString([], {month:"long", year:"numeric"}));
+  for (const [b, fn] of [[prev, () => calGo(c.id, calStep(view, at, -1))], [next, () => calGo(c.id, calStep(view, at, 1))], [today, () => calGo(c.id, new Date())]]){
+    stop(b); b.addEventListener("click", e => { e.stopPropagation(); fn(); });
+  }
+  const seg = mk("span", "cal-views");
+  for (const [v, name] of CAL_VIEWS){
+    const b = mk("button", v === view ? "on" : "", name === "3 months" ? "3M" : name[0]); b.title = name; b.dataset.view = v; stop(b);
+    b.addEventListener("click", e => { e.stopPropagation(); if (v !== view){ patchCard(c.id, {view:v}); markDirty(); renderBoard(); } });
+    seg.appendChild(b);
+  }
+  bar.append(prev, title, next, today, seg);
+  /* which calendars this widget shows */
+  const chips = mk("div", "cal-chips");
+  for (const k of Object.values(cats)){
+    const b = mk("button", "cal-chip" + (hidden.has(k.id) ? " off" : "")); b.dataset.cat = k.id; stop(b);
+    b.style.setProperty("--ec", k.color);
+    b.append(mk("b"), mk("span", "", k.name));
+    b.title = (hidden.has(k.id) ? "Show " : "Hide ") + k.name + " on this calendar";
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      const h = new Set(card(c.id).hide || []); h.has(k.id) ? h.delete(k.id) : h.add(k.id);
+      patchCard(c.id, {hide:[...h]}); markDirty(); renderBoard();
+    });
+    chips.appendChild(b);
+  }
+  const plus = mk("button", "cal-chip cal-manage", Object.keys(cats).length ? "\u2699" : "\uFF0B Calendars"); stop(plus);
+  plus.title = "Calendars: colours, import from Google, export";
+  plus.addEventListener("click", e => { e.stopPropagation(); openCalPanel(); });
+  chips.appendChild(plus);
+  const occ = calOccurrences(from, to, hidden);
+  const grid = mk("div", "cal-grid cal-" + view);
+  const todayKey = calKeyOf(new Date());
+  const dayHead = (d, cls) => {
+    const h = mk("button", cls + (calKeyOf(d) === todayKey ? " today" : ""), String(d.getDate())); stop(h);
+    h.dataset.day = calKeyOf(d);
+    h.addEventListener("click", e => { e.stopPropagation(); openCalDay(c, d, h); });
+    return h;
+  };
+  if (view === "day"){
+    const list = calOnDay(occ, at);
+    for (const o of list){
+      const row = mk("div", "cal-row" + (o.done ? " done" : ""));
+      row.style.setProperty("--ec", o.cat.color);
+      const when = mk("span", "cal-when", o.allDay ? (o.item ? "Due" : "All day") : calTime(o.start));
+      if (o.item){
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = o.done; stop(cb);
+        cb.addEventListener("change", () => calTickItem(o.list.id, o.item.id, cb.checked));
+        row.appendChild(cb);
+      }
+      const t = mk("button", "cal-rtitle", o.title); stop(t);
+      t.addEventListener("click", e => { e.stopPropagation(); openCalEvent(o, t); });
+      row.append(when, t, mk("span", "cal-rcat", o.cat.name));
+      grid.appendChild(row);
+    }
+    if (!list.length) grid.appendChild(mk("div", "cal-empty", "Nothing on this day."));
+    const add = mk("button", "cal-add", "\uFF0B Add event"); stop(add);
+    add.addEventListener("click", e => { e.stopPropagation(); calEditEvent(null, at); });
+    grid.appendChild(add);
+  } else if (view === "week"){
+    for (let i = 0; i < 7; i++){
+      const d = calAddDays(from, i), col = mk("div", "cal-wcol");
+      const h = mk("div", "cal-whead"); h.append(mk("small", "", d.toLocaleDateString([], {weekday:"short"})), dayHead(d, "cal-dnum"));
+      col.appendChild(h);
+      const list = calOnDay(occ, d), room = Math.max(1, Math.floor(((c.h || 360) - 150) / 34));
+      for (const o of list.slice(0, list.length > room ? room - 1 : room)) col.appendChild(calChip(o, true));
+      if (list.length > room){ const m = mk("button", "cal-more", "+" + (list.length - room + 1)); stop(m); m.addEventListener("click", e => { e.stopPropagation(); openCalDay(c, d, m); }); col.appendChild(m); }
+      grid.appendChild(col);
+    }
+  } else if (view === "month"){
+    for (const w of "MTWTFSS") grid.appendChild(mk("small", "cal-wd", w));
+    const weeks = Math.round((to - from) / 604800000);
+    const room = Math.max(0, Math.floor((((c.h || 360) - 120) / weeks - 18) / 15));
+    grid.style.gridTemplateRows = "auto repeat(" + weeks + ", 1fr)";
+    for (let d = new Date(from); d < to; d = calAddDays(d, 1)){
+      const cell = mk("div", "cal-cell" + (d.getMonth() !== at.getMonth() ? " other" : ""));
+      cell.appendChild(dayHead(d, "cal-dnum"));
+      const list = calOnDay(occ, d);
+      const shown = list.length > room ? Math.max(0, room - 1) : list.length;
+      for (const o of list.slice(0, shown)) cell.appendChild(calChip(o, true));
+      if (list.length > shown){
+        const m = mk("button", "cal-more", room ? "+" + (list.length - shown) : ""); stop(m);
+        if (!room) for (const o of list.slice(0, 4)){ const dot = mk("b"); dot.style.background = o.cat.color; m.appendChild(dot); }
+        m.addEventListener("click", e => { e.stopPropagation(); openCalDay(c, d, m); }); cell.appendChild(m);
+      }
+      grid.appendChild(cell);
+    }
+  } else {
+    for (let mo = 0; mo < 3; mo++){
+      const first = new Date(from.getFullYear(), from.getMonth() + mo, 1), box = mk("div", "cal-mini");
+      box.appendChild(mk("div", "cal-mname", first.toLocaleDateString([], {month:"long"})));
+      const g = mk("div", "cal-mgrid");
+      for (const w of "MTWTFSS") g.appendChild(mk("small", "", w));
+      for (let i = 0; i < (first.getDay() + 6) % 7; i++) g.appendChild(mk("i"));
+      const len = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      for (let n = 1; n <= len; n++){
+        const d = new Date(first.getFullYear(), first.getMonth(), n), h = dayHead(d, "cal-mday"), list = calOnDay(occ, d);
+        if (list.length){
+          const dots = mk("span", "cal-dots");
+          for (const col of [...new Set(list.map(o => o.cat.color))].slice(0, 3)){ const dot = mk("b"); dot.style.background = col; dots.appendChild(dot); }
+          h.appendChild(dots); h.title = list.map(o => o.title).slice(0, 6).join("\n");
+        }
+        g.appendChild(h);
+      }
+      box.appendChild(g); grid.appendChild(box);
+    }
+  }
+  body.append(bar, chips, grid);
+}
+function calTickItem(listId, itemId, done){
+  const c = card(listId); if (!c) return;
+  pushUndo();
+  patchCard(listId, {items:c.items.map(x => x.id === itemId ? {...x, done} : x)});
+  markDirty(); refreshCalendarWidgets();
+}
+/* a small pop-up near what was tapped */
+function calPop(anchor){
+  let pop = $("#calPop");
+  if (!pop){
+    pop = document.createElement("div"); pop.id = "calPop"; document.body.appendChild(pop);
+    document.addEventListener("pointerdown", e => { if (pop.classList.contains("open") && !pop.contains(e.target)) pop.classList.remove("open"); }, true);
+  }
+  pop.innerHTML = ""; pop.classList.add("open");
+  const place = () => {
+    const z = uiz(), r = anchor.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+    pop.style.left = Math.max(8, Math.min(r.left / z, innerWidth / z - pr.width / z - 8)) + "px";
+    pop.style.top = (r.bottom / z + 6 + pr.height / z > innerHeight / z - 8 ? Math.max(8, r.top / z - pr.height / z - 6) : r.bottom / z + 6) + "px";
+  };
+  return {pop, place, close:() => pop.classList.remove("open")};
+}
+function openCalDay(c, d, anchor){
+  const {pop, place, close} = calPop(anchor);
+  const h = document.createElement("div"); h.className = "cal-ptitle"; h.textContent = d.toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"});
+  pop.appendChild(h);
+  const list = calOnDay(calOccurrences(d, calAddDays(d, 1), new Set(c.hide || [])), d);
+  for (const o of list) pop.appendChild(calChip(o, false));
+  if (!list.length){ const e = document.createElement("div"); e.className = "cal-empty"; e.textContent = "Nothing on this day."; pop.appendChild(e); }
+  const row = document.createElement("div"); row.className = "cal-prow";
+  const add = document.createElement("button"); add.className = "cal-pbtn main"; add.textContent = "\uFF0B Add event";
+  add.addEventListener("click", () => { close(); calEditEvent(null, d); });
+  const dayv = document.createElement("button"); dayv.className = "cal-pbtn"; dayv.textContent = "Open day";
+  dayv.addEventListener("click", () => { close(); calNav.set(c.id, calDay0(d)); patchCard(c.id, {view:"day"}); markDirty(); renderBoard(); });
+  row.append(add, dayv); pop.appendChild(row);
+  place();
+}
+function openCalEvent(o, anchor){
+  const {pop, place, close} = calPop(anchor);
+  pop.style.setProperty("--ec", o.cat.color);
+  const t = document.createElement("div"); t.className = "cal-ptitle"; t.textContent = o.title; pop.appendChild(t);
+  const line = text => { const d = document.createElement("div"); d.className = "cal-pline"; d.textContent = text; pop.appendChild(d); return d; };
+  const dayText = o.start.toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"});
+  if (o.item) line("Due " + dayText);
+  else if (o.allDay) line(dayText + ((o.ev.days || 1) > 1 ? " \u2013 " + calAddDays(o.end, -1).toLocaleDateString([], {month:"long", day:"numeric"}) : ""));
+  else line(dayText + " \u00b7 " + calTime(o.start) + (o.end > o.start ? " \u2013 " + calTime(o.end) : ""));
+  const catLine = line(""); catLine.innerHTML = "<b class='cal-dot'></b>"; catLine.append(o.item ? "List: " + o.cat.name : o.cat.name);
+  if (o.ev?.rrule) line("Repeats " + calRepeatName(o.ev.rrule).toLowerCase());
+  if (o.ev?.loc) line(o.ev.loc);
+  if (o.ev?.notes){ const n = line(o.ev.notes); n.classList.add("cal-notes"); }
+  const row = document.createElement("div"); row.className = "cal-prow";
+  const btn = (label, fn, main) => { const b = document.createElement("button"); b.className = "cal-pbtn" + (main ? " main" : ""); b.textContent = label; b.addEventListener("click", () => { close(); fn(); }); row.appendChild(b); };
+  if (o.item){
+    btn(o.done ? "Not done" : "Done", () => calTickItem(o.list.id, o.item.id, !o.done), true);
+    btn("Change date", () => pickDueDate(o.list.id, o.item.id, anchor));
+    btn("Go to list", () => calRevealCard(o.list.id));
+  } else if (o.ev.ro || o.cat.source === "ics"){
+    const note = line("Imported copy, view only. Edit it in Google Calendar (or wherever it came from), then import it again to refresh.");
+    note.classList.add("cal-ro");
+  } else {
+    btn("Edit", () => calEditEvent(o.ev), true);
+    btn("Delete", () => calDeleteEvent(o.ev.id));
+  }
+  if (row.children.length) pop.appendChild(row);
+  place();
+}
+function calRevealCard(id){
+  const bid = findCardBoard(id);
+  if (bid && bid !== currentBoardId) openBoard(bid);
+  setSelection([id]);
+  const c = card(id); if (c && typeof centerOnCard === "function") centerOnCard(c);
+}
+const CAL_REPEATS = [["", "Never"], ["FREQ=DAILY", "Every day"], ["FREQ=WEEKLY", "Every week"], ["FREQ=WEEKLY;INTERVAL=2", "Every 2 weeks"], ["FREQ=MONTHLY", "Every month"], ["FREQ=YEARLY", "Every year"]];
+function calRepeatName(rule){
+  const hit = CAL_REPEATS.find(r => r[0] === rule); if (hit) return hit[1];
+  const r = calRule(rule), names = {DAILY:"day", WEEKLY:"week", MONTHLY:"month", YEARLY:"year"};
+  const every = +r.INTERVAL > 1 ? "Every " + r.INTERVAL + " " + names[r.FREQ] + "s" : "Every " + (names[r.FREQ] || "time");
+  return every + (r.BYDAY && r.FREQ === "WEEKLY" ? " on " + r.BYDAY.split(",").map(d => ({MO:"Mon", TU:"Tue", WE:"Wed", TH:"Thu", FR:"Fri", SA:"Sat", SU:"Sun"})[d.slice(-2)] || d).join(", ") : "");
+}
+/* this workspace's own calendars: always at least one to put events in */
+function calOwnCats(){ return Object.values(state.calCats || {}).filter(k => k.source !== "ics").sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); }
+function calNewCat(name){
+  const used = new Set(Object.values(state.calCats || {}).map(k => k.color));
+  const k = {id:uid("k"), name:String(name || "Personal").slice(0, 120), color:CAL_COLORS.find(c => !used.has(c)) || CAL_COLORS[0], source:"local", createdAt:Date.now(), updatedAt:Date.now()};
+  state.calCats = Object.assign({}, state.calCats || {}, {[k.id]:k});
+  markDirty(); return k;
+}
+function calSetCat(id, patch){
+  const k = state.calCats?.[id]; if (!k) return;
+  state.calCats = Object.assign({}, state.calCats, {[id]:Object.assign({}, k, patch, {updatedAt:Date.now()})});
+  markDirty(); refreshCalendarWidgets();
+}
+function calDeleteCat(id){
+  const cats = Object.assign({}, state.calCats || {}), evs = Object.assign({}, state.calEvents || {});
+  delete cats[id]; for (const [eid, e] of Object.entries(evs)) if (e.cat === id) delete evs[eid];
+  state.calCats = cats; state.calEvents = evs; markDirty(); refreshCalendarWidgets();
+}
+function calDeleteEvent(id){
+  const evs = Object.assign({}, state.calEvents || {}); delete evs[id];
+  state.calEvents = evs; markDirty(); refreshCalendarWidgets();
+}
+async function calEditEvent(ev, day){
+  const own = calOwnCats();
+  const p = ev ? calParts(ev.start) : null;
+  const d0 = p ? new Date(p[0], p[1] - 1, p[2], p[3] || 9, p[4] || 0) : new Date(calDay0(day || new Date()).setHours(9));
+  const end0 = ev && !ev.allDay ? new Date(+d0 + (ev.dur || 3600000)) : new Date(+d0 + 3600000);
+  const hm = d => calPad(d.getHours()) + ":" + calPad(d.getMinutes());
+  const res = await askOpen({
+    title:ev ? "Edit event" : "New event",
+    build(body){
+      const grid = document.createElement("div"); grid.className = "metagrid"; const inputs = {};
+      const field = (key, label, input) => { const l = document.createElement("label"); l.textContent = label; inputs[key] = input; grid.append(l, input); return l; };
+      const inp = (type, v) => { const i = document.createElement("input"); i.type = type; i.value = v || ""; return i; };
+      field("title", "Title", inp("text", ev?.title)).nextSibling.placeholder = "e.g. Bio 101 lecture";
+      field("date", "Date", inp("date", calKeyOf(d0)));
+      const all = inp("checkbox"); all.checked = !!ev?.allDay; field("allDay", "All day", all);
+      const sl = field("from", "Starts", inp("time", hm(d0))), el = field("to", "Ends", inp("time", hm(end0)));
+      const sync = () => { for (const x of [sl, inputs.from, el, inputs.to]) x.style.display = all.checked ? "none" : ""; };
+      all.addEventListener("change", sync); sync();
+      const rep = document.createElement("select");
+      for (const [v, name] of CAL_REPEATS){ const o = document.createElement("option"); o.value = v; o.textContent = name; rep.appendChild(o); }
+      if (ev?.rrule && !CAL_REPEATS.some(r => r[0] === ev.rrule)){ const o = document.createElement("option"); o.value = ev.rrule; o.textContent = calRepeatName(ev.rrule); rep.appendChild(o); }
+      rep.value = ev?.rrule || ""; field("rrule", "Repeats", rep);
+      const cat = document.createElement("select");
+      for (const k of own){ const o = document.createElement("option"); o.value = k.id; o.textContent = k.name; cat.appendChild(o); }
+      if (!own.length){ const o = document.createElement("option"); o.value = ""; o.textContent = "Personal"; cat.appendChild(o); }
+      const nw = document.createElement("option"); nw.value = "+"; nw.textContent = "New calendar\u2026"; cat.appendChild(nw);
+      cat.value = ev?.cat || own[0]?.id || "";
+      field("cat", "Calendar", cat);
+      const nl = field("catName", "Name", inp("text")); inputs.catName.placeholder = "e.g. Art History";
+      const syncCat = () => { nl.style.display = inputs.catName.style.display = cat.value === "+" ? "" : "none"; };
+      cat.addEventListener("change", syncCat); syncCat();
+      field("loc", "Where", inp("text", ev?.loc));
+      field("notes", "Notes", inp("text", ev?.notes));
+      body.appendChild(grid);
+      return {focus:() => inputs.title.focus(), read:() => ({title:inputs.title.value.trim(), date:inputs.date.value, allDay:all.checked,
+        from:inputs.from.value, to:inputs.to.value, rrule:rep.value, cat:cat.value, catName:inputs.catName.value.trim(), loc:inputs.loc.value.trim(), notes:inputs.notes.value.trim()})};
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
+  });
+  if (!res || typeof res !== "object") return null;
+  if (!calParts(res.date)){ toast("That event needs a date."); return null; }
+  let catId = res.cat;
+  if (catId === "+" || !catId || !state.calCats?.[catId]) catId = calNewCat(catId === "+" ? (res.catName || "New calendar") : "Personal").id;
+  const rec = Object.assign({}, ev || {id:uid("e")}, {cat:catId, title:res.title || "(no title)", allDay:res.allDay, loc:res.loc, notes:res.notes, rrule:res.rrule || "", tz:"", updatedAt:Date.now()});
+  if (!rec.rrule) delete rec.rrule;
+  delete rec.ro; delete rec.days; delete rec.dur;
+  if (res.allDay){ rec.start = res.date; rec.days = ev?.allDay ? (ev.days || 1) : 1; }
+  else {
+    const f = /^\d\d:\d\d$/.test(res.from) ? res.from : "09:00";
+    rec.start = res.date + "T" + f + ":00";
+    const [fh, fm] = f.split(":").map(Number), [th, tm] = (/^\d\d:\d\d$/.test(res.to) ? res.to : f).split(":").map(Number);
+    let mins = (th * 60 + tm) - (fh * 60 + fm); if (mins < 0) mins += 1440;
+    rec.dur = mins * 60000;
+  }
+  state.calEvents = Object.assign({}, state.calEvents || {}, {[rec.id]:rec});
+  markDirty(); refreshCalendarWidgets();
+  return rec;
+}
+/* the Calendars panel: colours, names, import, export */
+function openCalPanel(){
+  let ov = $("#calPanel");
+  if (!ov){
+    ov = document.createElement("div"); ov.id = "calPanel"; ov.className = "overlay";
+    ov.innerHTML = '<div class="panel cal-panel"><div class="md-ptop"><b>Calendars</b><button class="md-x" title="Close">\u2715</button></div><div id="calPanelBody"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("pointerdown", e => { if (e.target === ov) closeOverlay(ov); });
+    ov.querySelector(".md-x").addEventListener("click", () => closeOverlay(ov));
+  }
+  openOverlay(ov); renderCalPanel();
+}
+function renderCalPanel(){
+  const body = $("#calPanelBody"); if (!body) return;
+  body.innerHTML = "";
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; };
+  const section = (name, rows, empty) => {
+    body.appendChild(mk("div", "cal-sec", name));
+    if (!rows.length && empty) body.appendChild(mk("div", "cal-hint", empty));
+    for (const r of rows) body.appendChild(r);
+  };
+  const swatch = (color, onPick) => {
+    const b = mk("button", "cal-swatch"); b.style.background = color; b.title = "Colour";
+    b.addEventListener("click", () => openColorPicker({current:color, onPick:v => { if (v && !isGradient(v)) onPick(v); }}));
+    return b;
+  };
+  const row = (color, onColor, name, sub, extra) => {
+    const r = mk("div", "cal-prow2");
+    const txt = mk("div", "cal-pname"); txt.append(name); if (sub) txt.appendChild(mk("small", "", sub));
+    r.append(swatch(color, onColor), txt, ...extra); return r;
+  };
+  const own = calOwnCats().map(k => {
+    const name = mk("input", "cal-rename"); name.value = k.name; name.title = "Rename";
+    name.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") name.blur(); });
+    name.addEventListener("change", () => { if (name.value.trim()) calSetCat(k.id, {name:name.value.trim()}); });
+    const n = Object.values(state.calEvents || {}).filter(e => e.cat === k.id).length;
+    const del = mk("button", "cal-del", "\u2715"); del.title = "Delete this calendar and its events";
+    del.addEventListener("click", async () => {
+      if (n && !(await askConfirm({title:"Delete \u201c" + k.name + "\u201d?", message:n + (n === 1 ? " event goes" : " events go") + " with it.", okLabel:"Delete", danger:true}))) return;
+      calDeleteCat(k.id);
+    });
+    return row(k.color, v => calSetCat(k.id, {color:v}), name, n + (n === 1 ? " event" : " events"), [del]);
+  });
+  section("Your calendars", own, "None yet. Add an event and it goes in \u201cPersonal\u201d.");
+  const imported = Object.values(state.calCats || {}).filter(k => k.source === "ics").map(k => {
+    const n = Object.values(state.calEvents || {}).filter(e => e.cat === k.id).length;
+    const del = mk("button", "cal-del", "\u2715"); del.title = "Remove this imported copy";
+    del.addEventListener("click", () => calDeleteCat(k.id));
+    return row(k.color, v => calSetCat(k.id, {color:v}), k.name, n + (n === 1 ? " event" : " events") + (k.importedAt ? " \u00b7 imported " + new Date(k.importedAt).toLocaleDateString([], {month:"short", day:"numeric"}) : ""), [del]);
+  });
+  section("Imported (view only)", imported, "");
+  const trash = collectSubtree(TRASH_ID, {boards:new Set(), cards:new Set()}).cards;
+  const lists = Object.values(state.cards).filter(c => c.type === "todo" && !trash.has(c.id) && (c.items || []).some(it => it.due)).map(c => {
+    const n = c.items.filter(it => it.due).length;
+    const sw = mk("label", "cal-switch"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = c.calOn !== false;
+    cb.addEventListener("change", () => setListOnCalendar(c.id, cb.checked));
+    sw.append(cb, mk("span"));
+    sw.title = "Show this list on the calendar";
+    return row(c.color || CAL_LIST_COLOR, v => setListColor(c.id, v), c.title || "List", n + (n === 1 ? " dated item" : " dated items"), [sw]);
+  });
+  section("Lists", lists, "Give a list item a due date and its list shows up here.");
+  const acts = mk("div", "cal-acts");
+  const file = document.createElement("input"); file.type = "file"; file.accept = ".ics,.zip,text/calendar"; file.multiple = true; file.hidden = true;
+  file.addEventListener("change", async () => { const fs = [...file.files]; file.value = ""; await calImportAndReport(fs, null); });
+  const imp = mk("button", "cal-pbtn main", "Import .ics or .zip"); imp.addEventListener("click", () => file.click());
+  const exp = mk("button", "cal-pbtn", "Export .ics"); exp.addEventListener("click", () => calDownloadIcs());
+  const nw = mk("button", "cal-pbtn", "\uFF0B New calendar"); nw.addEventListener("click", () => { calNewCat("New calendar"); renderCalPanel(); refreshCalendarWidgets(); });
+  acts.append(imp, exp, nw, file); body.appendChild(acts);
+  const help = mk("div", "cal-help");
+  help.innerHTML = "<b>From Google Calendar:</b> on a computer, open Google Calendar \u203A Settings \u203A Import &amp; export \u203A Export. " +
+    "Drop the .zip it downloads here (or onto any board). Each Google calendar becomes its own calendar here.<br>" +
+    "<b>You can see your Google calendar here but not edit it from CORKBORK.</b> Edit it in Google, then import again to refresh. " +
+    "One-off events older than a year are left out.<br>" +
+    "<b>Export</b> writes your own events and dated list items to one .ics file for Google, Apple or Outlook. It's a copy: importing it twice into Google can make duplicates.";
+  body.appendChild(help);
+}
+async function calImportAndReport(files, at){
+  let res;
+  try { res = await calImportFiles(files); }
+  catch (err){ toast("That calendar file couldn't be read: " + (err?.message || err), 7000); return null; }
+  if (!res.calendars){ toast("No calendar found in that file."); return res; }
+  toast("Imported " + res.calendars + (res.calendars === 1 ? " calendar" : " calendars") + " \u00b7 " + res.events + (res.events === 1 ? " event" : " events") +
+    (res.old ? " (" + res.old + " older than a year left out)" : "") + ". View only: edit in Google, then import again.", 9000);
+  /* nowhere to see it on this board yet: put a calendar where it was dropped */
+  if (at && !cur().cardIds.some(id => card(id)?.type === "widget" && card(id).widget === "calendar")) addWidget("calendar", at);
+  return res;
+}
+/* ---- lists: colour, calendar switch, due dates ---- */
+function setListColor(id, color){
+  if (!card(id)) return;
+  pushUndo(); patchCard(id, {color:color || null}); markDirty(); renderBoard(); refreshCalendarWidgets();
+}
+function setListOnCalendar(id, on){
+  if (!card(id)) return;
+  pushUndo(); patchCard(id, {calOn:!!on}); markDirty(); renderBoard(); refreshCalendarWidgets();
+}
+function setItemDue(listId, itemId, due){
+  const c = card(listId); if (!c) return;
+  pushUndo();
+  patchCard(listId, {items:c.items.map(x => { if (x.id !== itemId) return x; const n = {...x}; if (due) n.due = due; else delete n.due; return n; })});
+  markDirty(); renderBoard(); refreshCalendarWidgets();
+}
+function pickDueDate(listId, itemId, anchor){
+  const it = card(listId)?.items.find(x => x.id === itemId); if (!it) return;
+  const {pop, place, close} = calPop(anchor);
+  const t = document.createElement("div"); t.className = "cal-ptitle"; t.textContent = "Due date"; pop.appendChild(t);
+  const inp = document.createElement("input"); inp.type = "date"; inp.className = "cal-date"; inp.value = it.due || "";
+  inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && inp.value){ close(); setItemDue(listId, itemId, inp.value); } });
+  inp.addEventListener("change", () => { if (inp.value){ close(); setItemDue(listId, itemId, inp.value); } });
+  pop.appendChild(inp);
+  const row = document.createElement("div"); row.className = "cal-prow";
+  const btn = (label, fn) => { const b = document.createElement("button"); b.className = "cal-pbtn"; b.textContent = label; b.addEventListener("click", () => { close(); fn(); }); row.appendChild(b); };
+  btn("Today", () => setItemDue(listId, itemId, calKeyOf(new Date())));
+  btn("Tomorrow", () => setItemDue(listId, itemId, calKeyOf(calAddDays(new Date(), 1))));
+  if (it.due) btn("No date", () => setItemDue(listId, itemId, null));
+  pop.appendChild(row);
+  const off = card(listId).calOn === false;
+  const hint = document.createElement("div"); hint.className = "cal-hint";
+  hint.textContent = off ? "This list is hidden from the calendar." : "Dated items show on the calendar in the list's colour.";
+  pop.appendChild(hint);
+  place(); inp.focus();
+}
+function dueLabel(due){
+  const p = calParts(due); if (!p) return "";
+  const d = new Date(p[0], p[1] - 1, p[2]), today = calDay0(new Date()), diff = Math.round((d - today) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff === -1) return "Yesterday";
+  return d.toLocaleDateString([], d.getFullYear() === today.getFullYear() ? {month:"short", day:"numeric"} : {month:"short", day:"numeric", year:"numeric"});
+}
 /* the Widget tool's picker: one row per widget, short names */
 
 function openWidgetPicker(){
@@ -16085,10 +17030,10 @@ function openWidgetPicker(){
     const t = document.createElement("span"); t.textContent = name;
     b.append(i, t); b.addEventListener("click", onClick); pop.appendChild(b); return b;
   };
-  for (const [kind, name] of [["clock", "Clock"], ["timer", "Timer"], ["countdown", "Countdown"], ["mood", "Mood tracker"]])
+  for (const [kind, name] of [["clock", "Clock"], ["timer", "Timer"], ["countdown", "Countdown"], ["mood", "Mood tracker"], ["calendar", "Calendar"]])
     row(WIDGET_KINDS[kind].icon, WIDGET_KINDS[kind].hue, name, () => { pop.classList.remove("open"); addWidget(kind); });
   const r = $("#toolWidget").getBoundingClientRect(), z = uiz();
-  pop.style.top = Math.min(r.top / z, innerHeight / z - 200) + "px";
+  pop.style.top = Math.min(r.top / z, innerHeight / z - 250) + "px";
   pop.classList.add("open");
 }
 $("#toolWidget").addEventListener("click", () => { if (!document.body.classList.contains("rail-edit")) openWidgetPicker(); });
@@ -17625,7 +18570,8 @@ function syncLockedPlaceholder(c){
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
-    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {}))};
+    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})),
+    calCats:syncClone((ws.calCats || {})), calEvents:syncClone((ws.calEvents || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
     if (!SYNC_DEVICE_SETTINGS.has(k)) out.settings[k] = syncClone((v ?? null));
   const keep = id => !priv.cards.has(id);
@@ -17757,6 +18703,9 @@ function syncMergeWorkspace(base, local, remote){
   mergeMap("library", () => false, (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0));
   /* the mood log: one entry per day, newest edit of a day wins */
   mergeMap("mood", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  /* the calendar: its calendars and events, newest edit wins */
+  mergeMap("calCats", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  mergeMap("calEvents", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
 
   /* bugs: list of {id,...} */
   {
@@ -18689,6 +19638,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b112", [
+    "Calendar widget: one calendar for the whole workspace, in Day, Week, Month or 3-month view. Tap a day to see it or add an event (it can repeat). The coloured chips choose which calendars each widget shows.",
+    "Google Calendar: in Google go to Settings \u203A Import & export \u203A Export, then drop the .zip on any board. Each Google calendar shows up here, view only: edit in Google, then import again. \u2699 \u203A Export .ics sends your own events the other way.",
+    "Lists: give an item a due date (calendar button when you hover it) and it appears on the calendar in the list's colour. The dot by a list's title sets its colour, and the title turns that colour. The \u{1F4C5} button takes a list off the calendar."
+  ]],
   ["b111", [
     "Mood tracker widget: one tap a day (each face shows its colour), an optional note, this week at a glance, and Look back by month or year. Tap any past day to fill it in. Syncs across devices.",
     "The Widget picker is a simple list again."
