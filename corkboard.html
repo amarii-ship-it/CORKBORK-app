@@ -537,6 +537,8 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .due-btn{flex:none; font-size:12px; padding:0 3px; visibility:hidden; filter:grayscale(1); opacity:.6;}
 .todo-item:hover .due-btn, .card.type-todo.selected .due-btn{visibility:visible;}
 .due-btn:hover{filter:none; opacity:1;}
+/* phones and iPads can't hover: the date button is always there, faintly */
+@media (hover:none){ .due-btn{visibility:visible; opacity:.45;} }
 /* mood tracker: each face's bubble carries the colour it will be in the log */
 .wd-body.wd-mood{align-items:stretch; justify-content:flex-start; gap:7px; padding-top:9px; text-align:left;}
 .md-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
@@ -2677,25 +2679,41 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   background:color-mix(in srgb, var(--surface) 80%, transparent);
 }
 .themedel:hover{color:#E0716A;}
-.bd-iconwrap{display:flex; gap:10px; align-items:flex-start;}
+/* ---- Edit board ---- */
+.bd-panel{width:min(520px, 100%) !important; gap:14px !important;}
+.bd-top{display:flex; align-items:center; gap:16px;}
+.bd-prevtile{width:76px; height:76px; border-radius:18px; flex:none; display:flex; align-items:center; justify-content:center;
+  font:700 34px/1 var(--font-serif); color:#1B1D1F; box-shadow:0 3px 10px rgba(0,0,0,.25);}
+.bd-prevtile .ic{width:60%; height:60%;}
+.bd-prevtile.tone-light{color:#FAFCFF; text-shadow:0 1px 2px rgba(10,8,24,.4);}
+.bd-prevtile.tone-dark{color:#190A3D;}
+.bd-topfields{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
+.bd-topfields input{font-size:16px; padding:8px 10px;}
+.bd-sec{display:flex; flex-direction:column; gap:7px;}
+.bd-lbl{font-size:12px; font-weight:700; color:var(--text-dim); letter-spacing:.02em;}
+#bdSwatches{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+#bdSwatches .swatch{width:24px; height:24px; border-radius:6px; flex:none;}
+#bdSwatches .swatch.sel{outline:2px solid var(--text); outline-offset:1px;}
+.bd-more{font-size:12px;}
+.bd-iconbar{display:flex; flex-wrap:wrap; align-items:center; gap:6px;}
+.bd-iconbar .sym-search{flex:1; min-width:140px; font-size:13px; padding:6px 9px;}
+.bd-icongrid{max-height:150px; overflow-y:auto; align-content:start; padding:6px; border-radius:9px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.bd-iconbar > button{padding:6px 12px; border-radius:7px; font-size:13px; border:1px solid var(--border); background:var(--surface); color:var(--text);}
+.bd-iconbar > button.sel{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
+.bd-hint{font-size:12px; color:var(--text-dim);}
+.bd-picker{display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:9px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.bd-picker[hidden]{display:none;}
 /* the grid has to be reachable: 300+ choices cannot live in five rows */
-.bd-iconwrap .emoji-grid{
-  flex:1; min-width:0; max-height:230px; overflow-y:auto;
-  align-content:start; padding-right:4px;
-}
-.bd-cats{display:flex; flex-direction:column; gap:1px; flex:none; width:104px;}
-.bd-cat{
-  text-align:left; font-size:12px; padding:5px 8px; border-radius:5px; cursor:pointer;
-  background:none; border:0; color:var(--text-dim);
-}
-.bd-cat:hover{background:var(--surface); color:var(--text);}
-.bd-cat.sel{background:var(--surface); color:var(--text); font-weight:600;}
-.bd-tones{display:flex; gap:2px; flex:none;}
-.bd-tone{
-  width:22px; height:22px; border-radius:4px; cursor:pointer; font-size:11px;
-  background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
-}
-.bd-tone.sel{border-color:var(--accent); color:var(--text);}
+.bd-picker .emoji-grid{max-height:220px; overflow-y:auto; align-content:start; padding-right:4px;}
+.bd-cats[hidden]{display:none;}
+.bd-cats{display:flex; gap:4px; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin;}
+.bd-cat{flex:none; font-size:12px; padding:4px 10px; border-radius:99px; cursor:pointer; background:var(--surface); border:0; color:var(--text-dim); white-space:nowrap;}
+.bd-cat:hover{color:var(--text);}
+.bd-cat.sel{background:var(--accent); color:#fff;}
+.bd-tones{display:flex; gap:2px; flex:none; margin-left:auto; padding:2px; border-radius:8px; background:color-mix(in srgb, var(--text) 6%, transparent);}
+.bd-tones[hidden]{display:none;}
+.bd-tone{padding:4px 9px; border-radius:6px; cursor:pointer; font-size:11.5px; background:none; border:0; color:var(--text-dim);}
+.bd-tone.sel{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.12);}
 .emoji-grid button.is-multi{background:none;}
 /* Drawn icons inherit the tile ink, so one icon serves every accent. Light
    is genuinely near-white; dark is a saturated ink rather than washed gray. */
@@ -3508,25 +3526,38 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 
 <!-- board dialog -->
 <div class="overlay" id="boardOverlay">
-  <div class="panel">
-    <h2>Board</h2>
-    <label>Title <input id="bdTitle" type="text"></label>
-    <label>Icon
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-        <button id="bdIconAuto">Auto — match the title</button>
-        <input id="bdEmojiSearch" class="sym-search" placeholder="Search icons and emoji — castle, wolf, fire…">
-        <span id="bdIconTone" class="bd-tones" title="Icon tone"></span>
+  <!-- Edit board, top to bottom in the order people decide: what it's called
+       (with the tile as it will look), its colour, its icon, its tags. The
+       icon library stays folded until asked for. -->
+  <div class="panel bd-panel">
+    <h2>Edit board</h2>
+    <div class="bd-top">
+      <div id="bdPreview" class="bd-prevtile" aria-hidden="true"></div>
+      <div class="bd-topfields">
+        <label class="bd-lbl" for="bdTitle">Name</label>
+        <input id="bdTitle" type="text" placeholder="Untitled board">
       </div>
-    </label>
-    <div class="bd-iconwrap">
-      <div id="bdIconCats" class="bd-cats"></div>
-      <div class="emoji-grid" id="bdEmojiGrid"></div>
     </div>
-    <label>Color <div class="swatches" id="bdSwatches"></div></label>
-    <label>Tags
+    <div class="bd-sec">
+      <span class="bd-lbl">Colour</span>
+      <div class="swatches" id="bdSwatches"></div>
+    </div>
+    <div class="bd-sec">
+      <span class="bd-lbl">Icon</span>
+      <div class="bd-iconbar">
+        <button id="bdIconAuto" type="button">Automatic</button>
+        <input id="bdEmojiSearch" class="sym-search" placeholder="Search icons and emoji — castle, wolf, fire…">
+        <span id="bdIconTone" class="bd-tones" title="Icon shade"></span>
+      </div>
+      <div class="bd-hint" id="bdIconHint"></div>
+      <div id="bdIconCats" class="bd-cats" hidden></div>
+      <div class="emoji-grid bd-icongrid" id="bdEmojiGrid"></div>
+    </div>
+    <div class="bd-sec">
+      <span class="bd-lbl">Tags</span>
       <div class="bd-tags"><span id="bdTagChips" class="bd-tagchips"></span><input id="bdTagInput" type="text" list="bdTagList" placeholder="Add a tag, press Enter"></div>
       <datalist id="bdTagList"></datalist>
-    </label>
+    </div>
     <div class="row">
       <button id="bdCancel">Cancel</button>
       <button id="bdOk" class="primary">Save</button>
@@ -3900,7 +3931,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b118";
+window.BUILD = "b119";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -8407,6 +8438,25 @@ function bdRefreshIconUI(){
   $("#bdIconAuto").classList.toggle("sel", bdIconSel === null);
   $("#bdEmojiGrid").querySelectorAll("button").forEach(b =>
     b.classList.toggle("sel", b.dataset.pick === bdIconSel));
+  /* the shade only changes drawn icons and letters, so it shows only for those */
+  $("#bdIconTone").hidden = !!bdIconSel && !isIconRef(bdIconSel);
+  const title = $("#bdTitle").value.trim() || "Untitled board";
+  const auto = autoIcon(title);
+  $("#bdIconHint").textContent = bdIconSel ? "Your icon stays when you rename the board."
+    : auto ? "Picked from the name: " + auto + ". It changes if you rename the board."
+    : "The first letter of the name. It changes if you rename the board.";
+  bdPaintPreview();
+}
+/* the tile exactly as the board will show it */
+function bdPaintPreview(){
+  const t = $("#bdPreview"); if (!t) return;
+  const title = $("#bdTitle").value.trim() || "Untitled board";
+  t.innerHTML = ""; t.className = "bd-prevtile" + (bdTone && bdTone !== "normal" ? " tone-" + bdTone : "");
+  t.style.background = bdAccent || "var(--surface-hi)";
+  t.classList.toggle("is-shiny", bdAccent === SHINY_CSS);
+  const shown = bdIconSel || autoIcon(title);
+  if (shown && isIconRef(shown)) t.appendChild(iconEl(shown, bdTone));
+  else t.textContent = shown || title.charAt(0).toUpperCase();
 }
 function openBoardDialog(c){
   boardEditingId = c.id;
@@ -8473,9 +8523,9 @@ function openBoardDialog(c){
   if (toneBar && !toneBar.childElementCount){
     for (const t of ["light","normal","dark"]){
       const b = document.createElement("button");
-      b.type = "button"; b.className = "bd-tone" + (t === "normal" ? " sel" : "");
+      b.type = "button"; b.className = "bd-tone" + (t === bdTone ? " sel" : "");
       b.dataset.tone = t; b.title = t + " tone";
-      b.textContent = t === "light" ? "\u25CB" : t === "normal" ? "\u25D0" : "\u25CF";
+      b.textContent = t === "light" ? "Light" : t === "normal" ? "Normal" : "Dark";
       b.addEventListener("click", () => {
         bdTone = t;
         toneBar.querySelectorAll(".bd-tone").forEach(x => x.classList.toggle("sel", x === b));
@@ -8497,10 +8547,12 @@ function openBoardDialog(c){
   const paint = () => {
     sw.querySelectorAll(".swatch").forEach(x =>
       x.classList.toggle("sel", x.dataset.col === bdAccent));
-    const prev = sw.querySelector(".bd-preview");
-    if (prev) prev.style.background = bdAccent || "var(--surface-hi)";
+    bdPaintPreview();
   };
-  for (const pick of QUICK_BOARD_COLOURS){
+  /* every Jewel colour and every gradient, always on show; More colours has the rest */
+  const shownColours = [...PALETTES.find(p => p.name === "Jewel").colors.map(css => ({css, title:css})), ...GRADIENTS, {css:SHINY_CSS, name:"Shiny"}];
+  if (bdAccent && !shownColours.some(g => g.css === bdAccent)) shownColours.unshift({css:bdAccent, name:"Current colour"});
+  for (const pick of shownColours){
     const col = pick.css;
     const b = document.createElement("button");
     b.className = "swatch" + (isGradient(col) ? " gradient" : ""); b.dataset.col = col;
@@ -8509,14 +8561,14 @@ function openBoardDialog(c){
     sw.appendChild(b);
   }
   const more = document.createElement("button");
-  more.className = "cpk-btn"; more.textContent = "More\u2026";
+  more.className = "cpk-btn bd-more"; more.type = "button"; more.textContent = "More colours\u2026";
   more.addEventListener("click", () => openColorPicker({
     current: bdAccent, allowGradient: true,
     onPick: v => { bdAccent = v; paint(); }
   }));
-  const prev = document.createElement("span");
-  prev.className = "bd-preview"; prev.title = "Current colour";
-  sw.append(prev, more);
+  sw.append(more);
+  $("#bdIconTone").querySelectorAll(".bd-tone").forEach(x => x.classList.toggle("sel", x.dataset.tone === bdTone));
+  $("#bdTitle").oninput = () => bdRefreshIconUI();
   paint();
   bdRefreshIconUI();
   $("#boardOverlay").classList.add("open");
@@ -19798,6 +19850,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b119", [
+    "Edit board is simpler: the tile shows exactly how the board will look as you change it; then Name, every Jewel colour and gradient, a small scrolling icon grid with search (or Automatic, which follows the name), and Tags.",
+    "On phones and iPads each list item shows its calendar button, so you can give it a due date without hovering."
+  ]],
   ["b118", [
     "Labels are now Tags. Click a tag in the Tags panel to see everything that has it, and the board fades the rest. Search #name to find a tag. Any card, block or board can be tagged (right-click → Tags…, or in Edit board), and each name is one tag.",
     "The old top-bar Tags button is now Cards (it jumps to character, place and item cards). On a character card, Tags is now Also called."
@@ -19843,9 +19899,7 @@ const PATCH_NOTES = [
     "Arrows: right-click to switch each arrowhead on or off (both off = a plain line); new arrows use your last choice, and the Arrow tool keeps linking from the last card you clicked.",
     "Timer: type any length (1 to 600 minutes). Export all images on a board as a .zip from the bottom-right button or a board's right-click menu."
   ]],
-  ["b106", [
-    "The chain link on stuck cards is smaller and grey (still easy to tap)."
-  ]],
+
 
 
 ];
