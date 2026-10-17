@@ -428,6 +428,18 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #updateBar .primary{padding:7px 14px; border-radius:9px;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
+/* editing the toolbar */
+body.rail-edit #railTools > .tool, body.rail-edit #morePop .tool{animation:railWiggle .32s ease-in-out infinite alternate; cursor:grab; touch-action:none;}
+body.rail-edit #railTools > .tool:nth-child(even), body.rail-edit #morePop .tool:nth-child(even){animation-delay:-.16s;}
+@keyframes railWiggle{from{transform:rotate(-2.2deg);} to{transform:rotate(2.2deg);}}
+body.rail-edit .rail-dragging{animation:none !important; transform:scale(1.08); box-shadow:0 6px 16px rgba(0,0,0,.25);}
+body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointer; background:color-mix(in srgb, var(--accent) 45%, transparent);}
+#railEditBar{position:fixed; left:calc(var(--rail-w) + 10px); bottom:16px; z-index:300; display:flex; flex-direction:column; gap:6px; max-width:300px;
+  padding:12px 14px; border-radius:14px; background:var(--surface-hi); color:var(--text); font-size:12.5px; box-shadow:0 10px 32px rgba(0,0,0,.28);}
+#railEditBar span{color:var(--text-dim);}
+#railEditBar div{display:flex; gap:6px;}
+#railEditBar button{padding:6px 11px; border-radius:8px; background:color-mix(in srgb, var(--text) 8%, transparent);}
+#railEditBar button.primary{background:var(--accent); color:var(--canvas);}
 /* sticking to blocks */
 .card.stick-target{box-shadow:0 0 0 3px color-mix(in srgb, #A98BD6 75%, transparent), 0 6px 18px rgba(0,0,0,.12) !important;}
 .card.stuck-pulse{animation:stuckPulse .5s ease-out;}
@@ -3447,6 +3459,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       </div>
 
       <div class="setsec" data-sec="tools" style="display:none;">
+        <div><button id="setEditRail" class="primary" style="padding:7px 14px; border-radius:8px;">Edit toolbar…</button>
+          <span class="meta" style="margin-left:8px;">Reorder tools, move them into More, add dividers. Saved on this device.</span></div>
         <div class="meta">Every tool on the left rail. Click or drag one onto the canvas, or press its key.</div>
         <div class="tool-list">
           <div class="tool-row"><b>Note</b><kbd>N</kbd><span>A sticky note for writing. Double-click to type; text can be bold, listed, coloured.</span></div>
@@ -3655,7 +3669,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b108";
+window.BUILD = "b109";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11230,9 +11244,119 @@ $("#railMore").addEventListener("click", () => {
   p.classList.toggle("open");
 });
 document.addEventListener("pointerdown", e => {
+  if (document.body.classList.contains("rail-edit")) return;   /* More stays open while editing the toolbar */
   if (!$("#morePop").contains(e.target) && e.target !== $("#railMore") && !$("#railMore").contains(e.target))
     $("#morePop").classList.remove("open");
 }, true);
+/* ---- editable toolbar ---------------------------------------------------
+   Right-click the toolbar (or Settings > Tools) > Edit toolbar. Tools wiggle;
+   drag them to a new spot, into the More menu or out of it; tap a divider to
+   remove it, "+ Divider" adds one. Saved per device (a phone and a PC can want
+   different toolbars); Reset puts the shipped layout back. Moving the real
+   buttons keeps their one set of listeners. */
+const RAIL_LAYOUT_KEY = "cb_railLayout";
+const railMain = () => $("#railTools"), railMoreBox = () => $("#morePop > div");
+const railKey = el => el.classList.contains("railDivider") ? "|" : (el.dataset.type || el.id);
+function readRailLayout(){
+  const keys = box => [...box.children].filter(el => el.classList.contains("tool") || el.classList.contains("railDivider")).map(railKey);
+  return {main:keys(railMain()), more:keys(railMoreBox())};
+}
+let railDefault = null;
+function applyRailLayout(layout){
+  if (!layout || !Array.isArray(layout.main)) return;
+  const pool = new Map();
+  for (const box of [railMain(), railMoreBox()])
+    for (const el of [...box.children]){
+      if (el.classList.contains("railDivider")){ el.remove(); continue; }
+      if (el.classList.contains("tool")) pool.set(railKey(el), el);
+    }
+  const place = (box, keys) => {
+    for (const k of keys){
+      if (k === "|"){ if (box === railMain()){ const d = document.createElement("div"); d.className = "railDivider"; box.appendChild(d); } continue; }
+      const el = pool.get(k); if (!el || (k === "railMore" && box !== railMain())) continue;
+      box.appendChild(el); pool.delete(k);
+    }
+  };
+  place(railMain(), layout.main); place(railMoreBox(), layout.more || []);
+  /* tools this layout doesn't know (added in a later build) go where they shipped */
+  for (const [k, el] of pool) ((railDefault?.more || []).includes(k) ? railMoreBox() : railMain()).appendChild(el);
+}
+function saveRailLayout(){ SAFE_STORE.set(RAIL_LAYOUT_KEY, JSON.stringify(readRailLayout())); }
+function loadRailLayout(){
+  railDefault = readRailLayout();
+  try { const saved = JSON.parse(SAFE_STORE.get(RAIL_LAYOUT_KEY) || "null"); if (saved) applyRailLayout(saved); } catch (_) {}
+}
+function startRailEdit(){
+  if (document.body.classList.contains("rail-edit")) return;
+  document.body.classList.add("rail-edit");
+  const p = $("#morePop"), r = $("#railMore").getBoundingClientRect();
+  p.style.top = Math.min(r.top / uiz(), innerHeight / uiz() - 220) + "px"; p.classList.add("open");
+  let bar = $("#railEditBar");
+  if (!bar){
+    bar = document.createElement("div"); bar.id = "railEditBar";
+    bar.innerHTML = '<b>Edit toolbar</b><span>Drag tools to move them, or into More. Tap a divider to remove it.</span>' +
+      '<div><button id="railAddDiv">+ Divider</button><button id="railReset">Reset</button><button id="railDone" class="primary">Done</button></div>';
+    document.body.appendChild(bar);
+    bar.querySelector("#railAddDiv").addEventListener("click", () => {
+      const d = document.createElement("div"); d.className = "railDivider"; railMain().insertBefore(d, $("#railMore")); saveRailLayout();
+    });
+    bar.querySelector("#railReset").addEventListener("click", () => { applyRailLayout(railDefault); SAFE_STORE.set(RAIL_LAYOUT_KEY, ""); toast("Toolbar reset."); });
+    bar.querySelector("#railDone").addEventListener("click", endRailEdit);
+  }
+}
+function endRailEdit(){
+  document.body.classList.remove("rail-edit");
+  $("#railEditBar")?.remove(); $("#morePop").classList.remove("open");
+  saveRailLayout(); queueFitTopbar?.();
+}
+/* while editing, a press on a tool starts a reorder instead of making a card */
+document.addEventListener("pointerdown", e => {
+  if (!document.body.classList.contains("rail-edit")) return;
+  const el = e.target.closest?.("#railTools > .tool, #railTools > .railDivider, #morePop .tool");
+  if (!el) return;
+  e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+  const sx = e.clientX, sy = e.clientY; let moved = false;
+  const move = ev => {
+    if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 5){ moved = true; el.classList.add("rail-dragging"); }
+    if (!moved) return;
+    el.style.visibility = "hidden";
+    const under = document.elementFromPoint(ev.clientX, ev.clientY);
+    el.style.visibility = "";
+    const over = under?.closest?.("#railTools > .tool, #railTools > .railDivider, #morePop .tool");
+    const intoMore = under?.closest?.("#morePop");
+    if (over && over !== el){
+      if (el.classList.contains("railDivider") && over.closest("#morePop")) return;   /* dividers belong to the toolbar */
+      if (el.id === "railMore" && over.closest("#morePop")) return;                     /* More can't go inside itself */
+      const r = over.getBoundingClientRect();
+      const after = over.closest("#morePop") ? ev.clientX > r.left + r.width / 2 : ev.clientY > r.top + r.height / 2;
+      over.parentNode.insertBefore(el, after ? over.nextSibling : over);
+    } else if (intoMore && !over && !el.classList.contains("railDivider") && el.id !== "railMore"){
+      railMoreBox().appendChild(el);
+    } else if (under?.closest?.("#railTools") && !over && el.parentNode !== railMain()){
+      railMain().insertBefore(el, $("#railMore").nextSibling);
+    }
+  };
+  const up = () => {
+    removeEventListener("pointermove", move, true); removeEventListener("pointerup", up, true);
+    el.classList.remove("rail-dragging");
+    if (!moved && el.classList.contains("railDivider")) el.remove();   /* tap a divider: remove it */
+    saveRailLayout();
+  };
+  addEventListener("pointermove", move, true); addEventListener("pointerup", up, true);
+}, true);
+document.addEventListener("click", e => {
+  if (document.body.classList.contains("rail-edit") && e.target.closest?.("#railTools .tool, #morePop .tool")){ e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+/* right-click the toolbar */
+$("#rail").addEventListener("contextmenu", e => {
+  if (e.target.closest?.("#railCardPage")) return;
+  e.preventDefault(); ctx.innerHTML = "";
+  const b = document.createElement("button");
+  b.textContent = document.body.classList.contains("rail-edit") ? "Done editing toolbar" : "Edit toolbar\u2026";
+  b.addEventListener("click", () => { closeCtx(); document.body.classList.contains("rail-edit") ? endRailEdit() : startRailEdit(); });
+  ctx.appendChild(b); ctx.classList.add("open");
+  const z = uiz(); ctx.style.left = (e.clientX / z) + "px"; ctx.style.top = (e.clientY / z) + "px";
+});
 /* Card/Sheet inside #morePop stay put; Block moves between there and the
    main rail depending on context, because it is one of the handful of
    tools that still work inside an open card (see the in-card CSS allowlist
@@ -13778,6 +13902,7 @@ async function renderBoardFolder(){
   btn(row(), "Update archive", async e => { e.target.disabled = true; e.target.textContent = "Updating\u2026"; await updateArchiveFolder(null, true); renderBoardFolder(); });
 }
 $("#btnBoardFolder").addEventListener("click", openBoardFolderPanel);
+$("#setEditRail").addEventListener("click", () => { closeOverlay($("#settingsOverlay")); startRailEdit(); });
 $("#btnLabels").addEventListener("click", () => {
   /* with cards selected, this labels all of them at once */
   if (selection.size){
@@ -18058,6 +18183,7 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 
 (async function boot(){
+  loadRailLayout();   /* the saved toolbar order (needs SAFE_STORE, defined above boot) */
   let firstRun = false;
   let recoveredSnapshot = 0;
   try {
@@ -18129,6 +18255,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b109", [
+    "Edit the left toolbar: right-click it (or Settings → Tools) → Edit toolbar. Drag tools to reorder them or into More, add or remove dividers, Reset any time. Saved per device."
+  ]],
   ["b108", [
     "New folder button in the top bar: shows where this board's folder is on your computer (Copy path, then paste into File Explorer), lists its files with Open buttons, and offers Update archive."
   ]],
@@ -18165,11 +18294,6 @@ const PATCH_NOTES = [
   ]],
   ["b98", [
     "Left toolbar: Column and Folder sit together in their own group, both green; Link moved below Heading; icons are bolder."
-  ]],
-  ["b97", [
-    "Double-click an image to view it big: crop, caption, previous/next, open in a new tab and download, as icons.",
-    "Right-click menu is shorter: one Copy (copies the picture on images), and side menus for Send to (Front, Back, Unsorted) and More.",
-    "Phones: tapping out of a note now always closes it (the box could stay on screen if nothing was typed)."
   ]],
 ];
 function renderPatchNotes(){
