@@ -26,12 +26,14 @@
   --canvas:#1B1D1F; --grid:#2A2D30; --surface:#26292C; --surface-hi:#2F3337;
   --border:#3A3E42; --text:#E8E6E3; --text-dim:#9AA0A6; --accent:#6E9EC4;
   --font-serif:Georgia,"Times New Roman",serif; --edit:#D6B24A;
-  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  /* Georgia's own partner: Matthew Carter drew Verdana and Georgia as a pair
+     for screens. Titles use the logo's Georgia, everything else Verdana. */
+  --font-ui:Verdana,Geneva,"DejaVu Sans","Bitstream Vera Sans",sans-serif;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%; overflow:hidden;}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:var(--font-ui);
   font-size:14px; color:var(--text); background:var(--canvas);
   display:flex; flex-direction:column;
 }
@@ -273,14 +275,8 @@ body.cardpage-open #cpCrumbs{display:flex; align-items:center; gap:2px; overflow
 .tool{
   width:48px; height:38px; border-radius:5px; display:flex; flex-direction:column;
   align-items:center; justify-content:center; color:var(--text);
-  /* ui-rounded is Safari/iOS's rounded system font (SF Pro Rounded), no
-     network fetch. "Segoe UI Rounded" is a real Windows font shipped since
-     Win10 and picked up first there. Both fall through to the app's normal
-     stack, so nothing breaks where neither is installed. Bold + a touch of
-     letter-spacing is what actually reads as "friendly" at 54px wide — the
-     rounded face alone was too subtle a change at this size. */
-  font-family:"Segoe UI Rounded", ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size:10px; font-weight:800; letter-spacing:.01em;
+  font-family:var(--font-ui);
+  font-size:9.5px; font-weight:700; letter-spacing:0;
   touch-action:none; user-select:none; -webkit-user-select:none; flex:none;
   transition:transform .12s ease;
 }
@@ -383,7 +379,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
    themes (Eautiphen) set no --chrome and keep their own look. */
 :root{--rail-w:72px;}
 #rail{background:var(--chrome, var(--surface-hi)); border-right:none; gap:2px; padding-top:4px; padding-bottom:4px;}
-.tool{--hue:var(--text-dim); width:56px; height:40px; border-radius:11px;
+.tool{--hue:var(--text-dim); width:56px; height:40px; border-radius:7px;
   background:color-mix(in srgb, var(--hue) var(--tint, 0%), transparent);}
 .tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 0%) + 12%), transparent); box-shadow:none;}
 .tool svg, .tool:hover svg{width:22px; height:22px; margin-bottom:2px; filter:none;}
@@ -588,9 +584,17 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .wd-title, .cal-title, .cal-ptitle, .cal-sec, .cal-mname, .md-q, .md-ptop b, .md-ltitle, #widgetPop .wp-head{
   font-family:var(--font-serif); letter-spacing:.01em;}
 .wd-title, .card-title, .bk-t{font-weight:700;}
+/* faces and icons always come from the colour emoji font, never a text font that happens to have the character */
+.md-face, .md-day span, .md-mday, .md-mostly, .md-legend, .wd-ic, #widgetPop .wp-ic, .list-cal, .due-btn{
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",var(--font-ui);}
+.md-mday small{font-family:var(--font-ui);}
+/* squarer corners inside widgets too (after b114: tools 7px, widgets 9px) */
+.wd-btn, .cal-pbtn, .cal-views, .cal-row, .cal-date, .md-note, .md-mday, #widgetPop .wp-row{border-radius:7px !important;}
+.cal-views button, .wd-ic, .wd-edit, .cal-nav, .cal-today, #widgetPop .wp-ic, .md-day span{border-radius:5px !important;}
+.md-face, .wd-big.wd-tap, .cal-prow2{border-radius:8px !important;}
 /* widgets: one look — rounded card, soft strip in the widget's colour, big bold numbers */
 /* the frame follows the colour profile (theme accent); only the icon keeps each widget's own colour */
-.card.type-widget{--whue:var(--accent); border:1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius:14px; background:var(--surface); overflow:hidden;
+.card.type-widget{--whue:var(--accent); border:1.5px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius:9px; background:var(--surface); overflow:hidden;
   box-shadow:0 2px 3px rgba(0,0,0,.06), 0 10px 26px rgba(0,0,0,var(--lift-shadow, .10));}
 .wd-strip{display:flex; align-items:center; gap:8px; padding:9px 12px; font-weight:800; font-size:13px;
   background:color-mix(in srgb, var(--whue) 18%, var(--surface)); color:color-mix(in srgb, var(--whue) 70%, var(--text));}
@@ -599,7 +603,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .wd-edit{display:none; padding:2px 9px; border-radius:7px; font-size:11px; font-weight:800; background:color-mix(in srgb, var(--whue) 25%, transparent); color:var(--text);}
 .card.type-widget:hover .wd-edit, .card.type-widget.selected .wd-edit{display:block;}
 .wd-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 12px 12px; gap:2px; color:var(--text);}
-.wd-big{font-size:40px; font-weight:900; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums;}
+.wd-big{font-size:36px; font-weight:900; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums;}
 .wd-accent{color:var(--whue); font-size:48px;}
 .wd-done{color:var(--whue);}
 .wd-big.wd-tap{cursor:pointer; border-radius:12px; padding:0 8px;}
@@ -1963,7 +1967,7 @@ body.focus-mode #textBarWrap{display:none;}
   background-image:radial-gradient(var(--grid) 1px, transparent 1.5px); background-size:24px 24px;}
 #treeSvg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
 #treeSvg line{stroke:var(--border); stroke-width:1.6;}
-#treeSvg text{fill:var(--text-dim); font-size:11px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+#treeSvg text{fill:var(--text-dim); font-size:11px; font-family:var(--font-ui);}
 .tnode{
   position:absolute; width:104px; display:flex; flex-direction:column; align-items:center; gap:5px;
   touch-action:none; user-select:none; -webkit-user-select:none; cursor:grab;
@@ -3865,7 +3869,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b114";
+window.BUILD = "b115";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19687,6 +19691,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b115", [
+    "New fonts: titles stay in the logo's Georgia, and everything else uses Verdana, which was designed as Georgia's partner. The rounded toolbar font is gone.",
+    "Tools and widgets have squarer corners."
+  ]],
   ["b114", [
     "Titles and headings (cards, blocks, widgets, windows) use the CORKBORK logo's serif again. Toolbar colours now all share one brightness, Widget sits under List, and Note and Block are a softer white.",
     "Timer: tap the time to change it. Type 25, 2:30 or 1:30:00. Widgets are a little less rounded."
