@@ -382,8 +382,8 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
    hue pulled toward the text colour, so it reads on every theme. Legacy
    themes (Eautiphen) set no --chrome and keep their own look. */
 :root{--rail-w:72px;}
-#rail{background:var(--chrome, var(--surface-hi)); border-right:none; gap:2px;}
-.tool{--hue:var(--text-dim); width:56px; height:42px; border-radius:11px;
+#rail{background:var(--chrome, var(--surface-hi)); border-right:none; gap:2px; padding-top:4px; padding-bottom:4px;}
+.tool{--hue:var(--text-dim); width:56px; height:40px; border-radius:11px;
   background:color-mix(in srgb, var(--hue) var(--tint, 0%), transparent);}
 .tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 0%) + 12%), transparent); box-shadow:none;}
 .tool svg, .tool:hover svg{width:22px; height:22px; margin-bottom:2px; filter:none;}
@@ -392,6 +392,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:color-mix(in srgb, var(--hue) 62%, var(--text));}
 .tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi));}
 .tool[data-type="note"]{--hue:#FFFFFF;}
+#toolWidget{--hue:#E2673F;} #toolWidget svg{stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
 :root[data-theme="light"] .tool[data-type="note"]{background:color-mix(in srgb, #FFFFFF 85%, transparent);}
 :root[data-theme="light"] #rail .tool[data-type="note"] svg{stroke:var(--text);}
 .tool[data-type="board"]{--hue:#E0913A;}
@@ -408,7 +409,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #toolTrash, #toolDelete{background:var(--hue); color:#FFFFFF;}
 #toolTrash:hover, #toolDelete:hover{background:color-mix(in srgb, var(--hue) 85%, #FFFFFF);}
 #toolTrash svg, #toolDelete svg{stroke:#FFFFFF !important; filter:none;}
-.railDivider{width:44px; height:2px; border-radius:2px; margin:3px 0; background:color-mix(in srgb, var(--text) 12%, transparent);}
+.railDivider{width:44px; height:2px; border-radius:2px; margin:2px 0; background:color-mix(in srgb, var(--text) 12%, transparent);}
 .tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
 /* cards lighter than the board, lifted by a shadow instead of an outline */
 .card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
@@ -428,6 +429,36 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #updateBar .primary{padding:7px 14px; border-radius:9px;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
+/* widgets: one look — rounded card, soft strip in the widget's colour, big bold numbers */
+.card.type-widget{border:none; border-radius:20px; background:var(--surface); overflow:hidden;
+  box-shadow:0 2px 3px rgba(0,0,0,.06), 0 10px 26px rgba(0,0,0,var(--lift-shadow, .10));}
+.wd-strip{display:flex; align-items:center; gap:8px; padding:9px 12px; font-weight:800; font-size:13px;
+  background:color-mix(in srgb, var(--whue) 18%, var(--surface)); color:color-mix(in srgb, var(--whue) 70%, var(--text));}
+.wd-ic{width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; background:var(--whue); flex:none;}
+.wd-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.wd-edit{display:none; padding:2px 9px; border-radius:7px; font-size:11px; font-weight:800; background:color-mix(in srgb, var(--whue) 25%, transparent); color:var(--text);}
+.card.type-widget:hover .wd-edit, .card.type-widget.selected .wd-edit{display:block;}
+.wd-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 12px 12px; gap:2px; color:var(--text);}
+.wd-big{font-size:40px; font-weight:900; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums;}
+.wd-accent{color:var(--whue); font-size:48px;}
+.wd-done{color:var(--whue);}
+.wd-sub{font-size:13px; font-weight:700; color:var(--text-dim);}
+.wd-tiny{font-size:11.5px; color:var(--text-dim); margin-top:3px;}
+.wd-bar{width:100%; height:8px; border-radius:99px; background:color-mix(in srgb, var(--whue) 16%, var(--surface)); margin:8px 0 9px; overflow:hidden;}
+.wd-fill{height:100%; border-radius:99px; background:var(--whue);}
+.wd-row{display:flex; gap:6px;}
+.wd-btn{padding:6px 13px; border-radius:11px; font-weight:800; font-size:12.5px; background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text);}
+.wd-btn.main{background:var(--whue); color:#fff; box-shadow:0 3px 0 color-mix(in srgb, var(--whue) 60%, #000);}
+.wd-btn.main:active{transform:translateY(2px); box-shadow:0 1px 0 color-mix(in srgb, var(--whue) 60%, #000);}
+/* the Widget tool's picker */
+#widgetPop{gap:4px; padding:10px;}
+#widgetPop .wp-head{font-weight:900; font-size:14px; padding:2px 4px 4px;}
+#widgetPop .wp-row{display:flex; align-items:center; gap:10px; padding:6px; border-radius:12px; font-weight:800; font-size:13px; text-align:left;}
+#widgetPop .wp-row:hover{background:color-mix(in srgb, var(--text) 7%, transparent);}
+#widgetPop .wp-ic{width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;}
+#widgetPop .wp-chips{display:none; flex-wrap:wrap; gap:6px; padding:2px 6px 6px 46px;}
+#widgetPop .wp-chip{padding:5px 10px; border-radius:99px; font-size:12px; font-weight:800; background:color-mix(in srgb, var(--whue) 20%, transparent); color:var(--text);}
+#widgetPop .wp-chip:hover{background:color-mix(in srgb, var(--whue) 32%, transparent);}
 /* editing the toolbar */
 body.rail-edit #railTools > .tool, body.rail-edit #morePop .tool{animation:railWiggle .32s ease-in-out infinite alternate; cursor:grab; touch-action:none;}
 body.rail-edit #railTools > .tool:nth-child(even), body.rail-edit #morePop .tool:nth-child(even){animation-delay:-.16s;}
@@ -2713,6 +2744,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div class="shead">Cards</div>
   <div id="tagList" class="toplist"></div>
 </div>
+<div id="widgetPop" class="railpop" style="width:240px;"></div>
 <div id="folderPanel" class="toppanel">
   <div class="shead">Board folder</div>
   <div id="folderBody"></div>
@@ -2801,6 +2833,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          slots. Block is pulled back out into this main list whenever a card
          page is open — see placeBlockTool() — since it is one of the few
          tools that still work inside a card. -->
+    <button class="tool" id="toolWidget" title="Widgets — clock, timer, countdown">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widget</button>
     <button class="tool" id="railMore" title="More tools">
       <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>More</button>
     <div class="railDivider"></div>
@@ -3669,7 +3703,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b109";
+window.BUILD = "b110";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3749,7 +3783,7 @@ let lastIntegrityReport = null;
 
 const VALID_CARD_TYPES = new Set([
   "note","image","link","todo","board","column","grid","heading",
-  "card","sheet","block","file","table"
+  "card","sheet","block","file","table","widget"
 ]);
 const plainObject = value => !!value && typeof value === "object" && !Array.isArray(value);
 /* A workspace is a graph of references. JSON parsing alone says nothing
@@ -5128,6 +5162,7 @@ function buildCardEl(c){
   else if (c.type === "block") buildBlock(c, el);
   else if (c.type === "file") buildFile(c, el);
   else if (c.type === "table") buildTable(c, el);
+  else if (c.type === "widget") buildWidget(c, el);
   else if (c.type === "board"){
     el.style.setProperty("--bscale", (c.w || 150) / 150);
     const b = board(c.boardId);   /* board title is authoritative — every shortcut stays in sync */
@@ -7070,6 +7105,7 @@ function renderDrawer(){
     else if (c.type === "link") d.appendChild(document.createTextNode(c.title || c.url));
     else if (c.type === "todo") d.appendChild(document.createTextNode(c.title || "List"));
     else if (c.type === "table") d.appendChild(document.createTextNode(c.title || "Sheet"));
+    else if (c.type === "widget") d.appendChild(document.createTextNode((WIDGET_KINDS[c.widget]?.name || "Widget") + (c.label ? " \u00b7 " + c.label : "")));
     else if (c.type === "board") d.appendChild(document.createTextNode(c.title || "Board"));
     wireDrawerDrag(d, c);
     list.appendChild(d);
@@ -7367,7 +7403,8 @@ function defaultSize(type){
   return { note:{w:260,h:180}, image:{w:280,h:220}, link:{w:280,h:120},
            todo:{w:260,h:220}, board:{w:150,h:150}, column:{w:340,h:140},
            grid:{w:320,h:180}, heading:{w:360,h:56}, card:{w:290,h:132}, sheet:{w:420,h:520},
-           block:{w:340,h:220}, file:{w:280,h:150}, folder:{w:150,h:150}, table:{w:420,h:260} }[type];
+           block:{w:340,h:220}, file:{w:280,h:150}, folder:{w:150,h:150}, table:{w:420,h:260},
+           widget:{w:200,h:178} }[type];
 }
 const isContainer = c => c && (c.type === "column" || c.type === "grid");
 function maxZ(){
@@ -8335,6 +8372,7 @@ function enterEdit(c){
   else if (c.type === "sheet") openSheet(c.id);
   else if (c.type === "file" && NOTE_IMPORT_EXT.has(fileExt(c.fileName))) openDocumentReader(c.id);
   else if (c.type === "card") openCardPage(c.id);
+  else if (c.type === "widget") editWidget(c);
 }
 
 /* ---- entity dialog ---- */
@@ -15664,6 +15702,186 @@ $("#sprintStart").addEventListener("click", () => {
 });
 $("#sprintReset").addEventListener("click", () => { stopSprint(); sprintLeft = sprintDur; $("#sprintDisplay").classList.remove("done"); paintSprint(); });
 
+/* ---- widgets -----------------------------------------------------------
+   Live cards placed from the Widget tool (above More). One look for all of
+   them — a rounded card, a soft strip in the widget's own colour, big bold
+   numbers — following the theme. Timers store when they END, not a running
+   count, so they keep going on other boards, in other tabs and after the
+   app closes; a once-a-second ticker repaints whatever is on screen and
+   announces any timer that has finished anywhere. */
+const WIDGET_KINDS = {
+  clock:    {name:"Clock",     hue:"#A98BD6", icon:"\u{1F552}", size:{w:200, h:160}},
+  timer:    {name:"Timer",     hue:"#3FAF62", icon:"⏱",    size:{w:210, h:196}},
+  countdown:{name:"Countdown", hue:"#E2673F", icon:"⏳",    size:{w:200, h:178}}
+};
+const WIDGET_ZONES = ["", "UTC", "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "America/Sao_Paulo",
+  "Europe/London", "Europe/Paris", "Europe/Berlin", "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney"];
+function timerLeft(c){
+  if (c.endAt) return Math.max(0, Math.ceil((c.endAt - Date.now()) / 1000));
+  return c.remaining != null ? c.remaining : (c.duration || 1500);
+}
+function fmtTimer(sec){
+  const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s2 = sec % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s2).padStart(2, "0");
+}
+function countdownDays(c){
+  if (!c.target) return null;
+  const [y, mo, d] = c.target.split("-").map(Number); if (!y) return null;
+  const t = new Date(y, mo - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((t - today) / 86400000);
+}
+function widgetLiveText(c, part){
+  if (c.widget === "clock"){
+    const zone = c.zone || undefined, nowD = new Date();
+    if (part === "time") return nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+    if (part === "date") return nowD.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
+    if (part === "zone" && zone) return zone.split("/").pop().replace(/_/g, " ") + " " + nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", timeZone:zone});
+    return "";
+  }
+  if (c.widget === "timer") return fmtTimer(timerLeft(c));
+  return "";
+}
+function buildWidget(c, el){
+  const k = WIDGET_KINDS[c.widget] || WIDGET_KINDS.clock;
+  el.style.setProperty("--whue", k.hue);
+  const strip = document.createElement("div"); strip.className = "wd-strip";
+  const ic = document.createElement("span"); ic.className = "wd-ic"; ic.textContent = k.icon;
+  const tl = document.createElement("span"); tl.className = "wd-title"; tl.textContent = k.name + (c.label ? " · " + c.label : "");
+  const ed = document.createElement("button"); ed.className = "wd-edit"; ed.textContent = "Edit"; ed.title = "Change this widget";
+  ed.addEventListener("pointerdown", e => e.stopPropagation());
+  ed.addEventListener("click", e => { e.stopPropagation(); editWidget(card(c.id)); });
+  strip.append(ic, tl, ed);
+  const body = document.createElement("div"); body.className = "wd-body";
+  const live = (cls, part) => { const d = document.createElement("div"); d.className = cls + " wd-live"; d.dataset.part = part || ""; d.textContent = widgetLiveText(c, part); return d; };
+  if (c.widget === "clock"){
+    body.append(live("wd-big", "time"), live("wd-sub", "date"));
+    if (c.zone) body.append(live("wd-tiny", "zone"));
+  } else if (c.widget === "timer"){
+    const big = live("wd-big", "timer"); if (c.done) big.classList.add("wd-done");
+    const bar = document.createElement("div"); bar.className = "wd-bar"; const fill = document.createElement("div"); fill.className = "wd-fill wd-live"; fill.dataset.part = "bar";
+    fill.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%"; bar.appendChild(fill);
+    const row = document.createElement("div"); row.className = "wd-row";
+    const btn = (label, fn, main) => { const b = document.createElement("button"); b.textContent = label; b.className = main ? "wd-btn main" : "wd-btn";
+      b.addEventListener("pointerdown", e => e.stopPropagation()); b.addEventListener("click", e => { e.stopPropagation(); fn(); }); row.appendChild(b); };
+    btn(c.endAt ? "Pause" : (c.done ? "Again" : "Start"), () => timerToggle(c.id), true);
+    btn("Reset", () => timerReset(c.id));
+    body.append(big, bar, row);
+  } else if (c.widget === "countdown"){
+    const n = countdownDays(c);
+    const big = document.createElement("div"); big.className = "wd-big wd-accent";
+    const sub = document.createElement("div"); sub.className = "wd-sub";
+    if (n == null){ big.textContent = "—"; sub.textContent = "Pick a date"; }
+    else if (n === 0){ big.textContent = "Today"; sub.textContent = c.label || ""; }
+    else { big.textContent = String(Math.abs(n)); sub.textContent = (Math.abs(n) === 1 ? "day " : "days ") + (n > 0 ? "until" : "ago"); }
+    const what = document.createElement("div"); what.className = "wd-tiny";
+    if (c.target){ const [y, mo, d] = c.target.split("-").map(Number); what.textContent = new Date(y, mo - 1, d).toLocaleDateString([], {month:"short", day:"numeric", year:"numeric"}); }
+    body.append(big, sub, what);
+  }
+  el.append(strip, body);
+}
+function timerToggle(id){
+  const c = card(id); if (!c) return;
+  if (c.endAt){ patchCard(id, {remaining:timerLeft(c), endAt:null}); }
+  else {
+    const left = c.done ? (c.duration || 1500) : timerLeft(c);
+    patchCard(id, {endAt:Date.now() + left * 1000, remaining:null, done:false});
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch (_) {}
+  }
+  markDirty(); renderBoard();
+}
+function timerReset(id){ const c = card(id); if (!c) return; patchCard(id, {endAt:null, remaining:c.duration || 1500, done:false}); markDirty(); renderBoard(); }
+setInterval(() => {
+  if (!state?.cards) return;
+  for (const el of worldEl.querySelectorAll(".card.type-widget .wd-live")){
+    const c = card(el.closest(".card")?.dataset.id); if (!c) continue;
+    if (el.dataset.part === "bar") el.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%";
+    else { const t = widgetLiveText(c, el.dataset.part); if (el.textContent !== t) el.textContent = t; }
+  }
+  /* timers anywhere in the workspace, not just this board */
+  let finished = false;
+  for (const c of Object.values(state.cards)){
+    if (c.type !== "widget" || c.widget !== "timer" || !c.endAt || Date.now() < c.endAt) continue;
+    patchCard(c.id, {endAt:null, remaining:0, done:true}); finished = true;
+    const msg = "⏱ " + (c.label ? c.label + " — time's up!" : "Time's up!");
+    toast(msg, 8000);
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification("CORKBORK", {body:msg}); } catch (_) {}
+  }
+  if (finished){ markDirty(); renderBoard(); }
+}, 1000);
+async function editWidget(c){
+  if (!c || c.type !== "widget") return;
+  const k = WIDGET_KINDS[c.widget] || WIDGET_KINDS.clock;
+  const res = await askOpen({
+    title: k.name,
+    build(body){
+      const grid = document.createElement("div"); grid.className = "metagrid"; const inputs = {};
+      const field = (key, label, input) => { const l = document.createElement("label"); l.textContent = label; input.dataset.key = key; inputs[key] = input; grid.append(l, input); };
+      const text = (v, ph) => { const i = document.createElement("input"); i.type = "text"; i.value = v || ""; if (ph) i.placeholder = ph; return i; };
+      field("label", "Label", text(c.label, c.widget === "countdown" ? "e.g. Midterm" : c.widget === "timer" ? "e.g. Study" : "e.g. Home"));
+      if (c.widget === "timer"){ const i = document.createElement("input"); i.type = "number"; i.min = 1; i.max = 600; i.value = Math.round((c.duration || 1500) / 60); field("minutes", "Minutes", i); }
+      if (c.widget === "countdown"){ const i = document.createElement("input"); i.type = "date"; i.value = c.target || ""; field("target", "Date", i); }
+      if (c.widget === "clock"){
+        const sel = document.createElement("select");
+        for (const z of WIDGET_ZONES){ const o = document.createElement("option"); o.value = z; o.textContent = z ? z.replace(/_/g, " ") : "None"; if ((c.zone || "") === z) o.selected = true; sel.appendChild(o); }
+        field("zone", "Second time zone", sel);
+      }
+      body.appendChild(grid);
+      return { focus:() => inputs.label.focus(), read:() => Object.fromEntries(Object.entries(inputs).map(([key, i]) => [key, i.value.trim()])) };
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
+  });
+  if (!res || typeof res !== "object") return;
+  const patch = {label:res.label || ""};
+  if (c.widget === "timer"){
+    const min = Math.round(Number(res.minutes));
+    if (Number.isFinite(min) && min >= 1 && min <= 600 && min * 60 !== c.duration) Object.assign(patch, {duration:min * 60, remaining:min * 60, endAt:null, done:false});
+  }
+  if (c.widget === "countdown") patch.target = res.target || "";
+  if (c.widget === "clock") patch.zone = res.zone || "";
+  pushUndo(); patchCard(c.id, patch); markDirty(); renderBoard();
+}
+function addWidget(kind){
+  const k = WIDGET_KINDS[kind]; if (!k) return null;
+  const p = viewCenterWorld();
+  const extra = {widget:kind, label:""};
+  if (kind === "timer") Object.assign(extra, {duration:1500, remaining:1500});
+  if (kind === "countdown"){ const d = new Date(Date.now() + 7 * 86400000); extra.target = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  const c = addCard("widget", p.x, p.y, extra);
+  patchCard(c.id, {w:k.size.w, h:k.size.h, x:Math.round(p.x - k.size.w / 2), y:Math.round(p.y - k.size.h / 2)});
+  markDirty(); renderAll(); setSelection([c.id]);
+  if (kind === "countdown") editWidget(card(c.id));
+  return card(c.id);
+}
+/* the Widget tool's picker: short names; time widgets share one entry */
+function openWidgetPicker(){
+  const pop = $("#widgetPop");
+  if (pop.classList.contains("open")){ pop.classList.remove("open"); return; }
+  pop.innerHTML = "";
+  const head = document.createElement("div"); head.className = "wp-head"; head.textContent = "Add a widget"; pop.appendChild(head);
+  const row = (icon, hue, name, onClick) => {
+    const b = document.createElement("button"); b.className = "wp-row";
+    const i = document.createElement("span"); i.className = "wp-ic"; i.style.background = hue; i.textContent = icon;
+    const t = document.createElement("span"); t.textContent = name;
+    b.append(i, t); b.addEventListener("click", onClick); pop.appendChild(b); return b;
+  };
+  const time = row("⏱", "#3FAF62", "Clock & timers", () => { chips.style.display = chips.style.display === "flex" ? "none" : "flex"; });
+  const chips = document.createElement("div"); chips.className = "wp-chips";
+  for (const kind of ["clock", "timer", "countdown"]){
+    const ch = document.createElement("button"); ch.className = "wp-chip"; ch.style.setProperty("--whue", WIDGET_KINDS[kind].hue);
+    ch.textContent = WIDGET_KINDS[kind].icon + " " + WIDGET_KINDS[kind].name;
+    ch.addEventListener("click", () => { pop.classList.remove("open"); addWidget(kind); });
+    chips.appendChild(ch);
+  }
+  pop.appendChild(chips);
+  const r = $("#toolWidget").getBoundingClientRect(), z = uiz();
+  pop.style.top = Math.min(r.top / z, innerHeight / z - 200) + "px";
+  pop.classList.add("open");
+}
+$("#toolWidget").addEventListener("click", () => { if (!document.body.classList.contains("rail-edit")) openWidgetPicker(); });
+document.addEventListener("pointerdown", e => {
+  const pop = $("#widgetPop");
+  if (pop?.classList.contains("open") && !pop.contains(e.target) && !e.target.closest?.("#toolWidget")) pop.classList.remove("open");
+}, true);
 /* ---- export every image on a board, originals, in one .zip ----
    Includes images sitting in columns and folders on that board, not those
    inside sub-boards. Each keeps its own format (PNG, JPEG, GIF…) and name. */
@@ -18255,6 +18473,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b110", [
+    "Widgets (toolbar, above More): Clock (with a second time zone), Timer and Countdown. Timers keep running on other boards and after closing the app, and tell you when time's up. Double-click or Edit to change one."
+  ]],
   ["b109", [
     "Edit the left toolbar: right-click it (or Settings → Tools) → Edit toolbar. Drag tools to reorder them or into More, add or remove dividers, Reset any time. Saved per device."
   ]],
@@ -18291,9 +18512,6 @@ const PATCH_NOTES = [
   ]],
   ["b99", [
     "The text formatting bar no longer leaves an arrow tab on screen: it shows while you edit text and hides after."
-  ]],
-  ["b98", [
-    "Left toolbar: Column and Folder sit together in their own group, both green; Link moved below Heading; icons are bolder."
   ]],
 ];
 function renderPatchNotes(){
