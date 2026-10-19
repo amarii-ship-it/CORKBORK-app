@@ -3868,7 +3868,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b123";
+window.BUILD = "b124";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -3940,6 +3940,19 @@ const now = () => Date.now();
 
 /* ---------------- state ---------------- */
 let state = null;              // { schemaVersion, rootBoardId, boards, cards }
+/* Until the stored workspace has loaded there is nothing to act on, and a
+   big workspace can take a few seconds. A key, scroll, tap or resize in that
+   window reached handlers that assumed a workspace and threw. Input waits;
+   the error banner stays usable. Window capture runs before every other
+   listener. */
+for (const type of ["keydown", "keyup", "pointerdown", "pointermove", "pointerup", "mousedown", "mouseup", "click",
+                    "dblclick", "contextmenu", "wheel", "touchstart", "touchmove", "gesturestart", "paste", "drop", "dragover"]){
+  addEventListener(type, e => {
+    if (state || e.target?.closest?.("#__errBanner")) return;
+    e.stopImmediatePropagation();
+    if (e.cancelable && type !== "touchstart" && type !== "touchmove") e.preventDefault();
+  }, {capture:true, passive:false});
+}
 let currentBoardId = null;
 let selection = new Set();
 let undoStack = [], redoStack = [];
@@ -20139,6 +20152,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b124", [
+    "Fixed red “Script error” messages after a refresh: tapping, scrolling or pressing a key while a big workspace was still loading no longer causes errors."
+  ]],
   ["b123", [
     "Faster on big boards: redraws leave untouched cards alone (videos and maps no longer reload), notes size themselves in one pass, dragging does its work once per screen frame, and search waits for a pause in typing.",
     "Saves and the Drive check do less work when nothing has changed, pictures from deleted cards stop taking up memory, and checking for a new version downloads a few bytes instead of the whole app.",
@@ -20240,7 +20256,7 @@ addEventListener("keydown", e => {
 let uiFitTimer = 0;
 function refitInterfaceSoon(){
   clearTimeout(uiFitTimer);
-  uiFitTimer = setTimeout(() => applyUiPrefs(), 80);
+  uiFitTimer = setTimeout(() => { if (state) applyUiPrefs(); }, 80);   /* a resize can come while the workspace is still loading */
 }
 addEventListener("resize", refitInterfaceSoon);
 if (window.visualViewport) visualViewport.addEventListener("resize", refitInterfaceSoon);
