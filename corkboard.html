@@ -1380,7 +1380,10 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
    moved INTO that layer while a card is open; at 106 the panel opened
    underneath it. Raising the control itself gives the absolutely-positioned
    panel inside it a stacking context that wins in both contexts. */
-#zoomCtl{position:relative; flex:none; z-index:170;}
+#zoomCtl{position:relative; flex:none; z-index:106;}
+/* only inside the card page; on the board 170 put the pill above the D&D
+   sheet (152), the picture viewer (150) and dialogs (160), blocking them */
+body.in-card #zoomCtl{z-index:170;}
 /* Active state has to be obvious at a glance — this is a mode, not an action,
    and it opens no panel, so the button itself has to carry the state. */
 #topbar #btnSnap.on{color:var(--edit); background:color-mix(in srgb, var(--edit) 22%, transparent);}
@@ -3926,7 +3929,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b127";
+window.BUILD = "b128";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -21338,6 +21341,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b128", [
+    "The zoom button no longer sits on top of the D&D sheet (it blocked the tabs), the picture viewer or dialogs."
+  ]],
   ["b127", [
     "Spell library: Add spells \u203a From a link imports a whole spell list from dnd5e.wikidot.com (or a class list, or one spell) with a progress bar. Spells you already have are skipped, so importing several lists never makes duplicates. Needs the updated Cloudflare Worker."
   ]],
@@ -21386,10 +21392,6 @@ const PATCH_NOTES = [
   ["b115", [
     "New fonts: titles stay in the logo's Georgia, and everything else uses Verdana, which was designed as Georgia's partner. The rounded toolbar font is gone.",
     "Tools and widgets have squarer corners."
-  ]],
-  ["b114", [
-    "Titles and headings (cards, blocks, widgets, windows) use the CORKBORK logo's serif again. Toolbar colours now all share one brightness, Widget sits under List, and Note and Block are a softer white.",
-    "Timer: tap the time to change it. Type 25, 2:30 or 1:30:00. Widgets are a little less rounded."
   ]],
 
 
