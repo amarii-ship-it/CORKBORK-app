@@ -1914,6 +1914,7 @@ body.focus-mode #textBarWrap{display:none;}
 .panel .row{display:flex; gap:8px; justify-content:flex-end;}
 #askOverlay{z-index:200;}                 /* above every other panel */
 #askPanel{width:min(460px,100%);}
+#askPanel.wide{width:min(640px,100%);}
 #askMsg{font-size:13px; line-height:1.5; color:var(--text); white-space:pre-wrap;}
 #askMsg .sub{display:block; margin-top:7px; font-size:12px; color:var(--text-dim);}
 #askBody input[type=text]{width:100%;}
@@ -3911,7 +3912,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b125";
+window.BUILD = "b126";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4646,6 +4647,7 @@ function tabMergeWorkspace(base, local, remote){
   out.labels = tabMergeMap(base.labels, local.labels, remote.labels, () => true);
   if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
   if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
+  if (local.spellLib || remote.spellLib) out.spellLib = tabMergeMap(base.spellLib, local.spellLib, remote.spellLib, byTime);
   for (const k of ["calCats", "calEvents"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   if (local.favorites || remote.favorites) out.favorites = syncMergeIdList(base.favorites || [], local.favorites || [], remote.favorites || []);
   {
@@ -4668,7 +4670,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","mood","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","spellLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -17768,12 +17770,13 @@ function askClose(value){
   const r = askResolve; askResolve = null;
   if (r) r(value);
 }
-function askOpen({ title, build, buttons }){
+function askOpen({ title, build, buttons, wide }){
   return new Promise(resolve => {
     /* a second ask while one is up resolves the first as cancelled rather
        than orphaning its promise */
     if (askResolve) askClose(null);
     askResolve = resolve;
+    $("#askPanel")?.classList.toggle("wide", !!wide);
     $("#askTitle").textContent = title || "";
     $("#askTitle").style.display = title ? "" : "none";
     const body = $("#askBody"); body.innerHTML = "";
@@ -18965,6 +18968,17 @@ function showSpellTip(sp, anchor){
     const p = document.createElement("p"); p.textContent = "No details saved for this spell. Paste its text with “Paste spell text…” to add them."; tip.appendChild(p);
   }
   if (d.src === "SRD 5.1"){ const s = document.createElement("div"); s.className = "src"; s.textContent = SRD_CREDIT; tip.appendChild(s); }
+  if (sp.id && seCardId && sheetSpells(seData()).list.some(x => x.id === sp.id)){
+    const ed = document.createElement("button"); ed.className = "se-prevsize"; ed.textContent = "Edit details"; ed.style.marginTop = "6px";
+    ed.addEventListener("click", async () => {
+      hideSpellTip();
+      const r = await editSpellDialog(sp, {offerLibrary:true}); if (!r) return;
+      seSetSpells(o => { o.list = o.list.map(x => x.id === sp.id ? {...x, name:r.name.slice(0, 120), lvl:r.lvl, det:r.det} : x); return o; });
+      if (r.lib) spellLibPut(r);
+      renderSheetEditor();
+    });
+    tip.appendChild(ed);
+  }
   tip.classList.add("open");
   const r = anchor.getBoundingClientRect(), z = uiz();
   const w = tip.offsetWidth, hh = tip.offsetHeight;
@@ -19007,7 +19021,201 @@ async function pasteSpellDialog(defaultLvl){
   const p = parseSpellText(result.text) || { det:null };
   const name = (result.name || p.name || "").trim();
   if (!name){ toast("Paste a spell, or type its name."); return; }
+  if (p.det) spellLibPut({ name, lvl:result.lvl, det:p.det });   /* reusable on every sheet */
   if (addSpellToSheet({ name, lvl:result.lvl, det:p.det })) renderSheetEditor();
+}
+/* ---- your own spell library ---------------------------------------------
+   Spells pasted or imported from anywhere live in the workspace
+   (state.spellLib), on this device and in your own Drive, never in the app's
+   files. Once there, every sheet's search finds them next to the free list. */
+function spellLibList(){ return Object.values(state.spellLib || {}).sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name)); }
+function spellLibFind(name){ const n = String(name || "").trim().toLowerCase(); return spellLibList().find(s => s.name.toLowerCase() === n) || null; }
+/* add or update by name; returns "added" | "updated" */
+function spellLibPut(sp){
+  state.spellLib = state.spellLib || {};
+  const name = String(sp.name || "").trim().slice(0, 120); if (!name) return null;
+  const lvl = Math.max(0, Math.min(9, Number(sp.lvl) || 0)), t = now();
+  const old = spellLibFind(name);
+  const det = sp.det ? {...sp.det, src:sp.det.src === "SRD 5.1" ? "SRD 5.1" : "yours"} : null;
+  if (old){ state.spellLib[old.id] = {...old, name, lvl, det:det || old.det, updatedAt:t}; return "updated"; }
+  const id = uid("spl");
+  state.spellLib[id] = {id, name, lvl, det, addedAt:t, updatedAt:t};
+  return "added";
+}
+/* Many spells pasted at once (a whole wiki page, a text file): each spell
+   starts at a short name line followed within a few lines by its level
+   ("2nd-level evocation", "Evocation cantrip", or D&D Beyond's "Level"
+   label) or by "Source:". A line of --- also separates spells. */
+const SPELL_LEVEL_LINE = /^(\d)(?:st|nd|rd|th)[- ]level\b|^[a-z]+ cantrip\b|^level$|^cantrip$/i;
+function splitSpellText(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const looksLikeName = l => { const t = l.trim(); return t && t.length <= 60 && !/[:.]$/.test(t) && !/:/.test(t) && !SPELL_LEVEL_LINE.test(t) && !/^[-=*_]{3,}$/.test(t); };
+  const starts = [];
+  for (let i = 0; i < lines.length; i++){
+    if (/^\s*[-=]{3,}\s*$/.test(lines[i])){ starts.push(i + 1); continue; }
+    if (!looksLikeName(lines[i])) continue;
+    let seen = 0;
+    for (let j = i + 1; j < lines.length && seen < 4; j++){
+      const t = lines[j].trim(); if (!t) continue; seen++;
+      if (SPELL_LEVEL_LINE.test(t) || /^source\s*:/i.test(t)){ starts.push(i); break; }
+    }
+  }
+  const cuts = [...new Set(starts)].sort((a, b) => a - b);
+  if (!cuts.length) return [text];
+  return cuts.map((s, k) => lines.slice(s, cuts[k + 1] ?? lines.length).join("\n").trim()).filter(Boolean);
+}
+function parseManySpells(text){
+  return splitSpellText(text).map(parseSpellText)
+    .filter(p => p && p.name && (p.lvl != null || p.det.time || p.det.range || p.det.dur));
+}
+async function importSpellsDialog(){
+  let found = [];
+  const result = await askOpen({
+    title:"Import spells into your library",
+    wide:true,
+    build(body){
+      const m = document.createElement("div"); m.id = "askMsg";
+      m.textContent = "Paste one spell or many (a whole page is fine), or choose a text file. Each spell needs its name, then its level line (like “2nd-level evocation”) or D&D Beyond’s layout.";
+      const ta = document.createElement("textarea"); ta.rows = 10; ta.style.cssText = "width:100%;margin-top:8px;font:inherit;font-size:13px;";
+      const fileBtn = document.createElement("button"); fileBtn.textContent = "Choose a text file…";
+      fileBtn.style.cssText = "margin-top:6px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);";
+      const file = document.createElement("input"); file.type = "file"; file.accept = ".txt,.md,.text,text/plain"; file.hidden = true;
+      const list = document.createElement("div"); list.style.cssText = "margin-top:8px;max-height:220px;overflow-y:auto;font-size:12.5px;";
+      const draw = () => {
+        found = parseManySpells(ta.value).map(p => ({...p, on:true}));
+        list.textContent = "";
+        if (!ta.value.trim()) return;
+        const h = document.createElement("div"); h.style.cssText = "font-weight:700;margin-bottom:4px;";
+        h.textContent = found.length ? "Found " + found.length + " spell" + (found.length === 1 ? "" : "s") + ":" : "No spells found yet — each needs a name and a level line.";
+        list.appendChild(h);
+        for (const f of found){
+          const row = document.createElement("label"); row.style.cssText = "display:flex;flex-direction:row;gap:8px;align-items:center;justify-content:flex-start;text-align:left;padding:2px 0;white-space:normal;";
+          const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = true; cb.style.cssText = "width:auto;flex:none;margin:0;";
+          cb.addEventListener("change", () => { f.on = cb.checked; });
+          const t = document.createElement("span"); t.style.flex = "1";
+          const exists = spellLibFind(f.name);
+          t.textContent = f.name + " · " + (f.lvl ? "Level " + f.lvl : f.lvl === 0 ? "Cantrip" : "level unknown (cantrip)") + (exists ? " · replaces your copy" : "");
+          row.append(cb, t); list.appendChild(row);
+        }
+      };
+      ta.addEventListener("input", draw);
+      ta.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+      fileBtn.addEventListener("click", () => file.click());
+      file.addEventListener("change", async () => { const f = file.files[0]; file.value = ""; if (!f) return;
+        if (f.size > 5e6){ toast("That file is too big for a spell list."); return; }
+        ta.value = await f.text(); draw(); });
+      m.append(ta, fileBtn, file, list); body.appendChild(m);
+      return { focus:() => ta.focus() };
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Add to my library", primary:true, value:() => found.filter(f => f.on)}]
+  });
+  if (!result || !result.length){ if (result) toast("No spells were selected."); return 0; }
+  pushUndo();
+  let added = 0, updated = 0;
+  for (const p of result){ const r = spellLibPut(p); if (r === "added") added++; else if (r === "updated") updated++; }
+  markDirty();
+  toast((added ? added + " spell" + (added === 1 ? "" : "s") + " added" : "") + (added && updated ? ", " : "") + (updated ? updated + " updated" : "") + " in your spell library.");
+  return added + updated;
+}
+/* edit a spell's details; returns the edited spell or null */
+async function editSpellDialog(sp, {offerLibrary = false} = {}){
+  const d = sp.det || {};
+  const res = await askOpen({
+    title:"Edit spell",
+    wide:true,
+    build(body){
+      const g = document.createElement("div"); g.className = "metagrid";
+      const field = (label, value, opts = {}) => {
+        const l = document.createElement("label"); l.textContent = label;
+        const el = opts.area ? document.createElement("textarea") : document.createElement("input");
+        if (opts.area){ el.rows = opts.rows || 4; el.style.cssText = "width:100%;font:inherit;font-size:13px;"; } else el.type = "text";
+        el.value = value || ""; el.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+        g.append(l, el); return el;
+      };
+      const api = {};
+      api.name = field("Name", sp.name);
+      const ll = document.createElement("label"); ll.textContent = "Level";
+      api.lvl = document.createElement("select");
+      SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; api.lvl.appendChild(o); });
+      api.lvl.value = String(sp.lvl || 0); g.append(ll, api.lvl);
+      api.school = field("School", d.school);
+      api.time = field("Casting time", d.time);
+      api.range = field("Range", d.range);
+      api.comp = field("Components", d.comp);
+      api.dur = field("Duration", d.dur);
+      const fl = document.createElement("label"); fl.textContent = "Tags";
+      const flags = document.createElement("div"); flags.style.cssText = "display:flex;gap:14px;font-size:13px;";
+      const flag = (t, on) => { const w = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = !!on; w.append(c, " " + t); flags.appendChild(w); return c; };
+      api.conc = flag("Concentration", d.conc); api.ritual = flag("Ritual", d.ritual);
+      g.append(fl, flags);
+      api.desc = field("Description", d.desc, {area:true, rows:7});
+      api.higher = field("At higher levels", d.higher, {area:true, rows:2});
+      if (offerLibrary){
+        const l2 = document.createElement("label"); l2.textContent = "";
+        const w = document.createElement("label"); w.style.fontSize = "13px";
+        api.lib = document.createElement("input"); api.lib.type = "checkbox"; api.lib.checked = true;
+        w.append(api.lib, " Save to my spell library too"); g.append(l2, w);
+      }
+      body.appendChild(g);
+      return {...api, focus:() => api.name.focus()};
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:a => ({
+      name:a.name.value.trim(), lvl:Number(a.lvl.value), lib:!!a.lib?.checked,
+      det:{school:a.school.value.trim(), time:a.time.value.trim(), range:a.range.value.trim(), comp:a.comp.value.trim(),
+        dur:a.dur.value.trim(), conc:a.conc.checked, ritual:a.ritual.checked, desc:a.desc.value.trim().slice(0, 12000),
+        higher:a.higher.value.trim().slice(0, 3000), src:d.src === "SRD 5.1" ? "SRD 5.1" : "yours"}})}]
+  });
+  if (!res || !res.name) return null;
+  return res;
+}
+async function spellLibraryDialog(){
+  for (;;){
+    let pick = null;
+    const action = await askOpen({
+      title:"My spell library",
+      wide:true,
+      build(body){
+        const m = document.createElement("div"); m.id = "askMsg";
+        m.textContent = "Spells you import or paste are kept here, in your workspace and your own Drive. Every sheet can search them.";
+        const q = document.createElement("input"); q.type = "text"; q.placeholder = "Find a spell"; q.style.cssText = "width:100%;margin-top:8px;";
+        const list = document.createElement("div"); list.style.cssText = "margin-top:8px;max-height:320px;overflow-y:auto;font-size:13px;";
+        const draw = () => {
+          list.textContent = "";
+          const all = spellLibList(), f = q.value.trim().toLowerCase();
+          const rows = all.filter(s => !f || s.name.toLowerCase().includes(f));
+          if (!all.length){ const e = document.createElement("div"); e.style.opacity = ".7"; e.textContent = "Empty so far. Use Import spells… to add some."; list.appendChild(e); return; }
+          for (const s of rows){
+            const r = document.createElement("div"); r.style.cssText = "display:flex;gap:8px;align-items:center;padding:4px 2px;border-bottom:1px solid var(--border);";
+            const n = document.createElement("span"); n.style.flex = "1"; n.textContent = s.name;
+            const lv = document.createElement("span"); lv.style.cssText = "font-size:11.5px;opacity:.7;"; lv.textContent = s.lvl ? "Level " + s.lvl : "Cantrip";
+            const ed = document.createElement("button"); ed.textContent = "Edit"; ed.addEventListener("click", () => { pick = {edit:s.id}; $("#askRow .primary")?.click(); });
+            const del = document.createElement("button"); del.textContent = "Delete"; del.addEventListener("click", () => { pick = {del:s.id}; $("#askRow .primary")?.click(); });
+            r.append(n, lv, ed, del); list.appendChild(r);
+          }
+        };
+        q.addEventListener("input", draw); q.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+        draw(); m.append(q, list); body.appendChild(m);
+        return { focus:() => q.focus() };
+      },
+      buttons:[{label:"Import spells…", value:"import"}, {label:"Done", primary:true, value:() => pick || "done"}]
+    });
+    if (action === "import"){ await importSpellsDialog(); continue; }
+    if (action?.edit){
+      const s = state.spellLib?.[action.edit]; if (!s) continue;
+      const r = await editSpellDialog(s);
+      if (r){ pushUndo(); state.spellLib[s.id] = {...s, name:r.name.slice(0, 120), lvl:r.lvl, det:r.det, updatedAt:now()}; markDirty(); }
+      continue;
+    }
+    if (action?.del){
+      const s = state.spellLib?.[action.del]; if (!s) continue;
+      if (await askConfirm({title:"Delete " + s.name + "?", message:"It leaves your library. Sheets that already have it keep their copy.", okLabel:"Delete", danger:true})){
+        pushUndo(); delete state.spellLib[s.id]; markDirty();
+      }
+      continue;
+    }
+    if (seCardId && $("#sheetEditor").classList.contains("open")) renderSheetEditor();
+    return;
+  }
 }
 function renderSpellsPage(page){
   const sh = seData(), sp = sheetSpells(sh);
@@ -19029,8 +19237,11 @@ function renderSpellsPage(page){
   SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; lvSel.appendChild(o); });
   const pasteBtn = document.createElement("button"); pasteBtn.className = "se-prevsize"; pasteBtn.textContent = "Paste spell text…";
   pasteBtn.addEventListener("click", () => pasteSpellDialog(Number(lvSel.value)));
+  const libBtn = document.createElement("button"); libBtn.className = "se-prevsize";
+  libBtn.textContent = "My spell library (" + Object.keys(state.spellLib || {}).length + ")\u2026";
+  libBtn.addEventListener("click", () => spellLibraryDialog());
   const res = document.createElement("div"); res.className = "se-spl-results";
-  add.append(inp, lvSel, pasteBtn, res);
+  add.append(inp, lvSel, pasteBtn, libBtn, res);
   page.appendChild(add);
   const credit = document.createElement("div"); credit.className = "se-spl-credit"; credit.textContent = SRD_CREDIT + " Spells from other books: use Paste.";
   page.appendChild(credit);
@@ -19041,7 +19252,8 @@ function renderSpellsPage(page){
     hits.forEach((r, i) => {
       const b = document.createElement("button"); if (i === at) b.className = "on";
       const n = document.createElement("b"); n.textContent = r.n; n.style.fontWeight = "600";
-      const m = document.createElement("span"); m.textContent = (r.l ? "Level " + r.l : "Cantrip") + " · " + r.s + (r.cl.length ? " · " + r.cl.join(", ") : "");
+      const m = document.createElement("span"); m.textContent = r.mine ? "My library \u00b7 " + (r.l ? "Level " + r.l : "Cantrip") + (r.s ? " \u00b7 " + r.s : "")
+        : (r.l ? "Level " + r.l : "Cantrip") + " \u00b7 " + r.s + (r.cl.length ? " \u00b7 " + r.cl.join(", ") : "");
       b.append(n, m);
       b.addEventListener("pointerdown", e => e.preventDefault());   /* keep focus in the box */
       b.addEventListener("click", () => pick(r));
@@ -19049,19 +19261,22 @@ function renderSpellsPage(page){
     });
     res.classList.toggle("open", hits.length > 0);
   };
-  const pick = r => { if (addSpellToSheet(srdToSpell(r))) renderSheetEditor(); };
+  const pick = r => { if (addSpellToSheet(r.mine ? {name:r.mine.name, lvl:r.mine.lvl, det:r.mine.det} : srdToSpell(r))) renderSheetEditor(); };
   const addTyped = () => { const v = inp.value.trim(); if (v && addSpellToSheet({ name:v, lvl:Number(lvSel.value), det:null })) renderSheetEditor(); };
   inp.addEventListener("input", async () => {
     const q = inp.value.trim().toLowerCase();
     if (q.length < 2){ hits = []; drawResults(); return; }
-    let list;
+    const own = spellLibList().filter(s => s.name.toLowerCase().includes(q))
+      .map(s => ({n:s.name, l:s.lvl, s:s.det?.school || "", cl:[], mine:s}));
+    let list = [];
     try { list = await loadSrdSpells(); }
-    catch (_) { hits = []; drawResults(); credit.textContent = "The free spell list couldn't load (it needs CORKBORK's website once). Type a name and press Enter, or use Paste."; return; }
+    catch (_) { credit.textContent = "The free spell list couldn't load (it needs CORKBORK's website once). Your library still works; or type a name and press Enter."; }
     if (inp.value.trim().toLowerCase() !== q) return;
+    const ownNames = new Set(own.map(o => o.n.toLowerCase()));
     const mine = r => myClass && r.cl.some(c => myClass.includes(c.toLowerCase())) ? 0 : 1;
-    hits = list.filter(r => r.n.toLowerCase().includes(q))
-      .sort((a, b) => (a.n.toLowerCase().startsWith(q) ? 0 : 1) - (b.n.toLowerCase().startsWith(q) ? 0 : 1) || mine(a) - mine(b) || a.l - b.l || a.n.localeCompare(b.n))
-      .slice(0, 12);
+    const free = list.filter(r => r.n.toLowerCase().includes(q) && !ownNames.has(r.n.toLowerCase()))
+      .sort((a, b) => (a.n.toLowerCase().startsWith(q) ? 0 : 1) - (b.n.toLowerCase().startsWith(q) ? 0 : 1) || mine(a) - mine(b) || a.l - b.l || a.n.localeCompare(b.n));
+    hits = [...own, ...free].slice(0, 14);
     at = 0; drawResults();
   });
   inp.addEventListener("keydown", e => {
@@ -19828,7 +20043,7 @@ function syncLockedPlaceholder(c){
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
-    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})),
+    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})), spellLib:syncClone((ws.spellLib || {})),
     favorites:(ws.favorites || []).filter(id => !priv.cards.has(id)),
     calCats:syncClone((ws.calCats || {})), calEvents:syncClone((ws.calEvents || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
@@ -19962,6 +20177,8 @@ function syncMergeWorkspace(base, local, remote){
   mergeMap("library", () => false, (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0));
   /* the mood log: one entry per day, newest edit of a day wins */
   mergeMap("mood", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  /* your spell library: newest edit of a spell wins */
+  mergeMap("spellLib", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   /* the calendar: its calendars and events, newest edit wins */
   mergeMap("calCats", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   mergeMap("calEvents", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
@@ -20948,6 +21165,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b126", [
+    "D&D sheet: My spell library. Import many spells at once (paste a whole page from a wiki or choose a text file); they're kept in your workspace and Drive, show up in every sheet's spell search, and can be edited. Spells pasted on a sheet are saved there too."
+  ]],
   ["b125", [
     "D&D sheet: a Spells tab. Search the free 5e spells (hover or tap one for its full details), paste any spell from D&D Beyond or a wiki, tick prepared spells, and tap slot circles as you use them.",
     "Print / PDF (in the open sheet, or right-click a sheet): a printable black-and-white character sheet in the classic layout, with a spell page for casters. Current HP, death saves, coins and slots are left blank for pencil."
