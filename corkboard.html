@@ -699,12 +699,11 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 .sf-meta b{font-weight:700; letter-spacing:.05em; text-transform:uppercase; font-size:7.5px; color:#8A7550;}
 .sf-portrait{width:42px; height:42px; border-radius:5px; object-fit:cover; flex:none; border:1px solid #C9B08A;}
 /* view switch: quiet until hovered, so it never competes with the sheet */
-.sf-viewtog{
-  flex:none; font:inherit; font-size:8.5px; font-weight:700; letter-spacing:.08em;
-  text-transform:uppercase; color:#8A7550; background:#EAD9BC;
-  border:1px solid #C9B08A; border-radius:4px; padding:3px 7px; cursor:pointer;
-}
-.sf-viewtog:hover{background:#DCC69E; color:#2C2415;}
+.sf-viewtog{flex:none; display:inline-flex; border:1px solid #C9B08A; border-radius:4px; overflow:hidden; background:#EAD9BC;}
+.sf-viewtog button{font:inherit; font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8A7550; background:none; border:none; padding:3px 7px; cursor:pointer;}
+.sf-viewtog button + button{border-left:1px solid #C9B08A;}
+.sf-viewtog button:hover{background:#DCC69E; color:#2C2415;}
+.sf-viewtog button.on{background:#5A4A2E; color:#F4ECDD;}
 
 .sf-abils{display:grid; grid-template-columns:repeat(6,1fr); gap:3px; padding:7px 9px 5px;}
 .sf-ab{background:#EAD9BC; border:1px solid #C9B08A; border-radius:4px; text-align:center; padding:3px 0 2px;}
@@ -793,11 +792,8 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 /* sheet fullscreen editor (reuses lightbox backdrop) */
 #sheetEditor{position:fixed; inset:0; z-index:152; background:rgba(10,11,12,.9); display:none; flex-direction:column; align-items:center;}
 #sheetEditor.open{display:flex;}
-#seClose{position:fixed; top:14px; right:16px; width:38px; height:38px; border-radius:50%; color:#fff; font-size:19px; background:rgba(255,255,255,.08); z-index:2;}
-#seClose:hover{background:rgba(255,255,255,.16);}
-#sePdf{position:fixed; top:16px; right:64px; height:34px; padding:0 14px; border-radius:17px; color:#F4ECDD; font-size:13px; font-weight:600; background:rgba(255,255,255,.1); border:1px solid rgba(244,236,221,.35); z-index:2;}
-#sePdf:hover{background:rgba(255,255,255,.18);}
-@media (max-width:700px){ #sePdf{top:auto; bottom:14px; right:14px; z-index:6; box-shadow:0 4px 14px rgba(0,0,0,.35); background:#5A4A2E;} }
+/* the first-run bar sits over the sheet's own header buttons; it waits */
+body.in-sheet #welcomeBar{display:none;}
 #seTabs{display:flex; gap:6px; padding:12px 0 8px; z-index:2;}
 #seTabs button{padding:6px 14px; border-radius:6px 6px 0 0; font-size:13px; color:#C9B08A; background:rgba(0,0,0,.25); border:1px solid transparent;}
 #seTabs button.sel{background:#F4ECDD; color:#2C2415; font-weight:600;}
@@ -821,6 +817,189 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 .se-abil .ab-mod{margin-left:auto; font-size:18px; font-weight:700; font-family:Georgia,serif; width:40px; text-align:center;}
 .se-block{border:1px solid #C9B08A; border-radius:5px; padding:12px 14px; margin-bottom:14px; background:#FBF6EC;}
 .se-block h3{font-family:Georgia,serif; font-size:15px; margin-bottom:9px; color:#5A4A2E; border-bottom:1px solid #D8C7A5; padding-bottom:5px;}
+/* D&D sheet viewer ("Beyond") and editor pages */
+#seScroll.bz-host{width:min(1220px,98vw); background:transparent;}
+.bz{--acc:#5A4A2E; background:#F4ECDD; color:#2C2415; font-family:Georgia,serif; padding:12px 14px 14px; border-radius:6px 8px 0 0; min-height:100%;}
+.bz-face{height:100%; overflow:auto; border-radius:6px;}
+.bz .bz-lab, .se-ed .bz-lab{font:700 8.5px Verdana,sans-serif; letter-spacing:.07em; text-transform:uppercase; color:#8A7550;}
+.bz-box{background:#FBF6EC; border:1px solid #C9B08A; border-radius:6px;}
+.bz-head{display:flex; align-items:center; gap:10px; margin-bottom:9px; flex-wrap:wrap;}
+.bz-port{width:54px; height:54px; border-radius:6px; overflow:hidden; background:#EAD9BC; border:1px solid #C9B08A; display:flex; align-items:center; justify-content:center; font:700 24px Georgia; color:#8A7550; flex:none;}
+.bz-port img{width:100%; height:100%; object-fit:cover;}
+.bz-name{font-size:21px; font-weight:700; line-height:1.1;}
+.bz-sub{font:11px Verdana,sans-serif; color:#6B5B3E; margin-top:3px;}
+.bz-gap{flex:1;}
+.bz-grp{display:flex; gap:6px; align-items:center;}
+.bz-sep{width:1px; height:26px; background:#C9B08A; margin:0 8px;}
+.bz-btn{font:700 11px Verdana,sans-serif; padding:6px 11px; border:1px solid #C9B08A; border-radius:5px; background:#EAD9BC; color:#5A4A2E; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; cursor:pointer;}
+.bz-btn:hover{background:#DCC69E;}
+.bz-btn.p{background:var(--acc); color:#F4ECDD; border-color:var(--acc);}
+.bz-btn.o{background:transparent; border-color:#8A7550;}
+.bz-btn.x{background:none; border:none; font-size:16px; padding:4px 6px;}
+.bz-btn.heal{background:#e3efe0; color:#3F7A4A; border-color:#9cc49a; justify-content:center; padding:2px 6px; font-size:9.5px;}
+.bz-btn.dmg{background:#f3e0dc; color:#9a3a2c; border-color:#d9a197; justify-content:center; padding:2px 6px; font-size:9.5px;}
+svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px;}
+.bz-top{display:grid; grid-template-columns:repeat(9, minmax(64px, 1fr)) minmax(250px, 2.6fr); gap:7px; margin-bottom:8px;}
+.bz-ab{text-align:center; padding:5px 0 0; position:relative; height:82px;}
+.bz-ab .bz-lab{font-size:7.5px; letter-spacing:.03em;}
+.bz-roll.bz-abm{font:700 24px Georgia; border:none; background:none; padding:0; margin-top:2px;}
+.bz-abs{position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); width:34px; border:1px solid #C9B08A; border-radius:10px; background:#F4ECDD; font:11px Verdana; padding:1px 0;}
+.bz-st{text-align:center; padding:6px 3px; height:82px; display:flex; flex-direction:column; justify-content:center; gap:3px;}
+.bz-v{font:700 22px Georgia;} .bz-v small{font-size:11px;}
+.bz-insp{width:26px; height:26px; margin:0 auto; border:2px solid #C9B08A; border-radius:50%; background:transparent; cursor:pointer;}
+.bz-insp.on{background:var(--acc); border-color:var(--acc); box-shadow:inset 0 0 0 3px #FBF6EC;}
+.bz-hp{display:grid; grid-template-columns:80px 1fr 64px; gap:8px; align-items:center; padding:6px 9px; height:82px;}
+.bz-hpb{display:flex; flex-direction:column; gap:3px;}
+.bz-hpb input{width:100%; border:1px solid #C9B08A; border-radius:4px; padding:2px; text-align:center; font-size:12px; background:#fff; color:#2C2415;}
+.bz-hpv{text-align:center;}
+.bz-hpn{font:700 28px Georgia; white-space:nowrap;}
+.bz-hps{color:#8A7550; font-size:22px; margin:0 6px; font-weight:400;}
+.bz-hpc.low{color:#9a3a2c;}
+.bz-temp{border:1px dashed #C9B08A; border-radius:5px; padding:4px 0; background:transparent; cursor:pointer; text-align:center;}
+.bz-tv{font:700 18px Georgia; color:#2C2415;}
+.bz-main{display:grid; grid-template-columns:220px 228px 1fr; gap:8px; margin-top:14px; align-items:start;}
+.bz-col{display:flex; flex-direction:column; gap:8px;}
+.bz-sec{padding:7px 10px;}
+.bz-sec h4{font-size:13px; color:#5A4A2E; border-bottom:1px solid #D8C7A5; padding-bottom:3px; margin-bottom:5px;}
+.bz-ia{display:flex; justify-content:space-around; text-align:center;}
+.bz-ac{font:700 20px Georgia;}
+.bz-saves{display:grid; grid-template-columns:1fr 1fr; gap:3px 8px;}
+.bz-save{display:flex; align-items:center; gap:4px; font:11.5px Verdana;}
+.bz-save .bz-roll{margin-left:auto;}
+.bz-dot{display:inline-block; width:10px; height:10px; border-radius:50%; border:1.5px solid #5A4A2E; flex:none;}
+.bz-dot.on{background:#5A4A2E;}
+.bz-dot.half{background:linear-gradient(90deg,#5A4A2E 50%,transparent 50%);}
+.bz-dot.exp{background:#5A4A2E; box-shadow:0 0 0 2px #FBF6EC,0 0 0 3.5px #5A4A2E;}
+.bz-pas{display:flex; align-items:center; gap:8px; font:11px Verdana; margin:3px 0;}
+.bz-pas b{border:1px solid #C9B08A; border-radius:4px; padding:1px 6px; background:#F4ECDD; font-size:12.5px; min-width:28px; text-align:center;}
+.bz-sense{font:11px Verdana; margin-top:4px;}
+.bz-profs .bz-lab{margin-top:5px;}
+.bz-pt{font:11px/1.45 Verdana; white-space:pre-wrap;}
+.bz-empty{font:11.5px Verdana; color:#8A7550; padding:4px 0;}
+.bz-sk{display:flex; align-items:center; gap:6px; font:11.5px Verdana; padding:2px 0; border-bottom:1px solid #EADFC9;}
+.bz-ska{font-size:9px; color:#8A7550; width:24px;}
+.bz-skn{flex:1;}
+.bz-roll{font:700 11.5px Verdana; border:1px solid #C9B08A; border-radius:4px; background:#F4ECDD; color:#2C2415; padding:1px 6px; min-width:28px; cursor:pointer;}
+.bz-roll:hover{background:var(--acc); color:#F4ECDD; border-color:var(--acc);}
+.bz-legend{font:10px Verdana; color:#8A7550; margin-top:5px; display:flex; gap:9px; flex-wrap:wrap; align-items:center;}
+.bz-legend span{display:flex; gap:4px; align-items:center;}
+.bz-tabsbox{min-height:420px; overflow:hidden;}
+.bz-tabs{display:flex; gap:2px; border-bottom:2px solid var(--acc); padding:6px 4px 0; flex-wrap:wrap;}
+.bz-tab{font:700 11px Verdana; padding:7px 10px; color:#8A7550; border-radius:5px 5px 0 0; background:none; border:none; cursor:pointer;}
+.bz-tab.on{background:var(--acc); color:#F4ECDD;}
+.bz-panel{padding:8px 10px;}
+.bz-filters{display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap;}
+.bz-fl{font:700 9.5px Verdana; padding:3px 8px; border-radius:10px; background:#EAD9BC; color:#5A4A2E; border:none; cursor:pointer;}
+.bz-fl.on{background:var(--acc); color:#F4ECDD;}
+.bz-t{width:100%; border-collapse:collapse; font:11.5px Verdana;}
+.bz-t th{font-size:8px; letter-spacing:.06em; text-transform:uppercase; color:#8A7550; text-align:left; padding:3px 5px; border-bottom:1px solid #D8C7A5;}
+.bz-t td{padding:4px 5px; border-bottom:1px solid #EADFC9; vertical-align:middle;}
+.bz-nm b{font:700 13px Georgia; display:block;}
+.bz-small{font-size:9.5px; color:#8A7550; display:block;}
+.bz-note{font-size:10px; color:#6B5B3E;}
+.bz-click{cursor:pointer;}
+.bz-click:hover b{text-decoration:underline dotted;}
+.bz-chips{display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-top:9px;}
+.bz-chips .bz-lab{margin-right:4px;}
+.bz-chip{font:11px Verdana; border:1px solid #C9B08A; border-radius:10px; padding:2px 8px; background:#FBF6EC; color:#2C2415; cursor:pointer;}
+.bz-chip:hover{background:var(--acc); color:#F4ECDD;}
+#bzPop{position:fixed; z-index:178; width:300px; background:#FBF6EC; color:#2C2415; border:1px solid #C9B08A; border-radius:7px; box-shadow:0 10px 26px rgba(0,0,0,.35); padding:9px 11px; font:12px/1.45 Georgia;}
+#bzPop b{display:block; font-size:14px; margin-bottom:3px;}
+.bz-res{margin-top:10px; font:11.5px Verdana;}
+.bz-resrow{display:flex; align-items:center; gap:5px; margin-top:4px;}
+.bz-resrow > span:first-child{margin-right:4px;}
+.bz-slot{width:13px; height:13px; border:1.5px solid var(--acc); border-radius:3px; background:transparent; padding:0; cursor:pointer;}
+.bz-slot.u{background:var(--acc);}
+.bz-coins{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+.bz-coin{display:flex; flex-direction:column; align-items:center; gap:2px;}
+.bz-coin input{width:58px; border:1px solid #C9B08A; border-radius:4px; padding:3px; text-align:center; background:#fff; font-size:12px; color:#2C2415;}
+.bz-list{font:12px/1.6 Verdana; margin-left:18px;}
+.bz-p{font:12.5px/1.5 Georgia; margin:0 0 8px; white-space:pre-wrap;}
+.bz-panel > .bz-lab{margin-top:8px;}
+.bz-hr{border:none; border-top:1px solid #D8C7A5; margin:8px 0;}
+.bz-spst{display:flex; gap:24px; justify-content:center; text-align:center; margin-bottom:6px;}
+.bz-spst b{font:700 17px Georgia; display:block;}
+.bz-lvlh{display:flex; align-items:center; gap:8px; color:var(--acc); font:700 11px Verdana; letter-spacing:.05em; text-transform:uppercase; margin:9px 0 2px; border-bottom:1.5px solid var(--acc); padding-bottom:2px;}
+.bz-slots{margin-left:auto; display:flex; gap:3px; align-items:center; font-size:9px;}
+.bz-cast{width:44px;}
+.bz-castb{font:700 8.5px Verdana; background:var(--acc); color:#F4ECDD; border:none; border-radius:3px; padding:3px 6px; cursor:pointer; letter-spacing:.04em; text-transform:uppercase;}
+.bz-atw{font:700 7.5px Verdana; color:#8A7550; letter-spacing:.04em;}
+.bz-spt td:nth-child(3), .bz-spt td:nth-child(4){white-space:nowrap;}
+@media (max-width:900px){
+  .bz-top{grid-template-columns:repeat(6, 1fr);}
+  .bz-hp{grid-column:1/-1;}
+  .bz-main{grid-template-columns:1fr;}
+  .bz-head .bz-gap{flex-basis:100%; height:0;}
+  .bz-sep{display:none;}
+  .bz-ab .bz-lab{font-size:6.5px; letter-spacing:0;}
+}
+#diceTray{position:fixed; right:16px; bottom:16px; z-index:420; display:flex; flex-direction:column; gap:6px; align-items:flex-end; pointer-events:none;}
+.dice-card{pointer-events:auto; background:#2C2415; color:#F4ECDD; border-radius:8px; padding:8px 12px; font:12px/1.5 Verdana; box-shadow:0 8px 22px rgba(0,0,0,.45); min-width:220px; cursor:pointer; animation:diceIn .18s ease-out;}
+.dice-card.crit{box-shadow:0 0 0 2px #E0C25C, 0 8px 22px rgba(0,0,0,.45);}
+.dice-card.fumble{box-shadow:0 0 0 2px #C0392B, 0 8px 22px rgba(0,0,0,.45);}
+.dice-h b{font-size:20px;}
+.dice-r{display:inline-block; border:1px solid #8A7550; border-radius:4px; padding:0 5px;}
+@keyframes diceIn{from{transform:translateY(8px); opacity:0}}
+/* editor pages */
+.se-ed{--acc:#5A4A2E; background:#F4ECDD; color:#2C2415; font-family:Georgia,serif; padding:12px 14px 16px; min-height:100%;}
+.se-edhead{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+.se-edtitle{font:700 18px Georgia; flex:1;}
+.se-edbody{display:grid; grid-template-columns:200px 1fr; gap:14px; align-items:start;}
+.se-nav{display:flex; flex-direction:column; gap:2px; background:#FBF6EC; border:1px solid #C9B08A; border-radius:6px; padding:6px; position:sticky; top:0;}
+.se-navb{display:flex; align-items:center; gap:6px; text-align:left; padding:8px 10px; border-radius:5px; border:none; background:none; color:#5A4A2E; font:12px Verdana; cursor:pointer;}
+.se-navb:hover{background:#EAD9BC;}
+.se-navb.on{background:var(--acc); color:#F4ECDD; font-weight:700;}
+.se-ck{margin-left:auto; font-size:10px; color:#3F7A4A;}
+.se-navb.on .se-ck{color:#cfe8c9;}
+.se-ed .se-page{padding:12px 14px; background:#FBF6EC; border:1px solid #C9B08A; border-radius:6px; display:flex; flex-direction:column; gap:12px;}
+.se-h{font:700 18px Georgia;}
+.se-grid{display:grid; gap:12px;}
+.se-hint{font:11px Verdana; color:#8A7550; margin-top:3px;}
+.se-inline{display:flex; gap:10px; align-items:center; font:12px Verdana;}
+.se-check{display:flex; gap:7px; align-items:center; font:12.5px Verdana;}
+.se-check input{width:auto;}
+.se-checkgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px 14px;}
+.se-checkgrid b{margin-left:auto;}
+.se-foot{display:flex; justify-content:space-between; border-top:1px solid #D8C7A5; padding-top:10px;}
+.se-imgrow{display:flex; gap:16px; align-items:flex-start;}
+.se-imgside{display:flex; flex-direction:column; gap:8px; max-width:280px;}
+.se-imgempty{width:220px; height:220px; border:2px dashed #C9B08A; border-radius:6px; display:flex; align-items:center; justify-content:center; font:12px Verdana; color:#8A7550;}
+.se-crop{position:relative; width:220px; height:220px; overflow:hidden; border-radius:6px; background:#EAD9BC; cursor:grab; touch-action:none;}
+.se-crop img{position:absolute; max-width:none; user-select:none; -webkit-user-select:none; pointer-events:none;}
+.se-cropframe{position:absolute; inset:0; box-shadow:inset 0 0 0 2px #fff, inset 0 0 0 3px rgba(0,0,0,.35); border-radius:6px; pointer-events:none;}
+.se-zoom{width:220px; margin-top:6px;}
+.se-swatches{display:flex; flex-wrap:wrap; gap:6px;}
+.se-sw{width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #C9B08A; cursor:pointer;}
+.se-sw.on{box-shadow:0 0 0 2.5px #2C2415;}
+.se-meth{display:flex; gap:5px; flex-wrap:wrap;}
+.se-dice{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.se-rl{width:104px; padding:7px; text-align:center; border:1px solid #C9B08A; border-radius:6px; background:#FBF6EC; cursor:pointer; color:#2C2415;}
+.se-rl.used{opacity:.45;}
+.se-rl.pick{border:2px solid var(--acc); opacity:1;}
+.se-rlt{font:700 24px Georgia;}
+.se-d6{display:inline-block; width:19px; height:19px; border:1.5px solid #5A4A2E; border-radius:4px; font:700 11px/16px Verdana; margin:1px; background:#fff;}
+.se-d6.x{opacity:.35; text-decoration:line-through;}
+.se-asg{display:grid; grid-template-columns:110px repeat(6, 1fr); gap:6px; align-items:center; font:11.5px Verdana;}
+.se-asgh{font-weight:700; text-align:center; font-size:10px; color:#8A7550;}
+.se-asgl{color:#6B5B3E;}
+.se-asgc{text-align:center; min-height:30px; display:flex; align-items:center; justify-content:center; gap:4px;}
+.se-asgc input{width:100%; text-align:center; font:700 16px Georgia; border:1px solid #C9B08A; border-radius:5px; padding:4px 0; background:#fff; color:#2C2415;}
+.se-asgc.tot{background:#EAD9BC; border-radius:5px; flex-direction:column; gap:0; padding:3px 0;}
+.se-asgc.tot b{font:700 17px Georgia;} .se-asgc.tot span{font-size:10px; color:#6B5B3E;}
+.se-asgc.pts button{width:24px; height:24px; border:1px solid #C9B08A; border-radius:4px; background:#EAD9BC; font-weight:700; cursor:pointer;}
+.se-asgc.pts button:disabled{opacity:.35;}
+.se-asgc.pts b{font:700 16px Georgia; min-width:22px;}
+.se-drop{width:100%; padding:5px 0; border:1px solid #D8C7A5; border-radius:5px; background:#fff; font:700 16px Georgia; color:#2C2415; cursor:pointer;}
+.se-drop.ready{border:2px dashed var(--acc);}
+.se-drop.old{color:#B8A684; font-weight:400;}
+.se-skilllist{display:grid; grid-template-columns:1fr 1fr; gap:2px 16px;}
+.se-skrow{display:flex; align-items:center; gap:7px; font:12px Verdana; padding:4px 4px; border:none; border-bottom:1px solid #EADFC9; background:none; text-align:left; cursor:pointer; color:#2C2415;}
+.se-skrow:hover{background:#F4ECDD;}
+.se-skrow b{margin-left:auto;}
+.se-atk5{grid-template-columns:2fr 70px 1.6fr 80px 1.6fr 28px !important;}
+.se-resrow{display:grid; grid-template-columns:2fr 70px 1.4fr 28px; gap:8px; margin-bottom:6px;}
+.se-resrow input, .se-resrow select, .se-atk5 input{background:#FBF6EC; border:1px solid #C9B08A; border-radius:4px; padding:4px 6px; font:13px Georgia; color:#2C2415; min-width:0;}
+@media (max-width:760px){ .se-edbody{grid-template-columns:1fr;} .se-nav{position:static; flex-direction:row; flex-wrap:wrap;} .se-skilllist, .se-checkgrid{grid-template-columns:1fr;} .se-imgrow{flex-direction:column;} .se-asg{grid-template-columns:70px repeat(6,1fr);} }
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -3403,8 +3582,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 
 <!-- character sheet fullscreen editor -->
 <div id="sheetEditor">
-  <button id="seClose" title="Close (Esc)">✕</button>
-  <button id="sePdf" title="Save a printable PDF (US Letter, black and white)">Print / PDF</button>
   <div id="seTabs"></div>
   <div id="seScroll"></div>
 </div>
@@ -3931,7 +4108,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b129";
+window.BUILD = "b130";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6865,11 +7042,18 @@ function sheetSubtitle(sh){
 function spellStats(sh){
   const ab = sh.spellAbility;
   if (!ab || !SHEET_ABILITIES.includes(ab)) return null;
-  const pb = Number(sh.profBonus) || 0;
-  const mod = abilityMod(sh.abilities[ab]);
+  const pb = sheetProf(sh);
+  const mod = sheetMod(sh, ab);
   return { ab, mod, dc: 8 + pb + mod, atk: pb + mod };
 }
-function sheetView(c){ return c.sheetView === "full" ? "full" : "simple"; }
+function sheetView(c){ return c.sheetView === "full" || c.sheetView === "beyond" ? c.sheetView : "simple"; }
+/* what the old single "Other proficiencies" box and the new split boxes print as */
+function sheetProfText(sh){
+  return [["Armour", sh.profArmor], ["Weapons", sh.profWeapons], ["Tools", sh.profTools], ["Languages", sh.languages]]
+    .filter(([, v]) => String(v || "").trim()).map(([l, v]) => l + ": " + String(v).trim())
+    .concat(String(sh.otherProfs || "").trim() ? [String(sh.otherProfs).trim()] : []).join("\n");
+}
+function sheetFeatureText(sh){ return [sh.raceTraits, sh.features].map(t => String(t || "").trim()).filter(Boolean).join("\n\n"); }
 
 /* Shared builders -------------------------------------------------------- */
 function sfStat(lab, val){
@@ -6888,13 +7072,13 @@ function sfPanel(title, text, cls){
    throw, and the skills it governs. This is the visual separation by
    modifier type — an ability is read once and its dependents sit under it. */
 function sfAbilityBlock(sh, ab, pb, opts){
-  const mod = abilityMod(sh.abilities[ab]);
+  const mod = sheetMod(sh, ab);
   const blk = document.createElement("div"); blk.className = "sf-abblk";
 
   const hd = document.createElement("div"); hd.className = "sf-abblk-h";
   const nm = document.createElement("span"); nm.className = "sf-abblk-n";
   nm.textContent = opts && opts.longNames ? ABILITY_FULL[ab] : ab;
-  const sc = document.createElement("span"); sc.className = "sf-abblk-s"; sc.textContent = sh.abilities[ab];
+  const sc = document.createElement("span"); sc.className = "sf-abblk-s"; sc.textContent = sheetScore(sh, ab);
   const md = document.createElement("span"); md.className = "sf-abblk-m"; md.textContent = fmtMod(mod);
   hd.append(nm, sc, md); blk.appendChild(hd);
 
@@ -6906,9 +7090,9 @@ function sfAbilityBlock(sh, ab, pb, opts){
     const m = document.createElement("span"); m.className = "sf-sk-m"; m.textContent = fmtMod(value);
     r.append(dot, n, m); return r;
   };
-  rows.appendChild(row("Saving Throw", mod + (sh.saves[ab] ? pb : 0), !!sh.saves[ab], "sf-save"));
+  rows.appendChild(row("Saving Throw", saveBonus(sh, ab), !!sh.saves?.[ab], "sf-save"));
   for (const name of SKILLS_BY_ABILITY[ab])
-    rows.appendChild(row(name, mod + (sh.skills[name] ? pb : 0), !!sh.skills[name]));
+    rows.appendChild(row(name, skillBonus(sh, name), skillProfLevel(sh, name) >= 1));
   blk.appendChild(rows);
   return blk;
 }
@@ -6983,8 +7167,9 @@ function sfHpBlock(c, sh){
 }
 
 function buildSheet(c, el){
-  const sh = c.sheet || blankSheet();
-  const pb = Number(sh.profBonus) || 0;
+  if (sheetView(c) === "beyond"){ buildBeyondSheet(c, el, {face:true}); return; }
+  const sh = { ...blankSheet(), ...(c.sheet || {}) };
+  const pb = sheetProf(sh);
   const full = sheetView(c) === "full";
   const wrap = document.createElement("div");
   wrap.className = "sheet-full" + (full ? " sf-mode-full" : " sf-mode-simple");
@@ -7018,26 +7203,14 @@ function buildSheet(c, el){
   }
   head.appendChild(hl);
   /* view switch, right of the name */
-  const vt = document.createElement("button"); vt.className = "sf-viewtog";
-  vt.textContent = full ? "Full" : "Simple";
-  vt.title = "Switch between the simple summary and the full character sheet";
-  vt.addEventListener("pointerdown", e => e.stopPropagation());
-  vt.addEventListener("click", e => {
-    e.stopPropagation();
-    pushUndo();
-    const next = full ? "simple" : "full";
-    const sz = next === "full" ? { w: 640, h: 760 } : { w: 420, h: 520 };
-    patchCard(c.id, { sheetView: next, w: Math.max(c.w, sz.w), h: Math.max(c.h, sz.h) });
-    invalidateCardEls(c.id); markDirty(); renderAll();
-  });
-  head.appendChild(vt);
+  head.appendChild(sheetViewSwitch(c));
   wrap.appendChild(head);
 
   /* ---- combat strip ---- */
   const combat = document.createElement("div"); combat.className = "sf-combat";
   combat.append(
     sfStat("AC", sh.ac),
-    sfStat("INIT", sh.initiative || fmtMod(abilityMod(sh.abilities.DEX))),
+    sfStat("INIT", fmtMod(initBonus(sh))),
     sfStat("SPD", sh.speed),
     sfStat("PROF", fmtMod(pb))
   );
@@ -7078,8 +7251,8 @@ function buildSheet(c, el){
     for (const ab of SHEET_ABILITIES){
       const cell = document.createElement("div"); cell.className = "sf-ab";
       const l = document.createElement("div"); l.className = "sf-ab-l"; l.textContent = ab;
-      const m = document.createElement("div"); m.className = "sf-ab-m"; m.textContent = fmtMod(abilityMod(sh.abilities[ab]));
-      const sc = document.createElement("div"); sc.className = "sf-ab-s"; sc.textContent = sh.abilities[ab];
+      const m = document.createElement("div"); m.className = "sf-ab-m"; m.textContent = fmtMod(sheetMod(sh, ab));
+      const sc = document.createElement("div"); sc.className = "sf-ab-s"; sc.textContent = sheetScore(sh, ab);
       cell.append(l, m, sc); abils.appendChild(cell);
     }
     wrap.appendChild(abils);
@@ -7092,7 +7265,7 @@ function buildSheet(c, el){
     const side = document.createElement("div"); side.className = "sf-side";
     side.append(
       sfPanel("Attacks", atkText),
-      sfPanel("Features & Traits", sh.features),
+      sfPanel("Features & Traits", sheetFeatureText(sh)),
       sfPanel("Equipment", sh.equipment)
     );
     /* Full-body art is optional and only appears when there is art to show.
@@ -7122,8 +7295,8 @@ function buildSheet(c, el){
     const colB = document.createElement("div"); colB.className = "sf-col";
     colB.append(
       sfPanel("Attacks & Spellcasting", atkText, "grow"),
-      sfPanel("Features & Traits", sh.features, "grow"),
-      sfPanel("Other Proficiencies & Languages", sh.otherProfs)
+      sfPanel("Features & Traits", sheetFeatureText(sh), "grow"),
+      sfPanel("Other Proficiencies & Languages", sheetProfText(sh))
     );
     body.appendChild(colB);
 
@@ -7291,6 +7464,166 @@ const PALETTES = [
    Take the first eight Jewel colours so this row cannot drift back to muted
    tones or grow past one compact line when the full Jewel library expands. */
 const ACCENTS = PALETTES.find(p => p.name === "Jewel").colors.slice(0, 8);
+/* ---------------- D&D sheet: rules helpers -------------------------------
+   Everything derived is worked out here, never stored, so it can't drift:
+   proficiency from level, scores with race/other bonuses, skill and save
+   bonuses (half proficiency, proficiency, expertise), initiative. Each one
+   can still be overridden where a homebrew or other rule set needs it. */
+const SKILL_AB = Object.fromEntries(SHEET_SKILLS);
+function sheetLevel(sh){
+  const n = parseInt(sh.level || (String(sh.classLevel || "").match(/\d+/) || [])[0], 10);
+  return n > 0 && n <= 30 ? n : 0;
+}
+function sheetProf(sh){
+  const lv = sheetLevel(sh);
+  if (lv && !sh.profManual) return 2 + Math.floor((lv - 1) / 4);
+  return Number(sh.profBonus) || 0;
+}
+/* the score you'd write down: the base plus every bonus (race, feat, item) */
+function sheetScore(sh, ab){
+  let v = Number(sh.abilities?.[ab] ?? 10) || 0;
+  for (const b of Object.values(sh.abilityBonus || {})) v += Number(b?.[ab]) || 0;
+  return v;
+}
+function sheetMod(sh, ab){ return abilityMod(sheetScore(sh, ab)); }
+/* 0 none, 0.5 half (Jack of All Trades), 1 proficient, 2 expertise */
+function skillProfLevel(sh, name){
+  const v = sh.skills?.[name];
+  if (v === true) return 1;
+  if (typeof v === "number" && v > 0) return v;
+  return sh.jack ? 0.5 : 0;
+}
+function skillBonus(sh, name){ return sheetMod(sh, SKILL_AB[name]) + Math.floor(sheetProf(sh) * skillProfLevel(sh, name)); }
+function saveBonus(sh, ab){ return sheetMod(sh, ab) + (sh.saves?.[ab] ? sheetProf(sh) : 0); }
+function initBonus(sh){
+  const o = parseInt(String(sh.initiative ?? "").replace(/−/g, "-"), 10);
+  if (!isNaN(o)) return o;
+  return sheetMod(sh, "DEX") + (sh.jack ? Math.floor(sheetProf(sh) / 2) : 0);
+}
+function passiveScore(sh, skill){ return 10 + skillBonus(sh, skill); }
+
+/* ---------------- dice ----------------------------------------------------
+   "+5" rolls a d20 with that bonus; "1d8+3", "2d10", "1d4-1" roll as written. */
+function rollD(sides){
+  const a = new Uint32Array(1); crypto.getRandomValues(a);
+  return 1 + (a[0] % sides);
+}
+function rollExpr(expr){
+  const s = String(expr ?? "").replace(/\s+/g, "").replace(/−/g, "-");
+  if (/^[+-]?\d+$/.test(s) && /^[+-]/.test(s)) return rollExpr("1d20" + s);
+  const groups = [], re = /([+-]?)(\d*)d(\d+)|([+-]?)(\d+)/gi;
+  let mod = 0, m, any = false;
+  while ((m = re.exec(s))){
+    any = true;
+    if (m[3]){
+      const n = Math.min(100, parseInt(m[2] || "1", 10)), d = Math.min(1000, parseInt(m[3], 10)), sign = m[1] === "-" ? -1 : 1;
+      const rolls = Array.from({length:n}, () => rollD(d));
+      groups.push({n, d, sign, rolls});
+    } else mod += (m[4] === "-" ? -1 : 1) * parseInt(m[5], 10);
+  }
+  if (!any) return null;
+  const total = groups.reduce((t, g) => t + g.sign * g.rolls.reduce((a, b) => a + b, 0), 0) + mod;
+  return {total, groups, mod};
+}
+/* the result card, bottom right, above everything; a few stack up */
+function showRoll(label, expr, kind){
+  const r = rollExpr(expr); if (!r) return null;
+  let tray = $("#diceTray");
+  if (!tray){ tray = document.createElement("div"); tray.id = "diceTray"; document.body.appendChild(tray); }
+  const c = document.createElement("div"); c.className = "dice-card";
+  const nat = r.groups.length === 1 && r.groups[0].d === 20 && r.groups[0].n === 1 ? r.groups[0].rolls[0] : 0;
+  const head = document.createElement("div"); head.className = "dice-h";
+  const tot = document.createElement("b"); tot.textContent = r.total;
+  if (nat === 20) c.classList.add("crit"); if (nat === 1) c.classList.add("fumble");
+  head.append("🎲 ", tot, " " + (kind || "") + (label ? " · " + label : ""));
+  const det = document.createElement("div"); det.className = "dice-d";
+  r.groups.forEach((g, i) => {
+    if (i || g.sign < 0) det.append(g.sign < 0 ? " − " : " + ");
+    const sp = document.createElement("span"); sp.className = "dice-r"; sp.textContent = g.n + "d" + g.d + ": " + g.rolls.join(", ");
+    det.appendChild(sp);
+  });
+  if (r.mod) det.append(r.mod < 0 ? " − " + -r.mod : " + " + r.mod);
+  if (nat === 20) det.append(" · natural 20!"); else if (nat === 1) det.append(" · natural 1");
+  c.append(head, det);
+  c.addEventListener("click", () => c.remove());
+  tray.prepend(c);
+  while (tray.children.length > 3) tray.lastChild.remove();
+  setTimeout(() => c.remove(), 9000);
+  return r;
+}
+/* a number or dice you can tap to roll */
+function rollBtn(text, expr, label, kind){
+  const b = document.createElement("button"); b.type = "button"; b.className = "bz-roll"; b.textContent = text;
+  b.title = "Roll " + (kind || "") + (label ? " for " + label : "");
+  b.addEventListener("pointerdown", e => e.stopPropagation());
+  b.addEventListener("click", e => { e.stopPropagation(); showRoll(label, expr, kind); });
+  return b;
+}
+
+/* ---------------- spells at the table ------------------------------------
+   Reads a spell's own text for what the sheet needs in play: whether it is
+   an attack or a save, its damage or healing dice (cantrips grow at 5th,
+   11th and 17th level), and short forms for time, range and duration. */
+const DAMAGE_TYPES = "acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder";
+function spellPlay(sh, s){
+  const d = s.det || {}, text = (d.desc || "") + " " + (d.higher || "");
+  const st = spellStats(sh);
+  const out = {hit:"", hitRoll:"", dmg:"", dmgType:"", heal:false};
+  if (/spell attack/i.test(d.desc || "") && st){ out.hit = fmtMod(st.atk); out.hitRoll = fmtMod(st.atk); }
+  else {
+    const sv = /\b(strength|dexterity|constitution|intelligence|wisdom|charisma) saving throw/i.exec(d.desc || "");
+    if (sv) out.hit = sv[1].slice(0, 3).toUpperCase() + (st ? " " + st.dc : "");
+  }
+  let m = new RegExp("(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)\\s+(" + DAMAGE_TYPES + ")\\s+damage", "i").exec(d.desc || "");
+  if (m){ out.dmg = m[1].replace(/\s+/g, ""); out.dmgType = m[2].toLowerCase(); }
+  else if ((m = /regains?\s+(?:a number of\s+)?hit points\s+equal to\s+(\d+d\d+)(\s*\+\s*your spellcasting ability modifier)?/i.exec(d.desc || ""))){
+    out.dmg = m[1] + (m[2] && st ? (st.mod >= 0 ? "+" : "") + st.mod : ""); out.heal = true;
+  }
+  if (out.dmg && s.lvl === 0 && /\b(5th|11th|17th) level\b/i.test(text)){
+    const lv = sheetLevel(sh), tier = lv >= 17 ? 4 : lv >= 11 ? 3 : lv >= 5 ? 2 : 1;
+    out.dmg = out.dmg.replace(/^(\d+)d/, (_, n) => (Number(n) * tier) + "d");
+  }
+  return out;
+}
+function spellTimeShort(t){
+  t = String(t || "");
+  if (/^1 action/i.test(t)) return "1A";
+  if (/bonus action/i.test(t)) return "1BA";
+  if (/reaction/i.test(t)) return "1R";
+  let m = /^(\d+)\s*minutes?/i.exec(t); if (m) return m[1] + "m";
+  m = /^(\d+)\s*hours?/i.exec(t); if (m) return m[1] + "h";
+  return t;
+}
+function spellNotesShort(d){
+  d = d || {};
+  const dur = String(d.dur || "").replace(/^concentration,?\s*/i, "").replace(/^up to\s*/i, "")
+    .replace(/minutes?/i, "min").replace(/hours?/i, "hr").replace(/rounds?/i, "rnd");
+  const parts = [];
+  if (dur && !/^instantaneous$/i.test(dur)) parts.push("D: " + dur + (d.conc ? " ◆" : ""));
+  else if (d.conc) parts.push("◆ conc.");
+  const comp = String(d.comp || "").replace(/\s*\(.*$/, "").trim();
+  if (comp) parts.push(comp);
+  if (d.ritual) parts.push("ritual");
+  return parts.join(", ");
+}
+function spellRangeShort(r){ return String(r || "").replace(/\bfeet\b/i, "ft").replace(/\bfoot\b/i, "ft"); }
+
+/* Actions anyone can take in combat (SRD 5.1, in short) */
+const COMBAT_ACTIONS = [
+  ["Attack", "Make one melee or ranged attack (more if a feature such as Extra Attack lets you)."],
+  ["Cast a Spell", "Cast a spell with a casting time of 1 action."],
+  ["Dash", "Gain extra movement equal to your speed for this turn."],
+  ["Disengage", "Your movement doesn't provoke opportunity attacks for the rest of the turn."],
+  ["Dodge", "Until your next turn, attacks against you have disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage."],
+  ["Help", "Give an ally advantage on their next ability check for a task, or on their next attack against a creature within 5 feet of you."],
+  ["Hide", "Make a Dexterity (Stealth) check to hide."],
+  ["Ready", "Choose a trigger and an action; when the trigger happens before your next turn, you can take that action as a reaction."],
+  ["Search", "Look for something, with a Wisdom (Perception) or Intelligence (Investigation) check."],
+  ["Use an Object", "Interact with a second object, or use one that needs your action."],
+  ["Grapple", "An attack that grabs: Strength (Athletics) against the target's Athletics or Acrobatics. If you win, it is grappled."],
+  ["Shove", "An attack that pushes: Strength (Athletics) against Athletics or Acrobatics. Knock the target prone or push it 5 feet."]
+];
+const SHEET_ACCENTS = PALETTES.find(p => p.name === "Jewel").colors;
 /* A broad ready-made gradient library: soft, vivid, dark and earthy choices
    make gradients useful without forcing people through a custom CSS workflow.
    Existing values stay unchanged so boards made with the original set keep
@@ -12797,7 +13130,7 @@ canvasEl.addEventListener("wheel", e => {
    page or board handlers below. The ask dialog and the tour keep their own
    handling. While typing somewhere else, side panels leave Escape to the editor. */
 const ESC_LAYERS = [
-  {sel:"#spellTip"},
+  {sel:"#spellTip"}, {sel:"#bzPop", close:() => $("#bzPop").remove()},
   {sel:"#ctx", close:() => closeCtx()},
   {sel:"#crumbPop"}, {sel:"#cpEmojiPop"}, {sel:"#cpAddPop"},
   {sel:"#tbColorPop"}, {sel:"#colorPop"}, {sel:"#labelPop"}, {sel:"#widgetPop"},
@@ -18513,18 +18846,395 @@ function boardImageIds(){
   }
   return out;
 }
-/* ---- character sheet fullscreen editor ---- */
-let seCardId = null, sePage = 0;
-function openSheet(cid){
+/* ---------------- D&D sheet: the viewer ("Beyond") -------------------------
+   The sheet for play, laid out like D&D Beyond in CORKBORK's parchment:
+   abilities and HP across the top, saves, senses and proficiencies on the
+   left, skills in the middle, and tabs for actions, spells, inventory,
+   features, background and notes. Built by one function for both the
+   full-screen window and the board card's "Beyond" view. Changes made here
+   are the in-play ones (HP, slots, uses, coins); the editor does the rest. */
+const bzTabs = new Map();   /* card id -> open tab, kept while the app runs */
+const BZ_TABS = ["Actions", "Spells", "Inventory", "Features & Traits", "Background", "Notes"];
+function bzEl(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function bzStop(el){ el.addEventListener("pointerdown", e => e.stopPropagation()); el.addEventListener("dblclick", e => e.stopPropagation()); return el; }
+/* write one change to a sheet and redraw wherever it shows */
+function sheetPatch(cardId, patch, {undo = true} = {}){
+  const c = card(cardId); if (!c) return;
+  if (undo) pushUndo();
+  patchCard(cardId, { sheet: { ...(c.sheet || blankSheet()), ...patch } });
+  markDirty(); invalidateCardEls(cardId);
+  if (seCardId === cardId && $("#sheetEditor").classList.contains("open")) renderSheetEditor();
+  renderBoard();
+}
+/* a synced or pasted sheet could carry anything here; only a plain colour is used */
+function sheetAccent(sh){ return /^#[0-9a-f]{6}$/i.test(sh?.accent || "") ? sh.accent : "#5A4A2E"; }
+function sheetHp(sh){
+  const mx = Number(sh.maxHp) || 0;
+  return {max:mx, cur:sh.curHp === "" || sh.curHp == null ? mx : Number(sh.curHp) || 0, temp:Number(sh.tempHp) || 0};
+}
+function sheetHpChange(cardId, delta){
+  const sh = card(cardId).sheet, hp = sheetHp(sh);
+  let {cur, temp} = hp;
+  if (delta < 0){ let dmg = -delta; const soak = Math.min(temp, dmg); temp -= soak; dmg -= soak; cur = Math.max(0, cur - dmg); }
+  else cur = hp.max ? Math.min(hp.max, cur + delta) : cur + delta;
+  sheetPatch(cardId, {curHp:String(cur), tempHp:temp ? String(temp) : ""});
+}
+function sheetRest(cardId, kind){
+  const sh = card(cardId).sheet, sp = sheetSpells(sh), patch = {};
+  const resources = (sh.resources || []).map(r => (kind === "long" || r.reset === "short") ? {...r, used:0} : r);
+  patch.resources = resources;
+  if (kind === "long"){
+    const hp = sheetHp(sh);
+    patch.curHp = String(hp.max || hp.cur); patch.tempHp = "";
+    const slots = {}; for (const [l, s] of Object.entries(sp.slots)) slots[l] = {...s, used:0};
+    patch.spells = {...sp, slots};
+    patch.hitDiceUsed = Math.max(0, (Number(sh.hitDiceUsed) || 0) - Math.max(1, Math.floor(sheetLevel(sh) / 2)));
+    patch.deathSaves = {ok:0, fail:0};
+  }
+  sheetPatch(cardId, patch);
+  toast(kind === "long" ? "Long rest: hit points full, spell slots and uses back." : "Short rest: short-rest uses are back.");
+}
+
+function buildBeyondSheet(c, host, {face = false} = {}){
+  const sh = { ...blankSheet(), ...(c.sheet || {}) }, id = c.id;
+  const pb = sheetProf(sh), st = spellStats(sh), sp = sheetSpells(sh);
+  const root = bzEl("div", "bz" + (face ? " bz-face" : ""));
+  root.style.setProperty("--acc", sheetAccent(sh));
+
+  /* ---- header ---- */
+  const head = bzEl("div", "bz-head");
+  const pic = bzEl("div", "bz-port");
+  if (sh.portrait){ const im = bzEl("img"); im.src = sh.portrait; im.alt = ""; pic.appendChild(im); } else pic.textContent = (sh.name || "?").trim().charAt(0).toUpperCase() || "?";
+  const who = bzEl("div", "bz-who");
+  who.append(bzEl("div", "bz-name", sh.name || "New Character"));
+  const lv = sheetLevel(sh);
+  const subParts = [sh.race, [sh.charClass, lv || ""].filter(Boolean).join(" ") || sh.classLevel, sh.subclass].filter(x => String(x || "").trim());
+  who.append(bzEl("div", "bz-sub", subParts.join(" · ") || "D&D 5e"));
+  head.append(pic, who, bzEl("div", "bz-gap"));
+  const btn = (text, fn, cls, title) => { const b = bzStop(bzEl("button", "bz-btn" + (cls ? " " + cls : ""), text)); if (title) b.title = title; b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
+  const play = bzEl("div", "bz-grp");
+  play.append(btn("☾ Short rest", () => sheetRest(id, "short")), btn("☾ Long rest", () => sheetRest(id, "long")));
+  const out = bzEl("div", "bz-grp");
+  if (face){
+    out.append(sheetViewSwitch(c));
+    out.append(btn("Open", () => openSheet(id), "o", "Open the sheet full screen"));
+  } else {
+    out.append(btn("✎ Edit character", () => { seMode = "edit"; renderSheetEditor(); }, "p"));
+    const pdf = btn("Print / PDF", () => exportSheetPdf(id), "o", "Save a printable PDF (US Letter, black and white)");
+    pdf.insertAdjacentHTML("afterbegin", '<svg class="bz-ic" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg> ');
+    out.append(pdf, btn("✕", closeSheet, "x", "Close (Esc)"));
+  }
+  head.append(play, bzEl("span", "bz-sep"), out);
+  root.appendChild(head);
+
+  /* ---- top row: abilities, proficiency, speed, inspiration, HP ---- */
+  const top = bzEl("div", "bz-top");
+  for (const ab of SHEET_ABILITIES){
+    const box = bzEl("div", "bz-box bz-ab");
+    box.append(bzEl("div", "bz-lab", ABILITY_FULL[ab]));
+    const m = rollBtn(fmtMod(sheetMod(sh, ab)), fmtMod(sheetMod(sh, ab)), ABILITY_FULL[ab], "check"); m.classList.add("bz-abm");
+    box.append(m, bzEl("div", "bz-abs", sheetScore(sh, ab)));
+    top.appendChild(box);
+  }
+  const stat = (lab, val, small) => { const b = bzEl("div", "bz-box bz-st"); b.append(bzEl("div", "bz-lab", lab)); const v = bzEl("div", "bz-v", val); if (small) v.append(bzEl("small", "", small)); b.append(v); return b; };
+  top.append(stat("Proficiency", fmtMod(pb)), stat("Speed", String(sh.speed || "—").replace(/\s*ft\.?$/i, ""), /\d/.test(sh.speed || "") ? " ft" : ""));
+  const insp = bzEl("div", "bz-box bz-st"); insp.append(bzEl("div", "bz-lab", "Inspiration"));
+  const ib = bzStop(bzEl("button", "bz-insp" + (sh.inspiration ? " on" : ""))); ib.title = sh.inspiration ? "Inspired (tap to use)" : "Not inspired (tap to give)";
+  ib.addEventListener("click", e => { e.stopPropagation(); sheetPatch(id, {inspiration:sh.inspiration ? 0 : 1}); });
+  insp.appendChild(ib); top.appendChild(insp);
+  /* HP: type an amount, then Heal or Damage; temp HP has its own box */
+  const hp = sheetHp(sh), hpBox = bzEl("div", "bz-box bz-hp");
+  const hb = bzEl("div", "bz-hpb");
+  const amt = bzStop(bzEl("input")); amt.type = "number"; amt.min = 0; amt.placeholder = "0"; amt.setAttribute("aria-label", "Amount");
+  amt.addEventListener("keydown", e => e.stopPropagation());
+  const heal = btn("Heal", () => { const n = Math.abs(parseInt(amt.value, 10)) || 0; if (n) sheetHpChange(id, n); }, "heal");
+  const dmg = btn("Damage", () => { const n = Math.abs(parseInt(amt.value, 10)) || 0; if (n) sheetHpChange(id, -n); }, "dmg");
+  hb.append(heal, amt, dmg);
+  const hv = bzEl("div", "bz-hpv"); hv.append(bzEl("div", "bz-lab", "Hit points"));
+  const nums = bzEl("div", "bz-hpn"); const curS = bzEl("span", "bz-hpc" + (hp.max && hp.cur <= hp.max / 4 ? " low" : ""), hp.max || sh.curHp !== "" ? hp.cur : "—");
+  nums.append(curS, bzEl("span", "bz-hps", "/"), bzEl("span", "", hp.max || "—"));
+  hv.appendChild(nums);
+  const tmp = bzStop(bzEl("button", "bz-temp")); tmp.title = "Temporary hit points: tap to set. Damage uses them first.";
+  tmp.append(bzEl("div", "bz-lab", "Temp"), bzEl("div", "bz-tv", hp.temp || "—"));
+  tmp.addEventListener("click", async e => {
+    e.stopPropagation();
+    const v = await askOpen({title:"Temporary hit points", build(body){ const i = document.createElement("input"); i.type = "number"; i.min = 0; i.value = hp.temp || ""; i.style.width = "100%"; body.appendChild(i); return {focus:() => i.focus(), i}; },
+      buttons:[{label:"Cancel", value:null}, {label:"Clear", value:"0"}, {label:"Set", primary:true, value:a => a.i.value}]});
+    if (v != null) sheetPatch(id, {tempHp:(parseInt(v, 10) || 0) > 0 ? String(parseInt(v, 10)) : ""});
+  });
+  hpBox.append(hb, hv, tmp);
+  top.appendChild(hpBox);
+  root.appendChild(top);
+
+  /* ---- main: left, skills, tabs ---- */
+  const main = bzEl("div", "bz-main");
+  const left = bzEl("div", "bz-col");
+  const ia = bzEl("div", "bz-box bz-sec bz-ia");
+  const i1 = bzEl("div"); i1.append(bzEl("div", "bz-lab", "Initiative"), rollBtn(fmtMod(initBonus(sh)), fmtMod(initBonus(sh)), "Initiative", ""));
+  const i2 = bzEl("div"); i2.append(bzEl("div", "bz-lab", "Armour class"), bzEl("div", "bz-ac", sh.ac || "—"));
+  ia.append(i1, i2); left.appendChild(ia);
+  const saves = bzEl("div", "bz-box bz-sec"); saves.append(bzEl("h4", "", "Saving throws"));
+  const sg = bzEl("div", "bz-saves");
+  for (const ab of SHEET_ABILITIES){
+    const r = bzEl("div", "bz-save"); r.append(bzEl("i", "bz-dot" + (sh.saves?.[ab] ? " on" : "")), bzEl("span", "", ab));
+    r.append(rollBtn(fmtMod(saveBonus(sh, ab)), fmtMod(saveBonus(sh, ab)), ABILITY_FULL[ab], "save")); sg.appendChild(r);
+  }
+  saves.appendChild(sg); left.appendChild(saves);
+  const senses = bzEl("div", "bz-box bz-sec"); senses.append(bzEl("h4", "", "Senses"));
+  for (const [sk, lab] of [["Perception", "Passive Perception"], ["Investigation", "Passive Investigation"], ["Insight", "Passive Insight"]]){
+    const r = bzEl("div", "bz-pas"); r.append(bzEl("b", "", passiveScore(sh, sk)), bzEl("span", "", lab)); senses.appendChild(r);
+  }
+  const senseText = String(sh.senses || "").trim();
+  if (senseText){
+    for (const s of senseText.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean)){
+      const r = bzEl("div", "bz-sense");
+      if (/darkvision|blindsight|truesight|tremorsense|see/i.test(s)) r.insertAdjacentHTML("afterbegin", '<svg class="bz-ic" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> ');
+      r.append(s); senses.appendChild(r);
+    }
+  }
+  left.appendChild(senses);
+  const profs = bzEl("div", "bz-box bz-sec bz-profs"); profs.append(bzEl("h4", "", "Proficiencies"));
+  let anyProf = false;
+  for (const [lab, v] of [["Armour", sh.profArmor], ["Weapons", sh.profWeapons], ["Tools", sh.profTools], ["Languages", sh.languages]]){
+    if (!String(v || "").trim()) continue; anyProf = true;
+    profs.append(bzEl("div", "bz-lab", lab), bzEl("div", "bz-pt", v));
+  }
+  if (String(sh.otherProfs || "").trim()){ anyProf = true; profs.append(bzEl("div", "bz-pt", sh.otherProfs)); }
+  if (!anyProf) profs.append(bzEl("div", "bz-empty", "Add them in Edit character › Skills & proficiencies."));
+  left.appendChild(profs);
+  main.appendChild(left);
+
+  const skills = bzEl("div", "bz-box bz-sec bz-skills"); skills.append(bzEl("h4", "", "Skills"));
+  for (const [name, ab] of SHEET_SKILLS){
+    const lvl = skillProfLevel(sh, name), r = bzEl("div", "bz-sk");
+    r.append(bzEl("i", "bz-dot" + (lvl >= 2 ? " exp" : lvl >= 1 ? " on" : lvl > 0 ? " half" : "")), bzEl("span", "bz-ska", ab), bzEl("span", "bz-skn", name));
+    const b = rollBtn(fmtMod(skillBonus(sh, name)), fmtMod(skillBonus(sh, name)), name, "check"); b.classList.add("bz-skm"); r.appendChild(b);
+    skills.appendChild(r);
+  }
+  const lg = bzEl("div", "bz-legend");
+  lg.innerHTML = '<span><i class="bz-dot"></i>none</span><span><i class="bz-dot half"></i>half</span><span><i class="bz-dot on"></i>proficient</span><span><i class="bz-dot exp"></i>expertise</span>';
+  skills.appendChild(lg);
+  main.appendChild(skills);
+
+  /* ---- tabs ---- */
+  const tabsBox = bzEl("div", "bz-box bz-tabsbox");
+  const tabBar = bzEl("div", "bz-tabs"), panel = bzEl("div", "bz-panel");
+  const cur = bzTabs.get(id) || "Actions";
+  for (const t of BZ_TABS){
+    const b = bzStop(bzEl("button", "bz-tab" + (t === cur ? " on" : ""), t));
+    b.addEventListener("click", e => { e.stopPropagation(); bzTabs.set(id, t); for (const x of tabBar.children) x.classList.toggle("on", x === b); panel.textContent = ""; bzRenderTab(t, c, sh, panel); });
+    tabBar.appendChild(b);
+  }
+  bzRenderTab(cur, c, sh, panel);
+  tabsBox.append(tabBar, panel);
+  main.appendChild(tabsBox);
+  root.appendChild(main);
+  host.appendChild(root);
+  return root;
+}
+
+function bzRenderTab(tab, c, sh, panel){
+  const id = c.id;
+  if (tab === "Actions") return bzActions(c, sh, panel);
+  if (tab === "Spells") return bzSpells(c, sh, panel);
+  if (tab === "Inventory"){
+    const coins = bzEl("div", "bz-coins");
+    for (const k of ["cp", "sp", "ep", "gp", "pp"]){
+      const w = bzEl("label", "bz-coin"); w.append(bzEl("span", "bz-lab", k.toUpperCase()));
+      const i = bzStop(bzEl("input")); i.type = "number"; i.min = 0; i.value = sh.coins?.[k] || "";
+      i.addEventListener("keydown", e => e.stopPropagation());
+      i.addEventListener("change", () => sheetPatch(id, {coins:{...(sh.coins || {}), [k]:Math.max(0, parseInt(i.value, 10) || 0)}}));
+      w.appendChild(i); coins.appendChild(w);
+    }
+    panel.appendChild(coins);
+    const items = String(sh.equipment || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
+    if (items.length){ const ul = bzEl("ul", "bz-list"); for (const it of items) ul.appendChild(bzEl("li", "", it.replace(/^[-*•]\s*/, ""))); panel.appendChild(ul); }
+    else panel.appendChild(bzEl("div", "bz-empty", "No equipment yet. Add it in Edit character › Equipment & attacks."));
+    return;
+  }
+  if (tab === "Features & Traits") return bzText(panel, sheetFeatureText(sh), "No features yet. Add them in Edit character › Class & level.");
+  if (tab === "Background"){
+    const rows = [["Background", sh.background], ["Alignment", sh.alignment], ["Personality traits", sh.personality], ["Ideals", sh.ideals], ["Bonds", sh.bonds], ["Flaws", sh.flaws]].filter(([, v]) => String(v || "").trim());
+    if (!rows.length) return bzText(panel, "", "Nothing yet. Add it in Edit character › Background & personality.");
+    for (const [l, v] of rows){ panel.append(bzEl("div", "bz-lab", l)); bzText(panel, v); }
+    return;
+  }
+  if (tab === "Notes"){
+    const pages = (sh.notesPages || []).map(p => String(p || "").trim()).filter(Boolean);
+    if (!pages.length) return bzText(panel, "", "No notes yet. Add them in Edit character › Notes.");
+    pages.forEach((p, i) => { if (i) panel.appendChild(bzEl("hr", "bz-hr")); bzText(panel, p); });
+  }
+}
+function bzText(panel, text, empty){
+  const t = String(text || "").trim();
+  if (!t){ panel.appendChild(bzEl("div", "bz-empty", empty || "")); return; }
+  for (const para of t.split(/\n{2,}/)){ const p = bzEl("p", "bz-p", para); panel.appendChild(p); }
+}
+function bzFilters(panel, names, current, onPick){
+  const f = bzEl("div", "bz-filters");
+  for (const n of names){ const b = bzStop(bzEl("button", "bz-fl" + (n === current ? " on" : ""), n)); b.addEventListener("click", e => { e.stopPropagation(); onPick(n); }); f.appendChild(b); }
+  panel.appendChild(f); return f;
+}
+const bzActFilter = new Map(), bzSpellFilter = new Map();
+function bzActions(c, sh, panel){
+  const id = c.id, f = bzActFilter.get(id) || "All";
+  bzFilters(panel, ["All", "Attack", "Action", "Bonus action", "Reaction", "Limited use"], f, n => { bzActFilter.set(id, n); panel.textContent = ""; bzActions(c, sh, panel); });
+  const rows = [];
+  for (const a of (sh.attacks || []).filter(a => a && a.name)){
+    rows.push({name:a.name, sub:a.kind || "Weapon", range:a.range || "", hit:a.bonus || "", hitRoll:/^[+-]?\d+$/.test(String(a.bonus || "").trim()) ? a.bonus : "", dmg:a.dmg || "", notes:a.notes || "", kind:"Action"});
+  }
+  const str = sheetMod(sh, "STR"), pb = sheetProf(sh);
+  rows.push({name:"Unarmed strike", sub:"Melee", range:"5 ft", hit:fmtMod(str + pb), hitRoll:fmtMod(str + pb), dmg:String(Math.max(1, 1 + str)) + " bludgeoning", notes:"", kind:"Action"});
+  for (const s of sheetSpells(sh).list){
+    if (s.lvl > 0 && !s.prep) continue;
+    const pl = spellPlay(sh, s); if (!pl.dmg || pl.heal) continue;
+    const t = spellTimeShort(s.det?.time);
+    rows.push({name:s.name, sub:(s.lvl ? ordinalLevel(s.lvl) + " level" : "Cantrip") + (s.det?.conc ? " · concentration" : ""), range:spellRangeShort(s.det?.range), hit:pl.hit, hitRoll:pl.hitRoll,
+      dmg:pl.dmg + (pl.dmgType ? " " + pl.dmgType : ""), notes:"", kind:t === "1BA" ? "Bonus action" : t === "1R" ? "Reaction" : "Action", spell:s});
+  }
+  const show = rows.filter(r => f === "All" || f === "Attack" || r.kind === f);
+  if (f !== "Limited use" && show.length){
+    const t = bzEl("table", "bz-t");
+    t.innerHTML = "<tr><th>Attack</th><th>Range</th><th>Hit / DC</th><th>Damage</th><th>Notes</th></tr>";
+    for (const r of show){
+      const tr = bzEl("tr");
+      const n = bzEl("td", "bz-nm"); n.append(bzEl("b", "", r.name), bzEl("span", "bz-small", r.sub));
+      if (r.spell){ n.classList.add("bz-click"); bzStop(n); n.addEventListener("click", e => { e.stopPropagation(); showSpellTip(r.spell, n); }); }
+      const h = bzEl("td"); if (r.hitRoll) h.appendChild(rollBtn(r.hit, r.hitRoll, r.name, "to hit")); else h.textContent = r.hit || "—";
+      const d = bzEl("td"); const dm = /^(\d+d\d+(?:[+-]\d+)?|\d+)\s*(.*)$/.exec(String(r.dmg).trim());
+      if (dm){ d.appendChild(rollBtn(dm[1], dm[1], r.name, "damage")); if (dm[2]) d.append(" " + dm[2]); } else d.textContent = r.dmg || "—";
+      tr.append(n, bzEl("td", "", r.range || "—"), h, d, bzEl("td", "bz-note", r.notes));
+      t.appendChild(tr);
+    }
+    panel.appendChild(t);
+  }
+  /* things anyone can do in combat: one row of chips, tap for what it does */
+  if (f === "All" || f === "Action"){
+    const chips = bzEl("div", "bz-chips"); chips.append(bzEl("span", "bz-lab", "In combat"));
+    for (const [n, text] of COMBAT_ACTIONS){
+      const b = bzStop(bzEl("button", "bz-chip", n));
+      b.addEventListener("click", e => { e.stopPropagation(); bzPop(b, n, text); });
+      chips.appendChild(b);
+    }
+    panel.appendChild(chips);
+  }
+  const res = sh.resources || [];
+  if ((f === "All" || f === "Limited use") && res.length){
+    const box = bzEl("div", "bz-res"); box.append(bzEl("div", "bz-lab", "Limited use"));
+    for (const r of res){
+      const row = bzEl("div", "bz-resrow"); row.append(bzEl("span", "", r.name));
+      for (let i = 0; i < (Number(r.max) || 0); i++){
+        const b = bzStop(bzEl("button", "bz-slot" + (i < (r.used || 0) ? " u" : ""))); b.title = i < (r.used || 0) ? "Used" : "Available";
+        b.addEventListener("click", e => { e.stopPropagation(); const used = i < (r.used || 0) ? i : i + 1; sheetPatch(id, {resources:res.map(x => x.id === r.id ? {...x, used} : x)}); });
+        row.appendChild(b);
+      }
+      row.append(bzEl("span", "bz-small", r.reset === "short" ? "short rest" : "long rest"));
+      box.appendChild(row);
+    }
+    panel.appendChild(box);
+  } else if (f === "Limited use") panel.appendChild(bzEl("div", "bz-empty", "No limited-use features. Add them in Edit character › Equipment & attacks."));
+}
+function ordinalLevel(n){ return n + ({1:"st", 2:"nd", 3:"rd"}[n] || "th"); }
+function bzPop(anchor, title, text){
+  $("#bzPop")?.remove();
+  const p = bzEl("div", "open"); p.id = "bzPop";
+  p.append(bzEl("b", "", title), bzEl("div", "", text));
+  document.body.appendChild(p);
+  const r = anchor.getBoundingClientRect(), z = uiz();
+  p.style.left = Math.max(8, Math.min(r.left / z, innerWidth / z - 320)) + "px";
+  p.style.top = (r.bottom / z + 6) + "px";
+  const off = e => { if (!p.contains(e.target) && e.target !== anchor){ p.remove(); document.removeEventListener("pointerdown", off, true); } };
+  setTimeout(() => document.addEventListener("pointerdown", off, true), 0);
+}
+function bzSpells(c, sh, panel){
+  const id = c.id, st = spellStats(sh), spl = sheetSpells(sh);
+  const stats = bzEl("div", "bz-spst");
+  const cell = (v, l) => { const d = bzEl("div"); d.append(typeof v === "string" ? bzEl("b", "", v) : v, bzEl("div", "bz-lab", l)); return d; };
+  stats.append(cell(st ? fmtMod(st.mod) : "—", "Modifier"), cell(st ? rollBtn(fmtMod(st.atk), fmtMod(st.atk), "Spell attack", "to hit") : "—", "Spell attack"), cell(st ? String(st.dc) : "—", "Save DC"));
+  panel.appendChild(stats);
+  const levels = [...new Set(spl.list.map(s => s.lvl))].sort((a, b) => a - b);
+  const f = bzSpellFilter.get(id) || {lvl:"All", prepared:true};
+  const fl = bzFilters(panel, ["All", ...levels.map(l => l ? ordinalLevel(l) : "Cantrips")], f.lvl, n => { bzSpellFilter.set(id, {...f, lvl:n}); panel.textContent = ""; bzSpells(c, sh, panel); });
+  const pt = bzStop(bzEl("button", "bz-fl" + (f.prepared ? " on" : ""), "Prepared only"));
+  pt.addEventListener("click", e => { e.stopPropagation(); bzSpellFilter.set(id, {...f, prepared:!f.prepared}); panel.textContent = ""; bzSpells(c, sh, panel); });
+  fl.appendChild(pt);
+  if (!spl.list.length){ panel.appendChild(bzEl("div", "bz-empty", "No spells yet. Add them in Edit character › Spells.")); return; }
+  for (let l = 0; l <= 9; l++){
+    const want = f.lvl === "All" || f.lvl === (l ? ordinalLevel(l) : "Cantrips");
+    const slot = spellSlot(spl, l);
+    const list = spl.list.filter(s => s.lvl === l && (l === 0 || !f.prepared || s.prep)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!want || (!list.length && !slot.total)) continue;
+    const h = bzEl("div", "bz-lvlh", l ? ordinalLevel(l) + " level" : "Cantrips");
+    if (l && slot.total){
+      const sl = bzEl("span", "bz-slots"); sl.append("Slots ");
+      for (let i = 0; i < slot.total; i++){
+        const b = bzStop(bzEl("button", "bz-slot" + (i < slot.used ? " u" : ""))); b.title = i < slot.used ? "Used" : "Available";
+        b.addEventListener("click", e => { e.stopPropagation(); const used = i < slot.used ? i : i + 1; sheetPatch(id, {spells:{...spl, slots:{...spl.slots, [l]:{total:slot.total, used}}}}); });
+        sl.appendChild(b);
+      }
+      h.appendChild(sl);
+    }
+    panel.appendChild(h);
+    if (!list.length) continue;
+    const t = bzEl("table", "bz-t bz-spt");
+    for (const s of list){
+      const pl = spellPlay(sh, s), tr = bzEl("tr");
+      const a = bzEl("td", "bz-cast");
+      if (l){
+        const cb = bzStop(bzEl("button", "bz-castb", "Cast"));
+        cb.title = "Cast: uses a level " + l + " slot";
+        cb.addEventListener("click", e => {
+          e.stopPropagation();
+          const s2 = spellSlot(sheetSpells(card(id).sheet), l);
+          if (s2.used >= s2.total){ toast("No level " + l + " slots left."); return; }
+          const cur = sheetSpells(card(id).sheet);
+          sheetPatch(id, {spells:{...cur, slots:{...cur.slots, [l]:{total:s2.total, used:s2.used + 1}}}});
+          toast(s.name + ": level " + l + " slot used (" + (s2.total - s2.used - 1) + " left).");
+        });
+        a.appendChild(cb);
+      } else a.append(bzEl("span", "bz-atw", "AT WILL"));
+      const n = bzStop(bzEl("td", "bz-nm bz-click")); n.append(bzEl("b", "", s.name), bzEl("span", "bz-small", [s.det?.school, s.det?.book].filter(Boolean).join(" · ")));
+      n.addEventListener("click", e => { e.stopPropagation(); showSpellTip(s, n); spellTipEl().dataset.for = s.id; });
+      const h2 = bzEl("td"); if (pl.hitRoll) h2.appendChild(rollBtn(pl.hit, pl.hitRoll, s.name, "to hit")); else h2.textContent = pl.hit || "—";
+      const d = bzEl("td"); if (pl.dmg){ d.appendChild(rollBtn(pl.dmg, pl.dmg, s.name, pl.heal ? "healing" : "damage")); d.append(" " + (pl.heal ? "heal" : pl.dmgType)); } else d.textContent = "—";
+      tr.append(a, n, bzEl("td", "", spellTimeShort(s.det?.time) || "—"), bzEl("td", "", spellRangeShort(s.det?.range) || "—"), h2, d, bzEl("td", "bz-note", spellNotesShort(s.det)));
+      t.appendChild(tr);
+    }
+    panel.appendChild(t);
+  }
+}
+/* Simple / Full / Beyond: how a sheet card looks on the board */
+const SHEET_VIEW_SIZES = {simple:{w:420, h:520}, full:{w:640, h:760}, beyond:{w:1180, h:820}};
+function sheetViewSwitch(c){
+  const seg = bzEl("div", "sf-viewtog");
+  seg.title = "How this sheet shows on the board";
+  for (const [v, label] of [["simple", "Simple"], ["full", "Full"], ["beyond", "Beyond"]]){
+    const b = bzStop(bzEl("button", sheetView(c) === v ? "on" : "", label));
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      if (sheetView(c) === v) return;
+      pushUndo();
+      const sz = SHEET_VIEW_SIZES[v];
+      patchCard(c.id, { sheetView:v, w:v === "beyond" ? Math.max(c.w || 0, sz.w) : sz.w, h:v === "beyond" ? Math.max(c.h || 0, sz.h) : sz.h });
+      invalidateCardEls(c.id); markDirty(); renderAll();
+    });
+    seg.appendChild(b);
+  }
+  return seg;
+}
+/* ---------------- D&D sheet: the window (viewer, or editor pages) ---------- */
+let seCardId = null, sePage = 0, seMode = "view";
+const SE_PAGES = ["Basics", "Race", "Class & level", "Ability scores", "Skills & proficiencies", "Spells", "Equipment & attacks", "Background & personality", "Notes"];
+function openSheet(cid, {edit = false, page = 0} = {}){
   const c = card(cid); if (!c || c.type !== "sheet") return;
   if (!c.sheet) patchCard(cid, { sheet: blankSheet() });
-  seCardId = cid; sePage = 0;
-  $("#sheetEditor").classList.add("open");
+  seCardId = cid; seMode = edit ? "edit" : "view"; sePage = page;
+  $("#sheetEditor").classList.add("open"); document.body.classList.add("in-sheet");
   renderSheetEditor();
 }
 function closeSheet(){
-  hideSpellTip();
-  $("#sheetEditor").classList.remove("open");
+  hideSpellTip(); $("#bzPop")?.remove();
+  $("#sheetEditor").classList.remove("open"); document.body.classList.remove("in-sheet");
   seCardId = null;
   renderBoard();
 }
@@ -18532,322 +19242,389 @@ function seData(){ return card(seCardId)?.sheet; }
 function seSet(patch){
   const c = card(seCardId); if (!c) return;
   patchCard(seCardId, { sheet: { ...c.sheet, ...patch } });
+  invalidateCardEls(seCardId);
   markDirty();
 }
 function seField(label, value, oninput, opts={}){
   const f = document.createElement("div"); f.className = "se-field" + (opts.big ? " big" : "");
   const l = document.createElement("label"); l.textContent = label; f.appendChild(l);
   const inp = opts.area ? document.createElement("textarea") : document.createElement("input");
-  inp.value = value || "";
+  inp.value = value ?? "";
   if (opts.rows) inp.rows = opts.rows;
+  if (opts.type) inp.type = opts.type;
+  if (opts.placeholder) inp.placeholder = opts.placeholder;
   inp.addEventListener("input", () => oninput(inp.value));
   inp.addEventListener("keydown", e => e.stopPropagation());
   f.appendChild(inp);
+  if (opts.hint){ const h = document.createElement("div"); h.className = "se-hint"; h.textContent = opts.hint; f.appendChild(h); }
   return f;
 }
+function seGrid(cols, ...kids){ const g = document.createElement("div"); g.className = "se-grid"; g.style.gridTemplateColumns = cols; g.append(...kids); return g; }
 function renderSheetEditor(){
   const sh = seData(); if (!sh) return;
-  const tabs = $("#seTabs"); tabs.innerHTML = "";
-  const pageNames = ["Character", "Details", "Spells", "Preview", ...sh.notesPages.map((_,i) => "Notes " + (i+1))];
-  pageNames.forEach((nm, i) => {
-    const b = document.createElement("button"); b.textContent = nm;
-    if (i === sePage) b.classList.add("sel");
-    b.addEventListener("click", () => { sePage = i; renderSheetEditor(); });
-    tabs.appendChild(b);
+  $("#seTabs").textContent = "";
+  const scroll = $("#seScroll"); const keep = scroll.scrollTop; scroll.textContent = "";
+  scroll.classList.toggle("bz-host", seMode === "view");
+  if (seMode === "view"){ buildBeyondSheet(card(seCardId), scroll); scroll.scrollTop = keep; return; }
+  /* ---- editor: pages in the order you'd build a character ---- */
+  const wrap = document.createElement("div"); wrap.className = "se-ed";
+  wrap.style.setProperty("--acc", sheetAccent(sh));
+  const head = document.createElement("div"); head.className = "se-edhead";
+  const t = document.createElement("div"); t.className = "se-edtitle"; t.textContent = "Editing: " + (sh.name || "New Character");
+  const done = document.createElement("button"); done.className = "bz-btn p"; done.textContent = "Done editing";
+  done.addEventListener("click", () => { seMode = "view"; renderSheetEditor(); });
+  head.append(t, done);
+  const body = document.createElement("div"); body.className = "se-edbody";
+  const nav = document.createElement("div"); nav.className = "se-nav";
+  const filled = [
+    !!(sh.name && sh.name.trim()), !!(sh.race || "").trim(), !!(sh.charClass || sh.classLevel || "").trim() && !!sheetLevel(sh),
+    SHEET_ABILITIES.some(a => Number(sh.abilities?.[a]) !== 10), Object.values(sh.skills || {}).some(Boolean),
+    sheetSpells(sh).list.length > 0, (sh.attacks || []).some(a => a.name) || !!(sh.equipment || "").trim(),
+    !!(sh.background || sh.personality || "").trim(), (sh.notesPages || []).some(p => (p || "").trim())
+  ];
+  SE_PAGES.forEach((n, i) => {
+    const a = document.createElement("button"); a.className = "se-navb" + (i === sePage ? " on" : "");
+    a.append((i + 1) + " · " + n);
+    if (filled[i]){ const ck = document.createElement("span"); ck.className = "se-ck"; ck.textContent = "✓"; a.appendChild(ck); }
+    a.addEventListener("click", () => { sePage = i; renderSheetEditor(); });
+    nav.appendChild(a);
   });
-  const addP = document.createElement("button"); addP.textContent = "＋ page";
-  addP.addEventListener("click", () => {
-    seSet({ notesPages: [...sh.notesPages, ""] });
-    sePage = pageNames.length; renderSheetEditor();   /* lands on the new tab */
-  });
-  tabs.appendChild(addP);
-
-  const scroll = $("#seScroll"); scroll.innerHTML = "";
   const page = document.createElement("div"); page.className = "se-page";
-
-  if (sePage === 0){
-    /* --- Character page --- */
-    const head = document.createElement("div"); head.className = "se-head";
-    head.appendChild(seField("Character name", sh.name, v => { seSet({name:v}); }, {big:true}));
-    head.appendChild(seField("Class", sh.charClass || sh.classLevel, v => seSet({charClass:v})));
-    head.appendChild(seField("Race", sh.race, v => seSet({race:v})));
-    page.appendChild(head);
-    const headB = document.createElement("div"); headB.className = "se-head"; headB.style.gridTemplateColumns = "90px 1fr 1fr";
-    headB.appendChild(seField("Level", sh.level, v => seSet({level:v})));
-    headB.appendChild(seField("Subclass", sh.subclass, v => seSet({subclass:v})));
-    /* spellcasting ability drives the derived DC and attack bonus */
-    {
-      const f = document.createElement("div"); f.className = "se-field";
-      const l = document.createElement("label"); l.textContent = "Spellcasting ability";
-      const sel = document.createElement("select");
-      for (const [v, t] of [["","— none —"],["INT","Intelligence"],["WIS","Wisdom"],["CHA","Charisma"],
-                            ["STR","Strength"],["DEX","Dexterity"],["CON","Constitution"]]){
-        const o = document.createElement("option"); o.value = v; o.textContent = t;
-        if ((sh.spellAbility||"") === v) o.selected = true;
-        sel.appendChild(o);
-      }
-      sel.addEventListener("change", () => { seSet({spellAbility: sel.value}); renderSheetEditor(); });
-      f.append(l, sel); headB.appendChild(f);
-    }
-    page.appendChild(headB);
-    const head2 = document.createElement("div"); head2.className = "se-head"; head2.style.gridTemplateColumns = "1fr 1fr 1fr 1fr";
-    head2.appendChild(seField("Background", sh.background, v => seSet({background:v})));
-    head2.appendChild(seField("Alignment", sh.alignment, v => seSet({alignment:v})));
-    head2.appendChild(seField("Player", sh.playerName, v => seSet({playerName:v})));
-    head2.appendChild(seField("XP", sh.xp, v => seSet({xp:v})));
-    page.appendChild(head2);
-
-    const cols = document.createElement("div"); cols.className = "se-cols";
-
-    /* left: abilities */
-    const left = document.createElement("div");
-    const pbBlock = document.createElement("div"); pbBlock.className = "se-block";
-    pbBlock.innerHTML = "<h3>Proficiency</h3>";
-    const pbf = seField("Proficiency bonus", sh.profBonus, v => { seSet({profBonus:Number(v)||0}); renderSheetEditor(); });
-    pbBlock.appendChild(pbf); left.appendChild(pbBlock);
-
-    const abBlock = document.createElement("div"); abBlock.className = "se-block";
-    abBlock.innerHTML = "<h3>Ability Scores</h3>";
-    const abils = document.createElement("div"); abils.className = "se-abils";
-    for (const ab of SHEET_ABILITIES){
-      const row = document.createElement("div"); row.className = "se-abil";
-      const nm = document.createElement("div"); nm.className = "ab-name"; nm.textContent = ab;
-      const sc = document.createElement("input"); sc.className = "ab-score"; sc.type = "number"; sc.value = sh.abilities[ab];
-      sc.addEventListener("input", () => {
-        const a = { ...seData().abilities, [ab]: Number(sc.value)||10 };
-        seSet({ abilities:a });
-        mod.textContent = fmtMod(abilityMod(sc.value));
-        refreshDerived();
-      });
-      sc.addEventListener("keydown", e => e.stopPropagation());
-      const mod = document.createElement("div"); mod.className = "ab-mod"; mod.textContent = fmtMod(abilityMod(sh.abilities[ab]));
-      row.append(nm, sc, mod); abils.appendChild(row);
-    }
-    abBlock.appendChild(abils); left.appendChild(abBlock);
-    cols.appendChild(left);
-
-    /* right: saves + skills + combat */
-    const right = document.createElement("div");
-
-    const combat = document.createElement("div"); combat.className = "se-block";
-    combat.innerHTML = "<h3>Combat</h3>";
-    const stats = document.createElement("div"); stats.className = "se-stats3";
-    const mkStat = (key, lab) => {
-      const s = document.createElement("div"); s.className = "se-stat";
-      const l = document.createElement("label"); l.textContent = lab;
-      const i = document.createElement("input"); i.value = sh[key] || "";
-      i.addEventListener("input", () => seSet({[key]: i.value}));
-      i.addEventListener("keydown", e => e.stopPropagation());
-      s.append(l, i); return s;
-    };
-    stats.append(mkStat("ac","Armor Class"), mkStat("initiative","Initiative"), mkStat("speed","Speed"));
-    combat.appendChild(stats);
-    const hp = document.createElement("div"); hp.className = "se-stats3"; hp.style.marginTop = "10px";
-    hp.append(mkStat("maxHp","Max HP"), mkStat("curHp","Current HP"), mkStat("tempHp","Temp HP"));
-    combat.appendChild(hp);
-    right.appendChild(combat);
-
-    const savesBlock = document.createElement("div"); savesBlock.className = "se-block";
-    savesBlock.innerHTML = "<h3>Saving Throws</h3>";
-    const savesGrid = document.createElement("div"); savesGrid.className = "se-skills";
-    for (const ab of SHEET_ABILITIES){
-      const sk = document.createElement("label"); sk.className = "se-skill";
-      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!sh.saves[ab];
-      cb.addEventListener("change", () => { seSet({ saves:{...seData().saves, [ab]:cb.checked} }); refreshDerived(); });
-      const nm = document.createElement("span"); nm.textContent = ab;
-      const md = document.createElement("span"); md.className = "sk-mod"; md.dataset.save = ab;
-      sk.append(cb, nm, md); savesGrid.appendChild(sk);
-    }
-    savesBlock.appendChild(savesGrid); right.appendChild(savesBlock);
-
-    /* Skills grouped under their governing ability, matching the card face.
-       A flat alphabetical list of 18 hid which modifier each one used. */
-    const skillsBlock = document.createElement("div"); skillsBlock.className = "se-block";
-    skillsBlock.innerHTML = "<h3>Skills</h3>";
-    const skillsGrid = document.createElement("div"); skillsGrid.className = "se-skillgroups";
-    for (const ab of SHEET_ABILITIES){
-      const names = SKILLS_BY_ABILITY[ab];
-      if (!names.length) continue;                 /* CON governs no skills */
-      const grp = document.createElement("div"); grp.className = "se-skgroup";
-      const h = document.createElement("div"); h.className = "se-skgroup-h";
-      const hn = document.createElement("span"); hn.textContent = ABILITY_FULL[ab];
-      const hm = document.createElement("span"); hm.className = "sk-mod"; hm.dataset.abmod = ab;
-      h.append(hn, hm); grp.appendChild(h);
-      for (const name of names){
-        const sk = document.createElement("label"); sk.className = "se-skill";
-        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!sh.skills[name];
-        cb.addEventListener("change", () => { seSet({ skills:{...seData().skills, [name]:cb.checked} }); refreshDerived(); });
-        const abT = document.createElement("span"); abT.className = "sk-ab"; abT.textContent = ab;
-        const nm = document.createElement("span"); nm.textContent = name;
-        const md = document.createElement("span"); md.className = "sk-mod"; md.dataset.skill = name; md.dataset.ab = ab;
-        sk.append(cb, abT, nm, md); grp.appendChild(sk);
-      }
-      skillsGrid.appendChild(grp);
-    }
-    skillsBlock.appendChild(skillsGrid); right.appendChild(skillsBlock);
-    cols.appendChild(right);
-    page.appendChild(cols);
-
-    function refreshDerived(){
-      const s = seData(); if (!s) return;
-      const pb = Number(s.profBonus)||0;
-      page.querySelectorAll("[data-save]").forEach(el => {
-        const ab = el.dataset.save;
-        el.textContent = fmtMod(abilityMod(s.abilities[ab]) + (s.saves[ab] ? pb : 0));
-      });
-      page.querySelectorAll("[data-skill]").forEach(el => {
-        const ab = el.dataset.ab;
-        el.textContent = fmtMod(abilityMod(s.abilities[ab]) + (s.skills[el.dataset.skill] ? pb : 0));
-      });
-      page.querySelectorAll("[data-abmod]").forEach(el => {
-        el.textContent = fmtMod(abilityMod(s.abilities[el.dataset.abmod]));
-      });
-    }
-    setTimeout(refreshDerived, 0);
-  }
-  else if (sePage === 1){
-    /* --- Details page: portrait, attacks, features, equipment, personality --- */
-    const top = document.createElement("div"); top.className = "se-cols";
-    const pbox = document.createElement("div");
-    const box = document.createElement("div"); box.className = "se-portrait-box";
-    if (sh.portrait){ const im = document.createElement("img"); im.src = sh.portrait; box.appendChild(im); }
-    else box.textContent = "Click to add portrait";
-    box.addEventListener("click", () => serPortrait.click());
-    pbox.appendChild(box);
-    if (sh.portrait){
-      const clr = document.createElement("button"); clr.className = "se-prevsize"; clr.textContent = "Remove headshot";
-      clr.style.marginTop = "6px";
-      clr.addEventListener("click", () => { seSet({ portrait:null }); renderSheetEditor(); });
-      pbox.appendChild(clr);
-    }
-    /* optional full-body art — shown on the card face only when it exists */
-    const fbLab = document.createElement("div"); fbLab.className = "se-fblabel";
-    fbLab.textContent = "FULL BODY (optional)";
-    pbox.appendChild(fbLab);
-    const fbox = document.createElement("div"); fbox.className = "se-portrait-box se-fullbox";
-    if (sh.fullBody){ const im = document.createElement("img"); im.src = sh.fullBody; fbox.appendChild(im); }
-    else fbox.textContent = "Click to add full-body art";
-    fbox.addEventListener("click", () => serFullBody.click());
-    pbox.appendChild(fbox);
-    if (sh.fullBody){
-      const clr = document.createElement("button"); clr.className = "se-prevsize"; clr.textContent = "Remove full-body";
-      clr.style.marginTop = "6px";
-      clr.addEventListener("click", () => { seSet({ fullBody:null }); renderSheetEditor(); });
-      pbox.appendChild(clr);
-    }
-    top.appendChild(pbox);
-
-    const atkBlock = document.createElement("div"); atkBlock.className = "se-block"; atkBlock.style.margin = "0";
-    atkBlock.innerHTML = "<h3>Attacks & Spellcasting</h3>";
-    const hdr = document.createElement("div"); hdr.className = "se-atk-row";
-    hdr.innerHTML = '<label style="font-size:10px;color:#8A7550">NAME</label><label style="font-size:10px;color:#8A7550">BONUS</label><label style="font-size:10px;color:#8A7550">DAMAGE/TYPE</label>';
-    atkBlock.appendChild(hdr);
-    sh.attacks.forEach((atk, i) => {
-      const r = document.createElement("div"); r.className = "se-atk-row";
-      ["name","bonus","dmg"].forEach(k => {
-        const inp = document.createElement("input"); inp.value = atk[k] || "";
-        inp.addEventListener("input", () => {
-          const a = seData().attacks.map((x,j) => j===i ? {...x, [k]:inp.value} : x);
-          seSet({ attacks:a });
-        });
-        inp.addEventListener("keydown", e => e.stopPropagation());
-        r.appendChild(inp);
-      });
-      atkBlock.appendChild(r);
-    });
-    const addAtk = document.createElement("button"); addAtk.className = "se-pageadd"; addAtk.style.margin = "6px 0 0"; addAtk.textContent = "＋ attack row";
-    addAtk.addEventListener("click", () => { seSet({ attacks:[...seData().attacks, {name:"",bonus:"",dmg:""}] }); renderSheetEditor(); });
-    atkBlock.appendChild(addAtk);
-    top.appendChild(atkBlock);
-    page.appendChild(top);
-
-    const grid = document.createElement("div"); grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;";
-    grid.appendChild(seField("Features & Traits", sh.features, v => seSet({features:v}), {area:true, rows:6}));
-    grid.appendChild(seField("Equipment", sh.equipment, v => seSet({equipment:v}), {area:true, rows:6}));
-    grid.appendChild(seField("Other Proficiencies & Languages", sh.otherProfs, v => seSet({otherProfs:v}), {area:true, rows:4}));
-    grid.appendChild(seField("Personality Traits", sh.personality, v => seSet({personality:v}), {area:true, rows:4}));
-    grid.appendChild(seField("Ideals", sh.ideals, v => seSet({ideals:v}), {area:true, rows:3}));
-    grid.appendChild(seField("Bonds", sh.bonds, v => seSet({bonds:v}), {area:true, rows:3}));
-    grid.appendChild(seField("Flaws", sh.flaws, v => seSet({flaws:v}), {area:true, rows:3}));
-    grid.appendChild(seField("Hit Dice", sh.hitDice, v => seSet({hitDice:v})));
-    page.appendChild(grid);
-  }
-  else if (sePage === 2) renderSpellsPage(page);
-  else if (sePage === 3){
-    /* --- Preview: the real card face, rendered at full size ---------------
-       Not a mock-up. This calls the same buildSheet() the board uses, so what
-       is shown here IS what the card will look like, and it re-renders on
-       every edit. The view toggle inside it works, which is what makes this
-       usable for laying out the simple view specifically. */
-    const c = card(seCardId);
-    const bar = document.createElement("div"); bar.className = "se-prevbar";
-    const note = document.createElement("span");
-    note.textContent = "Live preview of the card face — the Simple / Full switch works here too.";
-    bar.appendChild(note);
-    for (const [label, w, h] of [["Simple size", 420, 520], ["Full size", 640, 760]]){
-      const b = document.createElement("button"); b.className = "se-prevsize"; b.textContent = label;
-      b.addEventListener("click", () => {
-        pushUndo();
-        patchCard(seCardId, { w, h, sheetView: w === 640 ? "full" : "simple" });
-        invalidateCardEls(seCardId); markDirty(); renderSheetEditor();
-      });
-      bar.appendChild(b);
-    }
-    page.appendChild(bar);
-
-    const stage = document.createElement("div"); stage.className = "se-prevstage";
-    const shell = document.createElement("div");
-    shell.className = "card type-sheet se-prevcard";
-    shell.style.width  = (c.w || 420) + "px";
-    shell.style.height = (c.h || 520) + "px";
-    /* buildSheet's view toggle calls renderAll(); refresh the preview too */
-    const prevRender = () => { shell.innerHTML = ""; buildSheet(card(seCardId), shell); };
-    buildSheet(c, shell);
-    shell.addEventListener("click", e => {
-      if (e.target.closest(".sf-viewtog, .sf-hpbtn")) setTimeout(() => renderSheetEditor(), 0);
-    });
-    stage.appendChild(shell);
-    page.appendChild(stage);
-  }
-  else {
-    /* --- extra notes pages --- */
-    const idx = sePage - 4;
-    const wrap = document.createElement("div"); wrap.className = "se-field";
-    const l = document.createElement("label"); l.textContent = "Page " + (idx+1) + " — free notes";
-    const ta = document.createElement("textarea"); ta.value = sh.notesPages[idx] || ""; ta.rows = 22; ta.style.width = "100%";
-    ta.addEventListener("input", () => {
-      const p = [...seData().notesPages]; p[idx] = ta.value; seSet({ notesPages:p });
-    });
-    ta.addEventListener("keydown", e => e.stopPropagation());
-    wrap.append(l, ta); page.appendChild(wrap);
-    if (sh.notesPages.length > 1){
-      const del = document.createElement("button"); del.className = "se-pageadd"; del.textContent = "Delete this page";
-      del.addEventListener("click", () => {
-        const p = seData().notesPages.filter((_,j) => j !== idx);
-        seSet({ notesPages: p.length ? p : [""] });
-        sePage = Math.max(3, sePage - 1); renderSheetEditor();
-      });
-      page.appendChild(del);
-    }
-  }
-  scroll.appendChild(page);
+  const h = document.createElement("h3"); h.className = "se-h"; h.textContent = SE_PAGES[sePage]; page.appendChild(h);
+  [seBasics, seRace, seClass, seAbilities, seSkills, sePageSpells, seEquipment, seBackground, seNotes][sePage](page, sh);
+  const foot = document.createElement("div"); foot.className = "se-foot";
+  if (sePage > 0){ const b = document.createElement("button"); b.className = "bz-btn"; b.textContent = "‹ " + SE_PAGES[sePage - 1]; b.addEventListener("click", () => { sePage--; renderSheetEditor(); }); foot.appendChild(b); }
+  foot.appendChild(document.createElement("span"));
+  if (sePage < SE_PAGES.length - 1){ const b = document.createElement("button"); b.className = "bz-btn"; b.textContent = SE_PAGES[sePage + 1] + " ›"; b.addEventListener("click", () => { sePage++; renderSheetEditor(); }); foot.appendChild(b); }
+  page.appendChild(foot);
+  body.append(nav, page);
+  wrap.append(head, body);
+  scroll.appendChild(wrap);
+  scroll.scrollTop = 0;
 }
-const serPortrait = document.createElement("input"); serPortrait.type = "file"; serPortrait.accept = "image/*"; serPortrait.hidden = true;
-document.body.appendChild(serPortrait);
-serPortrait.addEventListener("change", async e => {
+/* 1 · Basics: name, player, image (one picture, cropped for the headshot), colour */
+function seBasics(page, sh){
+  page.append(seGrid("2fr 1fr", seField("Character name", sh.name, v => seSet({name:v}), {big:true}), seField("Player", sh.playerName, v => seSet({playerName:v}))));
+  page.append(seGrid("1fr 1fr", seField("Alignment", sh.alignment, v => seSet({alignment:v})), seField("Experience points", sh.xp, v => seSet({xp:v}))));
+  const img = document.createElement("div"); img.className = "se-block";
+  img.innerHTML = "<h3>Character image</h3>";
+  const main = sh.fullBody || sh.portrait;
+  const row = document.createElement("div"); row.className = "se-imgrow";
+  if (main){
+    row.appendChild(seCropper(main, sh));
+  } else {
+    const empty = document.createElement("div"); empty.className = "se-imgempty"; empty.textContent = "No image yet";
+    row.appendChild(empty);
+  }
+  const side = document.createElement("div"); side.className = "se-imgside";
+  const up = document.createElement("button"); up.className = "bz-btn p"; up.textContent = main ? "Replace image…" : "Add an image…";
+  up.addEventListener("click", () => serMainImage.click());
+  side.appendChild(up);
+  if (main){
+    const rm = document.createElement("button"); rm.className = "bz-btn"; rm.textContent = "Remove image";
+    rm.addEventListener("click", () => { seSet({fullBody:null, portrait:null, portraitCrop:null}); renderSheetEditor(); });
+    side.appendChild(rm);
+    const hint = document.createElement("div"); hint.className = "se-hint"; hint.textContent = "Drag the picture and use the slider to choose the square that becomes the headshot. The whole image shows on the board's sheet.";
+    side.appendChild(hint);
+  }
+  row.appendChild(side); img.appendChild(row); page.appendChild(img);
+  const col = document.createElement("div"); col.className = "se-block";
+  col.innerHTML = "<h3>Sheet colour</h3>";
+  const sw = document.createElement("div"); sw.className = "se-swatches";
+  for (const hex of ["#5A4A2E", ...SHEET_ACCENTS]){
+    const b = document.createElement("button"); b.className = "se-sw" + ((sh.accent || "#5A4A2E") === hex ? " on" : ""); b.style.background = hex;
+    b.title = hex === "#5A4A2E" ? "Parchment brown (default)" : hex;
+    b.addEventListener("click", () => { seSet({accent:hex === "#5A4A2E" ? "" : hex}); renderSheetEditor(); });
+    sw.appendChild(b);
+  }
+  col.appendChild(sw); page.appendChild(col);
+}
+/* a square window over the picture: drag to move, slider to zoom; makes a 256px headshot */
+function seCropper(src, sh){
+  const box = document.createElement("div"); box.className = "se-crop";
+  const im = document.createElement("img"); im.src = src; im.alt = ""; im.draggable = false;
+  const frame = document.createElement("div"); frame.className = "se-cropframe";
+  box.append(im, frame);
+  const wrap = document.createElement("div"); wrap.append(box);
+  const zoom = document.createElement("input"); zoom.type = "range"; zoom.min = 1; zoom.max = 4; zoom.step = .01; zoom.className = "se-zoom"; zoom.setAttribute("aria-label", "Zoom");
+  wrap.appendChild(zoom);
+  const S = 220;
+  let crop = {x:.5, y:.5, z:1, ...(sh.portraitCrop || {})};
+  zoom.value = crop.z;
+  const place = () => {
+    if (!im.naturalWidth) return;
+    const base = Math.max(S / im.naturalWidth, S / im.naturalHeight) * crop.z;
+    const w = im.naturalWidth * base, h = im.naturalHeight * base;
+    crop.x = Math.min(1, Math.max(0, crop.x)); crop.y = Math.min(1, Math.max(0, crop.y));
+    im.style.width = w + "px"; im.style.height = h + "px";
+    im.style.left = Math.min(0, Math.max(S - w, S / 2 - crop.x * w)) + "px";
+    im.style.top = Math.min(0, Math.max(S - h, S / 2 - crop.y * h)) + "px";
+  };
+  const save = async () => {
+    if (!im.naturalWidth) return;
+    const base = Math.max(S / im.naturalWidth, S / im.naturalHeight) * crop.z;
+    const cv = document.createElement("canvas"); cv.width = cv.height = 256;
+    const g = cv.getContext("2d");
+    const left = -parseFloat(im.style.left) / base, top = -parseFloat(im.style.top) / base, size = S / base;
+    g.drawImage(im, left, top, size, size, 0, 0, 256, 256);
+    seSet({portrait:cv.toDataURL("image/jpeg", .88), portraitCrop:{...crop}});
+  };
+  im.addEventListener("load", place); if (im.complete) setTimeout(place, 0);
+  zoom.addEventListener("input", () => { crop.z = Number(zoom.value); place(); });
+  zoom.addEventListener("change", save);
+  let drag = null;
+  box.addEventListener("pointerdown", e => { e.preventDefault(); drag = {x:e.clientX, y:e.clientY, cx:crop.x, cy:crop.y}; box.setPointerCapture(e.pointerId); });
+  box.addEventListener("pointermove", e => {
+    if (!drag || !im.naturalWidth) return;
+    const w = parseFloat(im.style.width), h = parseFloat(im.style.height), z = uiz();
+    crop.x = drag.cx - (e.clientX - drag.x) / z / w; crop.y = drag.cy - (e.clientY - drag.y) / z / h; place();
+  });
+  const end = () => { if (drag){ drag = null; save(); } };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+  return wrap;
+}
+const serMainImage = document.createElement("input"); serMainImage.type = "file"; serMainImage.accept = "image/*"; serMainImage.hidden = true;
+document.body.appendChild(serMainImage);
+serMainImage.addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
-  try { const { dataUrl } = await processImageBlob(f); seSet({ portrait: dataUrl }); renderSheetEditor(); }
-  catch(err){ toast("Couldn't read that image."); }
+  try {
+    const { dataUrl } = await processImageBlob(f);
+    seSet({ fullBody:dataUrl, portraitCrop:{x:.5, y:.3, z:1} });
+    /* a first headshot straight away; adjusting the square refines it */
+    const im = new Image(); im.src = dataUrl; await im.decode();
+    const side = Math.min(im.naturalWidth, im.naturalHeight), cv = document.createElement("canvas"); cv.width = cv.height = 256;
+    cv.getContext("2d").drawImage(im, (im.naturalWidth - side) / 2, Math.max(0, im.naturalHeight * .3 - side / 2), side, side, 0, 0, 256, 256);
+    seSet({ portrait:cv.toDataURL("image/jpeg", .88) });
+    renderSheetEditor();
+  } catch (err){ toast("Couldn't read that image."); }
 });
-const serFullBody = document.createElement("input"); serFullBody.type = "file"; serFullBody.accept = "image/*"; serFullBody.hidden = true;
-document.body.appendChild(serFullBody);
-serFullBody.addEventListener("change", async e => {
-  const f = e.target.files[0]; e.target.value = "";
-  if (!f) return;
-  try { const { dataUrl } = await processImageBlob(f); seSet({ fullBody: dataUrl }); renderSheetEditor(); }
-  catch(err){ toast("Couldn't read that image."); }
-});
+/* 2 · Race */
+function seRace(page, sh){
+  page.append(seGrid("2fr 1fr 1fr", seField("Race", sh.race, v => seSet({race:v}), {big:true}), seField("Speed (ft)", sh.speed, v => seSet({speed:v})), seField("Size", sh.size, v => seSet({size:v}), {placeholder:"Medium"})));
+  page.append(seField("Senses", sh.senses, v => seSet({senses:v}), {placeholder:"Darkvision 60 ft", hint:"Separate several with commas. Each shows under Senses on the sheet."}));
+  page.append(seField("Racial traits", sh.raceTraits, v => seSet({raceTraits:v}), {area:true, rows:5, hint:"These show on the sheet's Features & Traits tab."}));
+}
+/* 3 · Class & level */
+function seClass(page, sh){
+  page.append(seGrid("2fr 1fr 2fr", seField("Class", sh.charClass || sh.classLevel, v => seSet({charClass:v}), {big:true}), seField("Level", sh.level, v => seSet({level:v}), {type:"number"}), seField("Subclass", sh.subclass, v => seSet({subclass:v}))));
+  const pbF = document.createElement("div"); pbF.className = "se-field";
+  const pl = document.createElement("label"); pl.textContent = "Proficiency bonus";
+  const pr = document.createElement("div"); pr.className = "se-inline";
+  const auto = document.createElement("label"); const ac = document.createElement("input"); ac.type = "checkbox"; ac.checked = !sh.profManual;
+  auto.append(ac, " From level (" + fmtMod(2 + Math.floor((Math.max(1, sheetLevel(sh)) - 1) / 4)) + ")");
+  const pv = document.createElement("input"); pv.type = "number"; pv.value = sh.profBonus ?? 2; pv.disabled = !sh.profManual && !!sheetLevel(sh); pv.style.width = "64px";
+  ac.addEventListener("change", () => { seSet({profManual:!ac.checked}); renderSheetEditor(); });
+  pv.addEventListener("input", () => seSet({profBonus:Number(pv.value) || 0})); pv.addEventListener("keydown", e => e.stopPropagation());
+  pr.append(auto, pv); pbF.append(pl, pr);
+  const sel = document.createElement("div"); sel.className = "se-field";
+  const sl = document.createElement("label"); sl.textContent = "Spellcasting ability";
+  const s = document.createElement("select");
+  for (const [v, tt] of [["", "— none —"], ["INT", "Intelligence"], ["WIS", "Wisdom"], ["CHA", "Charisma"], ["STR", "Strength"], ["DEX", "Dexterity"], ["CON", "Constitution"]]){
+    const o = document.createElement("option"); o.value = v; o.textContent = tt; if ((sh.spellAbility || "") === v) o.selected = true; s.appendChild(o);
+  }
+  s.addEventListener("change", () => seSet({spellAbility:s.value}));
+  sel.append(sl, s);
+  page.append(seGrid("1fr 1fr", pbF, sel));
+  page.append(seGrid("1fr 1fr 1fr 1fr", seField("Max HP", sh.maxHp, v => seSet({maxHp:v}), {type:"number"}), seField("Hit dice", sh.hitDice, v => seSet({hitDice:v}), {placeholder:"3d8"}),
+    seField("Armour class", sh.ac, v => seSet({ac:v}), {type:"number"}), seField("Initiative (blank = from DEX)", sh.initiative, v => seSet({initiative:v}), {placeholder:fmtMod(sheetMod(sh, "DEX"))})));
+  const jk = document.createElement("label"); jk.className = "se-check";
+  const jc = document.createElement("input"); jc.type = "checkbox"; jc.checked = !!sh.jack;
+  jc.addEventListener("change", () => seSet({jack:jc.checked}));
+  jk.append(jc, " Jack of All Trades (half proficiency on every check you aren't proficient in)");
+  page.appendChild(jk);
+  page.append(seField("Features & traits", sh.features, v => seSet({features:v}), {area:true, rows:8, hint:"Class and other features. Shows on the sheet's Features & Traits tab."}));
+}
+/* 4 · Ability scores: roll (4d6 drop lowest), standard array, point buy, or type */
+let seRolls = null, seRollPick = null, seAbMethod = "type";
+const POINT_COST = {8:0, 9:1, 10:2, 11:3, 12:4, 13:5, 14:7, 15:9};
+function seAbilities(page, sh){
+  const meth = document.createElement("div"); meth.className = "se-meth";
+  for (const [k, l] of [["roll", "🎲 Roll my stats"], ["array", "Standard array"], ["points", "Point buy"], ["type", "Type them in"]]){
+    const b = document.createElement("button"); b.className = "bz-fl" + (seAbMethod === k ? " on" : ""); b.textContent = l;
+    b.addEventListener("click", () => {
+      seAbMethod = k; seRollPick = null;
+      if (k === "roll" && !seRolls) seRolls = seRollSix();
+      if (k === "array") seRolls = [15, 14, 13, 12, 10, 8].map(t => ({total:t, dice:null, used:null}));
+      renderSheetEditor();
+    });
+    meth.appendChild(b);
+  }
+  page.appendChild(meth);
+  const base = ab => Number(sh.abilities?.[ab] ?? 10) || 0;
+  if (seAbMethod === "roll" || seAbMethod === "array"){
+    const dice = document.createElement("div"); dice.className = "se-dice";
+    seRolls.forEach((r, i) => {
+      const b = document.createElement("button"); b.className = "se-rl" + (r.used ? " used" : "") + (seRollPick === i ? " pick" : "");
+      if (r.dice){ const d = document.createElement("div"); r.dice.forEach((v, j) => { const s = document.createElement("span"); s.className = "se-d6" + (j === r.drop ? " x" : ""); s.textContent = v; d.appendChild(s); }); b.appendChild(d); }
+      const tt = document.createElement("div"); tt.className = "se-rlt"; tt.textContent = r.total; b.appendChild(tt);
+      if (r.used){ const u = document.createElement("div"); u.className = "se-hint"; u.textContent = "→ " + r.used; b.appendChild(u); }
+      b.addEventListener("click", () => { seRollPick = seRollPick === i ? null : i; renderSheetEditor(); });
+      dice.appendChild(b);
+    });
+    if (seAbMethod === "roll"){ const again = document.createElement("button"); again.className = "bz-btn"; again.textContent = "Roll again"; again.addEventListener("click", () => { seRolls = seRollSix(); seRollPick = null; renderSheetEditor(); }); dice.appendChild(again); }
+    page.appendChild(dice);
+    const hint = document.createElement("div"); hint.className = "se-hint"; hint.textContent = "Tap a number, then tap the ability it goes to. Scores change as you place them.";
+    page.appendChild(hint);
+  }
+  if (seAbMethod === "points"){
+    const spent = SHEET_ABILITIES.reduce((t, a) => t + (POINT_COST[base(a)] ?? 99), 0);
+    const p = document.createElement("div"); p.className = "se-hint"; p.style.fontSize = "13px";
+    p.textContent = spent > 27 || isNaN(spent) || spent === Infinity ? "Point buy needs every score between 8 and 15. Use the buttons below; scores outside that range were left as they are."
+      : "Points spent: " + spent + " of 27" + (spent > 27 ? " (over)" : "");
+    page.appendChild(p);
+  }
+  const grid = document.createElement("div"); grid.className = "se-asg";
+  grid.appendChild(document.createElement("span"));
+  for (const ab of SHEET_ABILITIES){ const s = document.createElement("span"); s.className = "se-asgh"; s.textContent = ab; grid.appendChild(s); }
+  grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"Base score"}));
+  for (const ab of SHEET_ABILITIES){
+    const cell = document.createElement("div"); cell.className = "se-asgc";
+    if (seAbMethod === "points"){
+      const minus = document.createElement("button"); minus.textContent = "−"; const plus = document.createElement("button"); plus.textContent = "+";
+      const v = document.createElement("b"); v.textContent = base(ab);
+      const spent = SHEET_ABILITIES.reduce((t, a) => t + (POINT_COST[base(a)] ?? 0), 0);
+      minus.disabled = base(ab) <= 8; plus.disabled = base(ab) >= 15 || spent + ((POINT_COST[base(ab) + 1] ?? 99) - (POINT_COST[base(ab)] ?? 0)) > 27;
+      minus.addEventListener("click", () => { seSet({abilities:{...sh.abilities, [ab]:Math.max(8, base(ab) - 1)}}); renderSheetEditor(); });
+      plus.addEventListener("click", () => { seSet({abilities:{...sh.abilities, [ab]:Math.min(15, Math.max(8, base(ab)) + 1)}}); renderSheetEditor(); });
+      cell.classList.add("pts"); cell.append(minus, v, plus);
+    } else if ((seAbMethod === "roll" || seAbMethod === "array") && seRolls){
+      const assigned = seRolls.find(r => r.used === ab);
+      const b = document.createElement("button"); b.className = "se-drop" + (seRollPick != null ? " ready" : "") + (assigned ? "" : " old"); b.textContent = assigned ? assigned.total : base(ab);
+      if (!assigned) b.title = "Not placed yet (currently " + base(ab) + ")";
+      b.addEventListener("click", () => {
+        if (seRollPick == null) return;
+        const r = seRolls[seRollPick];
+        for (const x of seRolls) if (x.used === ab) x.used = null;
+        r.used = ab; seRollPick = null;
+        seSet({abilities:{...sh.abilities, [ab]:r.total}}); renderSheetEditor();
+      });
+      cell.appendChild(b);
+    } else {
+      const i = document.createElement("input"); i.type = "number"; i.value = base(ab);
+      i.addEventListener("input", () => seSet({abilities:{...seData().abilities, [ab]:Number(i.value) || 0}}));
+      i.addEventListener("change", () => renderSheetEditor());
+      i.addEventListener("keydown", e => e.stopPropagation());
+      cell.appendChild(i);
+    }
+    grid.appendChild(cell);
+  }
+  const bonuses = Object.entries(sh.abilityBonus || {}).filter(([, b]) => b && SHEET_ABILITIES.some(a => Number(b[a])));
+  for (const [src, b] of bonuses){
+    grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"+ " + src}));
+    for (const ab of SHEET_ABILITIES) grid.appendChild(Object.assign(document.createElement("div"), {className:"se-asgc", textContent:Number(b[ab]) ? fmtMod(Number(b[ab])) : ""}));
+  }
+  grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"Score"}));
+  for (const ab of SHEET_ABILITIES){
+    const cell = document.createElement("div"); cell.className = "se-asgc tot";
+    cell.innerHTML = "<b>" + sheetScore(sh, ab) + "</b><span>" + fmtMod(sheetMod(sh, ab)) + "</span>";
+    grid.appendChild(cell);
+  }
+  page.appendChild(grid);
+}
+function seRollSix(){
+  return Array.from({length:6}, () => {
+    const dice = [rollD(6), rollD(6), rollD(6), rollD(6)];
+    const drop = dice.indexOf(Math.min(...dice));
+    return {dice, drop, total:dice.reduce((a, b) => a + b, 0) - dice[drop], used:null};
+  }).sort((a, b) => b.total - a.total);
+}
+/* 5 · Skills & proficiencies */
+function seSkills(page, sh){
+  const saves = document.createElement("div"); saves.className = "se-block"; saves.innerHTML = "<h3>Saving throws</h3>";
+  const sg = document.createElement("div"); sg.className = "se-checkgrid";
+  for (const ab of SHEET_ABILITIES){
+    const l = document.createElement("label"); l.className = "se-check";
+    const c = document.createElement("input"); c.type = "checkbox"; c.checked = !!sh.saves?.[ab];
+    c.addEventListener("change", () => { seSet({saves:{...seData().saves, [ab]:c.checked}}); renderSheetEditor(); });
+    l.append(c, " " + ABILITY_FULL[ab] + " ", Object.assign(document.createElement("b"), {textContent:fmtMod(saveBonus(sh, ab))}));
+    sg.appendChild(l);
+  }
+  saves.appendChild(sg); page.appendChild(saves);
+  const sk = document.createElement("div"); sk.className = "se-block"; sk.innerHTML = "<h3>Skills</h3>";
+  const hint = document.createElement("div"); hint.className = "se-hint"; hint.textContent = "Tap a skill's dot to step through: none, proficient, expertise." + (sh.jack ? " Jack of All Trades gives half on the rest." : ""); sk.appendChild(hint);
+  const list = document.createElement("div"); list.className = "se-skilllist";
+  for (const [name, ab] of SHEET_SKILLS){
+    const v = sh.skills?.[name], lvl = v === true ? 1 : typeof v === "number" ? v : 0;
+    const r = document.createElement("button"); r.className = "se-skrow";
+    const shown = skillProfLevel(sh, name);
+    r.innerHTML = '<i class="bz-dot' + (shown >= 2 ? " exp" : shown >= 1 ? " on" : shown > 0 ? " half" : "") + '"></i><span class="bz-ska">' + ab + "</span>";
+    r.append(name, Object.assign(document.createElement("b"), {textContent:fmtMod(skillBonus(sh, name))}));
+    r.title = ["Not proficient", "Proficient", "Expertise"][lvl >= 2 ? 2 : lvl >= 1 ? 1 : 0];
+    r.addEventListener("click", () => { const next = lvl >= 2 ? 0 : lvl >= 1 ? 2 : 1; seSet({skills:{...seData().skills, [name]:next || false}}); renderSheetEditor(); });
+    list.appendChild(r);
+  }
+  sk.appendChild(list); page.appendChild(sk);
+  page.append(seGrid("1fr 1fr", seField("Armour", sh.profArmor, v => seSet({profArmor:v}), {placeholder:"Light, medium, shields"}), seField("Weapons", sh.profWeapons, v => seSet({profWeapons:v}), {placeholder:"Simple weapons, scimitars"})));
+  page.append(seGrid("1fr 1fr", seField("Tools", sh.profTools, v => seSet({profTools:v}), {placeholder:"Herbalism kit"}), seField("Languages", sh.languages, v => seSet({languages:v}), {placeholder:"Common, Elvish"})));
+  if (String(sh.otherProfs || "").trim()) page.append(seField("Other proficiencies (from before)", sh.otherProfs, v => seSet({otherProfs:v}), {area:true, rows:3, hint:"From the old sheet. Move these into the boxes above when you like."}));
+}
+/* 6 · Spells: the spell list editor (search, import, library, slots, prepared) */
+function sePageSpells(page){ renderSpellsPage(page); }
+/* 7 · Equipment & attacks */
+function seEquipment(page, sh){
+  const atk = document.createElement("div"); atk.className = "se-block"; atk.innerHTML = "<h3>Weapons & attacks</h3>";
+  const hdr = document.createElement("div"); hdr.className = "se-atk-row se-atk5";
+  for (const t of ["Name", "Hit bonus", "Damage", "Range", "Notes", ""]){ const l = document.createElement("label"); l.textContent = t; hdr.appendChild(l); }
+  atk.appendChild(hdr);
+  const attacks = (sh.attacks || []).filter(Boolean);
+  attacks.forEach((a, i) => {
+    const r = document.createElement("div"); r.className = "se-atk-row se-atk5";
+    for (const [k, ph] of [["name", "Scimitar"], ["bonus", "+4"], ["dmg", "1d6+2 slashing"], ["range", "5 ft"], ["notes", "Finesse, light"]]){
+      const inp = document.createElement("input"); inp.value = a[k] || ""; inp.placeholder = ph;
+      inp.addEventListener("input", () => seSet({attacks:seData().attacks.map((x, j) => j === i ? {...x, [k]:inp.value} : x)}));
+      inp.addEventListener("keydown", e => e.stopPropagation());
+      r.appendChild(inp);
+    }
+    const x = document.createElement("button"); x.className = "se-spl-x"; x.textContent = "✕"; x.title = "Remove";
+    x.addEventListener("click", () => { seSet({attacks:seData().attacks.filter((_, j) => j !== i)}); renderSheetEditor(); });
+    r.appendChild(x); atk.appendChild(r);
+  });
+  const add = document.createElement("button"); add.className = "se-pageadd"; add.textContent = "＋ Add a weapon or attack";
+  add.addEventListener("click", () => { seSet({attacks:[...(seData().attacks || []), {name:"", bonus:"", dmg:""}]}); renderSheetEditor(); });
+  atk.appendChild(add);
+  const auto = document.createElement("div"); auto.className = "se-hint"; auto.textContent = "Spells with an attack or damage show under Actions by themselves, and so does an unarmed strike.";
+  atk.appendChild(auto); page.appendChild(atk);
+  const res = document.createElement("div"); res.className = "se-block"; res.innerHTML = "<h3>Limited-use features</h3>";
+  (sh.resources || []).forEach((r, i) => {
+    const row = document.createElement("div"); row.className = "se-resrow";
+    const n = document.createElement("input"); n.value = r.name || ""; n.placeholder = "Wild Shape";
+    const m = document.createElement("input"); m.type = "number"; m.min = 1; m.value = r.max || 1; m.title = "Uses";
+    const s = document.createElement("select");
+    for (const [v, t] of [["short", "Back on a short rest"], ["long", "Back on a long rest"]]){ const o = document.createElement("option"); o.value = v; o.textContent = t; if ((r.reset || "long") === v) o.selected = true; s.appendChild(o); }
+    const upd = patch => seSet({resources:seData().resources.map((x, j) => j === i ? {...x, ...patch} : x)});
+    n.addEventListener("input", () => upd({name:n.value})); m.addEventListener("input", () => upd({max:Math.max(1, parseInt(m.value, 10) || 1)})); s.addEventListener("change", () => upd({reset:s.value}));
+    for (const el of [n, m]) el.addEventListener("keydown", e => e.stopPropagation());
+    const x = document.createElement("button"); x.className = "se-spl-x"; x.textContent = "✕";
+    x.addEventListener("click", () => { seSet({resources:seData().resources.filter((_, j) => j !== i)}); renderSheetEditor(); });
+    row.append(n, m, s, x); res.appendChild(row);
+  });
+  const addR = document.createElement("button"); addR.className = "se-pageadd"; addR.textContent = "＋ Add a limited-use feature";
+  addR.addEventListener("click", () => { seSet({resources:[...(seData().resources || []), {id:uid("res"), name:"", max:1, used:0, reset:"long"}]}); renderSheetEditor(); });
+  res.appendChild(addR); page.appendChild(res);
+  page.append(seField("Equipment", sh.equipment, v => seSet({equipment:v}), {area:true, rows:8, hint:"One item per line. Coins are kept on the sheet's Inventory tab."}));
+}
+/* 8 · Background & personality */
+function seBackground(page, sh){
+  page.append(seField("Background", sh.background, v => seSet({background:v}), {big:true}));
+  page.append(seGrid("1fr 1fr", seField("Personality traits", sh.personality, v => seSet({personality:v}), {area:true, rows:4}), seField("Ideals", sh.ideals, v => seSet({ideals:v}), {area:true, rows:4})));
+  page.append(seGrid("1fr 1fr", seField("Bonds", sh.bonds, v => seSet({bonds:v}), {area:true, rows:4}), seField("Flaws", sh.flaws, v => seSet({flaws:v}), {area:true, rows:4})));
+}
+/* 9 · Notes: one or more pages */
+function seNotes(page, sh){
+  (sh.notesPages || [""]).forEach((txt, i) => {
+    const f = seField("Notes page " + (i + 1), txt, v => { const p = [...seData().notesPages]; p[i] = v; seSet({notesPages:p}); }, {area:true, rows:10});
+    if ((sh.notesPages || []).length > 1){
+      const del = document.createElement("button"); del.className = "se-pageadd"; del.textContent = "Delete this page";
+      del.addEventListener("click", () => { const p = seData().notesPages.filter((_, j) => j !== i); seSet({notesPages:p.length ? p : [""]}); renderSheetEditor(); });
+      f.appendChild(del);
+    }
+    page.appendChild(f);
+  });
+  const add = document.createElement("button"); add.className = "se-pageadd"; add.textContent = "＋ Add a notes page";
+  add.addEventListener("click", () => { seSet({notesPages:[...(seData().notesPages || []), ""]}); renderSheetEditor(); });
+  page.appendChild(add);
+}
 /* ---------------- spells ------------------------------------------------
    sheet.spells = {slots:{1:{total,used},…}, list:[{id, lvl, name, prep, det}]}
    det holds the spell's details (school, casting time, range, components,
@@ -19437,7 +20214,7 @@ async function spellLibraryDialog(){
 }
 function renderSpellsPage(page){
   const sh = seData(), sp = sheetSpells(sh);
-  /* spellcasting summary, derived from the Character tab */
+  /* spellcasting summary, derived from the Class & level page */
   const sum = document.createElement("div"); sum.className = "se-spl-sum";
   const st = spellStats(sh);
   for (const [lab, val] of [["Spellcasting ability", st ? ABILITY_FULL[st.ab] : "—"], ["Spell save DC", st ? st.dc : "—"], ["Spell attack bonus", st ? fmtMod(st.atk) : "—"]]){
@@ -19445,7 +20222,7 @@ function renderSpellsPage(page){
     const l = document.createElement("label"); l.textContent = lab;
     const b = document.createElement("b"); b.textContent = val; s.append(l, b); sum.appendChild(s);
   }
-  if (!st){ const h = document.createElement("div"); h.className = "hint"; h.textContent = "Choose a spellcasting ability on the Character tab to work out the save DC and attack bonus."; sum.appendChild(h); }
+  if (!st){ const h = document.createElement("div"); h.className = "hint"; h.textContent = "Choose a spellcasting ability on the Class & level page to work out the save DC and attack bonus."; sum.appendChild(h); }
   page.appendChild(sum);
 
   /* add: search the free list, or type any name; paste for full details */
@@ -19777,8 +20554,8 @@ function pdfLabelBox(doc, label, text, x, y, w, h, opt = {}){
   return over;
 }
 async function buildSheetPdf(sh){
-  const doc = new PdfDoc(), {m, top} = SHEET_PDF, pb = Number(sh.profBonus) || 0;
-  const ab = k => Number(sh.abilities?.[k] ?? 10), mod = k => abilityMod(ab(k));
+  const doc = new PdfDoc(), {m, top} = SHEET_PDF, pb = sheetProf(sh);
+  const ab = k => sheetScore(sh, k), mod = k => sheetMod(sh, k);
   const sp = sheetSpells(sh), st = spellStats(sh);
   const caster = !!st || sp.list.length > 0 || Object.values(sp.slots).some(s => Number(s?.total) > 0);
   const overflow = [];
@@ -19824,23 +20601,23 @@ async function buildSheetPdf(sh){
   const skH = y0 + abH - yy, rowH = Math.min(16, (skH - 20) / 18);
   doc.rect(ix, yy, iw, skH, {r:5, lw:1});
   SHEET_SKILLS.forEach(([name, a], i) => {
-    const on = !!sh.skills?.[name];
-    dotRow(ix + 6, yy + 12 + i * rowH, on, fmtMod(mod(a) + (on ? pb : 0)), name, "(" + a.charAt(0) + a.slice(1).toLowerCase() + ")");
+    const on = skillProfLevel(sh, name) >= 1;
+    dotRow(ix + 6, yy + 12 + i * rowH, on, fmtMod(skillBonus(sh, name)), name, "(" + a.charAt(0) + a.slice(1).toLowerCase() + ")");
   });
   doc.label("Skills", ix + iw / 2, yy + skH - 5, "center");
   yy = y0 + abH + 6.5;
-  const perc = 10 + mod("WIS") + (sh.skills?.Perception ? pb : 0);
+  const perc = passiveScore(sh, "Perception");
   doc.rect(c1, yy, w1, passH, {r:5, lw:1});
   doc.rect(c1 + 4, yy + 3, 22, 18, {r:3, lw:1});
   doc.text(String(perc), c1 + 15, yy + 15.5, {f:"HB", size:9.5, align:"center"});
   doc.label("Passive Wisdom (Perception)", c1 + 33, yy + 14.5);
   yy += passH + 6.5;
-  overflow.push(["Other proficiencies & languages", pdfLabelBox(doc, "Other proficiencies & languages", sh.otherProfs, c1, yy, w1, y1 - yy)]);
+  overflow.push(["Other proficiencies & languages", pdfLabelBox(doc, "Other proficiencies & languages", sheetProfText(sh), c1, yy, w1, y1 - yy)]);
   /* middle: combat */
   const cbH = 232;
   doc.rect(c2, y0, w2, cbH, {r:6, lw:1.2, fill:.95});
   const tw = (w2 - 12 - 10) / 3;
-  [["Armour class", sh.ac], ["Initiative", sh.initiative || fmtMod(mod("DEX"))], ["Speed", sh.speed]].forEach(([lab, v], i) => {
+  [["Armour class", sh.ac], ["Initiative", fmtMod(initBonus(sh))], ["Speed", sh.speed]].forEach(([lab, v], i) => {
     const x = c2 + 6 + i * (tw + 5);
     doc.rect(x, y0 + 6, tw, 46, {r:i ? 5 : 8, lw:1, fill:1});
     doc.text(String(v || ""), x + tw / 2, y0 + 30, {f:"TB", size:17, align:"center"});
@@ -19906,7 +20683,7 @@ async function buildSheetPdf(sh){
   [["Personality traits", sh.personality, 76], ["Ideals", sh.ideals, 52], ["Bonds", sh.bonds, 52], ["Flaws", sh.flaws, 52]].forEach(([lab, t, h]) => {
     overflow.push([lab, pdfLabelBox(doc, lab, t, c3 + 6, py, w3 - 12, h, {fill:1})]); py += h + 5;
   });
-  overflow.push(["Features & traits", pdfLabelBox(doc, "Features & traits", sh.features, c3, y0 + pH + 6, w3, y1 - y0 - pH - 6)]);
+  overflow.push(["Features & traits", pdfLabelBox(doc, "Features & traits", sheetFeatureText(sh), c3, y0 + pH + 6, w3, y1 - y0 - pH - 6)]);
 
   /* ---------- page 2: portrait, backstory, notes ---------- */
   doc.page();
@@ -20004,8 +20781,6 @@ async function exportSheetPdf(cardId){
     return true;
   } catch (e){ toast("Couldn't make the PDF: " + e.message, 8000); return false; }
 }
-$("#seClose").addEventListener("click", closeSheet);
-$("#sePdf").addEventListener("click", () => { if (seCardId) exportSheetPdf(seCardId); });
 $("#sheetEditor").addEventListener("pointerdown", e => { if (e.target === $("#sheetEditor")) closeSheet(); });
 
 function openLightbox(cid){
@@ -21411,6 +22186,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b130", [
+    "D&D sheet: opening a sheet now shows it ready to play, laid out like D&D Beyond. Tap any modifier, attack or spell damage to roll it; Heal, Damage and temp HP sit by your hit points; Cast uses a spell slot; Short and Long rest refill what they should.",
+    "Edit character walks through nine pages (Basics, Race, Class & level, Ability scores, …). Roll my stats rolls 4d6 drop lowest for you to place, or use the standard array or point buy. One image is cropped for the headshot, and Basics picks the sheet colour.",
+    "Proficiency follows your level, race bonuses add to scores, and skills can be proficient, expertise or half (Jack of All Trades). Sheet cards on the board have a third look, Beyond, beside Simple and Full."
+  ]],
   ["b129", [
     "Spells tab: \u201cPaste spell text\u201d is now Import spells\u2026, which opens with the link box first; pasting is still there underneath.",
     "Import from dnd5e.wikidot.com, aidedd.org or dandwiki.com (the window lists them and warns about any other site). Each spell now shows which book it\u2019s from, and My spell library can filter by book. Needs the updated Cloudflare Worker."
@@ -21458,20 +22238,7 @@ const PATCH_NOTES = [
   ]],
   ["b117", [
     "Clock widget sits on the board like a heading: just the time, date and second time zone, no frame or icon. Click it to see the frame and Edit."
-  ]],
-  ["b116", [
-    "New boards appear straight away in a jewel gradient, with no setup window. Right-click a board → Edit to change it. A board's letter or auto icon follows its name when you rename it.",
-    "Colour picker: No colour at the top (lists can lose their colour again), and Jewel gradients come first. Character cards use the same picker and brighter colours for each type."
-  ]],
-  ["b115", [
-    "New fonts: titles stay in the logo's Georgia, and everything else uses Verdana, which was designed as Georgia's partner. The rounded toolbar font is gone.",
-    "Tools and widgets have squarer corners."
-  ]],
-
-
-
-
-
+  ]]
 ];
 function renderPatchNotes(){
   const host = $("#patchNotes"); if (!host) return;
