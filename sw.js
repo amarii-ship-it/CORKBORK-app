@@ -10,7 +10,8 @@
 const SHELL = "corkbork-shell-v1";
 const LIBS = "corkbork-libs-v1";
 const SHELL_FILES = ["./", "./index.html", "./corkboard.html", "./privacy.html", "./terms.html", "./manifest.webmanifest",
-  "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
+  "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png",
+  "./spells-srd-2014.json"];   /* free D&D spell details, so spell lookup works offline */
 const LIB_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "tessdata.projectnaptha.com"];
 
 self.addEventListener("install", event => {

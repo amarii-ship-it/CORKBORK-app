@@ -795,6 +795,9 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 #sheetEditor.open{display:flex;}
 #seClose{position:fixed; top:14px; right:16px; width:38px; height:38px; border-radius:50%; color:#fff; font-size:19px; background:rgba(255,255,255,.08); z-index:2;}
 #seClose:hover{background:rgba(255,255,255,.16);}
+#sePdf{position:fixed; top:16px; right:64px; height:34px; padding:0 14px; border-radius:17px; color:#F4ECDD; font-size:13px; font-weight:600; background:rgba(255,255,255,.1); border:1px solid rgba(244,236,221,.35); z-index:2;}
+#sePdf:hover{background:rgba(255,255,255,.18);}
+@media (max-width:700px){ #sePdf{top:auto; bottom:14px; right:14px; z-index:6; box-shadow:0 4px 14px rgba(0,0,0,.35); background:#5A4A2E;} }
 #seTabs{display:flex; gap:6px; padding:12px 0 8px; z-index:2;}
 #seTabs button{padding:6px 14px; border-radius:6px 6px 0 0; font-size:13px; color:#C9B08A; background:rgba(0,0,0,.25); border:1px solid transparent;}
 #seTabs button.sel{background:#F4ECDD; color:#2C2415; font-weight:600;}
@@ -860,6 +863,45 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 .se-atk-row input{background:#FBF6EC; border:1px solid #C9B08A; border-radius:4px; padding:4px 6px; font:inherit; font-size:13px; color:#2C2415;}
 .se-portrait-box{width:100%; aspect-ratio:1; background:#EAD9BC; border:1px solid #C9B08A; border-radius:5px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8A7550; font-size:12px;}
 .se-portrait-box img{width:100%; height:100%; object-fit:cover;}
+/* spells tab */
+.se-spl-sum{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+.se-spl-sum .se-stat b{display:block; font-size:20px; font-family:Georgia,serif;}
+.se-spl-sum .hint{grid-column:1/-1; font-size:12px; color:#8A7550;}
+.se-spl-add{display:flex; gap:8px; align-items:center; position:relative; margin-bottom:6px;}
+.se-spl-add input{flex:1; background:#FBF6EC; border:1px solid #C9B08A; border-radius:4px; padding:7px 9px; font:inherit; font-size:14px; color:#2C2415;}
+.se-spl-add select{background:#FBF6EC; border:1px solid #C9B08A; border-radius:4px; padding:6px; font:inherit; font-size:13px; color:#2C2415;}
+.se-spl-results{position:absolute; left:0; right:0; top:100%; z-index:3; background:#FBF6EC; border:1px solid #C9B08A; border-radius:0 0 6px 6px; box-shadow:0 8px 20px rgba(0,0,0,.18); display:none; max-height:280px; overflow-y:auto;}
+.se-spl-results.open{display:block;}
+.se-spl-results button{display:flex; width:100%; justify-content:space-between; gap:10px; text-align:left; padding:6px 10px; font:inherit; font-size:13px; color:#2C2415;}
+.se-spl-results button span{color:#8A7550; font-size:11px;}
+.se-spl-results button.on, .se-spl-results button:hover{background:#EAD9BC;}
+.se-spl-credit{font-size:10px; color:#A08A5E; margin:0 0 14px;}
+.se-spl-levels{columns:2; column-gap:14px;}
+.se-spl-lvl{break-inside:avoid; border:1px solid #C9B08A; border-radius:5px; background:#FBF6EC; margin-bottom:12px; overflow:hidden;}
+.se-spl-lh{display:flex; align-items:center; gap:8px; background:#5A4A2E; color:#F4ECDD; padding:5px 9px; font-size:12px;}
+.se-spl-lh b{font-family:Georgia,serif; font-size:14px; margin-right:auto;}
+.se-spl-lh input{width:38px; text-align:center; background:#FBF6EC; border:none; border-radius:3px; font:inherit; font-size:12px; padding:2px 0; color:#2C2415;}
+.se-pips{display:flex; gap:3px;}
+.se-pips button{width:14px; height:14px; border-radius:50%; border:1.5px solid #F4ECDD; padding:0;}
+.se-pips button.used{background:#F4ECDD;}
+.se-spl-row{display:flex; align-items:center; gap:8px; padding:4px 9px; border-top:1px solid #E5D6B9; font-size:13px;}
+.se-prep{width:13px; height:13px; border-radius:50%; border:1.5px solid #5A4A2E; padding:0; flex:none;}
+.se-prep.on{background:#5A4A2E;}
+.se-spl-name{flex:1; cursor:help; text-decoration:underline dotted #C9B08A; text-underline-offset:3px; background:none; text-align:left; font:inherit; color:inherit; padding:0;}
+.se-spl-x{color:#A08A5E; font-size:13px; padding:0 4px; border-radius:3px;}
+.se-spl-x:hover{background:#EAD9BC; color:#5A4A2E;}
+.se-spl-empty{padding:5px 9px; font-size:12px; color:#A08A5E; border-top:1px solid #E5D6B9;}
+@media (max-width:700px){ .se-spl-levels{columns:1;} .se-spl-add{flex-wrap:wrap;} .se-spl-add input{flex-basis:100%;} .se-spl-sum b{font-size:16px;} }
+#spellTip{position:fixed; z-index:175; width:min(360px,92vw); max-height:62vh; overflow-y:auto; display:none;
+  background:#FBF6EC; color:#2C2415; border:1px solid #C9B08A; border-radius:7px; padding:11px 13px;
+  box-shadow:0 12px 32px rgba(0,0,0,.35); font-family:Georgia,serif; font-size:13px; line-height:1.45;}
+#spellTip.open{display:block;}
+#spellTip h4{font-size:16px; margin:0;}
+#spellTip .sub{font-style:italic; color:#6B5B3E; margin-bottom:7px;}
+#spellTip dl{display:grid; grid-template-columns:auto 1fr; gap:1px 8px; font-size:12px; margin-bottom:8px;}
+#spellTip dt{font-weight:700;}
+#spellTip p{margin:0 0 7px; white-space:pre-wrap;}
+#spellTip .src{font-size:10px; color:#A08A5E; border-top:1px solid #E5D6B9; padding-top:5px; margin-top:4px;}
 .se-pageadd{margin:8px; padding:6px 12px; border:1px dashed #C9B08A; border-radius:6px; color:#6B5B3E; background:#FBF6EC; font-size:13px;}
 .se-pageadd:hover{background:#F0E6D2;}
 .tool[data-type="card"] svg{stroke:#BE9A78;}
@@ -3342,6 +3384,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- character sheet fullscreen editor -->
 <div id="sheetEditor">
   <button id="seClose" title="Close (Esc)">✕</button>
+  <button id="sePdf" title="Save a printable PDF (US Letter, black and white)">Print / PDF</button>
   <div id="seTabs"></div>
   <div id="seScroll"></div>
 </div>
@@ -3868,7 +3911,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b124";
+window.BUILD = "b125";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11196,7 +11239,10 @@ function openCtx(x, y, c){
     });
   }
   else if (c.type === "card") add("Open card page…", () => openCardPage(c.id));
-  else if (c.type === "sheet") add("Open D&D sheet…", () => openSheet(c.id));
+  else if (c.type === "sheet"){
+    add("Open D&D sheet…", () => openSheet(c.id));
+    add("Export as PDF…", () => exportSheetPdf(c.id));
+  }
   else if (isContainer(c)) add("Rename", () => {
     const el = worldEl.querySelector(`.card[data-id="${c.id}"]`);
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: c.type === "grid" ? v : (v || "Column") }));
@@ -12730,6 +12776,7 @@ canvasEl.addEventListener("wheel", e => {
    page or board handlers below. The ask dialog and the tour keep their own
    handling. While typing somewhere else, side panels leave Escape to the editor. */
 const ESC_LAYERS = [
+  {sel:"#spellTip"},
   {sel:"#ctx", close:() => closeCtx()},
   {sel:"#crumbPop"}, {sel:"#cpEmojiPop"}, {sel:"#cpAddPop"},
   {sel:"#tbColorPop"}, {sel:"#colorPop"}, {sel:"#labelPop"}, {sel:"#widgetPop"},
@@ -18453,6 +18500,7 @@ function openSheet(cid){
   renderSheetEditor();
 }
 function closeSheet(){
+  hideSpellTip();
   $("#sheetEditor").classList.remove("open");
   seCardId = null;
   renderBoard();
@@ -18477,7 +18525,7 @@ function seField(label, value, oninput, opts={}){
 function renderSheetEditor(){
   const sh = seData(); if (!sh) return;
   const tabs = $("#seTabs"); tabs.innerHTML = "";
-  const pageNames = ["Character", "Details", "Preview", ...sh.notesPages.map((_,i) => "Notes " + (i+1))];
+  const pageNames = ["Character", "Details", "Spells", "Preview", ...sh.notesPages.map((_,i) => "Notes " + (i+1))];
   pageNames.forEach((nm, i) => {
     const b = document.createElement("button"); b.textContent = nm;
     if (i === sePage) b.classList.add("sel");
@@ -18701,7 +18749,8 @@ function renderSheetEditor(){
     grid.appendChild(seField("Hit Dice", sh.hitDice, v => seSet({hitDice:v})));
     page.appendChild(grid);
   }
-  else if (sePage === 2){
+  else if (sePage === 2) renderSpellsPage(page);
+  else if (sePage === 3){
     /* --- Preview: the real card face, rendered at full size ---------------
        Not a mock-up. This calls the same buildSheet() the board uses, so what
        is shown here IS what the card will look like, and it re-renders on
@@ -18739,7 +18788,7 @@ function renderSheetEditor(){
   }
   else {
     /* --- extra notes pages --- */
-    const idx = sePage - 3;
+    const idx = sePage - 4;
     const wrap = document.createElement("div"); wrap.className = "se-field";
     const l = document.createElement("label"); l.textContent = "Page " + (idx+1) + " — free notes";
     const ta = document.createElement("textarea"); ta.value = sh.notesPages[idx] || ""; ta.rows = 22; ta.style.width = "100%";
@@ -18753,7 +18802,7 @@ function renderSheetEditor(){
       del.addEventListener("click", () => {
         const p = seData().notesPages.filter((_,j) => j !== idx);
         seSet({ notesPages: p.length ? p : [""] });
-        sePage = Math.max(2, sePage - 1); renderSheetEditor();
+        sePage = Math.max(3, sePage - 1); renderSheetEditor();
       });
       page.appendChild(del);
     }
@@ -18776,7 +18825,754 @@ serFullBody.addEventListener("change", async e => {
   try { const { dataUrl } = await processImageBlob(f); seSet({ fullBody: dataUrl }); renderSheetEditor(); }
   catch(err){ toast("Couldn't read that image."); }
 });
+/* ---------------- spells ------------------------------------------------
+   sheet.spells = {slots:{1:{total,used},…}, list:[{id, lvl, name, prep, det}]}
+   det holds the spell's details (school, casting time, range, components,
+   duration, text). They are copied onto the sheet when a spell is added, so
+   hovering works offline, on every device and in the printout, whether the
+   spell came from the free list or was pasted in. */
+const SPELL_LEVEL_NAMES = ["Cantrips", "Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9"];
+const SRD_SPELLS_FILE = "spells-srd-2014.json";
+const SRD_CREDIT = "Free spell details: SRD 5.1 © Wizards of the Coast, CC BY 4.0.";
+function sheetSpells(sh){
+  const sp = sh?.spells || {};
+  return { slots: sp.slots && typeof sp.slots === "object" ? sp.slots : {}, list: Array.isArray(sp.list) ? sp.list : [] };
+}
+function seSetSpells(fn){
+  const cur = sheetSpells(seData());
+  seSet({ spells: fn({ slots:{...cur.slots}, list:[...cur.list] }) });
+}
+function spellSlot(sp, lvl){
+  const s = sp.slots[lvl] || {};
+  const total = Math.max(0, Math.min(9, Number(s.total) || 0));
+  return { total, used: Math.max(0, Math.min(total, Number(s.used) || 0)) };
+}
+/* the free list is a separate file, fetched the first time it is needed (the service worker keeps it offline) */
+let srdSpells = null, srdLoading = null;
+function loadSrdSpells(){
+  if (srdSpells) return Promise.resolve(srdSpells);
+  if (!srdLoading) srdLoading = fetch(SRD_SPELLS_FILE)
+    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(j => { if (!Array.isArray(j?.spells)) throw new Error("not a spell list"); return (srdSpells = j.spells); })
+    .catch(e => { srdLoading = null; throw e; });
+  return srdLoading;
+}
+function srdToSpell(r){
+  return { lvl:r.l, name:r.n, det:{ school:r.s, time:r.t, range:r.r, comp:r.c, dur:r.d, conc:!!r.k, ritual:!!r.ri,
+    desc:r.x || "", higher:r.h || "", src:"SRD 5.1" } };
+}
+function addSpellToSheet(sp){
+  const name = String(sp.name || "").trim().slice(0, 120); if (!name) return false;
+  const lvl = Math.max(0, Math.min(9, Number(sp.lvl) || 0));
+  if (sheetSpells(seData()).list.some(x => x.lvl === lvl && x.name.toLowerCase() === name.toLowerCase())){
+    toast(name + " is already on this sheet."); return false;
+  }
+  seSetSpells(s => { s.list.push({ id:uid("sp"), lvl, name, prep:false, det: sp.det || null }); return s; });
+  return true;
+}
+/* Pasted spell text, from D&D Beyond's spell page or a wiki, into the same
+   fields. Both "Casting Time: 1 action" and the label-on-its-own-line layout
+   D&D Beyond copies as are understood. Anything unrecognised becomes the
+   description, so nothing pasted is lost. */
+function parseSpellText(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n").map(l => l.replace(/\s+/g, " ").trim());
+  const KEYS = {"casting time":"time", "range":"range", "range/area":"range", "components":"comp", "duration":"dur",
+    "school":"school", "level":"level", "attack/save":"skip", "damage/effect":"skip", "source":"skip", "spell lists":"skip",
+    "spell tags":"skip", "available for":"skip", "classes":"skip", "tags":"skip"};
+  const det = {school:"", time:"", range:"", comp:"", dur:"", conc:false, ritual:false, desc:"", higher:"", src:"pasted"};
+  let name = "", lvl = null, footnote = "";
+  const desc = [];
+  const setLevel = v => {
+    let m;
+    if ((m = /^(\d)(?:st|nd|rd|th)?(?:[- ]level)?(?:\s+([a-z]+))?(\s*\(ritual\))?$/i.exec(v))){ lvl = Number(m[1]); if (m[2]) det.school = cap(m[2]); if (m[3]) det.ritual = true; return true; }
+    if ((m = /^(?:([a-z]+)\s+)?cantrip$/i.exec(v))){ lvl = 0; if (m[1]) det.school = cap(m[1]); return true; }
+    return false;
+  };
+  const cap = w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  for (let i = 0; i < lines.length; i++){
+    const line = lines[i];
+    if (!line){ if (desc.length && desc[desc.length - 1] !== "") desc.push(""); continue; }
+    if (!name){ name = line.replace(/\s*\(ritual\)$/i, ""); continue; }
+    if (/^(source|spell lists|classes|spell tags|available for)\s*[.:]/i.test(line)) continue;   /* wiki/D&D Beyond footers, not spell text */
+    let m = /^([a-z /]+):\s*(.*)$/i.exec(line), key = null, val = "";
+    if (m && KEYS[m[1].toLowerCase()]){ key = KEYS[m[1].toLowerCase()]; val = m[2]; }
+    else if (KEYS[line.toLowerCase()] && i + 1 < lines.length && lines[i + 1]){ key = KEYS[line.toLowerCase()]; val = lines[++i]; }
+    if (key){
+      if (key === "level") setLevel(val);
+      else if (key !== "skip") det[key] = val;
+      continue;
+    }
+    if (!det.time && setLevel(line)) continue;
+    if ((m = /^\*\s*-?\s*\((.*)\)\s*$/.exec(line))){ footnote = m[1]; continue; }
+    if ((m = /^(?:at higher levels|using a higher-level spell slot)[.:]\s*(.*)$/i.exec(line))){ det.higher = m[1]; continue; }
+    desc.push(line);
+  }
+  if (!name) return null;
+  det.comp = det.comp.replace(/\s*\*\s*$/, "");
+  if (footnote && !/\(/.test(det.comp)) det.comp += " (" + footnote + ")";
+  if (/^concentration/i.test(det.dur)){ det.conc = true; }
+  if (/ritual/i.test(det.time)){ det.ritual = true; det.time = det.time.replace(/\s*ritual\s*/i, " ").trim(); }
+  det.desc = desc.join("\n").replace(/\n{2,}/g, "\n\n").replace(/([^\n])\n(?!\n)/g, "$1\n\n").trim().slice(0, 12000);
+  det.higher = det.higher.slice(0, 3000);
+  for (const k of ["school","time","range","comp","dur"]) det[k] = det[k].slice(0, 300);
+  return { name:name.slice(0, 120), lvl, det };
+}
+/* ---- details pop-up: hover on a mouse, tap on a touch screen */
+function spellTipEl(){
+  let tip = $("#spellTip");
+  if (!tip){ tip = document.createElement("div"); tip.id = "spellTip"; document.body.appendChild(tip);
+    tip.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hideSpellTip(); }); }
+  return tip;
+}
+function hideSpellTip(){ $("#spellTip")?.classList.remove("open"); }
+function spellSubtitle(sp){
+  const d = sp.det || {}, school = d.school || "";
+  const ord = n => n + ({1:"st", 2:"nd", 3:"rd"}[n] || "th");
+  const base = sp.lvl === 0 ? (school ? school + " cantrip" : "Cantrip") : ord(sp.lvl) + "-level " + school.toLowerCase();
+  return base.trim() + (d.ritual ? " (ritual)" : "");
+}
+function showSpellTip(sp, anchor){
+  const tip = spellTipEl(); tip.textContent = "";
+  const d = sp.det || {};
+  const h = document.createElement("h4"); h.textContent = sp.name;
+  const sub = document.createElement("div"); sub.className = "sub"; sub.textContent = spellSubtitle(sp);
+  tip.append(h, sub);
+  const dl = document.createElement("dl");
+  const dur = d.conc && d.dur && !/concentration/i.test(d.dur) ? "Concentration, " + d.dur.replace(/^U/, "u") : d.dur;
+  for (const [k, v] of [["Casting time", d.time], ["Range", d.range], ["Components", d.comp], ["Duration", dur]]){
+    if (!v) continue;
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd);
+  }
+  if (dl.childNodes.length) tip.appendChild(dl);
+  const para = (text, lead) => {
+    for (const chunk of String(text || "").split(/\n{2,}/)){
+      if (!chunk.trim()) continue;
+      const p = document.createElement("p");
+      if (lead){ const b = document.createElement("b"); b.textContent = lead + " "; p.appendChild(b); lead = ""; }
+      /* the free list marks sub-headings ***like this.*** */
+      chunk.split(/(\*{2,3}[^*]+\*{2,3})/).forEach(part => {
+        const m = /^\*{2,3}([^*]+)\*{2,3}$/.exec(part);
+        if (m){ const b = document.createElement("b"); b.textContent = m[1]; p.appendChild(b); }
+        else if (part) p.appendChild(document.createTextNode(part));
+      });
+      tip.appendChild(p);
+    }
+  };
+  para(d.desc);
+  para(d.higher, "At higher levels.");
+  if (!d.desc && !dl.childNodes.length){
+    const p = document.createElement("p"); p.textContent = "No details saved for this spell. Paste its text with “Paste spell text…” to add them."; tip.appendChild(p);
+  }
+  if (d.src === "SRD 5.1"){ const s = document.createElement("div"); s.className = "src"; s.textContent = SRD_CREDIT; tip.appendChild(s); }
+  tip.classList.add("open");
+  const r = anchor.getBoundingClientRect(), z = uiz();
+  const w = tip.offsetWidth, hh = tip.offsetHeight;
+  let x = r.right / z + 10, y = r.top / z - 8;
+  if (x + w > innerWidth / z - 8) x = Math.max(8, r.left / z - w - 10);
+  if (x < 8){ x = 8; y = r.bottom / z + 6; }
+  tip.style.left = x + "px"; tip.style.top = Math.max(8, Math.min(y, innerHeight / z - hh - 8)) + "px";
+}
+async function pasteSpellDialog(defaultLvl){
+  let parsed = null;
+  const result = await askOpen({
+    title:"Paste a spell",
+    build(body){
+      const m = document.createElement("div"); m.id = "askMsg";
+      m.textContent = "Copy the whole spell from D&D Beyond or a wiki (name to the end of its text) and paste it here.";
+      const ta = document.createElement("textarea"); ta.rows = 9; ta.style.cssText = "width:100%;margin-top:8px;font:inherit;font-size:13px;";
+      ta.placeholder = "Fireball\n3rd-level evocation\nCasting Time: 1 action\nRange: 150 feet\n…";
+      const found = document.createElement("div"); found.style.cssText = "font-size:12px;margin-top:6px;opacity:.8;min-height:16px;";
+      const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;margin-top:8px;align-items:center;";
+      const nm = document.createElement("input"); nm.placeholder = "Spell name"; nm.style.flex = "1";
+      const lv = document.createElement("select");
+      SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; lv.appendChild(o); });
+      lv.value = String(defaultLvl || 0);
+      row.append(nm, lv);
+      ta.addEventListener("input", () => {
+        parsed = parseSpellText(ta.value);
+        if (!parsed){ found.textContent = ""; return; }
+        nm.value = parsed.name; if (parsed.lvl != null) lv.value = String(parsed.lvl);
+        const d = parsed.det;
+        found.textContent = "Found: " + [d.time && "casting time", d.range && "range", d.comp && "components", d.dur && "duration", d.desc && "description"].filter(Boolean).join(", ");
+      });
+      for (const el of [ta, nm]) el.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+      m.append(ta, found, row); body.appendChild(m);
+      return { focus:() => ta.focus(), ta, nm, lv };
+    },
+    buttons:[{label:"Cancel", value:null},
+      {label:"Add spell", primary:true, value:api => ({ text:api.ta.value, name:api.nm.value, lvl:Number(api.lv.value) })}]
+  });
+  if (!result) return;
+  const p = parseSpellText(result.text) || { det:null };
+  const name = (result.name || p.name || "").trim();
+  if (!name){ toast("Paste a spell, or type its name."); return; }
+  if (addSpellToSheet({ name, lvl:result.lvl, det:p.det })) renderSheetEditor();
+}
+function renderSpellsPage(page){
+  const sh = seData(), sp = sheetSpells(sh);
+  /* spellcasting summary, derived from the Character tab */
+  const sum = document.createElement("div"); sum.className = "se-spl-sum";
+  const st = spellStats(sh);
+  for (const [lab, val] of [["Spellcasting ability", st ? ABILITY_FULL[st.ab] : "—"], ["Spell save DC", st ? st.dc : "—"], ["Spell attack bonus", st ? fmtMod(st.atk) : "—"]]){
+    const s = document.createElement("div"); s.className = "se-stat";
+    const l = document.createElement("label"); l.textContent = lab;
+    const b = document.createElement("b"); b.textContent = val; s.append(l, b); sum.appendChild(s);
+  }
+  if (!st){ const h = document.createElement("div"); h.className = "hint"; h.textContent = "Choose a spellcasting ability on the Character tab to work out the save DC and attack bonus."; sum.appendChild(h); }
+  page.appendChild(sum);
+
+  /* add: search the free list, or type any name; paste for full details */
+  const add = document.createElement("div"); add.className = "se-spl-add";
+  const inp = document.createElement("input"); inp.placeholder = "Add a spell — type to search the free 5e spells, or any name";
+  const lvSel = document.createElement("select"); lvSel.title = "Level for a spell that isn't in the free list";
+  SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; lvSel.appendChild(o); });
+  const pasteBtn = document.createElement("button"); pasteBtn.className = "se-prevsize"; pasteBtn.textContent = "Paste spell text…";
+  pasteBtn.addEventListener("click", () => pasteSpellDialog(Number(lvSel.value)));
+  const res = document.createElement("div"); res.className = "se-spl-results";
+  add.append(inp, lvSel, pasteBtn, res);
+  page.appendChild(add);
+  const credit = document.createElement("div"); credit.className = "se-spl-credit"; credit.textContent = SRD_CREDIT + " Spells from other books: use Paste.";
+  page.appendChild(credit);
+  let hits = [], at = 0;
+  const myClass = String(sh.charClass || sh.classLevel || "").toLowerCase();
+  const drawResults = () => {
+    res.textContent = "";
+    hits.forEach((r, i) => {
+      const b = document.createElement("button"); if (i === at) b.className = "on";
+      const n = document.createElement("b"); n.textContent = r.n; n.style.fontWeight = "600";
+      const m = document.createElement("span"); m.textContent = (r.l ? "Level " + r.l : "Cantrip") + " · " + r.s + (r.cl.length ? " · " + r.cl.join(", ") : "");
+      b.append(n, m);
+      b.addEventListener("pointerdown", e => e.preventDefault());   /* keep focus in the box */
+      b.addEventListener("click", () => pick(r));
+      res.appendChild(b);
+    });
+    res.classList.toggle("open", hits.length > 0);
+  };
+  const pick = r => { if (addSpellToSheet(srdToSpell(r))) renderSheetEditor(); };
+  const addTyped = () => { const v = inp.value.trim(); if (v && addSpellToSheet({ name:v, lvl:Number(lvSel.value), det:null })) renderSheetEditor(); };
+  inp.addEventListener("input", async () => {
+    const q = inp.value.trim().toLowerCase();
+    if (q.length < 2){ hits = []; drawResults(); return; }
+    let list;
+    try { list = await loadSrdSpells(); }
+    catch (_) { hits = []; drawResults(); credit.textContent = "The free spell list couldn't load (it needs CORKBORK's website once). Type a name and press Enter, or use Paste."; return; }
+    if (inp.value.trim().toLowerCase() !== q) return;
+    const mine = r => myClass && r.cl.some(c => myClass.includes(c.toLowerCase())) ? 0 : 1;
+    hits = list.filter(r => r.n.toLowerCase().includes(q))
+      .sort((a, b) => (a.n.toLowerCase().startsWith(q) ? 0 : 1) - (b.n.toLowerCase().startsWith(q) ? 0 : 1) || mine(a) - mine(b) || a.l - b.l || a.n.localeCompare(b.n))
+      .slice(0, 12);
+    at = 0; drawResults();
+  });
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Escape"){ if (res.classList.contains("open")){ e.preventDefault(); e.stopPropagation(); hits = []; drawResults(); } return; }
+    e.stopPropagation();
+    if (e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); if (hits.length){ at = (at + (e.key === "ArrowDown" ? 1 : hits.length - 1)) % hits.length; drawResults(); } }
+    else if (e.key === "Enter"){ e.preventDefault(); hits.length ? pick(hits[at]) : addTyped(); }
+  });
+  inp.addEventListener("blur", () => setTimeout(() => res.classList.remove("open"), 150));
+
+  /* levels: cantrips and level 1 always; higher levels once they have slots or spells, plus the next one up */
+  let top = 1;
+  for (let l = 1; l <= 9; l++) if (spellSlot(sp, l).total || sp.list.some(x => x.lvl === l)) top = l;
+  const wrap = document.createElement("div"); wrap.className = "se-spl-levels";
+  for (let l = 0; l <= Math.min(9, top + 1); l++){
+    const box = document.createElement("div"); box.className = "se-spl-lvl"; box.dataset.lvl = l;
+    const head = document.createElement("div"); head.className = "se-spl-lh";
+    const t = document.createElement("b"); t.textContent = SPELL_LEVEL_NAMES[l]; head.appendChild(t);
+    if (l){
+      const slot = spellSlot(sp, l);
+      const lab = document.createElement("span"); lab.textContent = "Slots";
+      const n = document.createElement("input"); n.type = "number"; n.min = 0; n.max = 9; n.value = slot.total || "";
+      n.addEventListener("keydown", e => e.stopPropagation());
+      n.addEventListener("change", () => {
+        const total = Math.max(0, Math.min(9, Number(n.value) || 0));
+        seSetSpells(s => { s.slots[l] = { total, used:Math.min(total, spellSlot(s, l).used) }; return s; });
+        renderSheetEditor();
+      });
+      const pips = document.createElement("div"); pips.className = "se-pips"; pips.title = "Tap to mark a slot used";
+      for (let i = 0; i < slot.total; i++){
+        const b = document.createElement("button"); if (i < slot.used) b.className = "used";
+        b.setAttribute("aria-label", "Slot " + (i + 1) + (i < slot.used ? ", used" : ""));
+        b.addEventListener("click", () => {
+          seSetSpells(s => { const cur = spellSlot(s, l); s.slots[l] = { total:cur.total, used: i < cur.used ? i : i + 1 }; return s; });
+          renderSheetEditor();
+        });
+        pips.appendChild(b);
+      }
+      head.append(lab, n, pips);
+    }
+    box.appendChild(head);
+    const rows = sp.list.filter(x => x.lvl === l).sort((a, b) => a.name.localeCompare(b.name));
+    for (const s of rows){
+      const r = document.createElement("div"); r.className = "se-spl-row";
+      if (l){
+        const prep = document.createElement("button"); prep.className = "se-prep" + (s.prep ? " on" : "");
+        prep.title = s.prep ? "Prepared" : "Not prepared";
+        prep.addEventListener("click", () => { seSetSpells(o => { o.list = o.list.map(x => x.id === s.id ? {...x, prep:!x.prep} : x); return o; }); renderSheetEditor(); });
+        r.appendChild(prep);
+      }
+      const nm = document.createElement("button"); nm.className = "se-spl-name"; nm.textContent = s.name;
+      nm.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") showSpellTip(s, nm); });
+      nm.addEventListener("pointerleave", e => {
+        if (e.pointerType !== "mouse") return;
+        setTimeout(() => { if (!$("#spellTip")?.matches(":hover")) hideSpellTip(); }, 80);
+      });
+      nm.addEventListener("click", () => { const tip = $("#spellTip"); tip?.classList.contains("open") && tip.dataset.for === s.id ? hideSpellTip() : (showSpellTip(s, nm), spellTipEl().dataset.for = s.id); });
+      const x = document.createElement("button"); x.className = "se-spl-x"; x.textContent = "✕"; x.title = "Remove " + s.name;
+      x.addEventListener("click", () => { pushUndo(); hideSpellTip(); seSetSpells(o => { o.list = o.list.filter(y => y.id !== s.id); return o; }); renderSheetEditor(); });
+      r.append(nm, x); box.appendChild(r);
+    }
+    if (!rows.length){ const e = document.createElement("div"); e.className = "se-spl-empty"; e.textContent = l ? "No level " + l + " spells yet" : "No cantrips yet"; box.appendChild(e); }
+    wrap.appendChild(box);
+  }
+  page.appendChild(wrap);
+}
+document.addEventListener("pointerdown", e => {
+  const tip = $("#spellTip");
+  if (tip?.classList.contains("open") && !tip.contains(e.target) && !e.target.closest?.(".se-spl-name")) hideSpellTip();
+}, true);
+/* ---------------- character sheet → PDF ----------------------------------
+   A small PDF writer, so the printout needs no download and works offline:
+   lines, boxes, circles, text in the five standard PDF fonts (every PDF
+   reader has them) and JPEG pictures. Widths come from Adobe's Core 14 font
+   metrics (AFM), so wrapping and centring match what the reader draws.
+   Text uses the standard Windows-1252 set; anything outside it prints as "?". */
+const PDF_WIDTHS = {
+  H:"278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,556,556,556,222,556,333,1000,556,556,333,1000,667,333,1000,556,611,556,556,222,222,333,333,350,556,1000,333,1000,500,333,944,556,500,667,556,333,556,556,556,556,260,556,333,737,370,556,584,556,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500",
+  HB:"278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,556,556,556,278,556,500,1000,556,556,333,1000,667,333,1000,556,611,556,556,278,278,500,500,350,556,1000,333,1000,556,333,944,556,500,667,556,333,556,556,556,556,280,556,333,737,370,556,584,556,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556",
+  T:"250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541,500,500,500,333,500,444,1000,500,500,333,1000,556,333,889,500,611,500,500,333,333,444,444,350,500,1000,333,980,389,333,722,500,444,722,500,333,500,500,500,500,200,500,333,760,276,500,564,500,760,333,400,564,300,300,333,500,453,250,333,300,310,500,750,750,750,444,722,722,722,722,722,722,889,667,611,611,611,611,333,333,333,333,722,722,722,722,722,722,722,564,722,722,722,722,722,722,556,500,444,444,444,444,444,444,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,564,500,500,500,500,500,500,500,500",
+  TB:"250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520,500,500,500,333,500,500,1000,500,500,333,1000,556,333,1000,500,667,500,500,333,333,500,500,350,500,1000,333,1000,389,333,722,500,444,722,500,333,500,500,500,500,220,500,333,747,300,500,570,500,747,333,400,570,300,300,333,556,540,250,333,300,330,500,750,750,750,500,722,722,722,722,722,722,1000,722,667,667,667,667,389,389,389,389,722,722,778,778,778,778,778,570,778,722,722,722,722,722,611,556,500,500,500,500,500,500,722,444,444,444,444,444,278,278,278,278,500,556,500,500,500,500,500,570,500,556,556,556,556,500,556,500",
+  TI:"250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,500,500,500,333,500,556,889,500,500,333,1000,500,333,944,500,556,500,500,333,333,556,556,350,500,889,333,980,389,333,667,500,389,556,500,389,500,500,500,500,275,500,333,760,276,500,675,500,760,333,400,675,300,300,333,500,523,250,333,300,310,500,750,750,750,500,611,611,611,611,611,611,889,667,611,611,611,611,333,333,333,333,722,667,722,722,722,722,722,675,722,722,722,722,722,556,611,500,500,500,500,500,500,500,667,444,444,444,444,444,278,278,278,278,500,500,500,500,500,500,500,675,500,500,500,500,500,444,500,444"
+};
+const PDF_FONT_NAMES = {H:"Helvetica", HB:"Helvetica-Bold", T:"Times-Roman", TB:"Times-Bold", TI:"Times-Italic"};
+const pdfWidthCache = {};
+function pdfWidths(f){ return pdfWidthCache[f] || (pdfWidthCache[f] = PDF_WIDTHS[f].split(",").map(Number)); }
+const PDF_CP1252 = {0x20AC:128,0x201A:130,0x0192:131,0x201E:132,0x2026:133,0x2020:134,0x2021:135,0x02C6:136,0x2030:137,0x0160:138,
+  0x2039:139,0x0152:140,0x017D:142,0x2018:145,0x2019:146,0x201C:147,0x201D:148,0x2022:149,0x2013:150,0x2014:151,0x02DC:152,
+  0x2122:153,0x0161:154,0x203A:155,0x0153:156,0x017E:158,0x0178:159, 0x2212:45, 0x00A0:32};
+/* text → one character per byte, in Windows-1252 */
+function pdfEnc(s){
+  let out = "";
+  for (const ch of String(s ?? "")){
+    const u = ch.codePointAt(0);
+    if (u === 9) out += " ";
+    else if (u >= 32 && u < 127) out += ch;
+    else if (PDF_CP1252[u] != null) out += String.fromCharCode(PDF_CP1252[u]);
+    else if (u >= 160 && u <= 255) out += ch;
+    else if (u >= 32) out += "?";
+  }
+  return out;
+}
+function pdfTextWidth(s, f, size){
+  const w = pdfWidths(f), e = pdfEnc(s); let t = 0;
+  for (let i = 0; i < e.length; i++){ const c = e.charCodeAt(i); t += c >= 32 ? w[c - 32] : 0; }
+  return t * size / 1000;
+}
+/* words onto lines no wider than `width`; a word longer than a line is broken */
+function pdfWrap(s, width, f, size){
+  const lines = [];
+  for (const para of String(s ?? "").replace(/\r/g, "").split("\n")){
+    let line = "";
+    for (let word of para.split(/ +/)){
+      while (pdfTextWidth(word, f, size) > width && word.length > 1){
+        let cut = word.length - 1;
+        while (cut > 1 && pdfTextWidth(word.slice(0, cut), f, size) > width) cut--;
+        if (line){ lines.push(line); line = ""; }
+        lines.push(word.slice(0, cut)); word = word.slice(cut);
+      }
+      const next = line ? line + " " + word : word;
+      if (line && pdfTextWidth(next, f, size) > width){ lines.push(line); line = word; }
+      else line = next;
+    }
+    lines.push(line);
+  }
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+  return lines;
+}
+function pdfStr(s){ return "(" + pdfEnc(s).replace(/[\\()]/g, m => "\\" + m) + ")"; }
+const pdfN = n => (Math.round(n * 100) / 100).toString();
+class PdfDoc {
+  constructor(w = 612, h = 792){ this.W = w; this.H = h; this.pages = []; this.images = []; }
+  page(){ this.ops = []; this.pages.push(this.ops); return this; }
+  y(v){ return this.H - v; }
+  path(p, {fill = null, stroke = 0, lw = 1, close = true} = {}){
+    const o = this.ops;
+    o.push("q");
+    if (fill != null) o.push(pdfN(fill) + " g");
+    if (stroke != null && stroke !== false) o.push(pdfN(stroke === true ? 0 : stroke) + " G " + pdfN(lw) + " w");
+    o.push(p + (close ? " h" : ""));
+    const doFill = fill != null, doStroke = stroke != null && stroke !== false;
+    o.push(doFill && doStroke ? "B" : doFill ? "f" : "S");
+    o.push("Q");
+  }
+  rect(x, y, w, h, opt = {}){
+    const r = Math.min(opt.r || 0, w / 2, h / 2);
+    if (!r){ this.path(`${pdfN(x)} ${pdfN(this.y(y + h))} ${pdfN(w)} ${pdfN(h)} re`, {...opt, close:false}); return; }
+    const k = r * 0.5523, Y = v => pdfN(this.y(v)), X = pdfN;
+    this.path(`${X(x + r)} ${Y(y)} m ${X(x + w - r)} ${Y(y)} l ${X(x + w - r + k)} ${Y(y)} ${X(x + w)} ${Y(y + r - k)} ${X(x + w)} ${Y(y + r)} c ` +
+      `${X(x + w)} ${Y(y + h - r)} l ${X(x + w)} ${Y(y + h - r + k)} ${X(x + w - r + k)} ${Y(y + h)} ${X(x + w - r)} ${Y(y + h)} c ` +
+      `${X(x + r)} ${Y(y + h)} l ${X(x + r - k)} ${Y(y + h)} ${X(x)} ${Y(y + h - r + k)} ${X(x)} ${Y(y + h - r)} c ` +
+      `${X(x)} ${Y(y + r)} l ${X(x)} ${Y(y + r - k)} ${X(x + r - k)} ${Y(y)} ${X(x + r)} ${Y(y)} c`, opt);
+  }
+  circle(cx, cy, r, opt = {}){
+    const k = r * 0.5523, X = pdfN, Y = v => pdfN(this.y(v));
+    this.path(`${X(cx + r)} ${Y(cy)} m ${X(cx + r)} ${Y(cy + k)} ${X(cx + k)} ${Y(cy + r)} ${X(cx)} ${Y(cy + r)} c ` +
+      `${X(cx - k)} ${Y(cy + r)} ${X(cx - r)} ${Y(cy + k)} ${X(cx - r)} ${Y(cy)} c ` +
+      `${X(cx - r)} ${Y(cy - k)} ${X(cx - k)} ${Y(cy - r)} ${X(cx)} ${Y(cy - r)} c ` +
+      `${X(cx + k)} ${Y(cy - r)} ${X(cx + r)} ${Y(cy - k)} ${X(cx + r)} ${Y(cy)} c`, opt);
+  }
+  line(x1, y1, x2, y2, {lw = .6, stroke = 0} = {}){
+    this.path(`${pdfN(x1)} ${pdfN(this.y(y1))} m ${pdfN(x2)} ${pdfN(this.y(y2))} l`, {stroke, lw, close:false});
+  }
+  /* y is the baseline */
+  text(s, x, y, {f = "H", size = 8, align = "left", gray = 0, spacing = 0} = {}){
+    const e = String(s ?? ""); if (!e) return;
+    let w = pdfTextWidth(e, f, size) + spacing * Math.max(0, pdfEnc(e).length - 1);
+    const tx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+    /* character spacing is page state that outlives BT/ET, so every run sets its own */
+    this.ops.push(`q BT ${pdfN(gray)} g /${f} ${pdfN(size)} Tf ${pdfN(spacing)} Tc ${pdfN(tx)} ${pdfN(this.y(y))} Td ${pdfStr(e)} Tj ET Q`);
+  }
+  /* small upper-case label, the sheet's field names */
+  label(s, x, y, align = "left", size = 5.6){ this.text(String(s).toUpperCase(), x, y, {f:"HB", size, align, spacing:.35}); }
+  image(img, x, y, w, h){
+    let i = this.images.indexOf(img); if (i < 0){ this.images.push(img); i = this.images.length - 1; }
+    this.ops.push(`q ${pdfN(w)} 0 0 ${pdfN(h)} ${pdfN(x)} ${pdfN(this.y(y + h))} cm /Im${i} Do Q`);
+  }
+  output(info = {}){
+    /* everything as a "binary string" (one char per byte), converted at the end */
+    const objs = [];
+    const add = body => { objs.push(body); return objs.length; };
+    const catalog = add(null), pagesId = add(null);
+    const fontIds = {};
+    for (const [k, name] of Object.entries(PDF_FONT_NAMES))
+      fontIds[k] = add(`<< /Type /Font /Subtype /Type1 /BaseFont /${name} /Encoding /WinAnsiEncoding >>`);
+    const imgIds = this.images.map(img => add({stream:img.data, dict:`/Type /XObject /Subtype /Image /Width ${img.w} /Height ${img.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`}));
+    const fontRes = Object.entries(fontIds).map(([k, id]) => `/${k} ${id} 0 R`).join(" ");
+    const imgRes = imgIds.map((id, i) => `/Im${i} ${id} 0 R`).join(" ");
+    const pageIds = [];
+    for (const ops of this.pages){
+      const content = add({stream:ops.join("\n"), dict:""});
+      pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${this.W} ${this.H}] /Contents ${content} 0 R ` +
+        `/Resources << /Font << ${fontRes} >>${imgRes ? " /XObject << " + imgRes + " >>" : ""} >> >>`));
+    }
+    objs[catalog - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+    objs[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map(id => id + " 0 R").join(" ")}] /Count ${pageIds.length} >>`;
+    const infoId = add(`<< /Title ${pdfStr(info.title || "Character sheet")} /Producer (CORKBORK) /Creator (CORKBORK) >>`);
+    let out = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+    const offsets = [];
+    objs.forEach((o, i) => {
+      offsets.push(out.length);
+      if (typeof o === "string") out += `${i + 1} 0 obj\n${o}\nendobj\n`;
+      else out += `${i + 1} 0 obj\n<< ${o.dict} /Length ${o.stream.length} >>\nstream\n${o.stream}\nendstream\nendobj\n`;
+    });
+    const xref = out.length;
+    out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offsets.map(n => String(n).padStart(10, "0") + " 00000 n \n").join("");
+    out += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+    const bytes = new Uint8Array(out.length);
+    for (let i = 0; i < out.length; i++) bytes[i] = out.charCodeAt(i) & 255;
+    return bytes;
+  }
+}
+/* a picture (data URL) → grey JPEG cropped to fill w×h points, for the printout */
+async function pdfJpeg(dataUrl, w, h){
+  if (!dataUrl) return null;
+  const img = new Image(); img.src = dataUrl;
+  try { await img.decode(); } catch (_) { return null; }
+  const scale = 3, cw = Math.round(w * scale), ch = Math.round(h * scale);
+  const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+  const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cw, ch);
+  g.filter = "grayscale(1)";
+  const r = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+  const dw = img.naturalWidth * r, dh = img.naturalHeight * r;
+  g.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+  const blob = await new Promise(res => cv.toBlob(res, "image/jpeg", .86));
+  if (!blob) return null;
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let data = ""; for (let i = 0; i < buf.length; i += 8192) data += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
+  return { w:cw, h:ch, data };
+}
+/* text into a box: shrinks the size down to `min` to fit; returns the lines that still didn't fit */
+function pdfTextBox(doc, text, x, y, w, h, {f = "H", size = 7.6, min = 5.8, lead = 1.38} = {}){
+  let s = size, lines;
+  for (;;){
+    lines = pdfWrap(text, w, f, s);
+    if (lines.length * s * lead <= h || s <= min) break;
+    s = Math.max(min, s - .3);
+  }
+  const fit = Math.max(0, Math.floor(h / (s * lead)));
+  lines.slice(0, fit).forEach((l, i) => doc.text(l, x, y + s + i * s * lead, {f, size:s}));
+  return lines.slice(fit);
+}
+function pdfRuled(doc, x, y, w, h, step = 14){
+  for (let ly = y + step; ly < y + h - 2; ly += step) doc.line(x, ly, x + w, ly, {lw:.5, stroke:.7});
+}
+const SHEET_PDF = { m:30, top:29 };
+function sheetClassLine(sh){
+  const cls = String(sh.charClass || "").trim(), lvl = String(sh.level || "").trim(), sub = String(sh.subclass || "").trim();
+  const main = cls || lvl ? [cls, lvl].filter(Boolean).join(" ") : String(sh.classLevel || "").trim();
+  return [main, sub].filter(Boolean).join(" · ");
+}
+function pdfHeader(doc, sh, fields){
+  const {m, top} = SHEET_PDF;
+  doc.rect(m, top, 180, 66, {r:6, lw:1.4});
+  let name = String(sh.name || "").trim(), ns = 19;
+  while (ns > 9 && pdfTextWidth(name, "TB", ns) > 162) ns -= .5;
+  while (name.length > 2 && pdfTextWidth(name, "TB", ns) > 162) name = name.slice(0, -2) + "\u2026";
+  doc.text(name, m + 9, top + 44, {f:"TB", size:ns});
+  doc.line(m + 9, top + 50, m + 171, top + 50, {lw:.7});
+  doc.label("Character name", m + 9, top + 59);
+  const bx = m + 189, bw = 612 - m - bx;
+  doc.rect(bx, top, bw, 66, {r:6, lw:1.2});
+  const cw = (bw - 18 - 20) / 3;
+  fields.forEach(([lab, val], i) => {
+    const cx = bx + 9 + (i % 3) * (cw + 10), cy = top + 6 + Math.floor(i / 3) * 30;
+    const v = pdfWrap(val, cw, "H", 8.6);
+    if (v.length > 1){ doc.text(v[0], cx, cy + 7, {size:7.6}); doc.text(v.slice(1).join(" "), cx, cy + 15, {size:7.6}); }
+    else doc.text(v[0] || "", cx, cy + 13, {size:8.6});
+    doc.line(cx, cy + 18, cx + cw, cy + 18, {lw:.6});
+    doc.label(lab, cx, cy + 25);
+  });
+}
+function pdfFooter(doc, n, total){ doc.text("CORKBORK · page " + n + " of " + total, 582, 780, {size:5.6, align:"right", gray:.4}); }
+/* a labelled text box (label centred at the bottom); returns the overflow lines */
+function pdfLabelBox(doc, label, text, x, y, w, h, opt = {}){
+  doc.rect(x, y, w, h, {r:5, lw:1, fill:opt.fill});
+  const over = text ? pdfTextBox(doc, text, x + 6, y + 4, w - 12, h - 18, opt) : [];
+  if (opt.ruled) pdfRuled(doc, x + 6, y + 2, w - 12, h - 16);
+  doc.label(label, x + w / 2, y + h - 5, "center");
+  return over;
+}
+async function buildSheetPdf(sh){
+  const doc = new PdfDoc(), {m, top} = SHEET_PDF, pb = Number(sh.profBonus) || 0;
+  const ab = k => Number(sh.abilities?.[k] ?? 10), mod = k => abilityMod(ab(k));
+  const sp = sheetSpells(sh), st = spellStats(sh);
+  const caster = !!st || sp.list.length > 0 || Object.values(sp.slots).some(s => Number(s?.total) > 0);
+  const overflow = [];
+  doc.page();
+  /* ---------- page 1 ---------- */
+  pdfHeader(doc, sh, [["Class & level", sheetClassLine(sh)], ["Background", sh.background], ["Player name", sh.playerName],
+    ["Race", sh.race], ["Alignment", sh.alignment], ["Experience points", sh.xp]]);
+  const y0 = top + 75, y1 = 764, gap = 8.6;
+  const c1 = m, w1 = 187, c2 = c1 + w1 + gap, w2 = 176, c3 = c2 + w2 + gap, w3 = 612 - m - c3;
+  /* left: abilities, saves, skills */
+  const profH = 112, passH = 24, abH = y1 - y0 - profH - passH - 2 * 6.5;
+  doc.rect(c1, y0, 62, abH, {r:6, lw:1.2});
+  const step = (abH - 12) / 6;
+  SHEET_ABILITIES.forEach((k, i) => {
+    const by = y0 + 6 + i * step, bh = Math.min(64, step - 14);
+    doc.rect(c1 + 5, by, 52, bh, {r:6, lw:1});
+    doc.label(ABILITY_FULL[k], c1 + 31, by + 9, "center", 5);
+    doc.text(fmtMod(mod(k)), c1 + 31, by + bh / 2 + 9, {f:"TB", size:19, align:"center"});
+    doc.rect(c1 + 18, by + bh - 6, 26, 12, {r:6, lw:1, fill:1});
+    doc.text(String(ab(k)), c1 + 31, by + bh + 3, {size:8, align:"center"});
+  });
+  const ix = c1 + 62 + 6, iw = w1 - 68;
+  let yy = y0;
+  const mini = (label, val) => {
+    doc.rect(ix, yy, iw, 20, {r:5, lw:1});
+    doc.rect(ix + 4, yy + 3, 20, 14, {r:3, lw:1});
+    if (val) doc.text(val, ix + 14, yy + 13.5, {f:"HB", size:9, align:"center"});
+    doc.label(label, ix + 30, yy + 12.5); yy += 25;
+  };
+  mini("Inspiration", "");
+  mini("Proficiency bonus", fmtMod(pb));
+  const dotRow = (x, y, on, val, name, tag) => {
+    doc.circle(x + 3.5, y - 2.6, 3, {lw:.8, fill:on ? 0 : null});
+    doc.text(val, x + 18, y, {f:"HB", size:7, align:"center"});
+    doc.line(x + 10, y + 2, x + 26, y + 2, {lw:.5});
+    doc.text(name, x + 30, y, {size:7.1});
+    if (tag) doc.text(tag, x + 32 + pdfTextWidth(name, "H", 7.1), y, {size:5.6, gray:.4});
+  };
+  const savesH = 6 * 11.2 + 20;
+  doc.rect(ix, yy, iw, savesH, {r:5, lw:1});
+  SHEET_ABILITIES.forEach((k, i) => dotRow(ix + 6, yy + 12 + i * 11.2, !!sh.saves?.[k], fmtMod(mod(k) + (sh.saves?.[k] ? pb : 0)), ABILITY_FULL[k]));
+  doc.label("Saving throws", ix + iw / 2, yy + savesH - 5, "center"); yy += savesH + 5;
+  const skH = y0 + abH - yy, rowH = Math.min(16, (skH - 20) / 18);
+  doc.rect(ix, yy, iw, skH, {r:5, lw:1});
+  SHEET_SKILLS.forEach(([name, a], i) => {
+    const on = !!sh.skills?.[name];
+    dotRow(ix + 6, yy + 12 + i * rowH, on, fmtMod(mod(a) + (on ? pb : 0)), name, "(" + a.charAt(0) + a.slice(1).toLowerCase() + ")");
+  });
+  doc.label("Skills", ix + iw / 2, yy + skH - 5, "center");
+  yy = y0 + abH + 6.5;
+  const perc = 10 + mod("WIS") + (sh.skills?.Perception ? pb : 0);
+  doc.rect(c1, yy, w1, passH, {r:5, lw:1});
+  doc.rect(c1 + 4, yy + 3, 22, 18, {r:3, lw:1});
+  doc.text(String(perc), c1 + 15, yy + 15.5, {f:"HB", size:9.5, align:"center"});
+  doc.label("Passive Wisdom (Perception)", c1 + 33, yy + 14.5);
+  yy += passH + 6.5;
+  overflow.push(["Other proficiencies & languages", pdfLabelBox(doc, "Other proficiencies & languages", sh.otherProfs, c1, yy, w1, y1 - yy)]);
+  /* middle: combat */
+  const cbH = 232;
+  doc.rect(c2, y0, w2, cbH, {r:6, lw:1.2, fill:.95});
+  const tw = (w2 - 12 - 10) / 3;
+  [["Armour class", sh.ac], ["Initiative", sh.initiative || fmtMod(mod("DEX"))], ["Speed", sh.speed]].forEach(([lab, v], i) => {
+    const x = c2 + 6 + i * (tw + 5);
+    doc.rect(x, y0 + 6, tw, 46, {r:i ? 5 : 8, lw:1, fill:1});
+    doc.text(String(v || ""), x + tw / 2, y0 + 30, {f:"TB", size:17, align:"center"});
+    const lw2 = pdfWrap(lab.toUpperCase(), tw - 6, "HB", 5.6);
+    lw2.forEach((l, j) => doc.label(l, x + tw / 2, y0 + 41 + j * 6 - (lw2.length - 1) * 3, "center"));
+  });
+  let my = y0 + 58;
+  doc.rect(c2 + 6, my, w2 - 12, 66, {r:5, lw:1, fill:1});
+  doc.text("Hit point maximum", c2 + 12, my + 11, {size:6.6});
+  doc.text(String(sh.maxHp || ""), c2 + 14 + pdfTextWidth("Hit point maximum", "H", 6.6), my + 11, {f:"HB", size:9});
+  doc.line(c2 + 12, my + 15, c2 + w2 - 12, my + 15, {lw:.6});
+  doc.label("Current hit points", c2 + w2 / 2, my + 61, "center"); my += 71;
+  doc.rect(c2 + 6, my, w2 - 12, 46, {r:5, lw:1, fill:1});
+  doc.label("Temporary hit points", c2 + w2 / 2, my + 41, "center"); my += 51;
+  const hw = (w2 - 12 - 5) / 2;
+  doc.rect(c2 + 6, my, hw, 50, {r:5, lw:1, fill:1});
+  doc.text("Total", c2 + 12, my + 11, {size:6.6});
+  doc.text(String(sh.hitDice || ""), c2 + 14 + pdfTextWidth("Total", "H", 6.6), my + 11, {f:"HB", size:9});
+  doc.line(c2 + 12, my + 15, c2 + 6 + hw - 6, my + 15, {lw:.6});
+  doc.label("Hit dice", c2 + 6 + hw / 2, my + 45, "center");
+  const dx = c2 + 11 + hw;
+  doc.rect(dx, my, hw, 50, {r:5, lw:1, fill:1});
+  [["Successes", 14], ["Failures", 26]].forEach(([t, oy]) => {
+    doc.text(t, dx + 6, my + oy, {f:"HB", size:6.4});
+    for (let i = 0; i < 3; i++) doc.circle(dx + 45 + i * 10, my + oy - 2.3, 3.3, {lw:.8});
+  });
+  doc.label("Death saves", dx + hw / 2, my + 45, "center");
+  /* attacks */
+  let ay = y0 + cbH + 6;
+  const atkH = 151;
+  doc.rect(c2, ay, w2, atkH, {r:5, lw:1});
+  const colX = [c2 + 7, c2 + 70, c2 + 112];
+  ["Name", "Atk bonus", "Damage / type"].forEach((t, i) => doc.label(t, colX[i], ay + 11, "left", 5.2));
+  let ry = ay + 15;
+  for (const a of (sh.attacks || []).filter(a => a && (a.name || a.bonus || a.dmg))){
+    if (ry > ay + atkH - 30) break;
+    const n = pdfWrap(a.name, 60, "H", 7.2), d = pdfWrap(a.dmg, w2 - 118, "H", 7.2), h = Math.max(n.length, d.length, 1) * 8.6 + 4;
+    doc.rect(c2 + 5, ry, w2 - 10, h, {r:2, fill:.92, stroke:null});
+    n.forEach((l, i) => doc.text(l, colX[0], ry + 9 + i * 8.6, {size:7.2}));
+    doc.text(a.bonus || "", colX[1], ry + 9, {size:7.2});
+    d.forEach((l, i) => doc.text(l, colX[2], ry + 9 + i * 8.6, {size:7.2}));
+    ry += h + 2.5;
+  }
+  if (st){
+    doc.text("Spell save DC " + st.dc + " · spell attack " + fmtMod(st.atk) + " (" + ABILITY_FULL[st.ab] + ")", c2 + 7, ry + 9, {size:6.8, gray:.25});
+    ry += 13;
+  }
+  pdfRuled(doc, c2 + 6, ry, w2 - 12, ay + atkH - 16 - ry, 13);
+  doc.label("Attacks & spellcasting", c2 + w2 / 2, ay + atkH - 5, "center");
+  /* equipment: coin boxes stay blank for pencil */
+  const ey = ay + atkH + 6, eh = y1 - ey;
+  doc.rect(c2, ey, w2, eh, {r:5, lw:1});
+  ["CP", "SP", "EP", "GP", "PP"].forEach((t, i) => {
+    doc.rect(c2 + 6, ey + 6 + i * 24, 38, 19, {r:4, lw:1});
+    doc.text(t, c2 + 10, ey + 13 + i * 24, {f:"HB", size:5.8});
+  });
+  overflow.push(["Equipment", pdfTextBox(doc, sh.equipment, c2 + 50, ey + 5, w2 - 56, eh - 20)]);
+  doc.label("Equipment", c2 + w2 / 2, ey + eh - 5, "center");
+  /* right: personality and features */
+  const pH = 76 + 52 * 3 + 3 * 5 + 12;
+  doc.rect(c3, y0, w3, pH, {r:6, lw:1.2, fill:.95});
+  let py = y0 + 6;
+  [["Personality traits", sh.personality, 76], ["Ideals", sh.ideals, 52], ["Bonds", sh.bonds, 52], ["Flaws", sh.flaws, 52]].forEach(([lab, t, h]) => {
+    overflow.push([lab, pdfLabelBox(doc, lab, t, c3 + 6, py, w3 - 12, h, {fill:1})]); py += h + 5;
+  });
+  overflow.push(["Features & traits", pdfLabelBox(doc, "Features & traits", sh.features, c3, y0 + pH + 6, w3, y1 - y0 - pH - 6)]);
+
+  /* ---------- page 2: portrait, backstory, notes ---------- */
+  doc.page();
+  pdfHeader(doc, sh, [["Class & level", sheetClassLine(sh)], ["Background", sh.background], ["Race", sh.race]]);
+  const q0 = top + 75, pw = 187;
+  doc.rect(m, q0, pw, 223, {r:6, lw:1.2});
+  const pic = await pdfJpeg(sh.portrait, pw - 2, 221);
+  if (pic) doc.image(pic, m + 1, q0 + 1, pw - 2, 221);
+  doc.rect(m, q0, pw, 223, {r:6, lw:1.2});
+  doc.label("Portrait", m + pw / 2, q0 + 233, "center");
+  pdfLabelBox(doc, "Allies & organisations", "", m, q0 + 240, pw, y1 - q0 - 240, {ruled:true});
+  const nx = m + pw + gap, nw = 612 - m - nx, nh = y1 - q0 - 150;
+  const extra = overflow.filter(([, lines]) => lines.length).map(([lab, lines]) => lab + " (continued)\n" + lines.join(" "));
+  const notes = [...(sh.notesPages || []).map(p => String(p || "").trim()).filter(Boolean), ...extra].join("\n\n");
+  let rest = pdfLabelBox(doc, "Backstory & notes", notes, nx, q0, nw, nh, {size:8, min:7});
+  pdfLabelBox(doc, "Treasure", "", nx, q0 + nh + 6, nw, y1 - q0 - nh - 6, {ruled:true});
+  /* notes that didn't fit continue on their own pages */
+  while (rest.length){
+    doc.page();
+    doc.rect(m, top, 612 - 2 * m, y1 - top, {r:6, lw:1.2});
+    const fit = Math.floor((y1 - top - 24) / (8 * 1.38));
+    rest.slice(0, fit).forEach((l, i) => doc.text(l, m + 8, top + 14 + i * 8 * 1.38, {size:8}));
+    doc.label("Backstory & notes (continued)", 306, y1 - 6, "center");
+    rest = rest.slice(fit);
+  }
+  /* ---------- spells ---------- */
+  if (caster){
+    doc.page();
+    doc.rect(m, top, 158, 50, {r:6, lw:1.4});
+    doc.text(String(sh.charClass || "").trim(), m + 9, top + 26, {f:"TB", size:15});
+    doc.line(m + 9, top + 32, m + 149, top + 32, {lw:.7});
+    doc.label("Spellcasting class", m + 9, top + 42);
+    const sx = m + 167, sw = 612 - m - sx;
+    doc.rect(sx, top, sw, 50, {r:6, lw:1.2});
+    [["Spellcasting ability", st ? st.ab : ""], ["Spell save DC", st ? String(st.dc) : ""], ["Spell attack bonus", st ? fmtMod(st.atk) : ""]].forEach(([lab, v], i) => {
+      const cx = sx + sw * (i + .5) / 3;
+      doc.text(v, cx, top + 25, {f:"TB", size:16, align:"center"});
+      doc.label(lab, cx, top + 39, "center");
+    });
+    const cols = [[0, 1], [2, 3, 4], [5, 6, 7, 8, 9]], base = {0:6, 1:12, 2:9, 3:7, 4:6, 5:5, 6:4, 7:3, 8:3, 9:3};
+    const sy0 = top + 59, sy1 = 752, colW = (612 - 2 * m - 2 * 7.2) / 3, headH = 20;
+    cols.forEach((levels, ci) => {
+      const x = m + ci * (colW + 7.2);
+      const avail = sy1 - sy0 - (levels.length - 1) * 7.2 - levels.length * (headH + 2);
+      const want = levels.map(l => Math.max(base[l], sp.list.filter(s => s.lvl === l).length));
+      let row = Math.min(13.4, avail / want.reduce((a, b) => a + b, 0));
+      row = Math.max(9, row);
+      const rows = want.slice();
+      rows[rows.length - 1] = Math.max(rows[rows.length - 1], Math.floor((avail - want.slice(0, -1).reduce((a, b) => a + b, 0) * row) / row));
+      let by = sy0;
+      levels.forEach((l, li) => {
+        const bh = headH + rows[li] * row + 2;
+        doc.rect(x, by, colW, bh, {r:5, lw:1});
+        doc.rect(x, by, colW, headH, {r:5, fill:0, stroke:null});
+        doc.rect(x, by + headH - 5, colW, 5, {fill:0, stroke:null});
+        doc.text(String(l), x + 12, by + 14.5, {f:"TB", size:13, align:"center", gray:1});
+        if (l === 0) doc.text("CANTRIPS", x + 24, by + 12.5, {f:"HB", size:5.4, gray:1, spacing:.35});
+        else {
+          const slot = spellSlot(sp, l);
+          doc.rect(x + 24, by + 4, 20, 12, {r:3, fill:1, stroke:null});
+          if (slot.total) doc.text(String(slot.total), x + 34, by + 13, {f:"HB", size:8, align:"center"});
+          doc.text("SLOTS", x + 49, by + 12.5, {f:"HB", size:5.4, gray:1, spacing:.35});
+          for (let i = 0; i < slot.total; i++) doc.circle(x + 76 + i * 9.5, by + 10, 3.6, {stroke:1, lw:1});
+        }
+        const list = sp.list.filter(s => s.lvl === l).sort((a, b) => a.name.localeCompare(b.name));
+        for (let i = 0; i < rows[li]; i++){
+          const ry2 = by + headH + i * row;
+          if (i) doc.line(x, ry2, x + colW, ry2, {lw:.5, stroke:.6});
+          const s = list[i];
+          if (l) doc.circle(x + 8, ry2 + row / 2, 3, {lw:.8, fill:s?.prep ? 0 : null});
+          if (s){
+            let nm = s.name, fs = Math.min(7.6, row * .62);
+            while (pdfTextWidth(nm, "H", fs) > colW - (l ? 22 : 12) && nm.length > 3) nm = nm.slice(0, -2) + "…";
+            doc.text(nm, x + (l ? 15 : 6), ry2 + row / 2 + fs * .36, {size:fs});
+          }
+        }
+        if (list.length > rows[li]) doc.text("+" + (list.length - rows[li]) + " more", x + colW - 5, by + bh - 3, {size:5.6, align:"right", gray:.4});
+        by += bh + 7.2;
+      });
+    });
+    doc.text("• prepared   o known, not prepared   ·   Slot circles in the black bars are left empty to tick off in pencil.", m, 764, {size:6.2, gray:.3});
+  }
+  const total = doc.pages.length;
+  doc.pages.forEach((ops, i) => { doc.ops = ops; pdfFooter(doc, i + 1, total); });
+  return doc.output({title:(String(sh.name || "").trim() || "Character") + " — character sheet"});
+}
+async function exportSheetPdf(cardId){
+  const c = card(cardId); if (!c || c.type !== "sheet") return false;
+  const sh = { ...blankSheet(), ...(c.sheet || {}) };
+  try {
+    const bytes = await buildSheetPdf(sh);
+    const base = (String(sh.name || "").trim() || "character").replace(/[\\/:*?"<>|]+/g, "").slice(0, 60);
+    downloadBlob(new Blob([bytes], {type:"application/pdf"}), base + " - character sheet.pdf");
+    toast("Character sheet saved as a PDF.");
+    return true;
+  } catch (e){ toast("Couldn't make the PDF: " + e.message, 8000); return false; }
+}
 $("#seClose").addEventListener("click", closeSheet);
+$("#sePdf").addEventListener("click", () => { if (seCardId) exportSheetPdf(seCardId); });
 $("#sheetEditor").addEventListener("pointerdown", e => { if (e.target === $("#sheetEditor")) closeSheet(); });
 
 function openLightbox(cid){
@@ -20152,6 +20948,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b125", [
+    "D&D sheet: a Spells tab. Search the free 5e spells (hover or tap one for its full details), paste any spell from D&D Beyond or a wiki, tick prepared spells, and tap slot circles as you use them.",
+    "Print / PDF (in the open sheet, or right-click a sheet): a printable black-and-white character sheet in the classic layout, with a spell page for casters. Current HP, death saves, coins and slots are left blank for pencil."
+  ]],
   ["b124", [
     "Fixed red “Script error” messages after a refresh: tapping, scrolling or pressing a key while a big workspace was still loading no longer causes errors."
   ]],
@@ -20198,11 +20998,6 @@ const PATCH_NOTES = [
   ["b113", [
     "Toolbar: Note and Block are white, with Block under Note and Board under Block; Arrow sits above Link. List and Widgets share one pink, Column and Folder are a lighter warm blue, Image and Upload are pink-cream, Library is sky blue.",
     "Widgets take the colour of your theme for their frame; each keeps its own coloured icon. New theme: Blush dark, the warm dark version of Blush (Blush stays the default)."
-  ]],
-  ["b112", [
-    "Calendar widget: one calendar for the whole workspace, in Day, Week, Month or 3-month view. Tap a day to see it or add an event (it can repeat). The coloured chips choose which calendars each widget shows.",
-    "Google Calendar: in Google go to Settings \u203A Import & export \u203A Export, then drop the .zip on any board. Each Google calendar shows up here, view only: edit in Google, then import again. \u2699 \u203A Export .ics sends your own events the other way.",
-    "Lists: give an item a due date (calendar button when you hover it) and it appears on the calendar in the list's colour. The dot by a list's title sets its colour, and the title turns that colour. The \u{1F4C5} button takes a list off the calendar."
   ]],
 
 
