@@ -1915,6 +1915,20 @@ body.focus-mode #textBarWrap{display:none;}
 #askOverlay{z-index:200;}                 /* above every other panel */
 #askPanel{width:min(460px,100%);}
 #askPanel.wide{width:min(640px,100%);}
+.spl-import{display:flex; flex-direction:column; gap:6px; white-space:normal;}
+.spl-import > b{font-size:13px; margin-top:4px;}
+.spl-row{display:flex; gap:8px;}
+.spl-row input{flex:1; min-width:0;}
+.spl-btn{padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); align-self:flex-start;}
+#askBody .spl-check{display:flex; flex-direction:row; align-items:center; justify-content:flex-start; text-align:left; gap:7px; font-size:12.5px;}
+#askBody .spl-check input{width:auto; margin:0; flex:none;}
+.spl-bar{height:6px; border-radius:3px; background:color-mix(in srgb, var(--text) 12%, transparent); overflow:hidden;}
+.spl-bar i{display:block; height:100%; width:0; background:var(--accent); transition:width .2s;}
+.spl-status{font-size:12.5px; min-height:16px; color:var(--text-dim);}
+.spl-or{text-align:center; font-size:12px; color:var(--text-dim); border-top:1px solid var(--border); margin-top:6px; padding-top:6px;}
+.spl-import textarea{width:100%; font:inherit; font-size:13px;}
+.spl-found{max-height:200px; overflow-y:auto;}
+.spl-found-h{font-weight:700; font-size:12.5px; margin:2px 0 4px;}
 #askMsg{font-size:13px; line-height:1.5; color:var(--text); white-space:pre-wrap;}
 #askMsg .sub{display:block; margin-top:7px; font-size:12px; color:var(--text-dim);}
 #askBody input[type=text]{width:100%;}
@@ -3912,7 +3926,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b126";
+window.BUILD = "b127";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4529,7 +4543,7 @@ async function askReplaceSyncScope(){
     buttons:[{label:"Cancel", value:null}, {label:"All my devices", value:"all"}, {label:"This device only", value:"local", primary:true}]
   });
   if (!choice) return false;
-  if (choice === "local"){ try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); } catch (_) {} }
+  if (choice === "local"){ try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); await idbDel(SPELL_SYNC_KEY); } catch (_) {} }
   return true;
 }
 async function restoreSnapshot(ts){
@@ -17794,6 +17808,7 @@ function askOpen({ title, build, buttons, wide }){
        a confirm can be cleared without reaching for the mouse. */
     const keys = e => {
       if (!$("#askOverlay").classList.contains("open")) return;
+      if (e.target?.closest?.("[data-enter-own]") && e.key === "Enter") return;   /* that field acts on Enter itself */
       const tag = document.activeElement?.tagName;
       const typing = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
       if (e.key === "Escape"){
@@ -18867,7 +18882,7 @@ function srdToSpell(r){
 function addSpellToSheet(sp){
   const name = String(sp.name || "").trim().slice(0, 120); if (!name) return false;
   const lvl = Math.max(0, Math.min(9, Number(sp.lvl) || 0));
-  if (sheetSpells(seData()).list.some(x => x.lvl === lvl && x.name.toLowerCase() === name.toLowerCase())){
+  if (sheetSpells(seData()).list.some(x => spellKey(x.name) === spellKey(name))){
     toast(name + " is already on this sheet."); return false;
   }
   seSetSpells(s => { s.list.push({ id:uid("sp"), lvl, name, prep:false, det: sp.det || null }); return s; });
@@ -19029,7 +19044,9 @@ async function pasteSpellDialog(defaultLvl){
    (state.spellLib), on this device and in your own Drive, never in the app's
    files. Once there, every sheet's search finds them next to the free list. */
 function spellLibList(){ return Object.values(state.spellLib || {}).sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name)); }
-function spellLibFind(name){ const n = String(name || "").trim().toLowerCase(); return spellLibList().find(s => s.name.toLowerCase() === n) || null; }
+/* names match ignoring capitals, spacing, apostrophe style and a trailing "(UA)" */
+function spellKey(name){ return String(name || "").toLowerCase().replace(/[\u2018\u2019`]/g, "'").replace(/\s*\(ua\)\s*$/, "").replace(/\s+/g, " ").trim(); }
+function spellLibFind(name){ const n = spellKey(name); return n ? spellLibList().find(s => spellKey(s.name) === n) || null : null; }
 /* add or update by name; returns "added" | "updated" */
 function spellLibPut(sp){
   state.spellLib = state.spellLib || {};
@@ -19037,9 +19054,10 @@ function spellLibPut(sp){
   const lvl = Math.max(0, Math.min(9, Number(sp.lvl) || 0)), t = now();
   const old = spellLibFind(name);
   const det = sp.det ? {...sp.det, src:sp.det.src === "SRD 5.1" ? "SRD 5.1" : "yours"} : null;
-  if (old){ state.spellLib[old.id] = {...old, name, lvl, det:det || old.det, updatedAt:t}; return "updated"; }
+  const src = sp.url ? {url:String(sp.url).slice(0, 300)} : {};
+  if (old){ state.spellLib[old.id] = {...old, name, lvl, det:det || old.det, ...src, updatedAt:t}; return "updated"; }
   const id = uid("spl");
-  state.spellLib[id] = {id, name, lvl, det, addedAt:t, updatedAt:t};
+  state.spellLib[id] = {id, name, lvl, det, ...src, addedAt:t, updatedAt:t};
   return "added";
 }
 /* Many spells pasted at once (a whole wiki page, a text file): each spell
@@ -19068,34 +19086,161 @@ function parseManySpells(text){
   return splitSpellText(text).map(parseSpellText)
     .filter(p => p && p.name && (p.lvl != null || p.det.time || p.det.range || p.det.dur));
 }
+/* ---- import from a web page (dnd5e.wikidot.com) ---------------------------
+   Browsers can't read another site's pages, so your Cloudflare Worker fetches
+   them (POST /fetch, that site only). The list page gives the spell links;
+   each spell page is read a few at a time and parsed like pasted text. */
+const SPELL_WIKI_HOST = "dnd5e.wikidot.com";
+function spellFetchUrl(){ return AUTH_WORKER_URL ? AUTH_WORKER_URL.replace(/\/+$/, "") + "/fetch" : ""; }
+async function fetchSpellPage(url){
+  const api = spellFetchUrl(); if (!api) throw new Error("no worker");
+  const r = await fetch(api, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({url})});
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 404 && j.error === "not found") throw Object.assign(new Error("Your Cloudflare Worker needs the update that adds page reading. Redeploy it, then try again."), {fatal:true});
+  if (r.status === 403 && /origin/.test(j.error || "")) throw Object.assign(new Error("Importing from a link only works on CORKBORK's own website."), {fatal:true});
+  if (!r.ok) throw new Error(j.error || "HTTP " + r.status);
+  if (j.status && j.status >= 400) throw new Error("the page answered " + j.status);
+  return String(j.html || "");
+}
+function wikiSpellLinks(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");   /* inert: nothing in it runs */
+  const seen = new Map();
+  for (const a of doc.querySelectorAll("a[href]")){
+    let u; try { u = new URL(a.getAttribute("href"), "https://" + SPELL_WIKI_HOST + "/"); } catch (_) { continue; }
+    if (u.hostname !== SPELL_WIKI_HOST || !/^\/spell:[a-z0-9-]+$/i.test(u.pathname)) continue;
+    const key = u.pathname.toLowerCase();
+    if (!seen.has(key)) seen.set(key, {url:"https://" + SPELL_WIKI_HOST + u.pathname, name:a.textContent.replace(/\s+/g, " ").trim()});
+  }
+  return [...seen.values()];
+}
+/* one spell page → the same plain text a person would copy */
+function wikiPageText(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const title = (doc.querySelector(".page-title")?.textContent || doc.title.replace(/\s*-\s*DND 5th Edition.*$/i, "")).replace(/\s+/g, " ").trim();
+  const root = doc.querySelector("#page-content") || doc.body;
+  const out = [];
+  const walk = n => {
+    for (const c of n.childNodes){
+      if (c.nodeType === 3){ out.push(c.nodeValue.replace(/\s+/g, " ")); continue; }
+      if (c.nodeType !== 1) continue;
+      const t = c.tagName;
+      if (t === "SCRIPT" || t === "STYLE") continue;
+      if (t === "BR"){ out.push("\n"); continue; }
+      const block = /^(P|DIV|LI|TR|H[1-6]|UL|OL|TABLE|BLOCKQUOTE)$/.test(t);
+      if (block) out.push("\n");
+      walk(c);
+      if (t === "TD" || t === "TH") out.push(" | ");
+      if (block) out.push("\n");
+    }
+  };
+  walk(root);
+  const body = out.join("").split("\n").map(l => l.trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return title + "\n" + body;
+}
+const isUaSpell = (name, text) => /\(UA\)\s*$/i.test(name || "") || /^source:.*unearthed arcana/im.test(text || "");
+/* reads every spell linked from `url` (or the one spell it is); calls onProgress(done, total, name) */
+async function importSpellsFromLink(url, {skipUa = true, update = false, onProgress = () => {}, stopped = () => false} = {}){
+  let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
+  if (u.hostname !== SPELL_WIKI_HOST) throw Object.assign(new Error("Links from " + SPELL_WIKI_HOST + " only, for now."), {fatal:true});
+  let links;
+  if (/^\/spell:/i.test(u.pathname)) links = [{url:"https://" + SPELL_WIKI_HOST + u.pathname, name:""}];
+  else {
+    links = wikiSpellLinks(await fetchSpellPage("https://" + SPELL_WIKI_HOST + u.pathname));
+    if (!links.length) throw Object.assign(new Error("No spells are linked from that page."), {fatal:true});
+  }
+  let skipped = 0, have = 0;
+  if (skipUa){ const before = links.length; links = links.filter(l => !isUaSpell(l.name)); skipped = before - links.length; }
+  /* already in your library (same page or same name): not downloaded again unless updating */
+  if (!update){
+    const urls = new Set(spellLibList().map(s => s.url).filter(Boolean));
+    const before = links.length;
+    links = links.filter(l => !urls.has(l.url) && !(l.name && spellLibFind(l.name)));
+    have = before - links.length;
+  }
+  const found = [], failed = [];
+  let done = 0, next = 0;
+  onProgress(0, links.length, "");
+  const worker = async () => {
+    while (next < links.length && !stopped()){
+      const l = links[next++];
+      let text = null;
+      for (let attempt = 0; attempt < 2 && text == null; attempt++){
+        try { text = wikiPageText(await fetchSpellPage(l.url)); }
+        catch (e){ if (e.fatal) throw e; await new Promise(r => setTimeout(r, 800)); }
+      }
+      if (text == null) failed.push(l.name || l.url);
+      else if (skipUa && isUaSpell(l.name, text)) skipped++;
+      else { const p = parseSpellText(text); if (p?.name && (p.lvl != null || p.det.time)) found.push({...p, url:l.url}); else failed.push(l.name || l.url); }
+      onProgress(++done, links.length, l.name);
+      await new Promise(r => setTimeout(r, 120));   /* gentle on the wiki */
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  return {found, failed, skipped, have, stopped:stopped()};
+}
 async function importSpellsDialog(){
-  let found = [];
+  let pasted = [], linkResult = null;
   const result = await askOpen({
-    title:"Import spells into your library",
+    title:"Add spells to your library",
     wide:true,
     build(body){
-      const m = document.createElement("div"); m.id = "askMsg";
-      m.textContent = "Paste one spell or many (a whole page is fine), or choose a text file. Each spell needs its name, then its level line (like “2nd-level evocation”) or D&D Beyond’s layout.";
-      const ta = document.createElement("textarea"); ta.rows = 10; ta.style.cssText = "width:100%;margin-top:8px;font:inherit;font-size:13px;";
-      const fileBtn = document.createElement("button"); fileBtn.textContent = "Choose a text file…";
-      fileBtn.style.cssText = "margin-top:6px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);";
+      const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import";
+      const h1 = document.createElement("b"); h1.textContent = "From a link";
+      const row = document.createElement("div"); row.className = "spl-row";
+      const url = document.createElement("input"); url.type = "text"; url.value = "https://" + SPELL_WIKI_HOST + "/spells"; url.dataset.enterOwn = "1";
+      const go = document.createElement("button"); go.textContent = "Import"; go.className = "spl-btn";
+      row.append(url, go);
+      const hint = document.createElement("div"); hint.className = "sub";
+      hint.textContent = "The whole spell list, a class list (like /spells:wizard), or one spell.";
+      const uaWrap = document.createElement("label"); uaWrap.className = "spl-check";
+      const ua = document.createElement("input"); ua.type = "checkbox"; ua.checked = true;
+      uaWrap.append(ua, " Skip playtest (Unearthed Arcana) spells");
+      const upWrap = document.createElement("label"); upWrap.className = "spl-check";
+      const up = document.createElement("input"); up.type = "checkbox";
+      upWrap.append(up, " Update spells I already have (otherwise they're skipped)");
+      const status = document.createElement("div"); status.className = "spl-status";
+      const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
+      let stop = false, running = false;
+      const run = async () => {
+        if (running){ stop = true; go.textContent = "Stopping…"; return; }
+        running = true; stop = false; go.textContent = "Stop"; url.disabled = true; bar.hidden = false; fill.style.width = "0";
+        status.textContent = "Reading the list…";
+        try {
+          const r = await importSpellsFromLink(url.value, {skipUa:ua.checked, update:up.checked, stopped:() => stop,
+            onProgress:(d, t, n) => { fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = t ? "Reading " + d + " of " + t + (n ? " — " + n : "") : ""; }});
+          let added = 0, updated = 0;
+          for (const p of r.found){ const k = spellLibPut(p); if (k === "added") added++; else if (k === "updated") updated++; }
+          if (added || updated) markDirty();
+          linkResult = {added, updated};
+          const parts = [added && added + " added", updated && updated + " updated", r.have && r.have + " already in your library", r.skipped && r.skipped + " playtest skipped", r.failed.length && r.failed.length + " couldn't be read"].filter(Boolean);
+          status.textContent = (r.stopped ? "Stopped. " : "Done. ") + (parts.length ? parts.join(", ") + "." : "Nothing new.");
+          if (r.failed.length) status.title = "Couldn't read: " + r.failed.join(", ");
+          $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
+        } catch (e){ status.textContent = e.message; }
+        running = false; go.textContent = "Import"; url.disabled = false;
+      };
+      go.addEventListener("click", run);
+      url.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); run(); } else if (e.key !== "Escape") e.stopPropagation(); });
+
+      const or = document.createElement("div"); or.className = "spl-or"; or.textContent = "or";
+      const h2 = document.createElement("b"); h2.textContent = "Paste spells";
+      const ta = document.createElement("textarea"); ta.rows = 6; ta.placeholder = "Paste one or more spells, copied from a spell page";
+      const fileBtn = document.createElement("button"); fileBtn.textContent = "Or choose a text file…"; fileBtn.className = "spl-btn";
       const file = document.createElement("input"); file.type = "file"; file.accept = ".txt,.md,.text,text/plain"; file.hidden = true;
-      const list = document.createElement("div"); list.style.cssText = "margin-top:8px;max-height:220px;overflow-y:auto;font-size:12.5px;";
+      const list = document.createElement("div"); list.className = "spl-found";
       const draw = () => {
-        found = parseManySpells(ta.value).map(p => ({...p, on:true}));
+        const seen = new Set();
+        pasted = parseManySpells(ta.value).filter(p => !seen.has(spellKey(p.name)) && seen.add(spellKey(p.name))).map(p => ({...p, on:true}));
         list.textContent = "";
         if (!ta.value.trim()) return;
-        const h = document.createElement("div"); h.style.cssText = "font-weight:700;margin-bottom:4px;";
-        h.textContent = found.length ? "Found " + found.length + " spell" + (found.length === 1 ? "" : "s") + ":" : "No spells found yet — each needs a name and a level line.";
+        const h = document.createElement("div"); h.className = "spl-found-h";
+        h.textContent = pasted.length ? "Found " + pasted.length + " spell" + (pasted.length === 1 ? "" : "s") + ":" : "No spells found yet. Each one needs its name and its level line.";
         list.appendChild(h);
-        for (const f of found){
-          const row = document.createElement("label"); row.style.cssText = "display:flex;flex-direction:row;gap:8px;align-items:center;justify-content:flex-start;text-align:left;padding:2px 0;white-space:normal;";
-          const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = true; cb.style.cssText = "width:auto;flex:none;margin:0;";
-          cb.addEventListener("change", () => { f.on = cb.checked; });
-          const t = document.createElement("span"); t.style.flex = "1";
-          const exists = spellLibFind(f.name);
-          t.textContent = f.name + " · " + (f.lvl ? "Level " + f.lvl : f.lvl === 0 ? "Cantrip" : "level unknown (cantrip)") + (exists ? " · replaces your copy" : "");
-          row.append(cb, t); list.appendChild(row);
+        for (const f of pasted){
+          const r2 = document.createElement("label"); r2.className = "spl-check";
+          const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = true; cb.addEventListener("change", () => { f.on = cb.checked; });
+          r2.append(cb, " " + f.name + " · " + (f.lvl ? "Level " + f.lvl : "Cantrip") + (spellLibFind(f.name) ? " (replaces yours)" : ""));
+          list.appendChild(r2);
         }
       };
       ta.addEventListener("input", draw);
@@ -19104,17 +19249,17 @@ async function importSpellsDialog(){
       file.addEventListener("change", async () => { const f = file.files[0]; file.value = ""; if (!f) return;
         if (f.size > 5e6){ toast("That file is too big for a spell list."); return; }
         ta.value = await f.text(); draw(); });
-      m.append(ta, fileBtn, file, list); body.appendChild(m);
-      return { focus:() => ta.focus() };
+      wrap.append(h1, row, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list);
+      body.appendChild(wrap);
+      return { focus:() => url.focus() };
     },
-    buttons:[{label:"Cancel", value:null}, {label:"Add to my library", primary:true, value:() => found.filter(f => f.on)}]
+    buttons:[{label:"Cancel", value:null}, {label:"Add", primary:true, value:() => pasted.filter(f => f.on)}]
   });
-  if (!result || !result.length){ if (result) toast("No spells were selected."); return 0; }
-  pushUndo();
+  if (!result || !result.length) return linkResult ? linkResult.added + linkResult.updated : 0;
   let added = 0, updated = 0;
   for (const p of result){ const r = spellLibPut(p); if (r === "added") added++; else if (r === "updated") updated++; }
   markDirty();
-  toast((added ? added + " spell" + (added === 1 ? "" : "s") + " added" : "") + (added && updated ? ", " : "") + (updated ? updated + " updated" : "") + " in your spell library.");
+  toast([added && added + " added", updated && updated + " updated"].filter(Boolean).join(", ") + " in your spell library.");
   return added + updated;
 }
 /* edit a spell's details; returns the edited spell or null */
@@ -19176,14 +19321,14 @@ async function spellLibraryDialog(){
       wide:true,
       build(body){
         const m = document.createElement("div"); m.id = "askMsg";
-        m.textContent = "Spells you import or paste are kept here, in your workspace and your own Drive. Every sheet can search them.";
+        m.textContent = "Your own spells. Every sheet's spell search finds them.";
         const q = document.createElement("input"); q.type = "text"; q.placeholder = "Find a spell"; q.style.cssText = "width:100%;margin-top:8px;";
         const list = document.createElement("div"); list.style.cssText = "margin-top:8px;max-height:320px;overflow-y:auto;font-size:13px;";
         const draw = () => {
           list.textContent = "";
           const all = spellLibList(), f = q.value.trim().toLowerCase();
           const rows = all.filter(s => !f || s.name.toLowerCase().includes(f));
-          if (!all.length){ const e = document.createElement("div"); e.style.opacity = ".7"; e.textContent = "Empty so far. Use Import spells… to add some."; list.appendChild(e); return; }
+          if (!all.length){ const e = document.createElement("div"); e.style.opacity = ".7"; e.textContent = "No spells yet. Tap Add spells… to import some."; list.appendChild(e); return; }
           for (const s of rows){
             const r = document.createElement("div"); r.style.cssText = "display:flex;gap:8px;align-items:center;padding:4px 2px;border-bottom:1px solid var(--border);";
             const n = document.createElement("span"); n.style.flex = "1"; n.textContent = s.name;
@@ -19197,7 +19342,7 @@ async function spellLibraryDialog(){
         draw(); m.append(q, list); body.appendChild(m);
         return { focus:() => q.focus() };
       },
-      buttons:[{label:"Import spells…", value:"import"}, {label:"Done", primary:true, value:() => pick || "done"}]
+      buttons:[{label:"Add spells…", value:"import"}, {label:"Done", primary:true, value:() => pick || "done"}]
     });
     if (action === "import"){ await importSpellsDialog(); continue; }
     if (action?.edit){
@@ -20043,7 +20188,7 @@ function syncLockedPlaceholder(c){
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
-    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})), spellLib:syncClone((ws.spellLib || {})),
+    bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})),
     favorites:(ws.favorites || []).filter(id => !priv.cards.has(id)),
     calCats:syncClone((ws.calCats || {})), calEvents:syncClone((ws.calEvents || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
@@ -20177,8 +20322,6 @@ function syncMergeWorkspace(base, local, remote){
   mergeMap("library", () => false, (l, r) => (l.updatedAt || l.addedAt || 0) >= (r.updatedAt || r.addedAt || 0));
   /* the mood log: one entry per day, newest edit of a day wins */
   mergeMap("mood", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
-  /* your spell library: newest edit of a spell wins */
-  mergeMap("spellLib", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   /* the calendar: its calendars and events, newest edit wins */
   mergeMap("calCats", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   mergeMap("calEvents", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
@@ -20808,6 +20951,34 @@ function requestCloudSync(){
 function syncLooksOffline(e){
   return navigator.onLine === false || e instanceof TypeError || /Failed to fetch|Load failed|NetworkError|internet connection/i.test(e?.message || "");
 }
+/* Your spell library can be hundreds of spells, so it has its own Drive
+   file, uploaded only when the library changes instead of with every edit.
+   Merged three ways against the copy last synced: both sides' additions
+   and edits stay (newest edit of a spell wins), deletions carry over. */
+const SPELL_SYNC_KEY = "sync:spells";
+async function syncSpellLibrary(layout){
+  const st = Object.assign({rev:"", base:{}}, await idbGetRaw(SPELL_SYNC_KEY) || {});
+  const file = await driveFind("spelllib", layout.root);
+  const newer = (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0);
+  if (file && file.headRevisionId !== st.rev){
+    let remote;
+    try { remote = JSON.parse(await (await driveFetch(`/drive/v3/files/${file.id}?alt=media`)).text()).spells || {}; }
+    catch (_) { throw new Error("Drive's spell library is not readable."); }
+    /* no awaits from here to the assignment, so an edit can't slip between */
+    const merged = tabMergeMap(st.base, state.spellLib || {}, remote, newer);
+    if (!syncSame(merged, state.spellLib || {})){ state.spellLib = merged; markDirty(); }
+    st.base = remote; st.rev = file.headRevisionId;
+  }
+  const mine = state.spellLib || {};
+  if (!syncSame(mine, st.base) && (file || Object.keys(mine).length)){
+    const body = JSON.stringify({spells:mine});
+    const w = file
+      ? await driveJson(`/upload/drive/v3/files/${file.id}?uploadType=media&fields=id,headRevisionId`, {method:"PATCH", headers:{"Content-Type":"application/json"}, body})
+      : await driveCreate({name:"spell-library.json", parents:[layout.root], appProperties:{corkbork:"spelllib"}}, body);
+    st.rev = w.headRevisionId; st.base = syncClone(mine);
+  }
+  await idbSet(SPELL_SYNC_KEY, st);
+}
 /* The poll runs every minute. When neither Drive nor this workspace has
    changed since the last full pass, there is nothing to send or merge, so it
    stops after the one small lookup; a full pass still runs every 10 minutes. */
@@ -20832,6 +21003,7 @@ async function cloudSyncOnce(){
       SYNC.status = "ok"; refreshSyncUI(); return true;
     }
     if (file && readRev === meta.rev && syncedState === startState && syncedModified === startModified && Date.now() - syncedAt < 10 * 60 * 1000){
+      await syncSpellLibrary(layout);   /* another device may have changed it */
       SYNC.status = "ok"; SYNC.lastError = ""; SYNC.lastSync = Date.now();
       refreshSyncUI(); tabShareSync(); return true;
     }
@@ -20876,6 +21048,7 @@ async function cloudSyncOnce(){
     }
     if (purged && file) await dropOldCatalogueVersions(file.id);
     await setSyncMeta({rev:readRev, assets:meta.assets, at:Date.now()});
+    await syncSpellLibrary(layout);
     setTimeout(async () => { if (!await mirrorCloudFilesToArchive()) keepOriginalsOffline(); }, 0);
     syncedState = startState; syncedModified = startModified; syncedAt = Date.now();
     SYNC.status = "ok"; SYNC.lastError = ""; SYNC.lastSync = Date.now();
@@ -21006,7 +21179,7 @@ $("#syncOff").addEventListener("click", async () => {
   SYNC.clientId = ""; SYNC.token = null; SYNC.layout = null;
   SAFE_STORE.del("cb_token"); SAFE_STORE.del("cb_hint"); SAFE_STORE.del("cb_refresh");
   clearInterval(cloudPoll);
-  try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); } catch (_) {}
+  try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); await idbDel(SPELL_SYNC_KEY); } catch (_) {}
   refreshSyncUI();
   toast("Disconnected. Your boards stay on this device; the CORKBORK folder stays in your Drive.");
 });
@@ -21165,6 +21338,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b127", [
+    "Spell library: Add spells \u203a From a link imports a whole spell list from dnd5e.wikidot.com (or a class list, or one spell) with a progress bar. Spells you already have are skipped, so importing several lists never makes duplicates. Needs the updated Cloudflare Worker."
+  ]],
   ["b126", [
     "D&D sheet: My spell library. Import many spells at once (paste a whole page from a wiki or choose a text file); they're kept in your workspace and Drive, show up in every sheet's spell search, and can be edited. Spells pasted on a sheet are saved there too."
   ]],
@@ -21214,10 +21390,6 @@ const PATCH_NOTES = [
   ["b114", [
     "Titles and headings (cards, blocks, widgets, windows) use the CORKBORK logo's serif again. Toolbar colours now all share one brightness, Widget sits under List, and Note and Block are a softer white.",
     "Timer: tap the time to change it. Type 25, 2:30 or 1:30:00. Widgets are a little less rounded."
-  ]],
-  ["b113", [
-    "Toolbar: Note and Block are white, with Block under Note and Board under Block; Arrow sits above Link. List and Widgets share one pink, Column and Folder are a lighter warm blue, Image and Upload are pink-cream, Library is sky blue.",
-    "Widgets take the colour of your theme for their frame; each keeps its own coloured icon. New theme: Blush dark, the warm dark version of Blush (Blush stays the default)."
   ]],
 
 
