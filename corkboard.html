@@ -1927,6 +1927,8 @@ body.focus-mode #textBarWrap{display:none;}
 #askBody .spl-check input{width:auto; margin:0; flex:none;}
 .spl-bar{height:6px; border-radius:3px; background:color-mix(in srgb, var(--text) 12%, transparent); overflow:hidden;}
 .spl-bar i{display:block; height:100%; width:0; background:var(--accent); transition:width .2s;}
+.spl-warn{font-size:12.5px; color:#B3261E; font-weight:600;}
+.spl-link{padding:0; border:none; background:none; color:var(--accent); text-decoration:underline; font:inherit; cursor:pointer;}
 .spl-status{font-size:12.5px; min-height:16px; color:var(--text-dim);}
 .spl-or{text-align:center; font-size:12px; color:var(--text-dim); border-top:1px solid var(--border); margin-top:6px; padding-top:6px;}
 .spl-import textarea{width:100%; font:inherit; font-size:13px;}
@@ -3929,7 +3931,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b128";
+window.BUILD = "b129";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -18880,7 +18882,7 @@ function loadSrdSpells(){
 }
 function srdToSpell(r){
   return { lvl:r.l, name:r.n, det:{ school:r.s, time:r.t, range:r.r, comp:r.c, dur:r.d, conc:!!r.k, ritual:!!r.ri,
-    desc:r.x || "", higher:r.h || "", src:"SRD 5.1" } };
+    desc:r.x || "", higher:r.h || "", book:"Player's Handbook (SRD)", src:"SRD 5.1" } };
 }
 function addSpellToSheet(sp){
   const name = String(sp.name || "").trim().slice(0, 120); if (!name) return false;
@@ -18898,15 +18900,18 @@ function addSpellToSheet(sp){
 function parseSpellText(text){
   const lines = String(text || "").replace(/\r/g, "").split("\n").map(l => l.replace(/\s+/g, " ").trim());
   const KEYS = {"casting time":"time", "range":"range", "range/area":"range", "components":"comp", "duration":"dur",
-    "school":"school", "level":"level", "attack/save":"skip", "damage/effect":"skip", "source":"skip", "spell lists":"skip",
+    "school":"school", "level":"level", "attack/save":"skip", "damage/effect":"skip", "source":"book", "spell lists":"skip",
     "spell tags":"skip", "available for":"skip", "classes":"skip", "tags":"skip"};
-  const det = {school:"", time:"", range:"", comp:"", dur:"", conc:false, ritual:false, desc:"", higher:"", src:"pasted"};
+  const det = {school:"", time:"", range:"", comp:"", dur:"", conc:false, ritual:false, desc:"", higher:"", book:"", src:"pasted"};
   let name = "", lvl = null, footnote = "";
   const desc = [];
   const setLevel = v => {
     let m;
     if ((m = /^(\d)(?:st|nd|rd|th)?(?:[- ]level)?(?:\s+([a-z]+))?(\s*\(ritual\))?$/i.exec(v))){ lvl = Number(m[1]); if (m[2]) det.school = cap(m[2]); if (m[3]) det.ritual = true; return true; }
     if ((m = /^(?:([a-z]+)\s+)?cantrip$/i.exec(v))){ lvl = 0; if (m[1]) det.school = cap(m[1]); return true; }
+    /* aidedd.org: "level 3 - evocation", "cantrip - conjuration", maybe "(ritual)" */
+    if ((m = /^level\s+(\d)\s*[-\u2013\u2014]\s*([a-z]+)(\s*\(ritual\))?$/i.exec(v))){ lvl = Number(m[1]); det.school = cap(m[2]); if (m[3]) det.ritual = true; return true; }
+    if ((m = /^cantrip\s*[-\u2013\u2014]\s*([a-z]+)$/i.exec(v))){ lvl = 0; det.school = cap(m[1]); return true; }
     return false;
   };
   const cap = w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
@@ -18914,7 +18919,7 @@ function parseSpellText(text){
     const line = lines[i];
     if (!line){ if (desc.length && desc[desc.length - 1] !== "") desc.push(""); continue; }
     if (!name){ name = line.replace(/\s*\(ritual\)$/i, ""); continue; }
-    if (/^(source|spell lists|classes|spell tags|available for)\s*[.:]/i.test(line)) continue;   /* wiki/D&D Beyond footers, not spell text */
+    if (/^(spell lists|classes|spell tags|available for)\s*[.:]/i.test(line)) continue;   /* wiki/D&D Beyond footers, not spell text */
     let m = /^([a-z /]+):\s*(.*)$/i.exec(line), key = null, val = "";
     if (m && KEYS[m[1].toLowerCase()]){ key = KEYS[m[1].toLowerCase()]; val = m[2]; }
     else if (KEYS[line.toLowerCase()] && i + 1 < lines.length && lines[i + 1]){ key = KEYS[line.toLowerCase()]; val = lines[++i]; }
@@ -18935,6 +18940,7 @@ function parseSpellText(text){
   if (/ritual/i.test(det.time)){ det.ritual = true; det.time = det.time.replace(/\s*ritual\s*/i, " ").trim(); }
   det.desc = desc.join("\n").replace(/\n{2,}/g, "\n\n").replace(/([^\n])\n(?!\n)/g, "$1\n\n").trim().slice(0, 12000);
   det.higher = det.higher.slice(0, 3000);
+  det.book = det.book.replace(/[,;]?\s*(?:pg\.?|page|p\.)\s*\d+.*$/i, "").trim().slice(0, 120);   /* "Player's Handbook, pg. 241" */
   for (const k of ["school","time","range","comp","dur"]) det[k] = det[k].slice(0, 300);
   return { name:name.slice(0, 120), lvl, det };
 }
@@ -18960,7 +18966,7 @@ function showSpellTip(sp, anchor){
   tip.append(h, sub);
   const dl = document.createElement("dl");
   const dur = d.conc && d.dur && !/concentration/i.test(d.dur) ? "Concentration, " + d.dur.replace(/^U/, "u") : d.dur;
-  for (const [k, v] of [["Casting time", d.time], ["Range", d.range], ["Components", d.comp], ["Duration", dur]]){
+  for (const [k, v] of [["Casting time", d.time], ["Range", d.range], ["Components", d.comp], ["Duration", dur], ["Book", d.book]]){
     if (!v) continue;
     const dt = document.createElement("dt"); dt.textContent = k;
     const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd);
@@ -18983,7 +18989,7 @@ function showSpellTip(sp, anchor){
   para(d.desc);
   para(d.higher, "At higher levels.");
   if (!d.desc && !dl.childNodes.length){
-    const p = document.createElement("p"); p.textContent = "No details saved for this spell. Paste its text with “Paste spell text…” to add them."; tip.appendChild(p);
+    const p = document.createElement("p"); p.textContent = "No details saved for this spell. Use Edit details to add them."; tip.appendChild(p);
   }
   if (d.src === "SRD 5.1"){ const s = document.createElement("div"); s.className = "src"; s.textContent = SRD_CREDIT; tip.appendChild(s); }
   if (sp.id && seCardId && sheetSpells(seData()).list.some(x => x.id === sp.id)){
@@ -19004,43 +19010,6 @@ function showSpellTip(sp, anchor){
   if (x + w > innerWidth / z - 8) x = Math.max(8, r.left / z - w - 10);
   if (x < 8){ x = 8; y = r.bottom / z + 6; }
   tip.style.left = x + "px"; tip.style.top = Math.max(8, Math.min(y, innerHeight / z - hh - 8)) + "px";
-}
-async function pasteSpellDialog(defaultLvl){
-  let parsed = null;
-  const result = await askOpen({
-    title:"Paste a spell",
-    build(body){
-      const m = document.createElement("div"); m.id = "askMsg";
-      m.textContent = "Copy the whole spell from D&D Beyond or a wiki (name to the end of its text) and paste it here.";
-      const ta = document.createElement("textarea"); ta.rows = 9; ta.style.cssText = "width:100%;margin-top:8px;font:inherit;font-size:13px;";
-      ta.placeholder = "Fireball\n3rd-level evocation\nCasting Time: 1 action\nRange: 150 feet\n…";
-      const found = document.createElement("div"); found.style.cssText = "font-size:12px;margin-top:6px;opacity:.8;min-height:16px;";
-      const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;margin-top:8px;align-items:center;";
-      const nm = document.createElement("input"); nm.placeholder = "Spell name"; nm.style.flex = "1";
-      const lv = document.createElement("select");
-      SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; lv.appendChild(o); });
-      lv.value = String(defaultLvl || 0);
-      row.append(nm, lv);
-      ta.addEventListener("input", () => {
-        parsed = parseSpellText(ta.value);
-        if (!parsed){ found.textContent = ""; return; }
-        nm.value = parsed.name; if (parsed.lvl != null) lv.value = String(parsed.lvl);
-        const d = parsed.det;
-        found.textContent = "Found: " + [d.time && "casting time", d.range && "range", d.comp && "components", d.dur && "duration", d.desc && "description"].filter(Boolean).join(", ");
-      });
-      for (const el of [ta, nm]) el.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
-      m.append(ta, found, row); body.appendChild(m);
-      return { focus:() => ta.focus(), ta, nm, lv };
-    },
-    buttons:[{label:"Cancel", value:null},
-      {label:"Add spell", primary:true, value:api => ({ text:api.ta.value, name:api.nm.value, lvl:Number(api.lv.value) })}]
-  });
-  if (!result) return;
-  const p = parseSpellText(result.text) || { det:null };
-  const name = (result.name || p.name || "").trim();
-  if (!name){ toast("Paste a spell, or type its name."); return; }
-  if (p.det) spellLibPut({ name, lvl:result.lvl, det:p.det });   /* reusable on every sheet */
-  if (addSpellToSheet({ name, lvl:result.lvl, det:p.det })) renderSheetEditor();
 }
 /* ---- your own spell library ---------------------------------------------
    Spells pasted or imported from anywhere live in the workspace
@@ -19067,7 +19036,7 @@ function spellLibPut(sp){
    starts at a short name line followed within a few lines by its level
    ("2nd-level evocation", "Evocation cantrip", or D&D Beyond's "Level"
    label) or by "Source:". A line of --- also separates spells. */
-const SPELL_LEVEL_LINE = /^(\d)(?:st|nd|rd|th)[- ]level\b|^[a-z]+ cantrip\b|^level$|^cantrip$/i;
+const SPELL_LEVEL_LINE = /^(\d)(?:st|nd|rd|th)[- ]level\b|^[a-z]+ cantrip\b|^level$|^cantrip$|^level \d\s*[-\u2013\u2014]|^cantrip\s*[-\u2013\u2014]/i;
 function splitSpellText(text){
   const lines = String(text || "").replace(/\r/g, "").split("\n");
   const looksLikeName = l => { const t = l.trim(); return t && t.length <= 60 && !/[:.]$/.test(t) && !/:/.test(t) && !SPELL_LEVEL_LINE.test(t) && !/^[-=*_]{3,}$/.test(t); };
@@ -19093,7 +19062,34 @@ function parseManySpells(text){
    Browsers can't read another site's pages, so your Cloudflare Worker fetches
    them (POST /fetch, that site only). The list page gives the spell links;
    each spell page is read a few at a time and parsed like pasted text. */
-const SPELL_WIKI_HOST = "dnd5e.wikidot.com";
+/* Sites spells can be imported from. Each says what a spell's own page
+   looks like there; the list pages just need to link to those. The Worker's
+   FETCH_HOSTS must allow the same hosts. */
+const SPELL_SITES = {
+  "dnd5e.wikidot.com": {
+    isSpell: u => /^\/spell:[a-z0-9-]+$/i.test(u.pathname),
+    canon: u => "https://dnd5e.wikidot.com" + u.pathname
+  },
+  "www.aidedd.org": {
+    isSpell: u => /^\/dnd\/sorts\.php$/i.test(u.pathname) && !!u.searchParams.get("vo"),
+    canon: u => "https://www.aidedd.org/dnd/sorts.php?vo=" + encodeURIComponent(u.searchParams.get("vo"))
+  },
+  /* D&D Wiki (MediaWiki): homebrew spells are "Name (5e Spell)", official ones "5e SRD:Name";
+     its spell list pages may only link to further lists, which are followed one level */
+  "www.dandwiki.com": {
+    isSpell: u => { const t = decodeURIComponent(u.pathname); return /^\/wiki\/[^/]+_\(5e_Spell\)$/i.test(t) || /^\/wiki\/5e_SRD:[^/]+$/i.test(t); },
+    isList: u => /^\/wiki\/5e_[^/:]*Spells[^/:]*$/i.test(decodeURIComponent(u.pathname)),
+    canon: u => "https://www.dandwiki.com" + u.pathname,
+    book: url => /5e_SRD:/i.test(decodeURIComponent(url)) ? "SRD (D&D Wiki)" : "D&D Wiki (homebrew)"
+  }
+};
+const SPELL_SITE_ALIASES = {"aidedd.org":"www.aidedd.org", "www.dnd5e.wikidot.com":"dnd5e.wikidot.com", "dandwiki.com":"www.dandwiki.com"};
+const spellSiteHost = u => SPELL_SITE_ALIASES[u.hostname] || u.hostname;
+const RECOMMENDED_SPELL_LINKS = [
+  ["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/spells"],
+  ["aidedd.org", "https://www.aidedd.org/dnd-filters/spells-5e.php"],
+  ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Spells"]
+];
 function spellFetchUrl(){ return AUTH_WORKER_URL ? AUTH_WORKER_URL.replace(/\/+$/, "") + "/fetch" : ""; }
 async function fetchSpellPage(url){
   const api = spellFetchUrl(); if (!api) throw new Error("no worker");
@@ -19101,26 +19097,36 @@ async function fetchSpellPage(url){
   const j = await r.json().catch(() => ({}));
   if (r.status === 404 && j.error === "not found") throw Object.assign(new Error("Your Cloudflare Worker needs the update that adds page reading. Redeploy it, then try again."), {fatal:true});
   if (r.status === 403 && /origin/.test(j.error || "")) throw Object.assign(new Error("Importing from a link only works on CORKBORK's own website."), {fatal:true});
+  if (r.status === 403 && /can be read/.test(j.error || "")) throw Object.assign(new Error("Your Cloudflare Worker can't read " + new URL(url).hostname + " yet. Redeploy it with the latest code, then try again."), {fatal:true});
   if (!r.ok) throw new Error(j.error || "HTTP " + r.status);
   if (j.status && j.status >= 400) throw new Error("the page answered " + j.status);
   return String(j.html || "");
 }
-function wikiSpellLinks(html){
+/* spell links on a list page, for that list's site */
+function wikiListLinks(html, baseUrl){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const base = new URL(baseUrl), host = spellSiteHost(base), site = SPELL_SITES[host], seen = new Set();
+  if (!site?.isList) return [];
+  for (const a of doc.querySelectorAll("a[href]")){
+    let u; try { u = new URL(a.getAttribute("href"), base); } catch (_) { continue; }
+    if (spellSiteHost(u) === host && site.isList(u) && u.pathname !== base.pathname) seen.add("https://" + host + u.pathname);
+  }
+  return [...seen].slice(0, 60);
+}
+function wikiSpellLinks(html, baseUrl = "https://dnd5e.wikidot.com/spells"){
   const doc = new DOMParser().parseFromString(html, "text/html");   /* inert: nothing in it runs */
+  const base = new URL(baseUrl), host = spellSiteHost(base), site = SPELL_SITES[host];
   const seen = new Map();
   for (const a of doc.querySelectorAll("a[href]")){
-    let u; try { u = new URL(a.getAttribute("href"), "https://" + SPELL_WIKI_HOST + "/"); } catch (_) { continue; }
-    if (u.hostname !== SPELL_WIKI_HOST || !/^\/spell:[a-z0-9-]+$/i.test(u.pathname)) continue;
-    const key = u.pathname.toLowerCase();
-    if (!seen.has(key)) seen.set(key, {url:"https://" + SPELL_WIKI_HOST + u.pathname, name:a.textContent.replace(/\s+/g, " ").trim()});
+    let u; try { u = new URL(a.getAttribute("href"), base); } catch (_) { continue; }
+    if (spellSiteHost(u) !== host || !site.isSpell(u)) continue;
+    const url = site.canon(u), key = url.toLowerCase();
+    if (!seen.has(key)) seen.set(key, {url, name:a.textContent.replace(/\s+/g, " ").trim()});
   }
   return [...seen.values()];
 }
-/* one spell page → the same plain text a person would copy */
-function wikiPageText(html){
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const title = (doc.querySelector(".page-title")?.textContent || doc.title.replace(/\s*-\s*DND 5th Edition.*$/i, "")).replace(/\s+/g, " ").trim();
-  const root = doc.querySelector("#page-content") || doc.body;
+/* a page's text as a person would copy it: blocks and line breaks become new lines */
+function pageTextOf(root){
   const out = [];
   const walk = n => {
     for (const c of n.childNodes){
@@ -19137,18 +19143,52 @@ function wikiPageText(html){
     }
   };
   walk(root);
-  const body = out.join("").split("\n").map(l => l.trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
-  return title + "\n" + body;
+  return out.join("").split("\n").map(l => l.trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+/* one spell page → the same plain text a person would copy */
+function wikiPageText(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  /* aidedd.org: name in h1, then school/level, the four fields, the text; translation and class tags left out */
+  const bloc = doc.querySelector(".bloc");
+  if (bloc && bloc.querySelector("h1")){
+    for (const el of bloc.querySelectorAll(".trad, .classe, script, style")) el.remove();
+    const name = bloc.querySelector("h1").textContent.replace(/\s+/g, " ").trim();
+    const source = bloc.querySelector(".source")?.textContent.replace(/\s+/g, " ").trim();
+    bloc.querySelector("h1").remove(); bloc.querySelector(".source")?.remove();
+    return name + "\n" + (source ? "Source: " + source.replace(/^source\s*:?\s*/i, "") + "\n" : "") + pageTextOf(bloc);
+  }
+  const mw = doc.querySelector("#mw-content-text .mw-parser-output") || doc.querySelector("#mw-content-text");
+  if (mw){
+    for (const el of mw.querySelectorAll(".toc, .mw-editsection, .navbox, .noprint, .mbox, .ambox, .printfooter, #catlinks, sup.reference, script, style")) el.remove();
+    const name = (doc.querySelector("#firstHeading")?.textContent || doc.title.replace(/\s*-\s*D&D Wiki.*$/i, ""))
+      .replace(/\s*\(5e Spell\)\s*$/i, "").replace(/^5e SRD:\s*/i, "").replace(/\s+/g, " ").trim();
+    const text = pageTextOf(mw).split("\n").filter(l => !/^back to main page/i.test(l)).join("\n");
+    return name + "\n" + text;
+  }
+  const title = (doc.querySelector(".page-title")?.textContent || doc.title.replace(/\s*-\s*DND 5th Edition.*$/i, "")).replace(/\s+/g, " ").trim();
+  return title + "\n" + pageTextOf(doc.querySelector("#page-content") || doc.body);
 }
 const isUaSpell = (name, text) => /\(UA\)\s*$/i.test(name || "") || /^source:.*unearthed arcana/im.test(text || "");
 /* reads every spell linked from `url` (or the one spell it is); calls onProgress(done, total, name) */
 async function importSpellsFromLink(url, {skipUa = true, update = false, onProgress = () => {}, stopped = () => false} = {}){
   let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
-  if (u.hostname !== SPELL_WIKI_HOST) throw Object.assign(new Error("Links from " + SPELL_WIKI_HOST + " only, for now."), {fatal:true});
+  const host = spellSiteHost(u), site = SPELL_SITES[host];
+  if (!site) throw Object.assign(new Error("Links from " + Object.keys(SPELL_SITES).map(h => h.replace(/^www\./, "")).join(" or ") + " only, for now."), {fatal:true});
   let links;
-  if (/^\/spell:/i.test(u.pathname)) links = [{url:"https://" + SPELL_WIKI_HOST + u.pathname, name:""}];
+  if (site.isSpell(u)) links = [{url:site.canon(u), name:""}];
   else {
-    links = wikiSpellLinks(await fetchSpellPage("https://" + SPELL_WIKI_HOST + u.pathname));
+    const listUrl = "https://" + host + u.pathname + u.search;
+    const listHtml = await fetchSpellPage(listUrl);
+    links = wikiSpellLinks(listHtml, listUrl);
+    if (!links.length){
+      const seen = new Set();
+      for (const sub of wikiListLinks(listHtml, listUrl)){
+        if (stopped()) break;
+        onProgress(0, 0, "");
+        try { for (const l of wikiSpellLinks(await fetchSpellPage(sub), sub)) if (!seen.has(l.url.toLowerCase())){ seen.add(l.url.toLowerCase()); links.push(l); } }
+        catch (e){ if (e.fatal) throw e; }
+      }
+    }
     if (!links.length) throw Object.assign(new Error("No spells are linked from that page."), {fatal:true});
   }
   let skipped = 0, have = 0;
@@ -19173,7 +19213,13 @@ async function importSpellsFromLink(url, {skipUa = true, update = false, onProgr
       }
       if (text == null) failed.push(l.name || l.url);
       else if (skipUa && isUaSpell(l.name, text)) skipped++;
-      else { const p = parseSpellText(text); if (p?.name && (p.lvl != null || p.det.time)) found.push({...p, url:l.url}); else failed.push(l.name || l.url); }
+      else {
+        const p = parseSpellText(text);
+        if (p?.name && (p.lvl != null || p.det.time)){
+          if (!p.det.book && site.book) p.det.book = site.book(l.url);
+          found.push({...p, url:l.url});
+        } else failed.push(l.name || l.url);
+      }
       onProgress(++done, links.length, l.name);
       await new Promise(r => setTimeout(r, 120));   /* gentle on the wiki */
     }
@@ -19184,17 +19230,32 @@ async function importSpellsFromLink(url, {skipUa = true, update = false, onProgr
 async function importSpellsDialog(){
   let pasted = [], linkResult = null;
   const result = await askOpen({
-    title:"Add spells to your library",
+    title:"Import spells",
     wide:true,
     build(body){
       const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import";
       const h1 = document.createElement("b"); h1.textContent = "From a link";
       const row = document.createElement("div"); row.className = "spl-row";
-      const url = document.createElement("input"); url.type = "text"; url.value = "https://" + SPELL_WIKI_HOST + "/spells"; url.dataset.enterOwn = "1";
+      const url = document.createElement("input"); url.type = "text"; url.value = RECOMMENDED_SPELL_LINKS[0][1]; url.dataset.enterOwn = "1";
       const go = document.createElement("button"); go.textContent = "Import"; go.className = "spl-btn";
       row.append(url, go);
-      const hint = document.createElement("div"); hint.className = "sub";
-      hint.textContent = "The whole spell list, a class list (like /spells:wizard), or one spell.";
+      const hint = document.createElement("div"); hint.className = "sub spl-rec";
+      /* only these sites can be read (each needs its own page reader); tapping one fills in its spell list */
+      hint.append("Supported sites: ");
+      RECOMMENDED_SPELL_LINKS.forEach(([label, link], i) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "spl-link"; b.textContent = label; b.title = link;
+        b.addEventListener("click", () => { url.value = link; checkSite(); url.focus(); });
+        if (i) hint.append(i === RECOMMENDED_SPELL_LINKS.length - 1 ? " and " : ", "); hint.append(b);
+      });
+      hint.append(". Paste a whole spell list, a class list, or one spell\u2019s page from one of them.");
+      const warn = document.createElement("div"); warn.className = "spl-warn"; warn.hidden = true;
+      const checkSite = () => {
+        let u = null; try { u = new URL(url.value.trim()); } catch (_) {}
+        const bad = !!url.value.trim() && (!u || !SPELL_SITES[spellSiteHost(u)]);
+        warn.hidden = !bad; go.disabled = bad;
+        warn.textContent = !u ? "That isn\u2019t a web address." : "CORKBORK can\u2019t read spells from " + u.hostname + ". Use one of the supported sites above.";
+      };
+      url.addEventListener("input", checkSite);
       const uaWrap = document.createElement("label"); uaWrap.className = "spl-check";
       const ua = document.createElement("input"); ua.type = "checkbox"; ua.checked = true;
       uaWrap.append(ua, " Skip playtest (Unearthed Arcana) spells");
@@ -19252,7 +19313,7 @@ async function importSpellsDialog(){
       file.addEventListener("change", async () => { const f = file.files[0]; file.value = ""; if (!f) return;
         if (f.size > 5e6){ toast("That file is too big for a spell list."); return; }
         ta.value = await f.text(); draw(); });
-      wrap.append(h1, row, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list);
+      wrap.append(h1, row, warn, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list);
       body.appendChild(wrap);
       return { focus:() => url.focus() };
     },
@@ -19291,6 +19352,7 @@ async function editSpellDialog(sp, {offerLibrary = false} = {}){
       api.range = field("Range", d.range);
       api.comp = field("Components", d.comp);
       api.dur = field("Duration", d.dur);
+      api.book = field("Book", d.book);
       const fl = document.createElement("label"); fl.textContent = "Tags";
       const flags = document.createElement("div"); flags.style.cssText = "display:flex;gap:14px;font-size:13px;";
       const flag = (t, on) => { const w = document.createElement("label"); const c = document.createElement("input"); c.type = "checkbox"; c.checked = !!on; w.append(c, " " + t); flags.appendChild(w); return c; };
@@ -19311,7 +19373,7 @@ async function editSpellDialog(sp, {offerLibrary = false} = {}){
       name:a.name.value.trim(), lvl:Number(a.lvl.value), lib:!!a.lib?.checked,
       det:{school:a.school.value.trim(), time:a.time.value.trim(), range:a.range.value.trim(), comp:a.comp.value.trim(),
         dur:a.dur.value.trim(), conc:a.conc.checked, ritual:a.ritual.checked, desc:a.desc.value.trim().slice(0, 12000),
-        higher:a.higher.value.trim().slice(0, 3000), src:d.src === "SRD 5.1" ? "SRD 5.1" : "yours"}})}]
+        higher:a.higher.value.trim().slice(0, 3000), book:a.book.value.trim().slice(0, 120), src:d.src === "SRD 5.1" ? "SRD 5.1" : "yours"}})}]
   });
   if (!res || !res.name) return null;
   return res;
@@ -19325,27 +19387,35 @@ async function spellLibraryDialog(){
       build(body){
         const m = document.createElement("div"); m.id = "askMsg";
         m.textContent = "Your own spells. Every sheet's spell search finds them.";
-        const q = document.createElement("input"); q.type = "text"; q.placeholder = "Find a spell"; q.style.cssText = "width:100%;margin-top:8px;";
+        const q = document.createElement("input"); q.type = "text"; q.placeholder = "Find a spell"; q.style.cssText = "flex:1;min-width:0;";
+        const bookSel = document.createElement("select"); bookSel.title = "Show spells from one book";
+        const books = [...new Set(spellLibList().map(s => s.det?.book || ""))].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || a.localeCompare(b));
+        for (const [v, t] of [["*", "All books"], ...books.map(b => [b, b || "Book not known"])]){ const o = document.createElement("option"); o.value = v; o.textContent = t; bookSel.appendChild(o); }
+        const qrow = document.createElement("div"); qrow.style.cssText = "display:flex;gap:8px;margin-top:8px;"; qrow.append(q, bookSel);
+        bookSel.value = spellLibraryDialog.book && books.includes(spellLibraryDialog.book) ? spellLibraryDialog.book : "*";
         const list = document.createElement("div"); list.style.cssText = "margin-top:8px;max-height:320px;overflow-y:auto;font-size:13px;";
         const draw = () => {
           list.textContent = "";
           const all = spellLibList(), f = q.value.trim().toLowerCase();
-          const rows = all.filter(s => !f || s.name.toLowerCase().includes(f));
-          if (!all.length){ const e = document.createElement("div"); e.style.opacity = ".7"; e.textContent = "No spells yet. Tap Add spells… to import some."; list.appendChild(e); return; }
+          const bk = bookSel.value; spellLibraryDialog.book = bk;
+          const rows = all.filter(s => (!f || s.name.toLowerCase().includes(f)) && (bk === "*" || (s.det?.book || "") === bk));
+          if (!all.length){ const e = document.createElement("div"); e.style.opacity = ".7"; e.textContent = "No spells yet. Tap Import spells… to add some."; list.appendChild(e); return; }
           for (const s of rows){
             const r = document.createElement("div"); r.style.cssText = "display:flex;gap:8px;align-items:center;padding:4px 2px;border-bottom:1px solid var(--border);";
             const n = document.createElement("span"); n.style.flex = "1"; n.textContent = s.name;
-            const lv = document.createElement("span"); lv.style.cssText = "font-size:11.5px;opacity:.7;"; lv.textContent = s.lvl ? "Level " + s.lvl : "Cantrip";
+            const lv = document.createElement("span"); lv.style.cssText = "font-size:11.5px;opacity:.7;text-align:right;";
+            lv.textContent = (s.lvl ? "Level " + s.lvl : "Cantrip") + (s.det?.book ? " \u00b7 " + s.det.book : "");
             const ed = document.createElement("button"); ed.textContent = "Edit"; ed.addEventListener("click", () => { pick = {edit:s.id}; $("#askRow .primary")?.click(); });
             const del = document.createElement("button"); del.textContent = "Delete"; del.addEventListener("click", () => { pick = {del:s.id}; $("#askRow .primary")?.click(); });
             r.append(n, lv, ed, del); list.appendChild(r);
           }
         };
         q.addEventListener("input", draw); q.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
-        draw(); m.append(q, list); body.appendChild(m);
+        bookSel.addEventListener("change", draw);
+        draw(); m.append(qrow, list); body.appendChild(m);
         return { focus:() => q.focus() };
       },
-      buttons:[{label:"Add spells…", value:"import"}, {label:"Done", primary:true, value:() => pick || "done"}]
+      buttons:[{label:"Import spells…", value:"import"}, {label:"Done", primary:true, value:() => pick || "done"}]
     });
     if (action === "import"){ await importSpellsDialog(); continue; }
     if (action?.edit){
@@ -19383,15 +19453,15 @@ function renderSpellsPage(page){
   const inp = document.createElement("input"); inp.placeholder = "Add a spell — type to search the free 5e spells, or any name";
   const lvSel = document.createElement("select"); lvSel.title = "Level for a spell that isn't in the free list";
   SPELL_LEVEL_NAMES.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = i ? "Level " + i : "Cantrip"; lvSel.appendChild(o); });
-  const pasteBtn = document.createElement("button"); pasteBtn.className = "se-prevsize"; pasteBtn.textContent = "Paste spell text…";
-  pasteBtn.addEventListener("click", () => pasteSpellDialog(Number(lvSel.value)));
+  const importBtn = document.createElement("button"); importBtn.className = "se-prevsize"; importBtn.textContent = "Import spells…";
+  importBtn.addEventListener("click", async () => { await importSpellsDialog(); if (seCardId) renderSheetEditor(); });
   const libBtn = document.createElement("button"); libBtn.className = "se-prevsize";
   libBtn.textContent = "My spell library (" + Object.keys(state.spellLib || {}).length + ")\u2026";
   libBtn.addEventListener("click", () => spellLibraryDialog());
   const res = document.createElement("div"); res.className = "se-spl-results";
-  add.append(inp, lvSel, pasteBtn, libBtn, res);
+  add.append(inp, lvSel, importBtn, libBtn, res);
   page.appendChild(add);
-  const credit = document.createElement("div"); credit.className = "se-spl-credit"; credit.textContent = SRD_CREDIT + " Spells from other books: use Paste.";
+  const credit = document.createElement("div"); credit.className = "se-spl-credit"; credit.textContent = SRD_CREDIT + " Spells from other books: Import spells…";
   page.appendChild(credit);
   let hits = [], at = 0;
   const myClass = String(sh.charClass || sh.classLevel || "").toLowerCase();
@@ -19400,7 +19470,7 @@ function renderSpellsPage(page){
     hits.forEach((r, i) => {
       const b = document.createElement("button"); if (i === at) b.className = "on";
       const n = document.createElement("b"); n.textContent = r.n; n.style.fontWeight = "600";
-      const m = document.createElement("span"); m.textContent = r.mine ? "My library \u00b7 " + (r.l ? "Level " + r.l : "Cantrip") + (r.s ? " \u00b7 " + r.s : "")
+      const m = document.createElement("span"); m.textContent = r.mine ? "My library \u00b7 " + (r.l ? "Level " + r.l : "Cantrip") + (r.s ? " \u00b7 " + r.s : "") + (r.b ? " \u00b7 " + r.b : "")
         : (r.l ? "Level " + r.l : "Cantrip") + " \u00b7 " + r.s + (r.cl.length ? " \u00b7 " + r.cl.join(", ") : "");
       b.append(n, m);
       b.addEventListener("pointerdown", e => e.preventDefault());   /* keep focus in the box */
@@ -19415,7 +19485,7 @@ function renderSpellsPage(page){
     const q = inp.value.trim().toLowerCase();
     if (q.length < 2){ hits = []; drawResults(); return; }
     const own = spellLibList().filter(s => s.name.toLowerCase().includes(q))
-      .map(s => ({n:s.name, l:s.lvl, s:s.det?.school || "", cl:[], mine:s}));
+      .map(s => ({n:s.name, l:s.lvl, s:s.det?.school || "", b:s.det?.book || "", cl:[], mine:s}));
     let list = [];
     try { list = await loadSrdSpells(); }
     catch (_) { credit.textContent = "The free spell list couldn't load (it needs CORKBORK's website once). Your library still works; or type a name and press Enter."; }
@@ -21341,6 +21411,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b129", [
+    "Spells tab: \u201cPaste spell text\u201d is now Import spells\u2026, which opens with the link box first; pasting is still there underneath.",
+    "Import from dnd5e.wikidot.com, aidedd.org or dandwiki.com (the window lists them and warns about any other site). Each spell now shows which book it\u2019s from, and My spell library can filter by book. Needs the updated Cloudflare Worker."
+  ]],
   ["b128", [
     "The zoom button no longer sits on top of the D&D sheet (it blocked the tabs), the picture viewer or dialogs."
   ]],
