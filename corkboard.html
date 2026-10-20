@@ -1079,6 +1079,7 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .off-kind-tog{font-weight:600;}
 .se-help ol{margin:6px 0 10px 20px; line-height:1.6;}
 .se-help li{margin-bottom:3px;}
+.off-fails{margin:4px 0 6px 18px; font-size:12px; line-height:1.5; max-height:22vh; overflow:auto;}
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -4191,7 +4192,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b138";
+window.BUILD = "b139";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -20684,7 +20685,7 @@ const CLASS_SITES = {
   "www.dandwiki.com": {isClass:u => /_\(5e_Class\)$/i.test(decodeURIComponent(u.pathname)), isSub:u => /_\(5e_Subclass\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*(Classes|Subclasses)[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"}
 };
 const BG_SITES = {
-  "dnd5e.wikidot.com": {isItem:u => /^\/background:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/backgrounds?$/i.test(u.pathname)},
+  "dnd5e.wikidot.com": {isItem:u => /^\/background:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/(backgrounds?|home:home)?$/i.test(u.pathname)},   /* the home page lists them */
   "www.dandwiki.com": {isItem:u => /_\(5e_Background\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*Backgrounds[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"},
   "www.aidedd.org": {isItem:() => true, isList:() => false}
 };
@@ -20705,7 +20706,13 @@ async function runJobs(jobs, {onProgress = () => {}, stopped = () => false, widt
   for (let i = 0; i < jobs.length && !stopped(); i += width)
     await Promise.all(jobs.slice(i, i + width).map(async j => { try { await j.run(); } catch (e){ if (e.fatal) throw e; j.fail?.(e); } onProgress(++done, jobs.length, j.name || ""); }));
 }
-function importTally(){ return {added:0, updated:0, skipped:0, failed:[], note(r){ if (r === "added") this.added++; else if (r === "updated") this.updated++; }}; }
+/* counts for an import. Saves wait in `later` and run only when nothing failed
+   and it wasn't stopped, so an import never saves part of what it read */
+function importTally(){
+  return {added:0, updated:0, skipped:0, failed:[], later:[], saved:false,
+    note(r){ if (r === "added") this.added++; else if (r === "updated") this.updated++; },
+    finish(stopped){ if (!this.failed.length && !stopped){ for (const f of this.later) f(); this.saved = true; } this.later = []; return this; }};
+}
 async function importBackgroundsFromLink(url, {onProgress, stopped, skipUa = true} = {}){
   let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
   const host = spellSiteHost(u), site = BG_SITES[host];
@@ -20713,29 +20720,29 @@ async function importBackgroundsFromLink(url, {onProgress, stopped, skipUa = tru
   const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v)) : [{url:"https://" + host + u.pathname + u.search, name:""}];
   if (!links.length) throw Object.assign(new Error("No background pages were linked from that page."), {fatal:true});
   const t = importTally();
-  await runJobs(links.map(l => ({name:l.name, fail:() => t.failed.push(l.name || l.url), run:async () => {
+  await runJobs(links.map(l => ({name:l.name, fail:e => t.failed.push((l.name || l.url) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
     const bgs = parseBackgroundText(wikiPageText(await fetchSpellPage(l.url)));
     if (!bgs.length) throw new Error("not a background");
-    for (const b of bgs){ if (skipUa && isUaSource(b.book)){ t.skipped++; continue; } t.note(bgLibPut(b, {url:l.url, book:site.book ? site.book() : (b.book || host.replace(/^www\./, "")), src:host})); }
+    for (const b of bgs){ if (skipUa && isUaSource(b.book)){ t.skipped++; continue; } t.later.push(() => t.note(bgLibPut(b, {url:l.url, book:site.book ? site.book() : (b.book || host.replace(/^www\./, "")), src:host}))); }
   }})), {onProgress, stopped});
-  return t;
+  return t.finish(stopped?.());
 }
 async function importClassesFromLink(url, {onProgress, stopped, skipUa = true} = {}){
   let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
   const host = spellSiteHost(u), site = CLASS_SITES[host];
   if (!site) throw Object.assign(new Error("Links from " + Object.keys(CLASS_SITES).map(h => h.replace(/^www\./, "")).join(" or ") + " only, for now."), {fatal:true});
   const t = importTally(), book = b => site.book ? site.book() : (b || host.replace(/^www\./, ""));
-  const subJob = (link, className, name) => ({name:name || link, fail:() => t.failed.push(name || link), run:async () => {
+  const subJob = (link, className, name) => ({name:name || link, fail:e => t.failed.push((name || link) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
     const r = parseSubclassHtml(await fetchSpellPage(link), link, {className, name});
     if (!r) throw new Error("not a subclass");
     if (skipUa && isUaSource(r.book)){ t.skipped++; return; }
-    t.note(subclassLibPut(r.className || className, r.sub, {url:link, book:book(r.book), src:host}));
+    t.later.push(() => t.note(subclassLibPut(r.className || className, r.sub, {url:link, book:book(r.book), src:host})));
   }});
   const classJob = async link => {
     const html = await fetchSpellPage(link), r = parseClassHtml(html, link);
     if (!r) throw Object.assign(new Error("That page has no class table CORKBORK can read."), {fatal:links.length === 1});
     /* the free classes are built in; only their subclasses are added */
-    if (!srdClass(r.cls.name)) t.note(classLibPut(r.cls, {url:link, book:book(""), src:host}));
+    if (!srdClass(r.cls.name)) t.later.push(() => t.note(classLibPut(r.cls, {url:link, book:book(""), src:host})));
     return r;
   };
   let links = [];
@@ -20748,10 +20755,10 @@ async function importClassesFromLink(url, {onProgress, stopped, skipUa = true} =
     try {
       const r = await classJob(link);
       for (const s of r.subs) if (!(skipUa && s.ua)) jobs.push(subJob(s.url, r.cls.name, s.name)); else t.skipped++;
-    } catch (e){ if (e.fatal) throw e; t.failed.push(link); }
+    } catch (e){ if (e.fatal) throw e; t.failed.push(link + " (" + e.message + ")"); }
   }
   await runJobs(jobs, {onProgress, stopped});
-  return t;
+  return t.finish(stopped?.());
 }
 
 /* ---- one import window for each kind: a link first, pasting below ---- */
@@ -20794,9 +20801,12 @@ async function libImportDialog(K){
         try {
           const r = await K.fromLink(url.value, {skipUa:ua.checked, stopped:() => stop, onProgress:(d, t, n) => { fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = t > 1 ? "Reading " + d + " of " + t + (n ? " — " + n : "") : "Reading…"; }});
           if (r.added || r.updated){ markDirty(); changed += r.added + r.updated; }
-          const parts = [r.added && r.added + " added", r.updated && r.updated + " updated", r.skipped && r.skipped + " playtest skipped", r.failed.length && r.failed.length + " couldn't be read"].filter(Boolean);
-          status.textContent = (stop ? "Stopped. " : "Done. ") + (parts.length ? parts.join(", ") + "." : "Nothing new.");
-          if (r.failed.length) status.title = "Couldn't read: " + r.failed.join(", ");
+          if (!r.saved){
+            status.textContent = stop ? "Stopped. Nothing was saved." : "Nothing was saved: " + r.failed.length + " page" + (r.failed.length > 1 ? "s" : "") + " couldn\u2019t be read (after 3 tries each): " + r.failed.slice(0, 6).join("; ") + (r.failed.length > 6 ? "; and " + (r.failed.length - 6) + " more" : "") + ". Press Import to try again.";
+          } else {
+            const parts = [r.added && r.added + " added", r.updated && r.updated + " updated", r.skipped && r.skipped + " playtest skipped"].filter(Boolean);
+            status.textContent = "Done. Everything was read and saved. " + (parts.length ? parts.join(", ") + "." : "Nothing new.");
+          }
           $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
         } catch (e){ status.textContent = e.message; }
         running = false; go.textContent = "Import"; url.disabled = false;
@@ -20834,14 +20844,14 @@ function importRacesDialog(){
   return libImportDialog({title:"Import races", what:"races", sites:RACE_SITES, links:RECOMMENDED_RACE_LINKS,
     hint:" (a list of races, or one race’s page), or one race page from aidedd.org.",
     fromLink:async (url, o) => { const r = await importRacesFromLink(url, o), t = importTally(); t.failed = r.failed;
-      for (const f of r.found){ if (o.skipUa && isUaSource(f.race.book)){ t.skipped++; continue; } t.note(raceLibPut(f.race, f.src)); } return t; },
+      for (const f of r.found){ if (o.skipUa && isUaSource(f.race.book)){ t.skipped++; continue; } t.later.push(() => t.note(raceLibPut(f.race, f.src))); } return t.finish(r.stopped); },
     paste:{label:"Paste a race", placeholder:"Paste a race’s page: its name on the first line, then traits like “Ability Score Increase. Your Wisdom score increases by 2.”",
       none:"No race found yet. It needs a name, then traits such as Ability Score Increase, Size or Speed.",
       parse:text => parseRaceText(text).map(r => ({name:r.name, have:!!raceLibFind(r.name), put:() => raceLibPut(r, {book:r.book || "Pasted"})}))}});
 }
 function importBackgroundsDialog(){
   return libImportDialog({title:"Import backgrounds", what:"backgrounds", sites:BG_SITES,
-    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/backgrounds"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Backgrounds"]],
+    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Backgrounds"]],
     hint:" (a list of backgrounds, or one background’s page), or one page from aidedd.org.",
     fromLink:importBackgroundsFromLink,
     paste:{label:"Paste a background", placeholder:"Paste a background’s page: its name, then lines like “Skill Proficiencies: Insight, Religion” and “Feature: …”",
@@ -21000,7 +21010,7 @@ function parseFeatText(text){
   return [Object.assign(normFeat({name, desc, reqText:reqLine.replace(/^Prerequisites?\s*:\s*/i, ""), abFrom:[...new Set(abFrom)], abAmount:inc ? Number(inc[1]) : 1, saveChoice}), {book:src})];
 }
 const FEAT_SITES = {
-  "dnd5e.wikidot.com": {isItem:u => /^\/feat:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/feats?$/i.test(u.pathname)},
+  "dnd5e.wikidot.com": {isItem:u => /^\/feat:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/(feats?|home:home)?$/i.test(u.pathname)},   /* the home page lists them */
   "www.dandwiki.com": {isItem:u => /_\(5e_Feat\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*Feats[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"},
   "www.aidedd.org": {isItem:() => true, isList:() => false}
 };
@@ -21012,16 +21022,16 @@ async function importFeatsFromLink(url, {onProgress, stopped, skipUa = true} = {
   const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v)).filter(l => !(srdRules?.feats || []).some(f => spellKey(f.name) === spellKey(l.name))) : [{url:"https://" + host + u.pathname + u.search, name:""}];
   if (!links.length) throw Object.assign(new Error("No feat pages were linked from that page."), {fatal:true});
   const t = importTally();
-  await runJobs(links.map(l => ({name:l.name, fail:() => t.failed.push(l.name || l.url), run:async () => {
+  await runJobs(links.map(l => ({name:l.name, fail:e => t.failed.push((l.name || l.url) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
     const fs = parseFeatText(wikiPageText(await fetchSpellPage(l.url)));
     if (!fs.length) throw new Error("not a feat");
-    for (const f of fs){ if (skipUa && (isUaSource(f.book) || /\(UA\)/i.test(l.name))){ t.skipped++; continue; } t.note(featLibPut(f, {url:l.url, book:site.book ? site.book() : (f.book || host.replace(/^www\./, "")), src:host})); }
+    for (const f of fs){ if (skipUa && (isUaSource(f.book) || /\(UA\)/i.test(l.name))){ t.skipped++; continue; } t.later.push(() => t.note(featLibPut(f, {url:l.url, book:site.book ? site.book() : (f.book || host.replace(/^www\./, "")), src:host}))); }
   }})), {onProgress, stopped});
-  return t;
+  return t.finish(stopped?.());
 }
 function importFeatsDialog(){
   return libImportDialog({title:"Import feats", what:"feats", sites:FEAT_SITES,
-    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/feats"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Feats"]],
+    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Feats"]],
     hint:" (a list of feats, or one feat’s page), or one page from aidedd.org.",
     fromLink:importFeatsFromLink,
     paste:{label:"Paste a feat", placeholder:"Paste a feat’s page: its name, then “Prerequisite: …” if it has one, then what it does",
@@ -21032,10 +21042,20 @@ function importFeatsDialog(){
 const OFFICIAL_KINDS = [
   {id:"spell", label:"Spells", index:"https://dnd5e.wikidot.com/spells"},
   {id:"race", label:"Races", index:"https://dnd5e.wikidot.com/lineage"},
-  {id:"class", label:"Classes and subclasses", index:""},
-  {id:"background", label:"Backgrounds", index:"https://dnd5e.wikidot.com/backgrounds"},
-  {id:"feat", label:"Feats", index:"https://dnd5e.wikidot.com/feats"}
+  {id:"class", label:"Classes and subclasses", index:""},   /* the 13 class pages, each listing its subclasses */
+  {id:"background", label:"Backgrounds", index:"https://dnd5e.wikidot.com/"},   /* the wiki lists these on its home page */
+  {id:"feat", label:"Feats", index:"https://dnd5e.wikidot.com/"}
 ];
+/* the links on one of the wiki's list pages; a list that can't be read, or
+   lists nothing, stops the look-round (nothing has been saved by then) */
+async function officialList(u, what, ok){
+  let html;
+  try { html = await fetchSpellPage(u.href); }
+  catch (e){ throw Object.assign(new Error("Couldn\u2019t read the list of " + what + " (" + e.message + ")."), {fatal:true}); }
+  const links = pageLinks(html, u, ok);
+  if (!links.length) throw Object.assign(new Error("The list of " + what + " at " + u.href.replace(/^https?:\/\//, "") + " links to no " + what + "."), {fatal:true});
+  return links;
+}
 /* what the site has, marked with what you already have or comes built in */
 async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false} = {}){
   const items = [], W = "dnd5e.wikidot.com";
@@ -21044,8 +21064,8 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   const steps = kinds.length + (kinds.includes("class") ? WIKIDOT_CLASSES.length - 1 : 0);
   let done = 0; const tick = n => onProgress(++done, steps, n);
   if (kinds.includes("spell")){
-    const u = new URL(OFFICIAL_KINDS[0].index), html = await fetchSpellPage(u.href);
-    for (const l of wikiSpellLinks(html, u.href)){
+    const u = new URL(OFFICIAL_KINDS[0].index);
+    for (const l of await officialList(u, "spells", v => /^\/spell:[a-z0-9-]+$/i.test(v.pathname))){
       const built = (srdSpells || []).some(s => spellKey(s.n) === spellKey(l.name));
       items.push({kind:"spell", name:l.name, url:l.url, ua:/\(UA\)|\(HB\)/i.test(l.name), built, have:!built && !!spellLibFind(l.name.replace(/\s*\((UA|HB)\)\s*$/i, ""))});
     }
@@ -21053,12 +21073,12 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   }
   if (kinds.includes("race") && !stopped()){
     const u = new URL(OFFICIAL_KINDS[1].index);
-    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => RACE_SITES[W].isRace(v))) items.push({kind:"race", name:l.name, url:l.url, ua:l.ua, built:false, have:raceLibList().some(e => e.url === l.url)});
+    for (const l of await officialList(u, "races", v => RACE_SITES[W].isRace(v))) items.push({kind:"race", name:l.name, url:l.url, ua:l.ua, built:false, have:raceLibList().some(e => e.url === l.url)});
     tick("races");
   }
   if (kinds.includes("background") && !stopped()){
     const u = new URL(OFFICIAL_KINDS[3].index);
-    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => BG_SITES[W].isItem(v))){
+    for (const l of await officialList(u, "backgrounds", v => BG_SITES[W].isItem(v))){
       const built = (srdRules?.backgrounds || []).some(b => spellKey(b.name) === spellKey(l.name));
       items.push({kind:"background", name:l.name, url:l.url, ua:l.ua, built, have:!built && urlIn("bgLib", l.url)});
     }
@@ -21066,7 +21086,7 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   }
   if (kinds.includes("feat") && !stopped()){
     const u = new URL(OFFICIAL_KINDS[4].index);
-    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => FEAT_SITES[W].isItem(v))){
+    for (const l of await officialList(u, "feats", v => FEAT_SITES[W].isItem(v))){
       const built = (srdRules?.feats || []).some(f => spellKey(f.name) === spellKey(l.name));
       items.push({kind:"feat", name:l.name, url:l.url, ua:l.ua, built, have:!built && urlIn("featLib", l.url)});
     }
@@ -21086,42 +21106,58 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
             items.push({kind:"subclass", name:s.name, className:r.cls.name, url:s.url, ua:s.ua, built, have:!built && urlIn("classLib", s.url)});
           }
         }
-      } catch (e){ if (e.fatal) throw e; }
+      } catch (e){ throw Object.assign(new Error("Couldn\u2019t read the " + slug + " class page (" + e.message + ")."), {fatal:true}); }
       tick(slug);
     }
   }
   return items;
 }
-async function importOfficial(items, {skipUa = true, onProgress, stopped} = {}){
-  const t = {spell:importTally(), race:importTally(), class:importTally(), background:importTally(), feat:importTally()}, src = {src:"dnd5e.wikidot.com"};
-  const jobs = items.map(it => ({name:it.name, fail:() => t[it.kind === "subclass" ? "class" : it.kind].failed.push(it.name), run:async () => {
+/* phase one: read every page into memory, saving nothing. Each item gives
+   back what it would save; failures are listed with the reason. */
+async function readOfficial(items, {skipUa = true, onProgress, stopped} = {}){
+  const got = new Map(), failed = [], src = {src:"dnd5e.wikidot.com"};
+  const jobs = items.map(it => ({name:it.name, fail:e => failed.push({it, why:e?.message || "unreadable"}), run:async () => {
+    const puts = [];   /* [kind, () => "added" | "updated"] and [kind, "skipped"] */
     if (it.kind === "spell"){
       const r = await importSpellsFromLink(it.url, {skipUa, update:true});
-      for (const p of r.found) t.spell.note(spellLibPut(p));
-      t.spell.skipped += r.skipped || 0; if (r.failed.length || !r.found.length && !r.skipped) t.spell.failed.push(it.name);
+      if (r.failed.length || (!r.found.length && !r.skipped)) throw new Error("not a spell page CORKBORK can read");
+      for (const p of r.found) puts.push(["spell", () => spellLibPut(p)]);
+      for (let i = 0; i < (r.skipped || 0); i++) puts.push(["spell", "skipped"]);
     } else if (it.kind === "race"){
       const rs = parseRaceText(wikiPageText(await fetchSpellPage(it.url)));
-      if (!rs.length) throw new Error("no race");
-      for (const r of rs){ if (skipUa && isUaSource(r.book)){ t.race.skipped++; continue; } t.race.note(raceLibPut(r, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})); }
+      if (!rs.length) throw new Error("no race found on the page");
+      for (const r of rs) puts.push(["race", skipUa && isUaSource(r.book) ? "skipped" : () => raceLibPut(r, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})]);
     } else if (it.kind === "background"){
       const bs = parseBackgroundText(wikiPageText(await fetchSpellPage(it.url)));
-      if (!bs.length) throw new Error("no background");
-      for (const b of bs){ if (skipUa && isUaSource(b.book)){ t.background.skipped++; continue; } t.background.note(bgLibPut(b, {...src, url:it.url, book:b.book || "dnd5e.wikidot.com"})); }
+      if (!bs.length) throw new Error("no background found on the page");
+      for (const b of bs) puts.push(["background", skipUa && isUaSource(b.book) ? "skipped" : () => bgLibPut(b, {...src, url:it.url, book:b.book || "dnd5e.wikidot.com"})]);
     } else if (it.kind === "feat"){
       const fs = parseFeatText(wikiPageText(await fetchSpellPage(it.url)));
-      if (!fs.length) throw new Error("no feat");
-      for (const f of fs){ if (skipUa && isUaSource(f.book)){ t.feat.skipped++; continue; } t.feat.note(featLibPut(f, {...src, url:it.url, book:f.book || "dnd5e.wikidot.com"})); }
+      if (!fs.length) throw new Error("no feat found on the page");
+      for (const f of fs) puts.push(["feat", skipUa && isUaSource(f.book) ? "skipped" : () => featLibPut(f, {...src, url:it.url, book:f.book || "dnd5e.wikidot.com"})]);
     } else if (it.kind === "class"){
-      t.class.note(classLibPut(it.cls, {...src, url:it.url, book:"dnd5e.wikidot.com"}));
+      puts.push(["class", () => classLibPut(it.cls, {...src, url:it.url, book:"dnd5e.wikidot.com"})]);
     } else if (it.kind === "subclass"){
       const r = parseSubclassHtml(await fetchSpellPage(it.url), it.url, {className:it.className, name:it.name});
-      if (!r) throw new Error("no subclass");
-      if (skipUa && isUaSource(r.book)){ t.class.skipped++; return; }
-      t.class.note(subclassLibPut(it.className, r.sub, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"}));
+      if (!r) throw new Error("no subclass features found on the page");
+      puts.push(["class", skipUa && isUaSource(r.book) ? "skipped" : () => subclassLibPut(it.className, r.sub, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})]);
     }
+    got.set(it, puts);
   }}));
   await runJobs(jobs, {onProgress, stopped});
+  return {got, failed, stopped:!!stopped?.()};
+}
+/* phase two, only once everything was read: save it all in one go */
+function saveOfficial(got){
+  const t = {spell:importTally(), race:importTally(), class:importTally(), background:importTally(), feat:importTally()};
+  for (const puts of got.values()) for (const [kind, put] of puts){ if (put === "skipped") t[kind].skipped++; else t[kind].note(put()); }
   return t;
+}
+/* both phases (used where there's no retry button) */
+async function importOfficial(items, opts = {}){
+  const r = await readOfficial(items, opts);
+  if (r.failed.length || r.stopped) return {...saveOfficial(new Map()), failedPages:r.failed, saved:false};
+  return {...saveOfficial(r.got), failedPages:[], saved:true};
 }
 /* ---- what's built in, and how to add the rest ----
    The app can only carry the free rules (SRD 5.1); everything else comes in
@@ -21208,7 +21244,14 @@ async function importOfficialDialog({only = null} = {}){
       const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
       const status = document.createElement("div"); status.className = "spl-status";
       const list = document.createElement("div"); list.className = "off-list";
-      let items = [], stop = false, running = false, scanned = false;
+      let items = [], stop = false, running = false, scanned = false, got = new Map(), failedItems = [];
+      const retry = document.createElement("button"); retry.className = "spl-btn"; retry.textContent = "Retry failed pages"; retry.hidden = true;
+      const failList = document.createElement("ul"); failList.className = "off-fails"; failList.hidden = true;
+      const showFails = fails => {
+        failList.textContent = ""; failList.hidden = !fails.length; retry.hidden = !fails.length;
+        for (const f of fails.slice(0, 12)) failList.appendChild(Object.assign(document.createElement("li"), {textContent:f.it.name + (f.it.className ? " (" + f.it.className + ")" : "") + ": " + f.why}));
+        if (fails.length > 12) failList.appendChild(Object.assign(document.createElement("li"), {textContent:"and " + (fails.length - 12) + " more"}));
+      };
       const progress = (d, t, n) => { bar.hidden = false; fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = (running === "scan" ? "Looking: " : "Importing ") + d + " of " + t + (n ? " — " + n : ""); };
       const count = () => { if (!scanned){ go.disabled = !!running && running !== "import"; if (running !== "import") go.textContent = "Import"; return; } const n = items.filter(i => i.on).length; go.disabled = !n || (!!running && running !== "import"); if (running !== "import") go.textContent = "Import " + n; };
       const drawList = () => {
@@ -21249,7 +21292,7 @@ async function importOfficialDialog({only = null} = {}){
           scanned = true; applyDefaults();
           const n = items.filter(i => i.on).length;
           status.textContent = n ? "Found " + n + " new. Untick anything you don’t want (open a group to pick), then Import." : "Nothing new to import.";
-        } catch (e){ status.textContent = e.message; }
+        } catch (e){ status.textContent = "Nothing was saved. " + e.message; }
         running = false; find.textContent = "Choose individual items\u2026"; count();
       });
       go.addEventListener("click", async () => {
@@ -21263,23 +21306,41 @@ async function importOfficialDialog({only = null} = {}){
             scanned = true; for (const i of items) i.on = !i.built && !(ua.checked && i.ua) && !(have.checked && i.have);
           }
           const pick = items.filter(i => i.on);
-          if (!pick.length || stop){ status.textContent = stop ? "Stopped." : "Nothing new to import."; running = false; find.disabled = false; drawList(); return; }
-          const t = await importOfficial(pick, {skipUa:ua.checked, onProgress:progress, stopped:() => stop});
-          const sum = Object.entries(t).map(([k, v]) => [k, v]).filter(([, v]) => v.added || v.updated || v.failed.length || v.skipped);
-          changed += Object.values(t).reduce((n, v) => n + v.added + v.updated, 0);
-          if (changed) markDirty();
-          status.textContent = (stop ? "Stopped. " : "Done. ") + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds", feat:"Feats"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped", v.failed.length && v.failed.length + " couldn’t be read"].filter(Boolean).join(", ")).join("; ") + "." : "Nothing new.");
-          const failed = Object.values(t).flatMap(v => v.failed); if (failed.length) status.title = "Couldn't read: " + failed.join(", ");
-          for (const i of pick) i.have = true;
-          applyDefaults();
-          $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
-        } catch (e){ status.textContent = e.message; }
+          if (!pick.length || stop){ status.textContent = stop ? "Stopped. Nothing was saved." : "Nothing new to import."; running = false; find.disabled = false; drawList(); return; }
+          got = new Map(); await readPicked(pick);
+        } catch (e){ status.textContent = "Nothing was saved. " + e.message; }
         running = false; find.disabled = false; count();
+      });
+      /* read (or re-read) pages; save only when none are left failing */
+      const readPicked = async list => {
+        const r = await readOfficial(list, {skipUa:ua.checked, onProgress:progress, stopped:() => stop});
+        for (const [it, puts] of r.got) got.set(it, puts);
+        failedItems = r.failed.map(f => f.it);
+        if (r.stopped){ status.textContent = "Stopped. Nothing was saved."; showFails([]); return; }
+        if (r.failed.length){
+          status.textContent = "Nothing was saved: " + r.failed.length + " page" + (r.failed.length > 1 ? "s" : "") + " couldn\u2019t be read (after 3 tries each). Retry them, or Close to leave your libraries as they were.";
+          showFails(r.failed); return;
+        }
+        const total = got.size, t = saveOfficial(got); got = new Map(); showFails([]);
+        const n = Object.values(t).reduce((m, v) => m + v.added + v.updated, 0);
+        changed += n; if (n) markDirty();
+        const sum = Object.entries(t).filter(([, v]) => v.added || v.updated || v.skipped);
+        status.textContent = "Done. All " + total + " read and saved. " + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds", feat:"Feats"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped"].filter(Boolean).join(", ")).join("; ") + "." : "");
+        for (const i of items) if (i.on) i.have = true;
+        applyDefaults();
+        $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
+      };
+      retry.addEventListener("click", async () => {
+        if (running) return;
+        running = "import"; stop = false; find.disabled = true; retry.disabled = true; go.textContent = "Stop"; status.textContent = "Trying the failed pages again\u2026";
+        try { await readPicked(failedItems); } catch (e){ status.textContent = "Nothing was saved. " + e.message; }
+        running = false; find.disabled = false; retry.disabled = false; count();
       });
       const help = document.createElement("button"); help.type = "button"; help.className = "spl-all"; help.textContent = "How to import?";
       help.addEventListener("click", () => { askClose(null); setTimeout(() => importHelpDialog(), 50); });
       const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Press Import"});
-      wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, list, help);
+      row.appendChild(retry);
+      wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, failList, list, help);
       body.appendChild(wrap);
       count();
       return {focus:() => go.focus()};
@@ -21964,15 +22025,29 @@ const RECOMMENDED_SPELL_LINKS = [
   ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Spells"]
 ];
 function spellFetchUrl(){ return AUTH_WORKER_URL ? AUTH_WORKER_URL.replace(/\/+$/, "") + "/fetch" : ""; }
+/* reads a page through the Worker; a dropped connection or a busy site is
+   tried again (3 tries in all), a page that doesn't exist is not */
 async function fetchSpellPage(url){
+  for (let attempt = 1; ; attempt++){
+    try { return await fetchSpellPageOnce(url); }
+    catch (e){
+      if (e.fatal || e.status === 404 || e.status === 410 || attempt >= 3) throw e;
+      await new Promise(r => setTimeout(r, fetchSpellPage.wait * attempt));
+    }
+  }
+}
+fetchSpellPage.wait = 1500;
+async function fetchSpellPageOnce(url){
   const api = spellFetchUrl(); if (!api) throw new Error("no worker");
   const r = await fetch(api, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({url})});
   const j = await r.json().catch(() => ({}));
   if (r.status === 404 && j.error === "not found") throw Object.assign(new Error("Your Cloudflare Worker needs the update that adds page reading. Redeploy it, then try again."), {fatal:true});
   if (r.status === 403 && /origin/.test(j.error || "")) throw Object.assign(new Error("Importing from a link only works on CORKBORK's own website."), {fatal:true});
   if (r.status === 403 && /can be read/.test(j.error || "")) throw Object.assign(new Error("Your Cloudflare Worker can't read " + new URL(url).hostname + " yet. Redeploy it with the latest code, then try again."), {fatal:true});
-  if (!r.ok) throw new Error(j.error || "HTTP " + r.status);
-  if (j.status && j.status >= 400) throw new Error("the page answered " + j.status);
+  if (!r.ok) throw Object.assign(new Error(j.error || "HTTP " + r.status), {status:r.status === 429 ? 429 : 0});
+  const where = url.replace(/^https?:\/\//, "");
+  if (j.status === 404 || j.status === 410) throw Object.assign(new Error(where + ": no such page"), {status:j.status});
+  if (j.status && j.status >= 400) throw Object.assign(new Error(where + " answered " + j.status), {status:j.status});
   return String(j.html || "");
 }
 /* spell links on a list page, for that list's site */
@@ -22084,14 +22159,14 @@ async function importSpellsFromLink(url, {skipUa = true, update = false, onProgr
         try { text = wikiPageText(await fetchSpellPage(l.url)); }
         catch (e){ if (e.fatal) throw e; await new Promise(r => setTimeout(r, 800)); }
       }
-      if (text == null) failed.push(l.name || l.url);
+      if (text == null) failed.push((l.name || l.url) + " (couldn\u2019t load)");
       else if (skipUa && isUaSpell(l.name, text)) skipped++;
       else {
         const p = parseSpellText(text);
         if (p?.name && (p.lvl != null || p.det.time)){
           if (!p.det.book && site.book) p.det.book = site.book(l.url);
           found.push({...p, url:l.url});
-        } else failed.push(l.name || l.url);
+        } else failed.push((l.name || l.url) + " (not a spell page CORKBORK can read)");
       }
       onProgress(++done, links.length, l.name);
       await new Promise(r => setTimeout(r, 120));   /* gentle on the wiki */
@@ -22146,12 +22221,16 @@ async function importSpellsDialog(){
           const r = await importSpellsFromLink(url.value, {skipUa:ua.checked, update:up.checked, stopped:() => stop,
             onProgress:(d, t, n) => { fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = t ? "Reading " + d + " of " + t + (n ? " — " + n : "") : ""; }});
           let added = 0, updated = 0;
-          for (const p of r.found){ const k = spellLibPut(p); if (k === "added") added++; else if (k === "updated") updated++; }
+          /* all or nothing: one unreadable page means nothing is saved */
+          if (!r.failed.length && !r.stopped) for (const p of r.found){ const k = spellLibPut(p); if (k === "added") added++; else if (k === "updated") updated++; }
           if (added || updated) markDirty();
           linkResult = {added, updated};
-          const parts = [added && added + " added", updated && updated + " updated", r.have && r.have + " already in your library", r.skipped && r.skipped + " playtest skipped", r.failed.length && r.failed.length + " couldn't be read"].filter(Boolean);
-          status.textContent = (r.stopped ? "Stopped. " : "Done. ") + (parts.length ? parts.join(", ") + "." : "Nothing new.");
-          if (r.failed.length) status.title = "Couldn't read: " + r.failed.join(", ");
+          if (r.stopped) status.textContent = "Stopped. Nothing was saved.";
+          else if (r.failed.length) status.textContent = "Nothing was saved: " + r.failed.length + " page" + (r.failed.length > 1 ? "s" : "") + " couldn\u2019t be read (after 3 tries each): " + r.failed.slice(0, 6).join("; ") + (r.failed.length > 6 ? "; and " + (r.failed.length - 6) + " more" : "") + ". Press Import to try again.";
+          else {
+            const parts = [added && added + " added", updated && updated + " updated", r.have && r.have + " already in your library", r.skipped && r.skipped + " playtest skipped"].filter(Boolean);
+            status.textContent = "Done. Everything was read and saved. " + (parts.length ? parts.join(", ") + "." : "Nothing new.");
+          }
           $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
         } catch (e){ status.textContent = e.message; }
         running = false; go.textContent = "Import"; url.disabled = false;
@@ -24300,6 +24379,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b139", [
+    "Import official content: fixed \u201cthe page answered 404\u201d (the wiki lists backgrounds and feats on its home page). Imports now save everything or nothing: if any page can\u2019t be read (after 3 tries), nothing is saved, the pages are named, and Retry failed pages tries just those. The same goes for each Import button."
+  ]],
   ["b138", [
     "Import official content: the buttons match Close, and \u201cPick items first\u201d is now \u201cChoose individual items\u2026\u201d (only needed to leave out single items)."
   ]],
@@ -24352,9 +24434,6 @@ const PATCH_NOTES = [
   ["b125", [
     "D&D sheet: a Spells tab. Search the free 5e spells (hover or tap one for its full details), paste any spell from D&D Beyond or a wiki, tick prepared spells, and tap slot circles as you use them.",
     "Print / PDF (in the open sheet, or right-click a sheet): a printable black-and-white character sheet in the classic layout, with a spell page for casters. Current HP, death saves, coins and slots are left blank for pencil."
-  ]],
-  ["b124", [
-    "Fixed red “Script error” messages after a refresh: tapping, scrolling or pressing a key while a big workspace was still loading no longer causes errors."
   ]]
 ];
 function renderPatchNotes(){
