@@ -4193,7 +4193,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b140";
+window.BUILD = "b141";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -20718,7 +20718,7 @@ async function importBackgroundsFromLink(url, {onProgress, stopped, skipUa = tru
   let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
   const host = spellSiteHost(u), site = BG_SITES[host];
   if (!site) throw Object.assign(new Error("Links from " + Object.keys(BG_SITES).map(h => h.replace(/^www\./, "")).join(", ") + " only, for now."), {fatal:true});
-  const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v)) : [{url:"https://" + host + u.pathname + u.search, name:""}];
+  const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v) && !NOT_BACKGROUNDS.test(v.pathname)) : [{url:"https://" + host + u.pathname + u.search, name:""}];
   if (!links.length) throw Object.assign(new Error("No background pages were linked from that page."), {fatal:true});
   const t = importTally();
   await runJobs(links.map(l => ({name:l.name, fail:e => t.failed.push((l.name || l.url) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
@@ -21078,7 +21078,7 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   }
   if (kinds.includes("background") && !stopped()){
     const u = new URL(OFFICIAL_KINDS[3].index);
-    for (const l of await officialList(u, "backgrounds", v => BG_SITES[W].isItem(v))){
+    for (const l of await officialList(u, "backgrounds", v => BG_SITES[W].isItem(v) && !NOT_BACKGROUNDS.test(v.pathname))){
       const built = (srdRules?.backgrounds || []).some(b => spellKey(b.name) === spellKey(l.name));
       items.push({kind:"background", name:l.name, url:l.url, ua:l.ua, built, have:!built && (urlIn("bgLib", l.url) || libList("bgLib").some(e => e.group === l.url))});
     }
@@ -21112,14 +21112,35 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   }
   return items;
 }
+/* pages the wiki lists with its backgrounds that aren't backgrounds: the
+   optional features any background can swap in */
+const NOT_BACKGROUNDS = /^\/background:optional-features$/i;
+/* a variant background page: a feature (its first heading, or the page itself) and what it varies */
+function parseVariantBackground(html){
+  const doc = new DOMParser().parseFromString(html, "text/html"), root = pageRootOf(doc);
+  const name = pageTitleOf(doc).replace(/^background:\s*/i, "").trim();
+  const text = pageTextOf(root);
+  if (!name || text.length < 80 || !/background/i.test(text)) return null;
+  const src = (/^Source\s*:\s*(.+)$/im.exec(text) || [])[1]?.trim() || "";
+  const sec = pageSections(root).find(x => x.h && spellKey(x.h) !== spellKey(name) && x.text && !/^(source|table of contents)/i.test(x.h));
+  const feat = (/feature called ([A-Z][\w'\u2019 ]+?)[.,]/.exec(text) || [])[1];
+  const fn = (sec?.h || feat || name).replace(/^Feature\s*:\s*/i, "").trim();
+  const desc = (sec?.text || text.split("\n").filter(l => l && !/^Source\s*:/i.test(l)).join("\n")).slice(0, 6000);
+  return Object.assign(normBg({name, skills:[], feature:{n:fn, d:desc}}), {book:src, variant:true});
+}
 /* a background page, or a page that groups several (a setting's backgrounds):
    then each one it links to is read. Gives [[background, its page], …] */
 async function readBackgroundPage(url){
   const html = await fetchSpellPage(url), bs = parseBackgroundText(wikiPageText(html));
   if (bs.length) return bs.map(b => [b, url]);
   const u = new URL(url), host = spellSiteHost(u), site = BG_SITES[host];
-  const subs = site ? pageLinks(html, u, v => site.isItem(v) && !site.isList(v) && v.pathname !== u.pathname) : [];
-  if (!subs.length) throw new Error("no background found on the page");
+  const subs = site ? pageLinks(html, u, v => site.isItem(v) && !site.isList(v) && v.pathname !== u.pathname && !NOT_BACKGROUNDS.test(v.pathname)) : [];
+  if (!subs.length){
+    /* a variant (Amonkhet's Dissenter): no skills of its own, just a feature that replaces another background's */
+    const v = parseVariantBackground(html);
+    if (v) return [[v, url]];
+    throw new Error("no background found on the page");
+  }
   const out = [];
   for (const l of subs.slice(0, 40)){
     let one;
@@ -21345,7 +21366,7 @@ async function importOfficialDialog({only = null} = {}){
         const n = Object.values(t).reduce((m, v) => m + v.added + v.updated, 0);
         changed += n; if (n) markDirty();
         const sum = Object.entries(t).filter(([, v]) => v.added || v.updated || v.skipped);
-        status.textContent = "Done. All " + total + " read and saved. " + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds", feat:"Feats"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped"].filter(Boolean).join(", ")).join("; ") + "." : "");
+        status.textContent = (list.some(i => i.kind === "background") ? "(Optional Background Features isn\u2019t a background, so it was left out.) " : "") + "Done. All " + total + " read and saved. " + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds", feat:"Feats"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped"].filter(Boolean).join(", ")).join("; ") + "." : "");
         for (const i of items) if (i.on) i.have = true;
         applyDefaults();
         $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
@@ -24399,6 +24420,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b141", [
+    "Import official content: variant backgrounds like Dissenter (Amonkhet) now import with their feature, and the wiki\u2019s Optional Background Features page (not a background) is left out, with a note saying so."
+  ]],
   ["b140", [
     "Import official content: reads the newer feats that start with \u201cAbility Score Increase\u201d (Bigby\u2019s, Fizban\u2019s, Planescape) and background pages that group several (Wildemount, Sword Coast). If pages still fail, the whole list shows with a Copy list button."
   ]],
