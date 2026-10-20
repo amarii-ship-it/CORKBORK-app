@@ -4342,7 +4342,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b144";
+window.BUILD = "b145";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -22277,14 +22277,12 @@ function builtInNote(kind){
   if (hidden) return document.createDocumentFragment();
   const k = BUILT_IN[kind], box = document.createElement("div"); box.className = "se-builtin";
   richText(box, "**I HIGHLY recommend importing the official books to use all the content D&D has to offer before creating a character. You only have to do this once.** ");
-  const go = document.createElement("button"); go.className = "se-linkbtn"; go.textContent = "Import " + k.label + "\u2026";
+  const go = document.createElement("button"); go.className = "se-linkbtn"; go.textContent = "Import content\u2026";
   go.addEventListener("click", async () => { if (await importOfficialDialog({only:[kind]})) renderSheetEditor(); });
-  const how = document.createElement("button"); how.className = "se-linkbtn"; how.textContent = "How?";
-  how.addEventListener("click", () => importHelpDialog());
   const never = document.createElement("button"); never.className = "se-never"; never.textContent = "never see this again";
   never.title = "Hide this notice on every page (on this device)";
   never.addEventListener("click", () => { try { localStorage.setItem(IMPORT_NOTICE_KEY, "1"); } catch (_) {} document.querySelectorAll(".se-builtin").forEach(n => n.remove()); });
-  box.append(go, " \u00b7 ", how, never);
+  box.append(go, never);
   return box;
 }
 function importHelpDialog(){
@@ -22950,7 +22948,8 @@ function seSetItem(id, patch){ seSet({inventory:sheetInv(seData()).map(x => x.id
 function bgEquipEntries(list){
   const out = [], coins = {};
   for (const raw of list || []){
-    let t = String(raw).trim().replace(/^and\s+/i, "");
+    /* the wiki adds "Value: 25gp Weight: 3lbs" to some (Charlatan's disguise kit) */
+    let t = String(raw).trim().replace(/^and\s+/i, "").replace(/\s*\(?\s*(?:value|cost|weight)\s*:.*$/i, "").trim();
     const gp = /^(\d+)\s*(cp|sp|ep|gp|pp)\b/i.exec(t), inside = /\s*\b(?:containing|with) (\d+)\s*(cp|sp|ep|gp|pp)\b.*$/i.exec(t);
     if (gp){ coins[gp[2].toLowerCase()] = (coins[gp[2].toLowerCase()] || 0) + Number(gp[1]); continue; }
     if (inside){ coins[inside[2].toLowerCase()] = (coins[inside[2].toLowerCase()] || 0) + Number(inside[1]); t = t.slice(0, inside.index).trim(); }
@@ -25819,6 +25818,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b145", [
+    "D&D sheet: the import notice\u2019s button now says Import content\u2026 (How? is gone; the import window has its own help). A background\u2019s equipment listed with \u201cValue: \u2026 Weight: \u2026\u201d (Charlatan\u2019s disguise kit) now becomes the real item, with its details."
+  ]],
   ["b144", [
     "D&D sheet: changing your race, background, class or feats now updates every proficiency, replacing ticks you set by hand. On Abilities \u203a Saving Throws, Skills & Proficiencies, ticks set by hand show in blue (with Undo), and each skill says where it comes from."
   ]],
