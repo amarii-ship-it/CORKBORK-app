@@ -4340,7 +4340,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b142";
+window.BUILD = "b143";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -20871,13 +20871,14 @@ function seClassSpells(host, sh, g){
     list.textContent = "";
     const term = spellKey(q.value), cname = spellKey(g.name);
     const hits = spellCatalog().filter(s => s.lvl <= maxL && (s.lvl > 0 || g.cantrips) &&
-      (f.all || !s.classes || s.classes.some(x => spellKey(x) === cname)) &&
+      (f.all || (s.classes || []).some(x => spellKey(x) === cname)) &&
       (!f.lv.size || f.lv.has(s.lvl)) && (!f.src.size || f.src.has(s.src)) && (f.src.size || sourceAllowed(sh, {book:s.src === "srd" ? "SRD" : "", ...(s.lib || {})})) &&
       (!term || spellKey(s.name).includes(term)));
     for (const s of hits.slice(0, shown)) list.appendChild(seSpellRow(sh, s, g, sheetSpells(sh).list.find(x => spellKey(x.name) === spellKey(s.name))));
     if (!hits.length) list.appendChild(bzEl("div", "se-hint", term ? "No spells match." : "No spells here yet. Import spells (Import official content) for the books' spells."));
     if (hits.length > shown){ const m = bzEl("button", "se-linkbtn", "Show " + Math.min(60, hits.length - shown) + " more of " + (hits.length - shown)); m.addEventListener("click", () => { shown += 60; draw(); }); list.appendChild(m); }
-    if (hits.some(s => !s.classes)) list.appendChild(bzEl("div", "se-hint", "Spells from your library with no class list show for every class. Importing them again (Import official content) adds their class lists."));
+    const unlisted = f.all ? 0 : spellCatalog().filter(s => !s.classes?.length && s.lvl <= maxL).length;
+    if (unlisted) list.appendChild(bzEl("div", "se-hint", unlisted + " spell" + (unlisted > 1 ? "s" : "") + " in your library don't say which classes cast them (imported before b142), so they're hidden here; Every class's spells shows them. Run Import official content again (Spells ticked) to add their class lists."));
   };
   q.addEventListener("input", () => { f.q = q.value; shown = 60; draw(); });
   draw();
@@ -22112,7 +22113,7 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
     const u = new URL(OFFICIAL_KINDS[0].index);
     for (const l of await officialList(u, "spells", v => /^\/spell:[a-z0-9-]+$/i.test(v.pathname))){
       const built = (srdSpells || []).some(s => spellKey(s.n) === spellKey(l.name));
-      items.push({kind:"spell", name:l.name, url:l.url, ua:/\(UA\)|\(HB\)/i.test(l.name), built, have:!built && !!spellLibFind(l.name.replace(/\s*\((UA|HB)\)\s*$/i, ""))});
+      items.push({kind:"spell", name:l.name, url:l.url, ua:/\(UA\)|\(HB\)/i.test(l.name), built, have:!built && spellLibHasFull(l.name.replace(/\s*\((UA|HB)\)\s*$/i, ""))});
     }
     tick("spells");
   }
@@ -23253,7 +23254,8 @@ function parseSpellText(text){
   const KEYS = {"casting time":"time", "range":"range", "range/area":"range", "components":"comp", "duration":"dur",
     "school":"school", "level":"level", "attack/save":"skip", "damage/effect":"skip", "source":"book", "spell lists":"skip",
     "spell tags":"skip", "available for":"skip", "classes":"skip", "tags":"skip"};
-  const det = {school:"", time:"", range:"", comp:"", dur:"", conc:false, ritual:false, desc:"", higher:"", book:"", src:"pasted"};
+  /* classesRead: read by b143 or later, so a page without a class list isn't fetched again and again */
+  const det = {school:"", time:"", range:"", comp:"", dur:"", conc:false, ritual:false, desc:"", higher:"", book:"", src:"pasted", classesRead:true};
   let name = "", lvl = null, footnote = "";
   const desc = [];
   const setLevel = v => {
@@ -23373,6 +23375,8 @@ function spellLibList(){ return Object.values(state.spellLib || {}).sort((a, b) 
 /* names match ignoring capitals, spacing, apostrophe style and a trailing "(UA)" */
 function spellKey(name){ return String(name || "").toLowerCase().replace(/[\u2018\u2019`]/g, "'").replace(/\s*\(ua\)\s*$/, "").replace(/\s+/g, " ").trim(); }
 function spellLibFind(name){ const n = spellKey(name); return n ? spellLibList().find(s => spellKey(s.name) === n) || null : null; }
+/* already have it, complete: one imported before b142 has no class list, so importing again fetches it */
+const spellLibHasFull = name => { const d = spellLibFind(name)?.det; return !!(d?.classes?.length || d?.classesRead); };
 /* add or update by name; returns "added" | "updated" */
 function spellLibPut(sp){
   state.spellLib = state.spellLib || {};
@@ -23563,9 +23567,9 @@ async function importSpellsFromLink(url, {skipUa = true, update = false, onProgr
   if (skipUa){ const before = links.length; links = links.filter(l => !isUaSpell(l.name)); skipped = before - links.length; }
   /* already in your library (same page or same name): not downloaded again unless updating */
   if (!update){
-    const urls = new Set(spellLibList().map(s => s.url).filter(Boolean));
+    const urls = new Set(spellLibList().filter(s => s.det?.classes?.length || s.det?.classesRead).map(s => s.url).filter(Boolean));
     const before = links.length;
-    links = links.filter(l => !urls.has(l.url) && !(l.name && spellLibFind(l.name)));
+    links = links.filter(l => !urls.has(l.url) && !(l.name && spellLibHasFull(l.name)));
     have = before - links.length;
   }
   const found = [], failed = [];
@@ -25801,6 +25805,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b143", [
+    "D&D sheet: a class's spell list now hides spells that don't say which classes cast them (imported before b142); Every class's spells still shows them. Import official content now fetches those spells again instead of skipping them, so they get their class lists."
+  ]],
   ["b142", [
     "D&D sheet: Edit character now works like D&D Beyond. Steps across the top (Home, Class, Background, Race, Abilities, Equipment) with \u2039 \u203a arrows, your name and picture on every page, and a blue ! wherever a choice is still to make. Each feature is a card that opens, with its choices inside.",
     "Home holds the character\u2019s preferences: which sources the pickers offer (free rules, official books you imported, homebrew), Customize Your Origin, milestone or XP, fixed or rolled hit points, prerequisites for feats and multiclassing (on: what you don\u2019t qualify for can\u2019t be picked), level-scaled spells, encumbrance, coin weight, scores or modifiers on top, and dice rolling.",
@@ -25846,11 +25853,6 @@ const PATCH_NOTES = [
     "D&D sheet races: Edit character \u203a Race lists the free races (Hill Dwarf, High Elf, Half-Elf\u2026). Picking one fills in ability bonuses, speed, size, darkvision, languages, proficiencies and traits, with its choices (Half-Elf\u2019s +1s, Dragonborn ancestry). Change race and the old one\u2019s part comes off; anything you typed yourself stays.",
     "Import races\u2026 reads a race or a whole race list from dnd5e.wikidot.com or dandwiki.com (or pasted text) into your race library, synced through Drive. Custom race lets you type your own and save it for other sheets.",
     "Classes: Class & level lists the 12 free classes. Picking one sets hit dice, saving throws, proficiencies, spellcasting, spell slots, limited-use features and class features for your level. Level up adds hit points (average or roll) and shows what\u2019s new. Skills, Ability scores and Spells now say what the class expects (skills to pick, improvements to place, spells known or prepared), as a guide, never a limit."
-  ]],
-  ["b130", [
-    "D&D sheet: opening a sheet now shows it ready to play, laid out like D&D Beyond. Tap any modifier, attack or spell damage to roll it; Heal, Damage and temp HP sit by your hit points; Cast uses a spell slot; Short and Long rest refill what they should.",
-    "Edit character walks through nine pages (Basics, Race, Class & level, Ability scores, …). Roll my stats rolls 4d6 drop lowest for you to place, or use the standard array or point buy. One image is cropped for the headshot, and Basics picks the sheet colour.",
-    "Proficiency follows your level, race bonuses add to scores, and skills can be proficient, expertise or half (Jack of All Trades). Sheet cards on the board have a third look, Beyond, beside Simple and Full."
   ]],
 ];
 function renderPatchNotes(){
