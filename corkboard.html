@@ -1070,6 +1070,8 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .se-feats .se-picks{margin-top:6px;}
 .se-builtin{font:12px/1.5 Verdana; background:#EEF3E4; border:1px solid #BFD0A6; border-radius:6px; padding:7px 10px; color:#2C2415;}
 .se-builtin b{font-weight:700;}
+.se-never{display:block; margin-top:3px; padding:0; border:none; background:none; font:10px Verdana; color:#8A7550; text-decoration:underline; cursor:pointer;}
+.se-fine{font-size:.85em; font-style:italic; opacity:.8;}
 .se-page > .se-builtin{margin-bottom:2px;}
 .off-step{display:block; margin:10px 0 2px; font-size:13px;}
 .off-import .off-kinds{align-items:center;}
@@ -4185,7 +4187,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b136";
+window.BUILD = "b137";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -21128,35 +21130,46 @@ const BUILT_IN = {
   background:{label:"backgrounds", now:() => "1 background (Acolyte)"},
   feat:{label:"feats", now:() => "1 feat (Grappler)"}
 };
-function builtInNote(kind, mine){
+/* one line of text with **bold** and *small italic* parts */
+function richText(el, text){
+  for (const part of String(text).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/)){
+    if (/^\*\*.+\*\*$/.test(part)) el.appendChild(Object.assign(document.createElement("b"), {textContent:part.slice(2, -2)}));
+    else if (/^\*.+\*$/.test(part)) el.appendChild(Object.assign(document.createElement("small"), {className:"se-fine", textContent:part.slice(1, -1)}));
+    else if (part) el.append(part);
+  }
+  return el;
+}
+const IMPORT_NOTICE_KEY = "corkbork:importNoticeHidden";
+function builtInNote(kind){
+  let hidden = false; try { hidden = localStorage.getItem(IMPORT_NOTICE_KEY) === "1"; } catch (_) {}
+  if (hidden) return document.createDocumentFragment();
   const k = BUILT_IN[kind], box = document.createElement("div"); box.className = "se-builtin";
-  box.append(Object.assign(document.createElement("b"), {textContent:"Built in: " + k.now() + "."}), " ",
-    (mine ? "You have " + mine + " more of your own. " : "") + "Everything else from the official books has to be imported once. ");
+  richText(box, "**I HIGHLY recommend importing the official books to use all the content D&D has to offer before creating a character. You only have to do this once.** ");
   const go = document.createElement("button"); go.className = "se-linkbtn"; go.textContent = "Import " + k.label + "\u2026";
   go.addEventListener("click", async () => { if (await importOfficialDialog({only:[kind]})) renderSheetEditor(); });
   const how = document.createElement("button"); how.className = "se-linkbtn"; how.textContent = "How?";
   how.addEventListener("click", () => importHelpDialog());
-  box.append(go, " \u00b7 ", how);
+  const never = document.createElement("button"); never.className = "se-never"; never.textContent = "never see this again";
+  never.title = "Hide this notice on every page (on this device)";
+  never.addEventListener("click", () => { try { localStorage.setItem(IMPORT_NOTICE_KEY, "1"); } catch (_) {} document.querySelectorAll(".se-builtin").forEach(n => n.remove()); });
+  box.append(go, " \u00b7 ", how, never);
   return box;
 }
 function importHelpDialog(){
-  return askOpen({title:"Adding spells, races, classes, backgrounds and feats", wide:true, build(body){
+  return askOpen({title:"How to import", wide:true, build(body){
     const w = document.createElement("div"); w.id = "askMsg"; w.className = "se-help";
-    const p = t => w.appendChild(Object.assign(document.createElement("p"), {textContent:t}));
-    p("CORKBORK comes with only the free D&D rules: about 320 spells, 9 races, the 12 classes with one subclass each, 1 background and 1 feat (Grappler). Everything else in the official books has to be imported, once. It goes into your own libraries on this device and your Google Drive, never into the app.");
-    const ol = document.createElement("ol");
-    for (const t of ["Open CORKBORK from its website (importing doesn\u2019t work from a downloaded copy of the file).",
-      "Open a D&D sheet, then Edit character.",
-      "Press Import official content\u2026 at the top.",
-      "Tick the kinds you want: Spells, Races, Classes and subclasses, Backgrounds, Feats. Untick the rest.",
-      "Press Find what\u2019s there. It lists what\u2019s new, leaving out what\u2019s built in, what you already have, and playtest material.",
-      "Optional: open a group to untick single items.",
-      "Press Import and wait (spells take a few minutes; everything else is quick).",
-      "Done. The new items show up on the matching page (Race, Class & level, Background, Ability scores \u203a Feats, Spells). Run it again later and it only adds what\u2019s new."])
-      ol.appendChild(Object.assign(document.createElement("li"), {textContent:t}));
-    w.appendChild(ol);
-    p("Homebrew (dandwiki.com): use the Import button on each page instead (Import races\u2026, Import feats\u2026 and so on) and paste a dandwiki link. You can also paste a page\u2019s text there.");
-    p("If an import says some pages couldn\u2019t be read, send the link to whoever looks after your CORKBORK.");
+    const p = t => w.appendChild(richText(document.createElement("p"), t));
+    const list = items => { const ol = document.createElement("ol"); for (const t of items) ol.appendChild(richText(document.createElement("li"), t)); w.appendChild(ol); };
+    p("**Adding spells, races, classes, backgrounds and feats:**");
+    p("CORKBORK only includes the free D&D rules. All content in the official books (Player\u2019s Handbook, Xanathar\u2019s, Tasha\u2019s, etc.) has to be imported. **I highly recommend importing the official books to use all the content D&D has to offer before creating a character.**");
+    list(["Open CORKBORK\u2019s website (importing doesn\u2019t work from a downloaded copy of CORKBORK).",
+      "Open a **D&D sheet** \u2192 press **Edit character** \u2192 press **Import official content (RECOMMENDED)**",
+      "Toggle what you want imported. (I recommend everything.)",
+      "Press **Import**.",
+      "**Done!** Redo this process if you want to import something you hadn\u2019t before."]);
+    p("**Adding homebrew content:**");
+    list(["Inside the **Edit character** screen, use the Import button on each page instead (Import races\u2026, Import feats\u2026 etc.).",
+      "Paste a dandwiki link of the homebrewed content. You can also paste text."]);
     body.appendChild(w);
     return {};
   }, buttons:[{label:"Open the import window", value:"go"}, {label:"Close", primary:true, value:null}]}).then(v => { if (v === "go") importOfficialDialog().then(n => { if (n && seCardId) renderSheetEditor(); }); });
@@ -21170,14 +21183,14 @@ async function importOfficialDialog({only = null} = {}){
     title:"Import official content", wide:true,
     build(body){
       const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import off-import";
-      wrap.appendChild(Object.assign(document.createElement("div"), {className:"sub", textContent:"Reads dnd5e.wikidot.com (spells, races, classes and subclasses, backgrounds, feats), which has the official books beyond the free rules CORKBORK comes with. Everything goes into your own libraries (on this device and in your Drive), never into the app. Homebrew isn’t included; add it from each Import button."}));
+      wrap.appendChild(richText(Object.assign(document.createElement("div"), {className:"sub"}), "CORKBORK only includes the free D&D rules. All content in the official books (Player\u2019s Handbook, Xanathar\u2019s, Tasha\u2019s, etc.) has to be imported. **I highly recommend importing the official books to use all the content D&D has to offer before creating a character.** *Imports from dnd5e.wikidot.com*"));
       const kindsRow = document.createElement("div"); kindsRow.className = "off-kinds";
       const kindBox = {};
       kindsRow.appendChild(Object.assign(document.createElement("b"), {className:"off-step", textContent:"1. What to import"}));
       for (const k of OFFICIAL_KINDS){
         const l = document.createElement("label"); l.className = "spl-check off-kind-tog"; const c = document.createElement("input"); c.type = "checkbox";
         c.checked = only ? only.includes(k.id) : Array.isArray(saved) ? saved.includes(k.id) : true;
-        c.addEventListener("change", () => { try { localStorage.setItem(IMPORT_KINDS_KEY, JSON.stringify(OFFICIAL_KINDS.filter(x => kindBox[x.id].checked).map(x => x.id))); } catch (_) {} find.disabled = !OFFICIAL_KINDS.some(x => kindBox[x.id].checked); });
+        c.addEventListener("change", () => { try { localStorage.setItem(IMPORT_KINDS_KEY, JSON.stringify(OFFICIAL_KINDS.filter(x => kindBox[x.id].checked).map(x => x.id))); } catch (_) {} const none = !OFFICIAL_KINDS.some(x => kindBox[x.id].checked); find.disabled = none; scanned = false; items = []; list.textContent = ""; count(); if (none) go.disabled = true; });
         kindBox[k.id] = c; l.append(c, " " + k.label); kindsRow.appendChild(l);
       }
       const uaWrap = document.createElement("label"); uaWrap.className = "spl-check";
@@ -21185,15 +21198,15 @@ async function importOfficialDialog({only = null} = {}){
       const haveWrap = document.createElement("label"); haveWrap.className = "spl-check";
       const have = document.createElement("input"); have.type = "checkbox"; have.checked = true; haveWrap.append(have, " Skip what I already have (so running it again only adds what’s new)");
       const row = document.createElement("div"); row.className = "spl-row";
-      const find = document.createElement("button"); find.className = "spl-btn"; find.textContent = "Find what’s there";
-      const go = document.createElement("button"); go.className = "spl-btn"; go.textContent = "Import"; go.disabled = true;
-      row.append(find, go);
+      const go = document.createElement("button"); go.className = "spl-btn off-go"; go.textContent = "Import";
+      const find = document.createElement("button"); find.className = "spl-btn"; find.textContent = "Pick items first (optional)";
+      row.append(go, find);
       const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
       const status = document.createElement("div"); status.className = "spl-status";
       const list = document.createElement("div"); list.className = "off-list";
-      let items = [], stop = false, running = false;
+      let items = [], stop = false, running = false, scanned = false;
       const progress = (d, t, n) => { bar.hidden = false; fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = (running === "scan" ? "Looking: " : "Importing ") + d + " of " + t + (n ? " — " + n : ""); };
-      const count = () => { const n = items.filter(i => i.on).length; go.disabled = !n || !!running; go.textContent = "Import " + n; };
+      const count = () => { if (!scanned){ go.disabled = !!running && running !== "import"; if (running !== "import") go.textContent = "Import"; return; } const n = items.filter(i => i.on).length; go.disabled = !n || (!!running && running !== "import"); if (running !== "import") go.textContent = "Import " + n; };
       const drawList = () => {
         list.textContent = "";
         for (const k of OFFICIAL_KINDS){
@@ -21229,17 +21242,24 @@ async function importOfficialDialog({only = null} = {}){
         running = "scan"; stop = false; find.textContent = "Stop"; go.disabled = true; status.textContent = "Looking…";
         try {
           items = await scanOfficial(OFFICIAL_KINDS.filter(k => kindBox[k.id].checked).map(k => k.id), {onProgress:progress, stopped:() => stop});
-          applyDefaults();
+          scanned = true; applyDefaults();
           const n = items.filter(i => i.on).length;
           status.textContent = n ? "Found " + n + " new. Untick anything you don’t want (open a group to pick), then Import." : "Nothing new to import.";
         } catch (e){ status.textContent = e.message; }
-        running = false; find.textContent = "Find what’s there"; count();
+        running = false; find.textContent = "Pick items first (optional)"; count();
       });
       go.addEventListener("click", async () => {
         if (running === "import"){ stop = true; go.textContent = "Stopping…"; return; }
-        const pick = items.filter(i => i.on); if (!pick.length) return;
         running = "import"; stop = false; find.disabled = true; go.disabled = false; go.textContent = "Stop";
         try {
+          /* straight to Import: look first, then take everything new */
+          if (!scanned){
+            status.textContent = "Looking\u2026";
+            items = await scanOfficial(OFFICIAL_KINDS.filter(k => kindBox[k.id].checked).map(k => k.id), {onProgress:progress, stopped:() => stop});
+            scanned = true; for (const i of items) i.on = !i.built && !(ua.checked && i.ua) && !(have.checked && i.have);
+          }
+          const pick = items.filter(i => i.on);
+          if (!pick.length || stop){ status.textContent = stop ? "Stopped." : "Nothing new to import."; running = false; find.disabled = false; drawList(); return; }
           const t = await importOfficial(pick, {skipUa:ua.checked, onProgress:progress, stopped:() => stop});
           const sum = Object.entries(t).map(([k, v]) => [k, v]).filter(([, v]) => v.added || v.updated || v.failed.length || v.skipped);
           changed += Object.values(t).reduce((n, v) => n + v.added + v.updated, 0);
@@ -21252,12 +21272,13 @@ async function importOfficialDialog({only = null} = {}){
         } catch (e){ status.textContent = e.message; }
         running = false; find.disabled = false; count();
       });
-      const help = document.createElement("button"); help.type = "button"; help.className = "spl-all"; help.textContent = "Step by step\u2026";
+      const help = document.createElement("button"); help.type = "button"; help.className = "spl-all"; help.textContent = "How to import?";
       help.addEventListener("click", () => { askClose(null); setTimeout(() => importHelpDialog(), 50); });
-      const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Find what\u2019s there, untick anything you don\u2019t want, then Import"});
+      const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Press Import (or pick single items first)"});
       wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, list, help);
       body.appendChild(wrap);
-      return {focus:() => find.focus()};
+      count();
+      return {focus:() => go.focus()};
     },
     buttons:[{label:"Close", primary:true, value:null}]
   });
@@ -21315,12 +21336,10 @@ function renderSheetEditor(){
   const done = document.createElement("button"); done.className = "bz-btn p"; done.textContent = "Done editing";
   done.addEventListener("click", () => { seMode = "view"; renderSheetEditor(); });
   /* everything official in one go: spells, races, classes, backgrounds */
-  const hub = document.createElement("button"); hub.className = "bz-btn"; hub.textContent = "Import official content\u2026";
+  const hub = document.createElement("button"); hub.className = "bz-btn"; hub.textContent = "Import official content (RECOMMENDED)";
   hub.title = "Spells, races, classes, backgrounds and feats from dnd5e.wikidot.com, all at once or picked";
   hub.addEventListener("click", async () => { if (await importOfficialDialog()) renderSheetEditor(); });
-  const helpB = document.createElement("button"); helpB.className = "bz-btn"; helpB.textContent = "How to add more";
-  helpB.addEventListener("click", () => importHelpDialog());
-  head.append(t, helpB, hub, done);
+  head.append(t, hub, done);
   const body = document.createElement("div"); body.className = "se-edbody";
   const nav = document.createElement("div"); nav.className = "se-nav";
   const filled = [
@@ -24277,6 +24296,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b137", [
+    "D&D sheet: each page recommends importing the official books, with a button for that kind (and \u201cnever see this again\u201d). Import official content (RECOMMENDED) at the top of Edit character holds the import and its step-by-step guide. In the import window, tick what you want and press Import; picking single items first is optional. Your ticks are remembered."
+  ]],
   ["b136", [
     "D&D sheet: each page now says plainly what\u2019s built in (for example, 1 feat) and has a button to import the rest of that kind. How to add more (top of Edit character) walks through it step by step. The import window\u2019s Spells / Races / Classes / Backgrounds / Feats toggles are clearer and remembered."
   ]],
