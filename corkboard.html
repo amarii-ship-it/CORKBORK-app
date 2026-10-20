@@ -2181,6 +2181,10 @@ body.focus-mode #textBarWrap{display:none;}
 .spl-row{display:flex; gap:8px;}
 .spl-row input{flex:1; min-width:0;}
 .spl-btn{padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); align-self:flex-start;}
+/* the import window's buttons look like its Close button */
+.off-import .spl-btn{background:var(--accent); border-color:var(--accent); color:var(--canvas); font-weight:600;}
+.off-import .spl-btn:hover{filter:brightness(1.08);}
+.off-import .spl-btn:disabled{opacity:.5; filter:none;}
 #askBody .spl-check{display:flex; flex-direction:row; align-items:center; justify-content:flex-start; text-align:left; gap:7px; font-size:12.5px;}
 #askBody .spl-check input{width:auto; margin:0; flex:none;}
 .spl-bar{height:6px; border-radius:3px; background:color-mix(in srgb, var(--text) 12%, transparent); overflow:hidden;}
@@ -4187,7 +4191,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b137";
+window.BUILD = "b138";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -21199,7 +21203,7 @@ async function importOfficialDialog({only = null} = {}){
       const have = document.createElement("input"); have.type = "checkbox"; have.checked = true; haveWrap.append(have, " Skip what I already have (so running it again only adds what’s new)");
       const row = document.createElement("div"); row.className = "spl-row";
       const go = document.createElement("button"); go.className = "spl-btn off-go"; go.textContent = "Import";
-      const find = document.createElement("button"); find.className = "spl-btn"; find.textContent = "Pick items first (optional)";
+      const find = document.createElement("button"); find.className = "spl-btn"; find.textContent = "Choose individual items\u2026";
       row.append(go, find);
       const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
       const status = document.createElement("div"); status.className = "spl-status";
@@ -21246,7 +21250,7 @@ async function importOfficialDialog({only = null} = {}){
           const n = items.filter(i => i.on).length;
           status.textContent = n ? "Found " + n + " new. Untick anything you don’t want (open a group to pick), then Import." : "Nothing new to import.";
         } catch (e){ status.textContent = e.message; }
-        running = false; find.textContent = "Pick items first (optional)"; count();
+        running = false; find.textContent = "Choose individual items\u2026"; count();
       });
       go.addEventListener("click", async () => {
         if (running === "import"){ stop = true; go.textContent = "Stopping…"; return; }
@@ -21274,7 +21278,7 @@ async function importOfficialDialog({only = null} = {}){
       });
       const help = document.createElement("button"); help.type = "button"; help.className = "spl-all"; help.textContent = "How to import?";
       help.addEventListener("click", () => { askClose(null); setTimeout(() => importHelpDialog(), 50); });
-      const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Press Import (or pick single items first)"});
+      const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Press Import"});
       wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, list, help);
       body.appendChild(wrap);
       count();
@@ -24296,6 +24300,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b138", [
+    "Import official content: the buttons match Close, and \u201cPick items first\u201d is now \u201cChoose individual items\u2026\u201d (only needed to leave out single items)."
+  ]],
   ["b137", [
     "D&D sheet: each page recommends importing the official books, with a button for that kind (and \u201cnever see this again\u201d). Import official content (RECOMMENDED) at the top of Edit character holds the import and its step-by-step guide. In the import window, tick what you want and press Import; picking single items first is optional. Your ticks are remembered."
   ]],
