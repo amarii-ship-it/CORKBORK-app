@@ -1053,6 +1053,16 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-pact{margin-left:auto;}
 .bz-pact + .bz-slots2{margin-left:10px;}
 @media (max-width:760px){ .se-classrow{grid-template-columns:1fr 70px; } .se-classrow > .se-field:nth-of-type(2){grid-column:1 / -1;} }
+.bz-hp.dying{height:auto; grid-template-rows:auto auto;}
+.bz-death{grid-column:1 / -1; display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:1px dashed #C9B08A; padding-top:5px;}
+.bz-dsg{display:flex; align-items:center; gap:3px;}
+.bz-dsg .bz-lab{margin-right:3px;}
+.bz-ds{width:13px; height:13px; border-radius:50%; border:1.5px solid #5A4A2E; background:transparent; padding:0; cursor:pointer;}
+.bz-ds.ok.on{background:#3F7A4A; border-color:#3F7A4A;}
+.bz-ds.fail.on{background:#9a3a2c; border-color:#9a3a2c;}
+.bz-acguess{color:#8A7550; font-style:italic;}
+.bz-percls{text-align:center; margin:-2px 0 6px;}
+.bz-st .bz-small{font-size:8.5px; line-height:1.1;}
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -4161,7 +4171,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b132";
+window.BUILD = "b133";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -7535,7 +7545,7 @@ function sheetLevel(sh){
 }
 function sheetProf(sh){
   const lv = sheetLevel(sh);
-  if (lv && !sh.profManual) return 2 + Math.floor((lv - 1) / 4);
+  if (lv && !sh.profManual) return 2 + Math.floor((Math.min(20, lv) - 1) / 4);
   return Number(sh.profBonus) || 0;
 }
 /* the score you'd write down: the base plus every bonus (race, feat, item) */
@@ -7637,8 +7647,10 @@ function spellPlay(sh, s){
     out.dmg = m[1] + (m[2] && st ? (st.mod >= 0 ? "+" : "") + st.mod : ""); out.heal = true;
   }
   if (out.dmg && s.lvl === 0 && /\b(5th|11th|17th) level\b/i.test(text)){
-    const lv = sheetLevel(sh), tier = lv >= 17 ? 4 : lv >= 11 ? 3 : lv >= 5 ? 2 : 1;
-    out.dmg = out.dmg.replace(/^(\d+)d/, (_, n) => (Number(n) * tier) + "d");
+    const lv = Math.min(20, sheetLevel(sh)), tier = lv >= 17 ? 4 : lv >= 11 ? 3 : lv >= 5 ? 2 : 1;
+    /* Eldritch Blast and the like get more beams, each its own attack, not bigger dice */
+    if (/\bbeams?\b/i.test(text)) out.beams = tier;
+    else out.dmg = out.dmg.replace(/^(\d+)d/, (_, n) => (Number(n) * tier) + "d");
   }
   return out;
 }
@@ -18929,15 +18941,84 @@ function sheetHp(sh){
   const mx = Number(sh.maxHp) || 0;
   return {max:mx, cur:sh.curHp === "" || sh.curHp == null ? mx : Number(sh.curHp) || 0, temp:Number(sh.tempHp) || 0};
 }
+/* damage and healing as the rules have them: temp HP first; at 0 HP damage is a
+   failed death save; damage left over at 0 that reaches your maximum kills
+   outright; any healing wakes you and clears the death saves */
 function sheetHpChange(cardId, delta){
-  const sh = card(cardId).sheet, hp = sheetHp(sh);
-  let {cur, temp} = hp;
-  if (delta < 0){ let dmg = -delta; const soak = Math.min(temp, dmg); temp -= soak; dmg -= soak; cur = Math.max(0, cur - dmg); }
-  else cur = hp.max ? Math.min(hp.max, cur + delta) : cur + delta;
-  sheetPatch(cardId, {curHp:String(cur), tempHp:temp ? String(temp) : ""});
+  const sh = card(cardId).sheet, hp = sheetHp(sh), ds = {ok:0, fail:0, ...(sh.deathSaves || {})};
+  let {cur, temp} = hp; const patch = {};
+  if (delta < 0){
+    let dmg = -delta; const soak = Math.min(temp, dmg); temp -= soak; dmg -= soak;
+    if (dmg > 0 && cur === 0 && hp.max){
+      if (dmg >= hp.max){ patch.deathSaves = {ok:0, fail:3}; toast("Damage at 0 hit points equal to your maximum: instant death.", 7000); }
+      else { patch.deathSaves = {...ds, ok:ds.stable ? 0 : ds.ok, stable:false, fail:Math.min(3, ds.fail + 1)}; toast("Damage at 0 hit points: one failed death save" + (ds.fail + 1 >= 3 ? " \u2014 that\u2019s three." : " (two if it was a critical hit).")); }
+    } else if (dmg > 0){
+      const left = dmg - cur; cur = Math.max(0, cur - dmg);
+      if (cur === 0 && hp.max && left >= hp.max){ patch.deathSaves = {ok:0, fail:3}; toast("Massive damage: what was left after 0 hit points is at least your maximum, so that\u2019s instant death.", 8000); }
+      else if (cur === 0 && hp.max) patch.deathSaves = {ok:0, fail:0};
+    }
+  } else {
+    if (cur === 0 && delta > 0) patch.deathSaves = {ok:0, fail:0};
+    cur = hp.max ? Math.min(hp.max, cur + delta) : cur + delta;
+  }
+  sheetPatch(cardId, {...patch, curHp:String(cur), tempHp:temp ? String(temp) : ""});
 }
-function sheetRest(cardId, kind){
+/* hit dice by size, {8:3, 10:2}: from the classes, or a typed "3d8 + 2d10" */
+function sheetHitDice(sh){
+  const out = {}, gs = classGrantsOf(sh);
+  if (gs.length){ for (const g of gs) if (g.hd) out[g.hd] = (out[g.hd] || 0) + g.level; }
+  else for (const m of String(sh.hitDice || "").matchAll(/(\d+)\s*d\s*(\d+)/gi)) out[m[2]] = (out[m[2]] || 0) + Number(m[1]);
+  return out;
+}
+/* spent hit dice by size (older sheets kept one number) */
+function hitDiceUsed(sh){
+  const u = sh.hitDiceUsed, dice = sheetHitDice(sh), out = {};
+  if (u && typeof u === "object"){ for (const d of Object.keys(dice)) out[d] = Math.min(dice[d], Math.max(0, Number(u[d]) || 0)); return out; }
+  let left = Number(u) || 0;
+  for (const d of Object.keys(dice).sort((a, b) => b - a)){ const k = Math.min(dice[d], left); out[d] = k; left -= k; }
+  return out;
+}
+/* a short rest: spend hit dice one at a time (roll + CON each), then the short-rest refills */
+async function shortRestDialog(cardId){
+  const sh = card(cardId).sheet, dice = sheetHitDice(sh), spent = hitDiceUsed(sh), con = sheetMod(sh, "CON"), hp = sheetHp(sh);
+  let healed = 0;
+  const res = await askOpen({
+    title:"Short rest",
+    build(body){
+      const w = document.createElement("div"); w.id = "askMsg"; w.className = "se-lvup";
+      w.appendChild(Object.assign(document.createElement("p"), {textContent:"Spend hit dice to heal: each one is a roll of the die " + (con ? (con > 0 ? "plus " : "minus ") + Math.abs(con) + " (Constitution)" : "(Constitution adds 0)") + ". Spend as many as you like, one at a time."}));
+      const total = document.createElement("b");
+      const show = () => { total.textContent = "Healed +" + healed + " (" + Math.min(hp.max || Infinity, hp.cur + healed) + " / " + (hp.max || "\u2014") + ")"; };
+      const sizes = Object.keys(dice).sort((a, b) => b - a);
+      if (!sizes.length) w.appendChild(Object.assign(document.createElement("p"), {textContent:"No hit dice on this sheet yet (set your class, or Hit dice on Class & level)."}));
+      for (const d of sizes){
+        const row = document.createElement("div"); row.className = "se-inline";
+        const left = document.createElement("span");
+        const b = document.createElement("button"); b.className = "bz-btn"; b.textContent = "\ud83c\udfb2 Spend a d" + d;
+        const upd = () => { const n = dice[d] - (spent[d] || 0); left.textContent = n + " of " + dice[d] + " d" + d + " left"; b.disabled = n <= 0 || (hp.max && hp.cur + healed >= hp.max); };
+        b.addEventListener("click", () => { const x = showRoll("hit die", "1d" + d + (con ? fmtMod(con) : ""), ""); if (!x) return; healed += Math.max(0, x.total); spent[d] = (spent[d] || 0) + 1; for (const f of w._upd) f(); show(); });
+        (w._upd = w._upd || []).push(upd); upd();
+        row.append(b, left); w.appendChild(row);
+      }
+      w.appendChild(total); show();
+      w.appendChild(Object.assign(document.createElement("p"), {className:"se-hint", textContent:"Finishing also brings back short-rest uses" + (sheetSpells(sh).pact ? " and your pact slots" : "") + ". Spent hit dice come back on a long rest (half of them)."}));
+      body.appendChild(w);
+      return {focus:() => w.querySelector("button")?.focus()};
+    },
+    buttons:[{label:"Cancel", value:null}, {label:"Finish short rest", primary:true, value:() => true}]
+  });
+  if (!res) return;
+  sheetRest(cardId, "short", {heal:healed, hitDiceUsed:spent});
+}
+async function longRest(cardId){
+  const hp = sheetHp(card(cardId).sheet);
+  if (hp.max && hp.cur === 0 && !(await askConfirm({title:"Long rest at 0 hit points?", message:"The rules say you need at least 1 hit point when the long rest starts to get its benefits.", okLabel:"Rest anyway"}))) return;
+  sheetRest(cardId, "long");
+}
+function sheetRest(cardId, kind, {heal = 0, hitDiceUsed:spentDice = null} = {}){
   const sh = card(cardId).sheet, sp = sheetSpells(sh), patch = {};
+  if (kind === "short" && heal){ const hp = sheetHp(sh); patch.curHp = String(hp.max ? Math.min(hp.max, hp.cur + heal) : hp.cur + heal); if (hp.cur === 0) patch.deathSaves = {ok:0, fail:0}; }
+  if (kind === "short" && spentDice) patch.hitDiceUsed = spentDice;
   const resources = (sh.resources || []).map(r => (kind === "long" || r.reset === "short") ? {...r, used:0} : r);
   patch.resources = resources;
   const pact = sh.spells?.pact;
@@ -18951,11 +19032,15 @@ function sheetRest(cardId, kind){
     patch.curHp = String(hp.max || hp.cur); patch.tempHp = "";
     const slots = {}; for (const [l, s] of Object.entries(sp.slots)) slots[l] = {...s, used:0};
     patch.spells = {...sp, slots, ...(pact ? {pact:{...pact, used:0}} : {})};
-    patch.hitDiceUsed = Math.max(0, (Number(sh.hitDiceUsed) || 0) - Math.max(1, Math.floor(sheetLevel(sh) / 2)));
+    /* back: half your hit dice (at least one), the biggest first */
+    const dice = sheetHitDice(sh), used = hitDiceUsed(sh);
+    let back = Math.max(1, Math.floor(Object.values(dice).reduce((t, n) => t + n, 0) / 2));
+    for (const d of Object.keys(dice).sort((a, b) => b - a)){ const k = Math.min(used[d] || 0, back); used[d] = (used[d] || 0) - k; back -= k; }
+    patch.hitDiceUsed = used;
     patch.deathSaves = {ok:0, fail:0};
   }
   sheetPatch(cardId, patch);
-  toast(kind === "long" ? "Long rest: hit points full, spell slots and uses back." : "Short rest: short-rest uses" + (pact || sheetGrants(sh).class?.pact ? " and pact slots" : "") + " are back.");
+  toast(kind === "long" ? "Long rest: hit points full, spell slots, uses and half your hit dice back." : (heal ? "Short rest: +" + heal + " hit points. " : "Short rest: ") + "Short-rest uses" + (pact || sheetGrants(sh).class?.pact ? " and pact slots" : "") + " are back.");
 }
 
 function buildBeyondSheet(c, host, {face = false} = {}){
@@ -18977,7 +19062,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   head.append(pic, who, bzEl("div", "bz-gap"));
   const btn = (text, fn, cls, title) => { const b = bzStop(bzEl("button", "bz-btn" + (cls ? " " + cls : ""), text)); if (title) b.title = title; b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
   const play = bzEl("div", "bz-grp");
-  play.append(btn("☾ Short rest", () => sheetRest(id, "short")), btn("☾ Long rest", () => sheetRest(id, "long")));
+  play.append(btn("☾ Short rest", () => shortRestDialog(id), "", "Spend hit dice to heal; short-rest uses come back"), btn("☾ Long rest", () => longRest(id), "", "Hit points, spell slots and uses back, and half your hit dice"));
   const out = bzEl("div", "bz-grp");
   if (face){
     out.append(sheetViewSwitch(c));
@@ -19001,7 +19086,9 @@ function buildBeyondSheet(c, host, {face = false} = {}){
     top.appendChild(box);
   }
   const stat = (lab, val, small) => { const b = bzEl("div", "bz-box bz-st"); b.append(bzEl("div", "bz-lab", lab)); const v = bzEl("div", "bz-v", val); if (small) v.append(bzEl("small", "", small)); b.append(v); return b; };
-  top.append(stat("Proficiency", fmtMod(pb)), stat("Speed", String(sh.speed || "—").replace(/\s*ft\.?$/i, ""), /\d/.test(sh.speed || "") ? " ft" : ""));
+  const spBox = stat("Speed", String(sh.speed || "—").replace(/\s*ft\.?$/i, ""), /\d/.test(sh.speed || "") ? " ft" : ""), spPlus = speedBonus(sh);
+  if (spPlus){ const n = bzEl("div", "bz-small", "+" + spPlus.ft + " " + spPlus.when); n.title = spPlus.why; spBox.appendChild(n); }
+  top.append(stat("Proficiency", fmtMod(pb)), spBox);
   const insp = bzEl("div", "bz-box bz-st"); insp.append(bzEl("div", "bz-lab", "Inspiration"));
   const ib = bzStop(bzEl("button", "bz-insp" + (sh.inspiration ? " on" : ""))); ib.title = sh.inspiration ? "Inspired (tap to use)" : "Not inspired (tap to give)";
   ib.addEventListener("click", e => { e.stopPropagation(); sheetPatch(id, {inspiration:sh.inspiration ? 0 : 1}); });
@@ -19027,6 +19114,24 @@ function buildBeyondSheet(c, host, {face = false} = {}){
     if (v != null) sheetPatch(id, {tempHp:(parseInt(v, 10) || 0) > 0 ? String(parseInt(v, 10)) : ""});
   });
   hpBox.append(hb, hv, tmp);
+  if (hp.max && hp.cur === 0){
+    const ds = {ok:0, fail:0, ...(sh.deathSaves || {})};
+    hpBox.classList.add("dying");
+    const row = bzEl("div", "bz-death");
+    const marks = (n, cls, lab) => { const g = bzEl("span", "bz-dsg"); g.append(bzEl("span", "bz-lab", lab)); for (let i = 0; i < 3; i++){ const b = bzStop(bzEl("button", "bz-ds " + cls + (i < n ? " on" : ""))); b.addEventListener("click", e => { e.stopPropagation(); sheetPatch(id, {deathSaves:{...ds, [cls]:i < n ? i : i + 1}}); }); g.appendChild(b); } return g; };
+    const state = ds.fail >= 3 ? "Dead" : ds.ok >= 3 || ds.stable ? "Stable (unconscious; 1 hit point after 1d4 hours)" : "Dying: roll at the start of each turn";
+    const roll = btn("\ud83c\udfb2 Death save", () => {
+      const r = showRoll("death save", "1d20", ""); if (!r) return;
+      const d = r.groups[0].rolls[0];
+      if (d === 20){ sheetPatch(id, {curHp:"1", deathSaves:{ok:0, fail:0}}); toast("Natural 20: you regain 1 hit point and wake up."); return; }
+      const next = d === 1 ? {...ds, fail:Math.min(3, ds.fail + 2)} : d >= 10 ? {...ds, ok:Math.min(3, ds.ok + 1)} : {...ds, fail:Math.min(3, ds.fail + 1)};
+      sheetPatch(id, {deathSaves:next});
+      toast(d === 1 ? "Natural 1: two failures." : next.fail >= 3 ? "Third failure: the character dies." : next.ok >= 3 ? "Third success: stable." : d >= 10 ? "Success." : "Failure.");
+    }, "", "d20: 10 or more succeeds, 1 counts twice, 20 brings you back with 1 hit point");
+    if (ds.fail >= 3 || ds.ok >= 3) roll.disabled = true;
+    row.append(marks(ds.ok, "ok", "Successes"), marks(ds.fail, "fail", "Failures"), roll, bzEl("span", "bz-small", state));
+    hpBox.appendChild(row);
+  }
   top.appendChild(hpBox);
   root.appendChild(top);
 
@@ -19035,7 +19140,10 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   const left = bzEl("div", "bz-col");
   const ia = bzEl("div", "bz-box bz-sec bz-ia");
   const i1 = bzEl("div"); i1.append(bzEl("div", "bz-lab", "Initiative"), rollBtn(fmtMod(initBonus(sh)), fmtMod(initBonus(sh)), "Initiative", ""));
-  const i2 = bzEl("div"); i2.append(bzEl("div", "bz-lab", "Armour class"), bzEl("div", "bz-ac", sh.ac || "—"));
+  const acS = acSuggest(sh), i2 = bzEl("div"), acEl = bzEl("div", "bz-ac", sh.ac || acS.value);
+  if (!String(sh.ac || "").trim()){ acEl.classList.add("bz-acguess"); acEl.title = "No AC on the sheet: " + acS.why + ". Set your armour's AC on Class & level."; }
+  i2.append(bzEl("div", "bz-lab", "Armour class"), acEl);
+  if (!String(sh.ac || "").trim()) i2.append(bzEl("div", "bz-small", "no armour"));
   ia.append(i1, i2); left.appendChild(ia);
   const saves = bzEl("div", "bz-box bz-sec"); saves.append(bzEl("h4", "", "Saving throws"));
   const sg = bzEl("div", "bz-saves");
@@ -19169,13 +19277,18 @@ function bzActions(c, sh, panel){
     rows.push({name:a.name, sub:a.kind || "Weapon", range:a.range || "", hit:a.bonus || "", hitRoll:/^[+-]?\d+$/.test(String(a.bonus || "").trim()) ? a.bonus : "", dmg:a.dmg || "", notes:a.notes || "", kind:"Action"});
   }
   const str = sheetMod(sh, "STR"), pb = sheetProf(sh);
-  rows.push({name:"Unarmed strike", sub:"Melee", range:"5 ft", hit:fmtMod(str + pb), hitRoll:fmtMod(str + pb), dmg:String(Math.max(1, 1 + str)) + " bludgeoning", notes:"", kind:"Action"});
+  /* 1 + STR (the rules' own number); a monk uses the martial arts die and STR or DEX, whichever is better */
+  const monk = classGrantsOf(sh).find(g => g.id === "monk");
+  if (monk){
+    const ab = Math.max(str, sheetMod(sh, "DEX")), die = monk.level >= 17 ? 10 : monk.level >= 11 ? 8 : monk.level >= 5 ? 6 : 4;
+    rows.push({name:"Unarmed strike", sub:"Martial Arts", range:"5 ft", hit:fmtMod(ab + pb), hitRoll:fmtMod(ab + pb), dmg:"1d" + die + (ab ? fmtMod(ab) : "") + " bludgeoning", notes:"Also as a bonus action after the Attack action", kind:"Action"});
+  } else rows.push({name:"Unarmed strike", sub:"Melee", range:"5 ft", hit:fmtMod(str + pb), hitRoll:fmtMod(str + pb), dmg:String(Math.max(0, 1 + str)) + " bludgeoning", notes:"", kind:"Action"});
   for (const s of sheetSpells(sh).list){
     if (s.lvl > 0 && !s.prep) continue;
     const pl = spellPlay(sh, s); if (!pl.dmg || pl.heal) continue;
     const t = spellTimeShort(s.det?.time);
     rows.push({name:s.name, sub:(s.lvl ? ordinalLevel(s.lvl) + " level" : "Cantrip") + (s.det?.conc ? " · concentration" : ""), range:spellRangeShort(s.det?.range), hit:pl.hit, hitRoll:pl.hitRoll,
-      dmg:pl.dmg + (pl.dmgType ? " " + pl.dmgType : ""), notes:"", kind:t === "1BA" ? "Bonus action" : t === "1R" ? "Reaction" : "Action", spell:s});
+      dmg:pl.dmg + (pl.dmgType ? " " + pl.dmgType : ""), notes:pl.beams > 1 ? pl.beams + " beams, each its own attack" : "", kind:t === "1BA" ? "Bonus action" : t === "1R" ? "Reaction" : "Action", spell:s});
   }
   const show = rows.filter(r => f === "All" || f === "Attack" || r.kind === f);
   if (f !== "Limited use" && show.length){
@@ -19237,6 +19350,12 @@ function bzSpells(c, sh, panel){
   const cell = (v, l) => { const d = bzEl("div"); d.append(typeof v === "string" ? bzEl("b", "", v) : v, bzEl("div", "bz-lab", l)); return d; };
   stats.append(cell(st ? fmtMod(st.mod) : "—", "Modifier"), cell(st ? rollBtn(fmtMod(st.atk), fmtMod(st.atk), "Spell attack", "to hit") : "—", "Spell attack"), cell(st ? String(st.dc) : "—", "Save DC"));
   panel.appendChild(stats);
+  const casters = classGrantsOf(sh).filter(g => g.spell);
+  if (new Set(casters.map(g => g.spell)).size > 1){
+    const per = bzEl("div", "bz-small bz-percls");
+    per.textContent = casters.map(g => { const m = sheetMod(sh, g.spell); return g.name + " (" + g.spell + "): DC " + (8 + sheetProf(sh) + m) + ", attack " + fmtMod(sheetProf(sh) + m); }).join(" \u00b7 ");
+    panel.appendChild(per);
+  }
   const levels = [...new Set(spl.list.map(s => s.lvl))].sort((a, b) => a - b);
   const f = bzSpellFilter.get(id) || {lvl:"All", prepared:true};
   const fl = bzFilters(panel, ["All", ...levels.map(l => l ? ordinalLevel(l) : "Cantrips")], f.lvl, n => { bzSpellFilter.set(id, {...f, lvl:n}); panel.textContent = ""; bzSpells(c, sh, panel); });
@@ -19301,7 +19420,7 @@ function bzSpells(c, sh, panel){
       const n = bzStop(bzEl("td", "bz-nm bz-click")); n.append(bzEl("b", "", s.name), bzEl("span", "bz-small", [s.det?.school, s.det?.book].filter(Boolean).join(" · ")));
       n.addEventListener("click", e => { e.stopPropagation(); showSpellTip(s, n); spellTipEl().dataset.for = s.id; });
       const h2 = bzEl("td"); if (pl.hitRoll) h2.appendChild(rollBtn(pl.hit, pl.hitRoll, s.name, "to hit")); else h2.textContent = pl.hit || "—";
-      const d = bzEl("td"); if (pl.dmg){ d.appendChild(rollBtn(pl.dmg, pl.dmg, s.name, pl.heal ? "healing" : "damage")); d.append(" " + (pl.heal ? "heal" : pl.dmgType)); } else d.textContent = "—";
+      const d = bzEl("td"); if (pl.dmg){ d.appendChild(rollBtn(pl.dmg, pl.dmg, s.name, pl.heal ? "healing" : "damage")); d.append(" " + (pl.heal ? "heal" : pl.dmgType) + (pl.beams > 1 ? " \u00d7" + pl.beams + " beams" : "")); } else d.textContent = "—";
       tr.append(a, n, bzEl("td", "", spellTimeShort(s.det?.time) || "—"), bzEl("td", "", spellRangeShort(s.det?.range) || "—"), h2, d, bzEl("td", "bz-note", spellNotesShort(s.det)));
       t.appendChild(tr);
     }
@@ -19479,6 +19598,24 @@ function applyRace(opt, ch){
   if (kept.length) toast("Kept your own " + kept.join(" and ") + ". The race's are listed on this page.", 6000);
 }
 
+/* XP needed for each level (index = level - 1) */
+const XP_LEVELS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+function xpLevel(xp){ let lv = 1; while (lv < 20 && xp >= XP_LEVELS[lv]) lv++; return lv; }
+/* AC with no armour: 10 + DEX, or a class's unarmoured defence */
+function acSuggest(sh){
+  const gs = classGrantsOf(sh), dex = sheetMod(sh, "DEX"), opts = [{value:10 + dex, why:"10 + DEX"}];
+  if (gs.some(g => g.id === "barbarian")) opts.push({value:10 + dex + sheetMod(sh, "CON"), why:"Unarmored Defense: 10 + DEX + CON"});
+  if (gs.some(g => g.id === "monk")) opts.push({value:10 + dex + sheetMod(sh, "WIS"), why:"Unarmored Defense: 10 + DEX + WIS"});
+  if (gs.some(g => g.id === "sorcerer" && /draconic/i.test(g.sub || ""))) opts.push({value:13 + dex, why:"Draconic Resilience: 13 + DEX"});
+  return opts.reduce((a, b) => b.value > a.value ? b : a);
+}
+/* speed a class adds: a monk unarmoured, a barbarian out of heavy armour */
+function speedBonus(sh){
+  const gs = classGrantsOf(sh), monk = gs.find(g => g.id === "monk" && g.level >= 2), barb = gs.find(g => g.id === "barbarian" && g.level >= 5);
+  if (monk){ const ft = monk.level >= 18 ? 30 : monk.level >= 14 ? 25 : monk.level >= 10 ? 20 : monk.level >= 6 ? 15 : 10; return {ft, when:"unarmoured", why:"Unarmored Movement: +" + ft + " ft while you wear no armour and carry no shield"}; }
+  if (barb) return {ft:10, when:"no heavy armour", why:"Fast Movement: +10 ft while you aren't wearing heavy armour"};
+  return null;
+}
 /* ---- classes: one, or several (multiclassing) ----
    sheet.classes is the list you pick, [{key, name, level, sub}], first one
    the class you started as. Each gets its own grant in sheet.grants.classes;
@@ -19535,12 +19672,13 @@ function classGrant(cls, subName, level, sh, {multi = false, key = ""} = {}){
   if (sub) for (const [L, names] of Object.entries(sub.levels || {})) if (Number(L) <= lv) for (const n of names) features.push({n, lvl:Number(L), d:desc(n), sub:sub.name, cls:cls.name});
   features.sort((a, b) => a.lvl - b.lvl);
   let caster = cls.caster || "", slots = row.s || [];
+  const castsFrom = cls.spellFrom || cls.levels.find(l => (l.s || []).some(Boolean) || l.c)?.lv || 1;
   if (!caster && sub && (THIRD_CASTER_SUBS.test(sub.name) || sub.caster === "third")){ caster = "third"; slots = lv >= 3 ? slotsFor(Math.ceil(lv / 3)) : []; }
   const m = cls.multi || {armor:(cls.armor || []).filter(a => /^(light|medium) armou?r$|^shields?$/i.test(a)), weapons:[], tools:[], skills:null};
   return {key, id:cls.id, name:cls.name, sub:sub?.name || "", level:lv, hd:cls.hd, multi,
     saves:multi ? [] : cls.saves, armor:multi ? m.armor : cls.armor, weapons:multi ? m.weapons : cls.weapons, tools:multi ? m.tools : cls.tools,
     skillChoice:multi ? m.skills : cls.skills, otherChoices:multi ? [] : (cls.otherChoices || []),
-    spell:cls.spell || (caster === "third" ? "INT" : ""), caster, pact:caster === "pact", prepared:PREPARED_CASTERS[cls.id] || "",
+    spell:lv >= castsFrom ? cls.spell || (caster === "third" && lv >= 3 ? "INT" : "") : "", caster, pact:caster === "pact", prepared:PREPARED_CASTERS[cls.id] || "",
     slots, cantrips:row.c || 0, known:row.k || 0, features, resources:classResources(cls.id, row.x, lv, sh),
     jack:cls.id === "bard" && lv >= 2, asi:cls.levels.filter(l => l.lv <= lv && l.asi).length, subFrom:cls.sub[0]?.from || 3,
     subOptions:cls.sub.map(s => s.name), subFlavor:cls.sub[0]?.flavor || "", req:cls.multi?.req || [], reqAny:cls.multi?.reqAny || []};
@@ -19580,8 +19718,15 @@ function hpAverage(hd){ return Math.floor(hd / 2) + 1; }
 /* full first hit die, then the average for every other level */
 function suggestedHp(sh, gs){
   const con = sheetMod(sh, "CON"); let hp = 0, first = true;
-  for (const g of gs) for (let i = 0; i < g.level; i++){ hp += Math.max(1, (first ? g.hd : hpAverage(g.hd)) + con); first = false; }
+  for (const g of gs) for (let i = 0; i < g.level; i++){ hp += Math.max(1, (first ? g.hd : hpAverage(g.hd)) + con) + extraHpPerLevel(sh, g); first = false; }
   return hp;
+}
+/* hit points some traits add with every level: Dwarven Toughness (every level),
+   Draconic Resilience (each sorcerer level) */
+function extraHpPerLevel(sh, g){
+  const tough = (sheetGrants(sh).race?.traits || []).some(t => /^dwarven toughness/i.test(t.n)) ? 1 : 0;
+  const drac = g && g.id === "sorcerer" && /draconic/i.test(g.sub || "") ? 1 : 0;
+  return tough + drac;
 }
 /* put the classes on the sheet; anything you changed yourself is kept */
 function applyClasses(rows){
@@ -19631,11 +19776,18 @@ function applyClasses(rows){
   if (kept.length) toast("Kept your own " + kept.join(", ") + ". The classes' are listed on this page.", 6000);
 }
 /* can this character take a level in that class? (13 in the right scores) */
+/* the rules ask for 13 in the main scores of the new class AND of every class you already have */
 function multiclassReqNote(sh, c){
-  const req = c.multi?.req || [], any = c.multi?.reqAny || [];
-  const miss = req.filter(([a, n]) => sheetScore(sh, a) < n);
-  if (any.length && !any.some(([a, n]) => sheetScore(sh, a) >= n)) miss.push([any.map(([a]) => a).join(" or "), any[0][1]]);
-  return miss.length ? "Usually needs " + miss.map(([a, n]) => a + " " + n).join(" and ") : "";
+  const miss = [], seen = new Set();
+  const check = (k, who) => {
+    if (!k) return;
+    const req = k.multi?.req || [], any = k.multi?.reqAny || [];
+    for (const [a, n] of req) if (sheetScore(sh, a) < n && !seen.has(a)){ seen.add(a); miss.push(a + " " + n + who); }
+    if (any.length && !any.some(([a, n]) => sheetScore(sh, a) >= n)) miss.push(any.map(([a]) => a).join(" or ") + " " + any[0][1] + who);
+  };
+  check(c, "");
+  for (const r of classRows(sh)) if (r.key !== c.key && r.key !== "custom") check(classByKey(r.key), " (for " + (classByKey(r.key)?.name || r.name) + ")");
+  return miss.length ? "Usually needs " + miss.join(" and ") : "";
 }
 /* how many spells the rules expect, for gentle notes on the Spells page */
 function spellRuleNotes(sh){
@@ -19815,7 +19967,7 @@ function seClassPicker(onPick, {exclude = [], multi = false, sh} = {}){
   for (const o of classOptions()){
     if (exclude.includes(o.key)) continue;
     const b = document.createElement("button"); b.className = "se-pick";
-    const c = multi ? classByKey(o.key) : null, note = c ? multiclassReqNote(sh, c) : "";
+    const c = multi ? classByKey(o.key) : null, note = c ? multiclassReqNote(sh, {...c, key:o.key}) : "";
     b.append(Object.assign(document.createElement("b"), {textContent:o.name}), Object.assign(document.createElement("span"), {textContent:"d" + o.hd + (o.spell ? " · " + o.spell + " caster" : "") + (o.book !== "SRD" ? " · " + o.book : "")}));
     if (note){ b.appendChild(Object.assign(document.createElement("span"), {className:"se-pickwarn", textContent:note})); }
     b.addEventListener("click", () => onPick(o));
@@ -19954,11 +20106,11 @@ function seClass(page, sh){
     hpF.appendChild(h);
   }
   own.append(seGrid("1fr 1fr 1fr 1fr", hpF, seField("Hit dice", sh.hitDice, v => seSet({hitDice:v}), {placeholder:"3d8"}),
-    seField("Armour class", sh.ac, v => seSet({ac:v}), {type:"number"}), seField("Initiative (blank = from DEX)", sh.initiative, v => seSet({initiative:v}), {placeholder:fmtMod(sheetMod(sh, "DEX"))})));
+    seField("Armour class", sh.ac, v => seSet({ac:v}), {type:"number", placeholder:String(acSuggest(sh).value), hint:"With no armour: " + acSuggest(sh).value + " (" + acSuggest(sh).why + "). Armour or a shield: type your AC."}), seField("Initiative (blank = from DEX)", sh.initiative, v => seSet({initiative:v}), {placeholder:fmtMod(initBonus({...sh, initiative:""}))})));
   const jk = document.createElement("label"); jk.className = "se-check";
   const jc = document.createElement("input"); jc.type = "checkbox"; jc.checked = sheetJack(sh);
   jc.addEventListener("change", () => seSet({jack:jc.checked}));
-  jk.append(jc, " Jack of All Trades (half proficiency on every check you aren't proficient in)" + (gs.some(g => g.jack) ? " — from Bard" : ""));
+  jk.append(jc, " Jack of All Trades (half your proficiency bonus, rounded down, on every ability check you aren't proficient in, initiative included)" + (gs.some(g => g.jack) ? " \u2014 from Bard" : ""));
   own.appendChild(jk);
   own.append(seField(gs.length ? "More features & traits (your own)" : "Features & traits", sh.features, v => seSet({features:v}), {area:true, rows:6, hint:"Feats and anything else. Shows on the sheet's Features & Traits tab" + (gs.length ? ", after the class features." : ".")}));
   page.appendChild(own);
@@ -19981,8 +20133,8 @@ async function levelUpDialog(){
       const show = document.createElement("b");
       const a = document.createElement("button"); a.className = "bz-btn";
       const r = document.createElement("button"); r.className = "bz-btn";
-      let hd = 8;
-      const set = n => { gain = n; show.textContent = "+" + n + " hit points"; };
+      let hd = 8, extra = 0;
+      const set = n => { gain = n; show.textContent = "+" + n + " hit points" + (extra ? " (with +" + extra + " from " + ((sheetGrants(sh).race?.traits || []).some(t => /^dwarven toughness/i.test(t.n)) ? "Dwarven Toughness" : "Draconic Resilience") + ")" : ""); };
       const draw = () => {
         const v = which.value || "row:0";
         let g = null, gNext = null, c = null;
@@ -19996,13 +20148,14 @@ async function levelUpDialog(){
           gNext = c ? classGrant(c, "", 1, sh, {multi:true}) : null;
         }
         a.textContent = "Average (" + hpAverage(hd) + (con ? fmtMod(con) : "") + ")"; r.textContent = "🎲 Roll d" + hd;
-        set(Math.max(1, hpAverage(hd) + con));
+        extra = extraHpPerLevel(sh, newKey ? gNext : gNext || g);
+        set(Math.max(1, hpAverage(hd) + con) + extra);
         info.textContent = "";
         const lines = [];
         const pbNew = 2 + Math.floor(Math.min(19, lv) / 4);
         if (!sh.profManual && pbNew !== sheetProf(sh)) lines.push("Proficiency bonus becomes " + fmtMod(pbNew) + ".");
         if (newKey && c){
-          const note = multiclassReqNote(sh, c); if (note) lines.push(note + " to multiclass into " + c.name + " (a guide; you can go ahead).");
+          const note = multiclassReqNote(sh, {...c, key:newKey}); if (note) lines.push(note + " to multiclass into " + c.name + " (a guide; you can go ahead).");
           if (gNext) lines.push("Gains: " + [...gNext.armor, ...gNext.weapons, ...gNext.tools].join(", ") + (gNext.skillChoice ? (gNext.armor.length ? ", " : "") + "one skill from its list" : "") + ".");
         }
         if (gNext){
@@ -20020,8 +20173,8 @@ async function levelUpDialog(){
         } else lines.push("Add any new features on Class & level; the hit points use d" + hd + ".");
         for (const l of lines) info.appendChild(Object.assign(document.createElement("p"), {textContent:l}));
       };
-      a.addEventListener("click", () => set(Math.max(1, hpAverage(hd) + con)));
-      r.addEventListener("click", () => { const x = showRoll("hit points", "1d" + hd + (con ? fmtMod(con) : ""), ""); if (x) set(Math.max(1, x.total)); });
+      a.addEventListener("click", () => set(Math.max(1, hpAverage(hd) + con) + extra));
+      r.addEventListener("click", () => { const x = showRoll("hit points", "1d" + hd + (con ? fmtMod(con) : ""), ""); if (x) set(Math.max(1, x.total) + extra); });
       which.addEventListener("change", draw);
       if (rows.length > 1 || classOptions().length) { const l = document.createElement("label"); l.className = "se-inline"; l.append("Level up in ", which); if (rows.length) w.appendChild(l); }
       hp.append(a, r, show); w.append(hp, info);
@@ -20933,7 +21086,14 @@ function renderSheetEditor(){
 /* 1 · Basics: name, player, image (one picture, cropped for the headshot), colour */
 function seBasics(page, sh){
   page.append(seGrid("2fr 1fr", seField("Character name", sh.name, v => seSet({name:v}), {big:true}), seField("Player", sh.playerName, v => seSet({playerName:v}))));
-  page.append(seGrid("1fr 1fr", seField("Alignment", sh.alignment, v => seSet({alignment:v})), seField("Experience points", sh.xp, v => seSet({xp:v}))));
+  const xpF = seField("Experience points", sh.xp, v => seSet({xp:v}), {placeholder:"Leave blank if your group levels by milestones"});
+  const xp = parseInt(String(sh.xp || "").replace(/[^\d]/g, ""), 10);
+  if (!isNaN(xp)){
+    const byXp = xpLevel(xp), lv = sheetLevel(sh) || 1;
+    xpF.appendChild(Object.assign(document.createElement("div"), {className:byXp > lv ? "se-warn" : "se-hint",
+      textContent:byXp > lv ? xp + " XP is enough for level " + byXp + ". Use Level up on Class & level." : "Level " + byXp + " by XP" + (byXp < 20 ? "; level " + (byXp + 1) + " at " + XP_LEVELS[byXp].toLocaleString() + " XP." : ".")}));
+  }
+  page.append(seGrid("1fr 1fr", seField("Alignment", sh.alignment, v => seSet({alignment:v})), xpF));
   const img = document.createElement("div"); img.className = "se-block";
   img.innerHTML = "<h3>Character image</h3>";
   const main = sh.fullBody || sh.portrait;
@@ -21130,8 +21290,9 @@ function seAbilities(page, sh){
     page.appendChild(Object.assign(document.createElement("div"), {className:used === due ? "se-hint se-ok" : "se-warn",
       textContent:asiGs.map(g => "Level " + g.level + " " + g.name).join(" and ") + (asiGs.length > 1 ? " have" : " has") + " had " + asiN + " Ability Score Improvement" + (asiN > 1 ? "s" : "") + ": +" + due + " to place (+2 to one score or +1 to two, each time; a feat can replace one). Placed: +" + used + "."}));
   }
-  const over = SHEET_ABILITIES.filter(a => sheetScore(sh, a) > 20);
-  if (over.length) page.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:over.join(", ") + " is over 20, the usual most for a player character."}));
+  const champ = classGrantsOf(sh).some(g => g.id === "barbarian" && g.level >= 20);
+  const over = SHEET_ABILITIES.filter(a => sheetScore(sh, a) > (champ && (a === "STR" || a === "CON") ? 24 : 20));
+  if (over.length) page.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:over.join(", ") + (over.length > 1 ? " are" : " is") + " over 20, the most a player character's scores usually go" + (champ ? " (24 for STR and CON with Primal Champion)" : "") + "."}));
 }
 function seRollSix(){
   return Array.from({length:6}, () => {
@@ -21169,6 +21330,16 @@ function seSkills(page, sh){
       textContent:p.g.name + (p.g.multi ? " (multiclass)" : "") + ": choose " + p.choice.n + (p.choice.from.length >= 18 ? " skill" + (p.choice.n > 1 ? "s" : "") + " (any)" : " from " + p.from.join(", ")) + ". You have " + mine.length + "." + (mine.length === p.choice.n ? " \u2713" : "")}));
   }
   const choice = picks[0]?.choice;
+  /* expertise the classes give: Rogue 1 (2, 4 from 6th), Bard 3 (2, 4 from 10th) */
+  for (const g of classGrantsOf(sh)){
+    const due = g.id === "rogue" ? (g.level >= 6 ? 4 : 2) : g.id === "bard" ? (g.level >= 10 ? 4 : g.level >= 3 ? 2 : 0) : 0;
+    if (!due) continue;
+    const have = SHEET_SKILLS.filter(([n]) => skillBase(sh, n) >= 2).length;
+    sk.appendChild(Object.assign(document.createElement("div"), {className:have >= due ? "se-hint se-ok" : "se-warn",
+      textContent:g.name + " " + g.level + ": Expertise in " + due + " of your proficient skills" + (g.id === "rogue" ? " (or thieves' tools)" : "") + " \u2014 tap a proficient skill again. You have " + have + "."}));
+  }
+  const twice = (gr.race?.skills || []).filter(n => (gr.background?.skills || []).includes(n));
+  if (twice.length) sk.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:twice.join(", ") + " comes from both " + gr.race.name + " and " + gr.background.name + ". The rules let you take a different skill instead: tap one to make it proficient."}));
   const list = document.createElement("div"); list.className = "se-skilllist";
   for (const [name, ab] of SHEET_SKILLS){
     const lvl = skillBase(sh, name);
@@ -23835,6 +24006,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b133", [
+    "D&D sheet, checked against the 5e rules: Short rest now lets you spend hit dice (roll + CON), and Long rest gives back half of them. At 0 hit points the sheet tracks death saves (roll, 1s and 20s, damage at 0, instant death from massive damage, healing clears them).",
+    "Fixes: proficiency stops at +6; Paladins and Rangers cast from 2nd level; multiclassing checks the scores of your current classes too; Hill Dwarf and Draconic sorcerers get their extra hit point per level; a monk's unarmed strike uses martial arts; Eldritch Blast shows beams instead of bigger dice; casters with two abilities show each DC.",
+    "New hints: unarmoured AC (Unarmored Defense, Draconic Resilience) when no AC is typed, monk and barbarian speed bonuses, Rogue and Bard expertise to pick, a skill given twice, and the level your XP reaches."
+  ]],
   ["b132", [
     "Import official content\u2026 (top of Edit character) reads spells, races, classes, subclasses and backgrounds from dnd5e.wikidot.com in one go. Find what\u2019s there lists everything new, with playtest and what you have or what\u2019s built in left out; untick anything you don\u2019t want. Running it again only adds what\u2019s new.",
     "Multiclassing: add more classes on Class & level. Each has its own level and subclass; saving throws come from your first class, later ones give their multiclass proficiencies, spell slots use the multiclass table and Warlock pact slots are kept apart. Level up asks which class (or a new one) and warns when scores are under 13.",
@@ -23878,14 +24054,6 @@ const PATCH_NOTES = [
   ["b122", [
     "Safer and steadier: pasted or imported cards can't run code or open unsafe links; Start fresh or restoring a backup asks whether to change all your devices or just this one; edits made while Drive is pulling, starred cards and restore points from earlier days are kept.",
     "Calendar reads more Google and Outlook repeat rules and time zones correctly. A finished timer is announced once (not once per tab) and Undo no longer brings it back. A toolbar you arranged stays as you left it, and tag counts include cards inside columns."
-  ]],
-  ["b121", [
-    "Pinch zoom on phones is smooth: the board follows your fingers once per screen frame instead of jumping, and no longer snaps when you let go.",
-    "On phones and narrow windows the path of boards (Home › …) has its own bar under the top bar, so you can always see where you are and go back up."
-  ]],
-  ["b120", [
-    "Pinch to zoom on phones and iPads is smooth: the first finger no longer keeps dragging the board (or a card) while you pinch.",
-    "Countdown sits bare like the clock. The Mood tracker can show this week, this month or the whole year, and neither it nor the Calendar has an Edit button now (right-click → Edit still works)."
   ]]
 ];
 function renderPatchNotes(){
