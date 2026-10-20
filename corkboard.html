@@ -1063,6 +1063,11 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-acguess{color:#8A7550; font-style:italic;}
 .bz-percls{text-align:center; margin:-2px 0 6px;}
 .bz-st .bz-small{font-size:8.5px; line-height:1.1;}
+.se-feats .se-featrow{border-top:1px solid #EADFC9; padding:6px 0; display:flex; flex-direction:column; gap:4px;}
+.se-featrow summary{cursor:pointer; font:700 13px Georgia;}
+.se-featrow p{font:12px/1.5 Georgia; margin:4px 0 4px 14px; white-space:pre-wrap;}
+.se-featrow select{background:#fff; border:1px solid #C9B08A; border-radius:4px; padding:3px 5px; font:12px Verdana; color:#2C2415;}
+.se-feats .se-picks{margin-top:6px;}
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -4171,7 +4176,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b134";
+window.BUILD = "b135";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4907,7 +4912,7 @@ function tabMergeWorkspace(base, local, remote){
   if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
   if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
   if (local.spellLib || remote.spellLib) out.spellLib = tabMergeMap(base.spellLib, local.spellLib, remote.spellLib, byTime);
-  for (const k of ["raceLib", "classLib", "bgLib"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
+  for (const k of ["raceLib", "classLib", "bgLib", "featLib"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   for (const k of ["calCats", "calEvents"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   if (local.favorites || remote.favorites) out.favorites = syncMergeIdList(base.favorites || [], local.favorites || [], remote.favorites || []);
   {
@@ -4930,7 +4935,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","classLib","bgLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","classLib","bgLib","featLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -7119,7 +7124,7 @@ function sheetProfText(sh){
 }
 /* full: every trait with its text (the PDF); otherwise the names (the card face) */
 function sheetFeatureText(sh, {full = false} = {}){
-  const g = sheetGrants(sh), items = [...(g.race?.traits || []), ...(g.background?.feature ? [g.background.feature] : []), ...classGrantsOf(sh).flatMap(c => classFeatureList(c)).map(f => ({...f, n:f.n + (f.count > 1 ? " \u00d7" + f.count : "")}))];
+  const g = sheetGrants(sh), items = [...(g.race?.traits || []), ...(g.background?.feature ? [g.background.feature] : []), ...featGrantsOf(sh).map(f => ({n:f.name + " (feat)", d:f.d})), ...classGrantsOf(sh).flatMap(c => classFeatureList(c)).map(f => ({...f, n:f.n + (f.count > 1 ? " \u00d7" + f.count : "")}))];
   const granted = full ? items.map(t => t.n + (t.d ? ". " + t.d : "")).join("\n\n") : items.map(t => t.n).join(", ");
   return [granted, sh.raceTraits, sh.features].map(t => String(t || "").trim()).filter(Boolean).join("\n\n");
 }
@@ -7565,9 +7570,9 @@ function saveBonus(sh, ab){ return sheetMod(sh, ab) + (saveProf(sh, ab) ? sheetP
 function initBonus(sh){
   const o = parseInt(String(sh.initiative ?? "").replace(/−/g, "-"), 10);
   if (!isNaN(o)) return o;
-  return sheetMod(sh, "DEX") + (sheetJack(sh) ? Math.floor(sheetProf(sh) / 2) : 0);
+  return sheetMod(sh, "DEX") + (sheetJack(sh) ? Math.floor(sheetProf(sh) / 2) : 0) + (hasFeat(sh, "alert") ? 5 : 0);
 }
-function passiveScore(sh, skill){ return 10 + skillBonus(sh, skill); }
+function passiveScore(sh, skill){ return 10 + skillBonus(sh, skill) + (hasFeat(sh, "observant") && (skill === "Perception" || skill === "Investigation") ? 5 : 0); }
 
 /* ---------------- dice ----------------------------------------------------
    "+5" rolls a d20 with that bonus; "1d8+3", "2d10", "1d4-1" roll as written. */
@@ -19088,6 +19093,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   const stat = (lab, val, small) => { const b = bzEl("div", "bz-box bz-st"); b.append(bzEl("div", "bz-lab", lab)); const v = bzEl("div", "bz-v", val); if (small) v.append(bzEl("small", "", small)); b.append(v); return b; };
   const spBox = stat("Speed", String(sh.speed || "—").replace(/\s*ft\.?$/i, ""), /\d/.test(sh.speed || "") ? " ft" : ""), spPlus = speedBonus(sh);
   if (spPlus){ const n = bzEl("div", "bz-small", "+" + spPlus.ft + " " + spPlus.when); n.title = spPlus.why; spBox.appendChild(n); }
+  if (hasFeat(sh, "mobile")){ const n = bzEl("div", "bz-small", "+10 Mobile"); n.title = "Mobile feat: +10 ft speed"; spBox.appendChild(n); }
   top.append(stat("Proficiency", fmtMod(pb)), spBox);
   const insp = bzEl("div", "bz-box bz-st"); insp.append(bzEl("div", "bz-lab", "Inspiration"));
   const ib = bzStop(bzEl("button", "bz-insp" + (sh.inspiration ? " on" : ""))); ib.title = sh.inspiration ? "Inspired (tap to use)" : "Not inspired (tap to give)";
@@ -19242,6 +19248,7 @@ function bzRenderTab(tab, c, sh, panel){
     group(g.race ? g.race.name + " traits" : "Racial traits", g.race?.traits || [], sh.raceTraits);
     for (const c of classGrantsOf(sh)) group(c.name + " features", classFeatureList(c), "");
     if (g.background?.feature) group(g.background.name + " (background)", [g.background.feature], "");
+    if (featGrantsOf(sh).length) group("Feats", featGrantsOf(sh).map(f => ({n:f.name, d:f.d})), "");
     group(classGrantsOf(sh).length ? "Other features" : "Features", [], sh.features);
     if (!any.length) bzText(panel, "", "No features yet. Pick a race and class in Edit character, or add your own there.");
     return;
@@ -19485,7 +19492,7 @@ function sheetProfList(sh, kind){
 function saveProf(sh, ab){
   const v = sh.saves?.[ab];
   if (v === true || v === false) return v;
-  return !!classGrantsOf(sh)[0]?.saves?.includes(ab);
+  return !!classGrantsOf(sh)[0]?.saves?.includes(ab) || featGrantsOf(sh).some(g => g.saves?.includes(ab));
 }
 /* skill proficiency you set (none / proficient / expertise), else one the race grants */
 function skillBase(sh, name){
@@ -19731,7 +19738,7 @@ function suggestedHp(sh, gs){
 function extraHpPerLevel(sh, g){
   const tough = (sheetGrants(sh).race?.traits || []).some(t => /^dwarven toughness/i.test(t.n)) ? 1 : 0;
   const drac = g && g.id === "sorcerer" && /draconic/i.test(g.sub || "") ? 1 : 0;
-  return tough + drac;
+  return tough + drac + (hasFeat(sh, "tough") ? 2 : 0);
 }
 /* put the classes on the sheet; anything you changed yourself is kept */
 function applyClasses(rows){
@@ -20830,12 +20837,186 @@ function importClassesDialog(){
     fromLink:importClassesFromLink});
 }
 
+/* ---- feats ----
+   A feat is usually taken instead of an Ability Score Improvement (if your
+   group uses feats), and some races give one. sheet.feats is the list you
+   pick, [{id, key, name, asi, ab}]; what they give goes in grants.feats and
+   abilityBonus.feats. Grappler is the one free feat; the rest come from
+   imports, kept in state.featLib like the other libraries. A few feats have
+   numbers the sheet works out (half-feats' +1, Resilient, Tough, Alert,
+   Observant, Mobile, Lucky); the rest are their text on Features & Traits. */
+function normFeat(f){
+  const ab = (Array.isArray(f.abFrom) ? f.abFrom : []).filter(a => SHEET_ABILITIES.includes(a));
+  return {name:cut(f.name, 80), desc:cut(f.desc, 8000), reqText:cut(f.reqText, 300),
+    req:(Array.isArray(f.req) ? f.req : []).slice(0, 4).filter(r => SHEET_ABILITIES.includes(r?.[0])).map(r => [r[0], cutNum(r[1], 1, 30)]),
+    abFrom:ab, abAmount:cutNum(f.abAmount || 1, 1, 2), saveChoice:!!f.saveChoice};
+}
+function featLibPut(f, src){ const n = normFeat(f); return libPut("featLib", n.name, {feat:n}, src); }
+function featOptions(){
+  const srd = (srdRules?.feats || []).map(f => ({key:"srd:" + spellKey(f.name), name:f.name, feat:{...normFeat({...f, desc:f.desc}), req:f.req || []}, book:"SRD"}));
+  const names = new Set(srd.map(o => spellKey(o.name)));
+  return [...srd, ...libList("featLib").filter(e => !names.has(spellKey(e.name))).map(e => ({key:"lib:" + e.id, name:e.name, feat:e.feat, book:e.book || "Mine", lib:e}))];
+}
+function featByKey(key){ return featOptions().find(o => o.key === key) || null; }
+/* numbers some well-known feats change */
+function featEffect(name){
+  const k = spellKey(name);
+  return {tough:k === "tough", alert:k === "alert", observant:k === "observant", mobile:k === "mobile", lucky:k === "lucky"};
+}
+function featGrant(f){
+  const o = featByKey(f.key), F = o?.feat || {name:f.name, desc:"", abFrom:[], abAmount:1};
+  const ab = F.abFrom.length && F.abFrom.includes(f.ab) ? {[f.ab]:F.abAmount || 1} : {};
+  return {key:f.key, name:o?.name || f.name, d:F.desc || "", ab, saves:F.saveChoice && f.ab ? [f.ab] : [], effect:featEffect(o?.name || f.name), asi:f.asi !== false};
+}
+const sheetFeats = sh => Array.isArray(sh.feats) ? sh.feats : [];
+const featGrantsOf = sh => Array.isArray(sheetGrants(sh).feats) ? sheetGrants(sh).feats : [];
+const hasFeat = (sh, what) => featGrantsOf(sh).some(g => g.effect?.[what]);
+function applyFeats(list){
+  const sh = seData(), gs = list.map(featGrant), ab = {};
+  for (const g of gs) for (const [k, v] of Object.entries(g.ab)) ab[k] = (ab[k] || 0) + v;
+  const bonus = {...(sh.abilityBonus || {})};
+  if (Object.keys(ab).length) bonus.feats = ab; else delete bonus.feats;
+  const res = (sh.resources || []).filter(r => !String(r.id || "").startsWith("feat-") || (r.id === "feat-lucky" && gs.some(g => g.effect.lucky)));
+  if (gs.some(g => g.effect.lucky) && !res.some(r => r.id === "feat-lucky")) res.push({id:"feat-lucky", name:"Lucky (luck points)", max:3, used:0, reset:"long"});
+  const grants = {...sheetGrants(sh)};
+  if (gs.length) grants.feats = gs; else delete grants.feats;
+  seSet({feats:list, abilityBonus:bonus, resources:res, grants});
+}
+/* prerequisites the sheet can check: scores, spellcasting, armour, race */
+function featReqNote(sh, F){
+  const miss = [];
+  const reqs = F.req?.length ? F.req : [...String(F.reqText || "").matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma) (\d+) or higher/gi)].map(m => [ABILITY_WORD[m[1].toLowerCase()], Number(m[2])]);
+  const anyOf = /\bor\b/i.test(F.reqText || "") && reqs.length > 1;
+  if (reqs.length && (anyOf ? !reqs.some(([a, n]) => sheetScore(sh, a) >= n) : reqs.some(([a, n]) => sheetScore(sh, a) < n))) miss.push(reqs.map(([a, n]) => a + " " + n).join(anyOf ? " or " : " and "));
+  const t = String(F.reqText || "");
+  if (/ability to cast at least one spell/i.test(t) && !classGrantsOf(sh).some(g => g.spell) && !sheetSpells(sh).list.length) miss.push("casting a spell");
+  const arm = /proficiency with (light|medium|heavy) armou?r/i.exec(t);
+  if (arm && !sheetProfList(sh, "armor").some(x => new RegExp(arm[1] + "|all armou?r", "i").test(x))) miss.push(arm[1].toLowerCase() + " armour proficiency");
+  const RACE_RE = /\b(half-elf|half-orc|dwarf|elf|gnome|halfling|human|dragonborn|tiefling|small race)\b/gi;
+  if (/^(half-elf|half-orc|dwarf|elf|gnome|halfling|human|dragonborn|tiefling|a small race)\b/i.test(t.trim())){
+    const races = [...t.matchAll(RACE_RE)].map(m => m[1]);
+    const ok = races.some(r => /small race/i.test(r) ? /small/i.test(sh.size || sheetGrants(sh).race?.size || "") : new RegExp("\\b" + r + "\\b", "i").test(sh.race || ""));
+    if (!ok) miss.push(races.join(" or "));
+  }
+  return miss.length ? "Prerequisite not met: " + miss.join("; ") : "";
+}
+function seFeatsBlock(page, sh){
+  const box = document.createElement("div"); box.className = "se-block se-feats";
+  box.appendChild(Object.assign(document.createElement("h3"), {textContent:"Feats"}));
+  const raceFeat = (sheetGrants(sh).race?.traits || []).some(t => /^feats?\b/i.test(t.n));
+  box.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"If your group uses feats, you can take one instead of an Ability Score Improvement." + (raceFeat ? " Your race also gives one feat: untick “instead of an improvement” for that one." : "")}));
+  const list = sheetFeats(sh).map(f => ({...f}));
+  list.forEach((f, i) => {
+    const o = featByKey(f.key), F = o?.feat || {abFrom:[], desc:""};
+    const row = document.createElement("div"); row.className = "se-featrow";
+    const d = document.createElement("details");
+    d.append(Object.assign(document.createElement("summary"), {textContent:(o?.name || f.name) + (o ? "" : " (not in your library)")}));
+    if (F.reqText) d.appendChild(Object.assign(document.createElement("p"), {className:"se-hint", textContent:"Prerequisite: " + F.reqText}));
+    if (F.desc) d.appendChild(Object.assign(document.createElement("p"), {textContent:F.desc}));
+    row.appendChild(d);
+    const ctl = document.createElement("div"); ctl.className = "se-inline";
+    if (F.abFrom?.length){
+      const s = document.createElement("select"); s.appendChild(new Option((F.saveChoice ? "Ability (+1 and its saves)" : "+" + (F.abAmount || 1) + " to…"), ""));
+      for (const a of F.abFrom) s.appendChild(new Option("+" + (F.abAmount || 1) + " " + ABILITY_FULL[a], a));
+      s.value = f.ab || "";
+      s.addEventListener("change", () => { list[i].ab = s.value; applyFeats(list); renderSheetEditor(); });
+      ctl.appendChild(s);
+    }
+    const asiL = document.createElement("label"); asiL.className = "se-check";
+    const asi = document.createElement("input"); asi.type = "checkbox"; asi.checked = f.asi !== false;
+    asi.addEventListener("change", () => { list[i].asi = asi.checked; applyFeats(list); renderSheetEditor(); });
+    asiL.append(asi, " instead of an improvement");
+    const x = document.createElement("button"); x.className = "se-spl-x"; x.textContent = "✕"; x.title = "Remove this feat";
+    x.addEventListener("click", () => { pushUndo(); applyFeats(list.filter((_, j) => j !== i)); renderSheetEditor(); });
+    ctl.append(asiL, x); row.appendChild(ctl);
+    const note = o ? featReqNote(sh, F) : "";
+    if (note) row.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:note + " (a guide; it stays on the sheet)."}));
+    if (F.abFrom?.length && !f.ab) row.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:"Choose which score it raises."}));
+    box.appendChild(row);
+  });
+  /* add one: search your feats */
+  const bar = document.createElement("div"); bar.className = "se-inline se-racebar";
+  const q = document.createElement("input"); q.type = "search"; q.className = "se-search"; q.placeholder = "Add a feat: search"; q.value = seFeatsBlock.q || "";
+  q.addEventListener("keydown", e => e.stopPropagation());
+  const imp = document.createElement("button"); imp.className = "bz-btn"; imp.textContent = "Import feats…";
+  imp.addEventListener("click", async () => { if (await importFeatsDialog()) renderSheetEditor(); });
+  bar.append(q, imp); box.appendChild(bar);
+  const picks = document.createElement("div"); picks.className = "se-picks";
+  const draw = () => {
+    picks.textContent = "";
+    const term = spellKey(q.value), taken = new Set(list.map(f => f.key));
+    const opts = featOptions().filter(o => !taken.has(o.key) && (!term || spellKey(o.name).includes(term)));
+    for (const o of opts.slice(0, 40)){
+      const b = document.createElement("button"); b.className = "se-pick";
+      const note = featReqNote(sh, o.feat);
+      b.append(Object.assign(document.createElement("b"), {textContent:o.name}), Object.assign(document.createElement("span"), {textContent:o.book + (o.feat.abFrom?.length ? " · +1 score" : "")}));
+      if (note) b.appendChild(Object.assign(document.createElement("span"), {className:"se-pickwarn", textContent:note.replace(/^Prerequisite not met: /, "Needs ")}));
+      b.title = (o.feat.reqText ? "Prerequisite: " + o.feat.reqText + "\n\n" : "") + (o.feat.desc || "").slice(0, 600);
+      b.addEventListener("click", () => { pushUndo(); seFeatsBlock.q = ""; applyFeats([...list, {id:uid("ft"), key:o.key, name:o.name, asi:!(raceFeat && !list.some(f => f.asi === false)), ab:o.feat.abFrom?.length === 1 ? o.feat.abFrom[0] : ""}]); renderSheetEditor(); });
+      picks.appendChild(b);
+    }
+    if (opts.length > 40) picks.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:(opts.length - 40) + " more: type to narrow it down."}));
+    if (!featOptions().length || featOptions().length === 1) picks.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"Only Grappler is in the free rules. Import feats (or Import official content at the top) to add the rest."}));
+  };
+  q.addEventListener("input", () => { seFeatsBlock.q = q.value; draw(); });
+  draw(); box.appendChild(picks);
+  page.appendChild(box);
+}
+/* a feat page → its name, prerequisite, text and the score it raises */
+function parseFeatText(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n").map(l => l.trim());
+  const first = lines.findIndex(Boolean); if (first < 0) return [];
+  const name = lines[first].replace(/\s*\(5e Feat\)\s*$/i, "").replace(/^feat:\s*/i, "").trim().slice(0, 80);
+  const src = (lines.find(l => /^Source\s*:/i.test(l)) || "").replace(/^Source\s*:\s*/i, "");
+  const reqLine = lines.find(l => /^Prerequisites?\s*:/i.test(l)) || "";
+  const body = lines.slice(first + 1).filter(l => l && !/^(Source|Prerequisites?)\s*:/i.test(l) && !/^(back to|see also|categories)/i.test(l));
+  const desc = body.join("\n").trim();
+  if (desc.length < 30 || /^casting time\s*:/im.test(desc) || /^ability score increase\./im.test(desc)) return [];
+  const inc = /Increase (?:your|one ability score of your choice)[^.]*?by (\d)[^.]*\./i.exec(desc);
+  let abFrom = [];
+  if (inc){
+    abFrom = /one ability score of your choice/i.test(inc[0]) ? [...SHEET_ABILITIES] : [...inc[0].matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\b/gi)].map(m => ABILITY_WORD[m[1].toLowerCase()]);
+  }
+  const saveChoice = /proficiency in saving throws using the chosen ability/i.test(desc);
+  if (saveChoice && !abFrom.length) abFrom = [...SHEET_ABILITIES];
+  return [Object.assign(normFeat({name, desc, reqText:reqLine.replace(/^Prerequisites?\s*:\s*/i, ""), abFrom:[...new Set(abFrom)], abAmount:inc ? Number(inc[1]) : 1, saveChoice}), {book:src})];
+}
+const FEAT_SITES = {
+  "dnd5e.wikidot.com": {isItem:u => /^\/feat:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/feats?$/i.test(u.pathname)},
+  "www.dandwiki.com": {isItem:u => /_\(5e_Feat\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*Feats[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"},
+  "www.aidedd.org": {isItem:() => true, isList:() => false}
+};
+async function importFeatsFromLink(url, {onProgress, stopped, skipUa = true} = {}){
+  let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
+  const host = spellSiteHost(u), site = FEAT_SITES[host];
+  if (!site) throw Object.assign(new Error("Links from " + Object.keys(FEAT_SITES).map(h => h.replace(/^www\./, "")).join(", ") + " only, for now."), {fatal:true});
+  /* the free feat is built in, so a list skips it */
+  const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v)).filter(l => !(srdRules?.feats || []).some(f => spellKey(f.name) === spellKey(l.name))) : [{url:"https://" + host + u.pathname + u.search, name:""}];
+  if (!links.length) throw Object.assign(new Error("No feat pages were linked from that page."), {fatal:true});
+  const t = importTally();
+  await runJobs(links.map(l => ({name:l.name, fail:() => t.failed.push(l.name || l.url), run:async () => {
+    const fs = parseFeatText(wikiPageText(await fetchSpellPage(l.url)));
+    if (!fs.length) throw new Error("not a feat");
+    for (const f of fs){ if (skipUa && (isUaSource(f.book) || /\(UA\)/i.test(l.name))){ t.skipped++; continue; } t.note(featLibPut(f, {url:l.url, book:site.book ? site.book() : (f.book || host.replace(/^www\./, "")), src:host})); }
+  }})), {onProgress, stopped});
+  return t;
+}
+function importFeatsDialog(){
+  return libImportDialog({title:"Import feats", what:"feats", sites:FEAT_SITES,
+    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/feats"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Feats"]],
+    hint:" (a list of feats, or one feat’s page), or one page from aidedd.org.",
+    fromLink:importFeatsFromLink,
+    paste:{label:"Paste a feat", placeholder:"Paste a feat’s page: its name, then “Prerequisite: …” if it has one, then what it does",
+      none:"No feat found yet. It needs a name, then what the feat does.",
+      parse:text => parseFeatText(text).map(f => ({name:f.name, have:libList("featLib").some(e => spellKey(e.name) === spellKey(f.name)), put:() => featLibPut(f, {book:f.book || "Pasted"})}))}});
+}
 /* ---- everything official at once (dnd5e.wikidot.com), or just what you tick ---- */
 const OFFICIAL_KINDS = [
   {id:"spell", label:"Spells", index:"https://dnd5e.wikidot.com/spells"},
   {id:"race", label:"Races", index:"https://dnd5e.wikidot.com/lineage"},
   {id:"class", label:"Classes and subclasses", index:""},
-  {id:"background", label:"Backgrounds", index:"https://dnd5e.wikidot.com/backgrounds"}
+  {id:"background", label:"Backgrounds", index:"https://dnd5e.wikidot.com/backgrounds"},
+  {id:"feat", label:"Feats", index:"https://dnd5e.wikidot.com/feats"}
 ];
 /* what the site has, marked with what you already have or comes built in */
 async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false} = {}){
@@ -20865,6 +21046,14 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
     }
     tick("backgrounds");
   }
+  if (kinds.includes("feat") && !stopped()){
+    const u = new URL(OFFICIAL_KINDS[4].index);
+    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => FEAT_SITES[W].isItem(v))){
+      const built = (srdRules?.feats || []).some(f => spellKey(f.name) === spellKey(l.name));
+      items.push({kind:"feat", name:l.name, url:l.url, ua:l.ua, built, have:!built && urlIn("featLib", l.url)});
+    }
+    tick("feats");
+  }
   if (kinds.includes("class")){
     for (const slug of WIKIDOT_CLASSES){
       if (stopped()) break;
@@ -20886,7 +21075,7 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   return items;
 }
 async function importOfficial(items, {skipUa = true, onProgress, stopped} = {}){
-  const t = {spell:importTally(), race:importTally(), class:importTally(), background:importTally()}, src = {src:"dnd5e.wikidot.com"};
+  const t = {spell:importTally(), race:importTally(), class:importTally(), background:importTally(), feat:importTally()}, src = {src:"dnd5e.wikidot.com"};
   const jobs = items.map(it => ({name:it.name, fail:() => t[it.kind === "subclass" ? "class" : it.kind].failed.push(it.name), run:async () => {
     if (it.kind === "spell"){
       const r = await importSpellsFromLink(it.url, {skipUa, update:true});
@@ -20900,6 +21089,10 @@ async function importOfficial(items, {skipUa = true, onProgress, stopped} = {}){
       const bs = parseBackgroundText(wikiPageText(await fetchSpellPage(it.url)));
       if (!bs.length) throw new Error("no background");
       for (const b of bs){ if (skipUa && isUaSource(b.book)){ t.background.skipped++; continue; } t.background.note(bgLibPut(b, {...src, url:it.url, book:b.book || "dnd5e.wikidot.com"})); }
+    } else if (it.kind === "feat"){
+      const fs = parseFeatText(wikiPageText(await fetchSpellPage(it.url)));
+      if (!fs.length) throw new Error("no feat");
+      for (const f of fs){ if (skipUa && isUaSource(f.book)){ t.feat.skipped++; continue; } t.feat.note(featLibPut(f, {...src, url:it.url, book:f.book || "dnd5e.wikidot.com"})); }
     } else if (it.kind === "class"){
       t.class.note(classLibPut(it.cls, {...src, url:it.url, book:"dnd5e.wikidot.com"}));
     } else if (it.kind === "subclass"){
@@ -20918,7 +21111,7 @@ async function importOfficialDialog(){
     title:"Import official content", wide:true,
     build(body){
       const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import off-import";
-      wrap.appendChild(Object.assign(document.createElement("div"), {className:"sub", textContent:"Reads dnd5e.wikidot.com, which has the official books beyond the free rules CORKBORK comes with. Everything goes into your own libraries (on this device and in your Drive), never into the app. Homebrew isn’t included; add it from each Import button."}));
+      wrap.appendChild(Object.assign(document.createElement("div"), {className:"sub", textContent:"Reads dnd5e.wikidot.com (spells, races, classes and subclasses, backgrounds, feats), which has the official books beyond the free rules CORKBORK comes with. Everything goes into your own libraries (on this device and in your Drive), never into the app. Homebrew isn’t included; add it from each Import button."}));
       const kindsRow = document.createElement("div"); kindsRow.className = "off-kinds";
       const kindBox = {};
       for (const k of OFFICIAL_KINDS){ const l = document.createElement("label"); l.className = "spl-check"; const c = document.createElement("input"); c.type = "checkbox"; c.checked = true; kindBox[k.id] = c; l.append(c, " " + k.label); kindsRow.appendChild(l); }
@@ -20986,7 +21179,7 @@ async function importOfficialDialog(){
           const sum = Object.entries(t).map(([k, v]) => [k, v]).filter(([, v]) => v.added || v.updated || v.failed.length || v.skipped);
           changed += Object.values(t).reduce((n, v) => n + v.added + v.updated, 0);
           if (changed) markDirty();
-          status.textContent = (stop ? "Stopped. " : "Done. ") + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped", v.failed.length && v.failed.length + " couldn’t be read"].filter(Boolean).join(", ")).join("; ") + "." : "Nothing new.");
+          status.textContent = (stop ? "Stopped. " : "Done. ") + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds", feat:"Feats"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped", v.failed.length && v.failed.length + " couldn’t be read"].filter(Boolean).join(", ")).join("; ") + "." : "Nothing new.");
           const failed = Object.values(t).flatMap(v => v.failed); if (failed.length) status.title = "Couldn't read: " + failed.join(", ");
           for (const i of pick) i.have = true;
           applyDefaults();
@@ -21055,7 +21248,7 @@ function renderSheetEditor(){
   done.addEventListener("click", () => { seMode = "view"; renderSheetEditor(); });
   /* everything official in one go: spells, races, classes, backgrounds */
   const hub = document.createElement("button"); hub.className = "bz-btn"; hub.textContent = "Import official content\u2026";
-  hub.title = "Spells, races, classes and backgrounds from dnd5e.wikidot.com, all at once or picked";
+  hub.title = "Spells, races, classes, backgrounds and feats from dnd5e.wikidot.com, all at once or picked";
   hub.addEventListener("click", async () => { if (await importOfficialDialog()) renderSheetEditor(); });
   head.append(t, hub, done);
   const body = document.createElement("div"); body.className = "se-edbody";
@@ -21267,11 +21460,11 @@ function seAbilities(page, sh){
   const gr = sheetGrants(sh);
   const bonuses = Object.entries(sh.abilityBonus || {}).filter(([k, b]) => k !== "asi" && b && SHEET_ABILITIES.some(a => Number(b[a])));
   for (const [src, b] of bonuses){
-    grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"+ " + (src === "race" ? (gr.race?.name || sh.race || "race") : src)}));
+    grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"+ " + (src === "race" ? (gr.race?.name || sh.race || "race") : src === "feats" ? "feats" : src)}));
     for (const ab of SHEET_ABILITIES) grid.appendChild(Object.assign(document.createElement("div"), {className:"se-asgc", textContent:Number(b[ab]) ? fmtMod(Number(b[ab])) : ""}));
   }
   /* improvements from levelling (and feats or items): yours to place */
-  grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"+ improvements & feats"}));
+  grid.appendChild(Object.assign(document.createElement("span"), {className:"se-asgl", textContent:"+ improvements (your own)"}));
   for (const ab of SHEET_ABILITIES){
     const cell = document.createElement("div"); cell.className = "se-asgc";
     const i = document.createElement("input"); i.type = "number"; i.className = "se-asgi"; i.value = sh.abilityBonus?.asi?.[ab] || ""; i.placeholder = "0";
@@ -21288,14 +21481,17 @@ function seAbilities(page, sh){
   }
   page.appendChild(grid);
   const asiGs = classGrantsOf(sh).filter(g => g.asi), asiN = asiGs.reduce((t, g) => t + g.asi, 0);
-  if (asiN){
-    const used = SHEET_ABILITIES.reduce((t, a) => t + Math.max(0, Number(sh.abilityBonus?.asi?.[a]) || 0), 0), due = asiN * 2;
-    page.appendChild(Object.assign(document.createElement("div"), {className:used === due ? "se-hint se-ok" : "se-warn",
-      textContent:asiGs.map(g => "Level " + g.level + " " + g.name).join(" and ") + (asiGs.length > 1 ? " have" : " has") + " had " + asiN + " Ability Score Improvement" + (asiN > 1 ? "s" : "") + ": +" + due + " to place (+2 to one score or +1 to two, each time; a feat can replace one). Placed: +" + used + "."}));
+  const asFeats = sheetFeats(sh).filter(f => f.asi !== false).length;
+  if (asiN || asFeats){
+    const used = SHEET_ABILITIES.reduce((t, a) => t + Math.max(0, Number(sh.abilityBonus?.asi?.[a]) || 0), 0), due = Math.max(0, asiN - asFeats) * 2;
+    page.appendChild(Object.assign(document.createElement("div"), {className:used === due && asFeats <= asiN ? "se-hint se-ok" : "se-warn",
+      textContent:(asiN ? asiGs.map(g => "Level " + g.level + " " + g.name).join(" and ") + (asiGs.length > 1 ? " have" : " has") + " had " + asiN + " Ability Score Improvement" + (asiN > 1 ? "s" : "") : "No Ability Score Improvements yet") +
+        (asFeats ? ", " + asFeats + " taken as " + (asFeats > 1 ? "feats" : "a feat") : "") + ": +" + due + " to place (+2 to one score or +1 to two, each time). Placed: +" + used + "." + (asFeats > asiN ? " That's more feats than improvements; untick \u201cinstead of an improvement\u201d on any your race or DM gave you." : "")}));
   }
   const champ = classGrantsOf(sh).some(g => g.id === "barbarian" && g.level >= 20);
   const over = SHEET_ABILITIES.filter(a => sheetScore(sh, a) > (champ && (a === "STR" || a === "CON") ? 24 : 20));
   if (over.length) page.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:over.join(", ") + (over.length > 1 ? " are" : " is") + " over 20, the most a player character's scores usually go" + (champ ? " (24 for STR and CON with Primal Champion)" : "") + "."}));
+  seFeatsBlock(page, sh);
 }
 function seRollSix(){
   return Array.from({length:6}, () => {
@@ -21897,7 +22093,7 @@ async function importSpellsDialog(){
       file.addEventListener("change", async () => { const f = file.files[0]; file.value = ""; if (!f) return;
         if (f.size > 5e6){ toast("That file is too big for a spell list."); return; }
         ta.value = await f.text(); draw(); });
-      const all = document.createElement("button"); all.type = "button"; all.className = "spl-all"; all.textContent = "Import everything official at once (spells, races, classes, backgrounds)\u2026";
+      const all = document.createElement("button"); all.type = "button"; all.className = "spl-all"; all.textContent = "Import everything official at once (spells, races, classes, backgrounds, feats)\u2026";
       all.addEventListener("click", () => { askClose(null); setTimeout(() => importOfficialDialog().then(n => { if (n && seCardId) renderSheetEditor(); }), 50); });
       wrap.append(h1, row, warn, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list, all);
       body.appendChild(wrap);
@@ -23620,7 +23816,8 @@ const LIBRARY_FILES = [
   {prop:"spellLib", tag:"spelllib", file:"spell-library.json", field:"spells", key:SPELL_SYNC_KEY, what:"spell library"},
   {prop:"raceLib", tag:"racelib", file:"race-library.json", field:"races", key:RACE_SYNC_KEY, what:"race library"},
   {prop:"classLib", tag:"classlib", file:"class-library.json", field:"classes", key:"sync:classes", what:"class library"},
-  {prop:"bgLib", tag:"bglib", file:"background-library.json", field:"backgrounds", key:"sync:backgrounds", what:"background library"}
+  {prop:"bgLib", tag:"bglib", file:"background-library.json", field:"backgrounds", key:"sync:backgrounds", what:"background library"},
+  {prop:"featLib", tag:"featlib", file:"feat-library.json", field:"feats", key:"sync:feats", what:"feat library"}
 ];
 async function syncLibraryFile(layout, L, file){
   const st = Object.assign({rev:"", base:{}}, await idbGetRaw(L.key) || {});
@@ -24009,6 +24206,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b135", [
+    "D&D sheet feats: Ability scores has a Feats section. Pick a feat in place of an Ability Score Improvement (or untick that for one your race gives); its +1 goes where you choose, and Resilient, Tough, Alert, Observant, Mobile and Lucky change the sheet's numbers. Prerequisites are checked and flagged, never blocked.",
+    "Import feats\u2026 reads a feat list or page from dnd5e.wikidot.com or dandwiki (homebrew), or pasted text, into your feat library (synced through Drive). Import official content now includes feats too."
+  ]],
   ["b134", [
     "D&D sheet: the Jack of All Trades tick box is gone. It now comes only from a class that has the feature (Bard from 2nd level, or an imported class or subclass that lists it), and Class & level says so when it applies."
   ]],
@@ -24056,10 +24257,6 @@ const PATCH_NOTES = [
     "Faster on big boards: redraws leave untouched cards alone (videos and maps no longer reload), notes size themselves in one pass, dragging does its work once per screen frame, and search waits for a pause in typing.",
     "Saves and the Drive check do less work when nothing has changed, pictures from deleted cards stop taking up memory, and checking for a new version downloads a few bytes instead of the whole app.",
     "Escape closes one thing at a time: a menu or colour pop first, then search, then the page or dialog underneath. The app file is a third smaller (the starter frog is stored more efficiently)."
-  ]],
-  ["b122", [
-    "Safer and steadier: pasted or imported cards can't run code or open unsafe links; Start fresh or restoring a backup asks whether to change all your devices or just this one; edits made while Drive is pulling, starred cards and restore points from earlier days are kept.",
-    "Calendar reads more Google and Outlook repeat rules and time zones correctly. A finished timer is announced once (not once per tab) and Undo no longer brings it back. A toolbar you arranged stays as you left it, and tag counts include cards inside columns."
   ]]
 ];
 function renderPatchNotes(){
