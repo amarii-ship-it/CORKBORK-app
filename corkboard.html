@@ -4171,7 +4171,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b133";
+window.BUILD = "b134";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19496,7 +19496,12 @@ function skillBase(sh, name){
   const g = sheetGrants(sh);
   return (g.race?.skills || []).includes(name) || (g.background?.skills || []).includes(name) ? 1 : 0;
 }
-function sheetJack(sh){ return sh.jack === true || (sh.jack !== false && classGrantsOf(sh).some(g => g.jack)); }
+/* Jack of All Trades is a Bard feature (2nd level), not something to switch on:
+   it comes from a Bard level, or any class or subclass that lists the feature
+   (an imported or homebrew one), or a custom class row named Bard */
+function sheetJack(sh){
+  return classGrantsOf(sh).some(g => g.jack || (g.features || []).some(f => /^jack of all trades\b/i.test(f.n)) || (g.custom && /^bard$/i.test(String(g.name).trim()) && g.level >= 2));
+}
 /* class features up to your level, later versions replacing earlier ones ("Bardic Inspiration (d8)") */
 function classFeatureList(gc){
   const out = new Map();
@@ -20107,11 +20112,9 @@ function seClass(page, sh){
   }
   own.append(seGrid("1fr 1fr 1fr 1fr", hpF, seField("Hit dice", sh.hitDice, v => seSet({hitDice:v}), {placeholder:"3d8"}),
     seField("Armour class", sh.ac, v => seSet({ac:v}), {type:"number", placeholder:String(acSuggest(sh).value), hint:"With no armour: " + acSuggest(sh).value + " (" + acSuggest(sh).why + "). Armour or a shield: type your AC."}), seField("Initiative (blank = from DEX)", sh.initiative, v => seSet({initiative:v}), {placeholder:fmtMod(initBonus({...sh, initiative:""}))})));
-  const jk = document.createElement("label"); jk.className = "se-check";
-  const jc = document.createElement("input"); jc.type = "checkbox"; jc.checked = sheetJack(sh);
-  jc.addEventListener("change", () => seSet({jack:jc.checked}));
-  jk.append(jc, " Jack of All Trades (half your proficiency bonus, rounded down, on every ability check you aren't proficient in, initiative included)" + (gs.some(g => g.jack) ? " \u2014 from Bard" : ""));
-  own.appendChild(jk);
+  /* shown only when a class gives it */
+  if (sheetJack(sh)) own.appendChild(Object.assign(document.createElement("div"), {className:"se-hint se-ok",
+    textContent:"Jack of All Trades (" + (gs.find(g => g.jack || (g.features || []).some(f => /^jack of all trades\b/i.test(f.n)) || g.custom)?.name || "Bard") + "): half your proficiency bonus, rounded down, on every ability check you aren't proficient in, initiative included."}));
   own.append(seField(gs.length ? "More features & traits (your own)" : "Features & traits", sh.features, v => seSet({features:v}), {area:true, rows:6, hint:"Feats and anything else. Shows on the sheet's Features & Traits tab" + (gs.length ? ", after the class features." : ".")}));
   page.appendChild(own);
 }
@@ -24006,6 +24009,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b134", [
+    "D&D sheet: the Jack of All Trades tick box is gone. It now comes only from a class that has the feature (Bard from 2nd level, or an imported class or subclass that lists it), and Class & level says so when it applies."
+  ]],
   ["b133", [
     "D&D sheet, checked against the 5e rules: Short rest now lets you spend hit dice (roll + CON), and Long rest gives back half of them. At 0 hit points the sheet tracks death saves (roll, 1s and 20s, damage at 0, instant death from massive damage, healing clears them).",
     "Fixes: proficiency stops at +6; Paladins and Rangers cast from 2nd level; multiclassing checks the scores of your current classes too; Hill Dwarf and Draconic sorcerers get their extra hit point per level; a monk's unarmed strike uses martial arts; Eldritch Blast shows beams instead of bigger dice; casters with two abilities show each DC.",
