@@ -1079,7 +1079,8 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .off-kind-tog{font-weight:600;}
 .se-help ol{margin:6px 0 10px 20px; line-height:1.6;}
 .se-help li{margin-bottom:3px;}
-.off-fails{margin:4px 0 6px 18px; font-size:12px; line-height:1.5; max-height:22vh; overflow:auto;}
+.off-fails{margin:4px 0 6px 18px; font-size:12px; line-height:1.5; max-height:22vh; overflow:auto; user-select:text; -webkit-user-select:text;}
+.off-copy{margin:0 0 6px;}
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -4192,7 +4193,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b139";
+window.BUILD = "b140";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -20721,9 +20722,7 @@ async function importBackgroundsFromLink(url, {onProgress, stopped, skipUa = tru
   if (!links.length) throw Object.assign(new Error("No background pages were linked from that page."), {fatal:true});
   const t = importTally();
   await runJobs(links.map(l => ({name:l.name, fail:e => t.failed.push((l.name || l.url) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
-    const bgs = parseBackgroundText(wikiPageText(await fetchSpellPage(l.url)));
-    if (!bgs.length) throw new Error("not a background");
-    for (const b of bgs){ if (skipUa && isUaSource(b.book)){ t.skipped++; continue; } t.later.push(() => t.note(bgLibPut(b, {url:l.url, book:site.book ? site.book() : (b.book || host.replace(/^www\./, "")), src:host}))); }
+    for (const [b, bu] of await readBackgroundPage(l.url)){ l.url = bu; if (skipUa && isUaSource(b.book)){ t.skipped++; continue; } t.later.push(() => t.note(bgLibPut(b, {url:l.url, book:site.book ? site.book() : (b.book || host.replace(/^www\./, "")), src:host}))); }
   }})), {onProgress, stopped});
   return t.finish(stopped?.());
 }
@@ -20999,7 +20998,8 @@ function parseFeatText(text){
   const reqLine = lines.find(l => /^Prerequisites?\s*:/i.test(l)) || "";
   const body = lines.slice(first + 1).filter(l => l && !/^(Source|Prerequisites?)\s*:/i.test(l) && !/^(back to|see also|categories)/i.test(l));
   const desc = body.join("\n").trim();
-  if (desc.length < 30 || /^casting time\s*:/im.test(desc) || /^ability score increase\./im.test(desc)) return [];
+  const raceLike = /^ability score increases?\./im.test(desc) && /^(size|speed|creature type)\./im.test(desc);
+  if (desc.length < 30 || /^casting time\s*:/im.test(desc) || raceLike) return [];
   const inc = /Increase (?:your|one ability score of your choice)[^.]*?by (\d)[^.]*\./i.exec(desc);
   let abFrom = [];
   if (inc){
@@ -21080,7 +21080,7 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
     const u = new URL(OFFICIAL_KINDS[3].index);
     for (const l of await officialList(u, "backgrounds", v => BG_SITES[W].isItem(v))){
       const built = (srdRules?.backgrounds || []).some(b => spellKey(b.name) === spellKey(l.name));
-      items.push({kind:"background", name:l.name, url:l.url, ua:l.ua, built, have:!built && urlIn("bgLib", l.url)});
+      items.push({kind:"background", name:l.name, url:l.url, ua:l.ua, built, have:!built && (urlIn("bgLib", l.url) || libList("bgLib").some(e => e.group === l.url))});
     }
     tick("backgrounds");
   }
@@ -21112,6 +21112,24 @@ async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false
   }
   return items;
 }
+/* a background page, or a page that groups several (a setting's backgrounds):
+   then each one it links to is read. Gives [[background, its page], …] */
+async function readBackgroundPage(url){
+  const html = await fetchSpellPage(url), bs = parseBackgroundText(wikiPageText(html));
+  if (bs.length) return bs.map(b => [b, url]);
+  const u = new URL(url), host = spellSiteHost(u), site = BG_SITES[host];
+  const subs = site ? pageLinks(html, u, v => site.isItem(v) && !site.isList(v) && v.pathname !== u.pathname) : [];
+  if (!subs.length) throw new Error("no background found on the page");
+  const out = [];
+  for (const l of subs.slice(0, 40)){
+    let one;
+    try { one = parseBackgroundText(wikiPageText(await fetchSpellPage(l.url))); }
+    catch (e){ throw new Error(l.name + " (from this page): " + e.message); }
+    if (!one.length) throw new Error(l.name + " (from this page): no background found on the page");
+    for (const b of one) out.push([b, l.url]);
+  }
+  return out;
+}
 /* phase one: read every page into memory, saving nothing. Each item gives
    back what it would save; failures are listed with the reason. */
 async function readOfficial(items, {skipUa = true, onProgress, stopped} = {}){
@@ -21128,9 +21146,8 @@ async function readOfficial(items, {skipUa = true, onProgress, stopped} = {}){
       if (!rs.length) throw new Error("no race found on the page");
       for (const r of rs) puts.push(["race", skipUa && isUaSource(r.book) ? "skipped" : () => raceLibPut(r, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})]);
     } else if (it.kind === "background"){
-      const bs = parseBackgroundText(wikiPageText(await fetchSpellPage(it.url)));
-      if (!bs.length) throw new Error("no background found on the page");
-      for (const b of bs) puts.push(["background", skipUa && isUaSource(b.book) ? "skipped" : () => bgLibPut(b, {...src, url:it.url, book:b.book || "dnd5e.wikidot.com"})]);
+      /* backgrounds from a grouping page remember it, so a second run knows you have them */
+      for (const [b, url] of await readBackgroundPage(it.url)) puts.push(["background", skipUa && isUaSource(b.book) ? "skipped" : () => bgLibPut(b, {...src, url, ...(url !== it.url ? {group:it.url} : {}), book:b.book || "dnd5e.wikidot.com"})]);
     } else if (it.kind === "feat"){
       const fs = parseFeatText(wikiPageText(await fetchSpellPage(it.url)));
       if (!fs.length) throw new Error("no feat found on the page");
@@ -21247,10 +21264,13 @@ async function importOfficialDialog({only = null} = {}){
       let items = [], stop = false, running = false, scanned = false, got = new Map(), failedItems = [];
       const retry = document.createElement("button"); retry.className = "spl-btn"; retry.textContent = "Retry failed pages"; retry.hidden = true;
       const failList = document.createElement("ul"); failList.className = "off-fails"; failList.hidden = true;
+      const copy = document.createElement("button"); copy.type = "button"; copy.className = "spl-all off-copy"; copy.textContent = "Copy list"; copy.hidden = true;
       const showFails = fails => {
         failList.textContent = ""; failList.hidden = !fails.length; retry.hidden = !fails.length;
-        for (const f of fails.slice(0, 12)) failList.appendChild(Object.assign(document.createElement("li"), {textContent:f.it.name + (f.it.className ? " (" + f.it.className + ")" : "") + ": " + f.why}));
-        if (fails.length > 12) failList.appendChild(Object.assign(document.createElement("li"), {textContent:"and " + (fails.length - 12) + " more"}));
+        const lines = fails.map(f => f.it.name + (f.it.className ? " (" + f.it.className + ")" : "") + ": " + f.why + " \u2014 " + f.it.url);
+        for (const l of lines) failList.appendChild(Object.assign(document.createElement("li"), {textContent:l}));
+        copy.hidden = !fails.length;
+        copy.onclick = async () => { try { await navigator.clipboard.writeText(lines.join("\n")); copy.textContent = "Copied"; } catch (_) { copy.textContent = "Couldn\u2019t copy: select the list instead"; } setTimeout(() => { copy.textContent = "Copy list"; }, 2500); };
       };
       const progress = (d, t, n) => { bar.hidden = false; fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = (running === "scan" ? "Looking: " : "Importing ") + d + " of " + t + (n ? " — " + n : ""); };
       const count = () => { if (!scanned){ go.disabled = !!running && running !== "import"; if (running !== "import") go.textContent = "Import"; return; } const n = items.filter(i => i.on).length; go.disabled = !n || (!!running && running !== "import"); if (running !== "import") go.textContent = "Import " + n; };
@@ -21340,7 +21360,7 @@ async function importOfficialDialog({only = null} = {}){
       help.addEventListener("click", () => { askClose(null); setTimeout(() => importHelpDialog(), 50); });
       const step2 = Object.assign(document.createElement("b"), {className:"off-step", textContent:"2. Press Import"});
       row.appendChild(retry);
-      wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, failList, list, help);
+      wrap.append(kindsRow, uaWrap, haveWrap, step2, row, bar, status, failList, copy, list, help);
       body.appendChild(wrap);
       count();
       return {focus:() => go.focus()};
@@ -24379,6 +24399,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b140", [
+    "Import official content: reads the newer feats that start with \u201cAbility Score Increase\u201d (Bigby\u2019s, Fizban\u2019s, Planescape) and background pages that group several (Wildemount, Sword Coast). If pages still fail, the whole list shows with a Copy list button."
+  ]],
   ["b139", [
     "Import official content: fixed \u201cthe page answered 404\u201d (the wiki lists backgrounds and feats on its home page). Imports now save everything or nothing: if any page can\u2019t be read (after 3 tries), nothing is saved, the pages are named, and Retry failed pages tries just those. The same goes for each Import button."
   ]],
@@ -24430,10 +24453,6 @@ const PATCH_NOTES = [
   ]],
   ["b126", [
     "D&D sheet: My spell library. Import many spells at once (paste a whole page from a wiki or choose a text file); they're kept in your workspace and Drive, show up in every sheet's spell search, and can be edited. Spells pasted on a sheet are saved there too."
-  ]],
-  ["b125", [
-    "D&D sheet: a Spells tab. Search the free 5e spells (hover or tap one for its full details), paste any spell from D&D Beyond or a wiki, tick prepared spells, and tap slot circles as you use them.",
-    "Print / PDF (in the open sheet, or right-click a sheet): a printable black-and-white character sheet in the classic layout, with a spell page for casters. Current HP, death saves, coins and slots are left blank for pencil."
   ]]
 ];
 function renderPatchNotes(){
