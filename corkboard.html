@@ -1034,6 +1034,25 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .se-field .se-inline label{text-transform:none; font:12px Verdana; letter-spacing:0; color:#2C2415; display:flex; align-items:center; gap:4px;}
 .se-lvup p{font:13px/1.5 Georgia; margin:6px 0;}
 .se-lvup .se-inline{gap:8px; margin-bottom:8px;}
+.se-classrows{display:flex; flex-direction:column; gap:8px;}
+.se-classrow{display:grid; grid-template-columns:minmax(150px, 1.3fr) 80px minmax(150px, 1.6fr) 28px; gap:10px; align-items:start; border:1px solid #C9B08A; border-radius:6px; padding:8px 10px; background:#FBF6EC;}
+.se-classname{display:flex; flex-direction:column; gap:3px;}
+.se-classname b{font:700 15px Georgia;}
+.se-pickwarn{color:#8A5A12 !important;}
+.se-lvsel{font:13px Georgia; padding:3px 5px; margin-left:6px;}
+.se-suggest{margin-top:4px; gap:6px;}
+.se-grid > *{min-width:0;}
+.se-suggest select{flex:1; width:0; min-width:0; font:12px Verdana; padding:3px; background:#fff; border:1px solid #C9B08A; border-radius:4px; color:#2C2415;}
+.spl-all{display:block; margin-top:12px; padding:0; border:none; background:none; color:var(--accent); text-decoration:underline; font:inherit; cursor:pointer;}
+.off-import .off-kinds{display:flex; flex-wrap:wrap; gap:4px 14px; margin:8px 0 4px;}
+.off-list{max-height:42vh; overflow:auto; margin-top:8px;}
+.off-kind{border-top:1px solid var(--border, #ddd); padding:5px 0;}
+.off-kind summary{cursor:pointer; font-weight:600;}
+.off-items{display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:2px 10px; padding:6px 0 4px 14px;}
+.bz-slots2{margin-left:10px;}
+.bz-pact{margin-left:auto;}
+.bz-pact + .bz-slots2{margin-left:10px;}
+@media (max-width:760px){ .se-classrow{grid-template-columns:1fr 70px; } .se-classrow > .se-field:nth-of-type(2){grid-column:1 / -1;} }
 /* preview page: the real card face on a neutral stage */
 .themewash{flex:2 !important; background-size:cover; background-position:center;}
 .se-fblabel{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#8A7550; font-weight:700; margin:12px 0 4px;}
@@ -4142,7 +4161,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b131";
+window.BUILD = "b132";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4759,7 +4778,7 @@ async function askReplaceSyncScope(){
     buttons:[{label:"Cancel", value:null}, {label:"All my devices", value:"all"}, {label:"This device only", value:"local", primary:true}]
   });
   if (!choice) return false;
-  if (choice === "local"){ try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); await idbDel(SPELL_SYNC_KEY); await idbDel(RACE_SYNC_KEY); } catch (_) {} }
+  if (choice === "local"){ try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); for (const L of LIBRARY_FILES) await idbDel(L.key); } catch (_) {} }
   return true;
 }
 async function restoreSnapshot(ts){
@@ -4878,7 +4897,7 @@ function tabMergeWorkspace(base, local, remote){
   if (local.library || remote.library) out.library = tabMergeMap(base.library, local.library, remote.library, byTime);
   if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
   if (local.spellLib || remote.spellLib) out.spellLib = tabMergeMap(base.spellLib, local.spellLib, remote.spellLib, byTime);
-  if (local.raceLib || remote.raceLib) out.raceLib = tabMergeMap(base.raceLib, local.raceLib, remote.raceLib, byTime);
+  for (const k of ["raceLib", "classLib", "bgLib"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   for (const k of ["calCats", "calEvents"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   if (local.favorites || remote.favorites) out.favorites = syncMergeIdList(base.favorites || [], local.favorites || [], remote.favorites || []);
   {
@@ -4901,7 +4920,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","classLib","bgLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -7090,7 +7109,7 @@ function sheetProfText(sh){
 }
 /* full: every trait with its text (the PDF); otherwise the names (the card face) */
 function sheetFeatureText(sh, {full = false} = {}){
-  const g = sheetGrants(sh), items = [...(g.race?.traits || []), ...classFeatureList(g.class).map(f => ({...f, n:f.n + (f.count > 1 ? " \u00d7" + f.count : "")}))];
+  const g = sheetGrants(sh), items = [...(g.race?.traits || []), ...(g.background?.feature ? [g.background.feature] : []), ...classGrantsOf(sh).flatMap(c => classFeatureList(c)).map(f => ({...f, n:f.n + (f.count > 1 ? " \u00d7" + f.count : "")}))];
   const granted = full ? items.map(t => t.n + (t.d ? ". " + t.d : "")).join("\n\n") : items.map(t => t.n).join(", ");
   return [granted, sh.raceTraits, sh.features].map(t => String(t || "").trim()).filter(Boolean).join("\n\n");
 }
@@ -18921,7 +18940,9 @@ function sheetRest(cardId, kind){
   const sh = card(cardId).sheet, sp = sheetSpells(sh), patch = {};
   const resources = (sh.resources || []).map(r => (kind === "long" || r.reset === "short") ? {...r, used:0} : r);
   patch.resources = resources;
-  if (kind === "short" && sheetGrants(sh).class?.pact){
+  const pact = sh.spells?.pact;
+  if (kind === "short" && pact) patch.spells = {...sp, pact:{...pact, used:0}};
+  else if (kind === "short" && sheetGrants(sh).class?.pact){
     const slots = {}; for (const [l, s] of Object.entries(sp.slots)) slots[l] = {...s, used:0};
     patch.spells = {...sp, slots};
   }
@@ -18929,12 +18950,12 @@ function sheetRest(cardId, kind){
     const hp = sheetHp(sh);
     patch.curHp = String(hp.max || hp.cur); patch.tempHp = "";
     const slots = {}; for (const [l, s] of Object.entries(sp.slots)) slots[l] = {...s, used:0};
-    patch.spells = {...sp, slots};
+    patch.spells = {...sp, slots, ...(pact ? {pact:{...pact, used:0}} : {})};
     patch.hitDiceUsed = Math.max(0, (Number(sh.hitDiceUsed) || 0) - Math.max(1, Math.floor(sheetLevel(sh) / 2)));
     patch.deathSaves = {ok:0, fail:0};
   }
   sheetPatch(cardId, patch);
-  toast(kind === "long" ? "Long rest: hit points full, spell slots and uses back." : "Short rest: short-rest uses" + (sheetGrants(sh).class?.pact ? " and pact slots" : "") + " are back.");
+  toast(kind === "long" ? "Long rest: hit points full, spell slots and uses back." : "Short rest: short-rest uses" + (pact || sheetGrants(sh).class?.pact ? " and pact slots" : "") + " are back.");
 }
 
 function buildBeyondSheet(c, host, {face = false} = {}){
@@ -18950,7 +18971,8 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   const who = bzEl("div", "bz-who");
   who.append(bzEl("div", "bz-name", sh.name || "New Character"));
   const lv = sheetLevel(sh);
-  const subParts = [sh.race, [sh.charClass, lv || ""].filter(Boolean).join(" ") || sh.classLevel, sh.subclass].filter(x => String(x || "").trim());
+  const multi = classRows(sh).length > 1;
+  const subParts = [sh.race, multi ? sh.charClass : [sh.charClass, lv || ""].filter(Boolean).join(" ") || sh.classLevel, sh.subclass].filter(x => String(x || "").trim());
   who.append(bzEl("div", "bz-sub", subParts.join(" · ") || "D&D 5e"));
   head.append(pic, who, bzEl("div", "bz-gap"));
   const btn = (text, fn, cls, title) => { const b = bzStop(bzEl("button", "bz-btn" + (cls ? " " + cls : ""), text)); if (title) b.title = title; b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
@@ -19110,8 +19132,9 @@ function bzRenderTab(tab, c, sh, panel){
       if (String(text || "").trim()) bzText(panel, text);
     };
     group(g.race ? g.race.name + " traits" : "Racial traits", g.race?.traits || [], sh.raceTraits);
-    group(g.class ? g.class.name + " features" : "Features", classFeatureList(g.class), "");
-    group(g.class ? "Other features" : "", [], sh.features);
+    for (const c of classGrantsOf(sh)) group(c.name + " features", classFeatureList(c), "");
+    if (g.background?.feature) group(g.background.name + " (background)", [g.background.feature], "");
+    group(classGrantsOf(sh).length ? "Other features" : "Features", [], sh.features);
     if (!any.length) bzText(panel, "", "No features yet. Pick a race and class in Edit character, or add your own there.");
     return;
   }
@@ -19220,15 +19243,29 @@ function bzSpells(c, sh, panel){
   const pt = bzStop(bzEl("button", "bz-fl" + (f.prepared ? " on" : ""), "Prepared only"));
   pt.addEventListener("click", e => { e.stopPropagation(); bzSpellFilter.set(id, {...f, prepared:!f.prepared}); panel.textContent = ""; bzSpells(c, sh, panel); });
   fl.appendChild(pt);
-  if (!spl.list.length){ panel.appendChild(bzEl("div", "bz-empty", "No spells yet. Add them in Edit character › Spells.")); return; }
+  if (!spl.list.length){
+    panel.appendChild(bzEl("div", "bz-empty", "No spells yet. Add them in Edit character › Spells."));
+    if (!spl.pact && ![1,2,3,4,5,6,7,8,9].some(l => spellSlot(spl, l).total)) return;
+  }
   for (let l = 0; l <= 9; l++){
     const want = f.lvl === "All" || f.lvl === (l ? ordinalLevel(l) : "Cantrips");
     const slot = spellSlot(spl, l);
     const list = spl.list.filter(s => s.lvl === l && (l === 0 || !f.prepared || s.prep)).sort((a, b) => a.name.localeCompare(b.name));
-    if (!want || (!list.length && !slot.total)) continue;
+    const pact = spl.pact && spl.pact.lvl === l ? spl.pact : null;
+    if (!want || (!list.length && !slot.total && !pact)) continue;
     const h = bzEl("div", "bz-lvlh", l ? ordinalLevel(l) + " level" : "Cantrips");
+    /* warlock's pact slots, back on a short rest */
+    if (pact){
+      const pl = bzEl("span", "bz-slots bz-pact"); pl.append("Pact ");
+      for (let i = 0; i < pact.total; i++){
+        const b = bzStop(bzEl("button", "bz-slot" + (i < (pact.used || 0) ? " u" : ""))); b.title = i < (pact.used || 0) ? "Used" : "Available (back on a short rest)";
+        b.addEventListener("click", e => { e.stopPropagation(); const used = i < (pact.used || 0) ? i : i + 1; sheetPatch(id, {spells:{...spl, pact:{...pact, used}}}); });
+        pl.appendChild(b);
+      }
+      h.appendChild(pl);
+    }
     if (l && slot.total){
-      const sl = bzEl("span", "bz-slots"); sl.append("Slots ");
+      const sl = bzEl("span", "bz-slots" + (pact ? " bz-slots2" : "")); sl.append("Slots ");
       for (let i = 0; i < slot.total; i++){
         const b = bzStop(bzEl("button", "bz-slot" + (i < slot.used ? " u" : ""))); b.title = i < slot.used ? "Used" : "Available";
         b.addEventListener("click", e => { e.stopPropagation(); const used = i < slot.used ? i : i + 1; sheetPatch(id, {spells:{...spl, slots:{...spl.slots, [l]:{total:slot.total, used}}}}); });
@@ -19247,11 +19284,17 @@ function bzSpells(c, sh, panel){
         cb.title = "Cast: uses a level " + l + " slot";
         cb.addEventListener("click", e => {
           e.stopPropagation();
-          const s2 = spellSlot(sheetSpells(card(id).sheet), l);
-          if (s2.used >= s2.total){ toast("No level " + l + " slots left."); return; }
-          const cur = sheetSpells(card(id).sheet);
-          sheetPatch(id, {spells:{...cur, slots:{...cur.slots, [l]:{total:s2.total, used:s2.used + 1}}}});
-          toast(s.name + ": level " + l + " slot used (" + (s2.total - s2.used - 1) + " left).");
+          const cur = sheetSpells(card(id).sheet), s2 = spellSlot(cur, l), pk = cur.pact;
+          if (s2.used < s2.total){
+            sheetPatch(id, {spells:{...cur, slots:{...cur.slots, [l]:{total:s2.total, used:s2.used + 1}}}});
+            toast(s.name + ": level " + l + " slot used (" + (s2.total - s2.used - 1) + " left)."); return;
+          }
+          /* a pact slot casts any spell up to its level */
+          if (pk && pk.lvl >= l && (pk.used || 0) < pk.total){
+            sheetPatch(id, {spells:{...cur, pact:{...pk, used:(pk.used || 0) + 1}}});
+            toast(s.name + ": pact slot used (" + (pk.total - (pk.used || 0) - 1) + " left, cast at level " + pk.lvl + ")."); return;
+          }
+          toast("No level " + l + " slots left.");
         });
         a.appendChild(cb);
       } else a.append(bzEl("span", "bz-atw", "AT WILL"));
@@ -19315,7 +19358,7 @@ const PROF_FIELD = {armor:"profArmor", weapons:"profWeapons", tools:"profTools",
 /* race's, class's, then your own; each once */
 function sheetProfList(sh, kind){
   const g = sheetGrants(sh), out = [], seen = new Set();
-  for (const src of [g.race?.[kind], g.class?.[kind], splitList(sh[PROF_FIELD[kind]])])
+  for (const src of [g.race?.[kind], g.background?.[kind], ...classGrantsOf(sh).map(c => c[kind]), splitList(sh[PROF_FIELD[kind]])])
     for (const x of src || []){ const k = String(x).toLowerCase(); if (!seen.has(k)){ seen.add(k); out.push(String(x)); } }
   return out;
 }
@@ -19323,7 +19366,7 @@ function sheetProfList(sh, kind){
 function saveProf(sh, ab){
   const v = sh.saves?.[ab];
   if (v === true || v === false) return v;
-  return !!sheetGrants(sh).class?.saves?.includes(ab);
+  return !!classGrantsOf(sh)[0]?.saves?.includes(ab);
 }
 /* skill proficiency you set (none / proficient / expertise), else one the race grants */
 function skillBase(sh, name){
@@ -19332,9 +19375,9 @@ function skillBase(sh, name){
   if (typeof v === "number") return Math.max(0, v);
   if (v === false) return 0;
   const g = sheetGrants(sh);
-  return (g.race?.skills || []).includes(name) ? 1 : 0;
+  return (g.race?.skills || []).includes(name) || (g.background?.skills || []).includes(name) ? 1 : 0;
 }
-function sheetJack(sh){ return sh.jack === true || (sh.jack !== false && !!sheetGrants(sh).class?.jack); }
+function sheetJack(sh){ return sh.jack === true || (sh.jack !== false && classGrantsOf(sh).some(g => g.jack)); }
 /* class features up to your level, later versions replacing earlier ones ("Bardic Inspiration (d8)") */
 function classFeatureList(gc){
   const out = new Map();
@@ -19359,7 +19402,13 @@ function srdRaceOptions(){
 }
 function raceLibList(){ return Object.values(state.raceLib || {}).sort((a, b) => a.name.localeCompare(b.name)); }
 function raceOptions(){
-  return [...srdRaceOptions(), ...raceLibList().map(e => ({key:"lib:" + e.id, label:e.name, race:e.race, sub:null, book:e.book || "Mine", lib:e}))];
+  const srd = srdRaceOptions(), names = new Set(srd.map(o => spellKey(o.label))), out = [...srd];
+  for (const e of raceLibList()){
+    const subs = e.race.sub || [];
+    if (!subs.length){ if (!names.has(spellKey(e.name))) out.push({key:"lib:" + e.id, label:e.name, race:e.race, sub:null, book:e.book || "Mine", lib:e}); continue; }
+    subs.forEach((sb, i) => { if (!names.has(spellKey(sb.name))) out.push({key:"lib:" + e.id + ":" + i, label:sb.name, race:e.race, sub:sb, book:e.book || "Mine", lib:e}); });
+  }
+  return out;
 }
 function raceLibFind(name){ const k = spellKey(name); return raceLibList().find(e => spellKey(e.name) === k) || null; }
 function raceLibPut(race, src = {}){
@@ -19383,7 +19432,8 @@ function normRace(r){
     langs:arr(r.langs), langChoose:Math.max(0, Math.min(3, Number(r.langChoose) || 0)), senses:String(r.senses || "").slice(0, 120),
     skills:arr(r.skills).filter(s => SKILL_AB[s]), armor:arr(r.armor), weapons:arr(r.weapons), tools:arr(r.tools),
     traits:(Array.isArray(r.traits) ? r.traits : []).slice(0, 40).map(t => ({n:String(t?.n || "").slice(0, 120), d:String(t?.d || "").slice(0, 6000)})).filter(t => t.n),
-    choices:(Array.isArray(r.choices) ? r.choices : []).slice(0, 6).map(c => ({label:String(c.label || "").slice(0, 80), options:arr(c.options), n:Math.max(1, Math.min(4, Number(c.n) || 1))})).filter(c => c.label && c.options.length)};
+    choices:(Array.isArray(r.choices) ? r.choices : []).slice(0, 6).map(c => ({label:String(c.label || "").slice(0, 80), options:arr(c.options), n:Math.max(1, Math.min(4, Number(c.n) || 1))})).filter(c => c.label && c.options.length),
+    sub:(Array.isArray(r.sub) ? r.sub : []).slice(0, 12).map(x => { const n = normRace({...x, sub:[]}); return {name:n.name, ab:n.ab, skills:n.skills, traits:n.traits, speed:n.speed, senses:n.senses, armor:n.armor, weapons:n.weapons, tools:n.tools, choices:n.choices, langChoose:n.langChoose}; }).filter(x => x.name)};
 }
 /* what a race (and subrace, and your choices) gives */
 function raceGrant(opt, ch = {}){
@@ -19403,7 +19453,8 @@ function raceGrant(opt, ch = {}){
     if (t) t.n += ": " + picked.join(", "); else traits.push({n:c.label + ": " + picked.join(", "), d:""});
   }
   const uniq = a => [...new Set(a.filter(Boolean))];
-  return {key:opt.key, name:opt.label, ab, speed:race.speed ? race.speed + " ft" : "", size:race.size || "", senses:race.senses || "",
+  const speed = sub?.speed || race.speed;
+  return {key:opt.key, name:opt.label, ab, speed:speed ? speed + " ft" : "", size:race.size || "", senses:sub?.senses || race.senses || "",
     skills:uniq(skills), armor:uniq([...(race.armor || []), ...(sub?.armor || [])]), weapons:uniq([...(race.weapons || []), ...(sub?.weapons || [])]),
     tools:uniq(tools), languages:uniq([...(race.langs || []), ...splitList(ch.lang)]), traits, choices:ch,
     langChoose:(race.langChoose || 0) + (sub?.langChoose || 0)};
@@ -19428,9 +19479,38 @@ function applyRace(opt, ch){
   if (kept.length) toast("Kept your own " + kept.join(" and ") + ". The race's are listed on this page.", 6000);
 }
 
-/* ---- classes ---- */
+/* ---- classes: one, or several (multiclassing) ----
+   sheet.classes is the list you pick, [{key, name, level, sub}], first one
+   the class you started as. Each gets its own grant in sheet.grants.classes;
+   saving throws come from the first, later classes give only the multiclass
+   proficiencies, and spell slots follow the multiclass table when more than
+   one class casts. Classes and subclasses you import live in state.classLib. */
 function srdClass(name){ const k = spellKey(name || ""); return (srdRules?.classes || []).find(c => spellKey(c.name) === k) || null; }
-const PREPARED_CASTERS = {cleric:"full", druid:"full", wizard:"full", paladin:"half"};
+function classLibList(kind){ return Object.values(state.classLib || {}).filter(e => !kind || e.kind === kind).sort((a, b) => a.name.localeCompare(b.name)); }
+/* a free or imported class, with the subclasses you imported for it */
+function withLibSubs(c){
+  const extra = classLibList("subclass").filter(e => spellKey(e.className) === spellKey(c.name)).map(e => ({...e.sub, name:e.name, lib:e, book:e.book}));
+  if (!extra.length) return c;
+  const have = new Set(c.sub.map(s => spellKey(s.name)));
+  return {...c, sub:[...c.sub, ...extra.filter(s => !have.has(spellKey(s.name)))]};
+}
+function classByKey(key){
+  if (!key) return null;
+  if (key.startsWith("srd:")){ const c = (srdRules?.classes || []).find(x => x.id === key.slice(4)); return c ? withLibSubs(c) : null; }
+  if (key.startsWith("lib:")){ const e = state.classLib?.[key.slice(4)]; return e?.kind === "class" ? withLibSubs({...e.cls, name:e.name}) : null; }
+  return null;
+}
+function classOptions(){
+  const srd = (srdRules?.classes || []).map(c => ({key:"srd:" + c.id, name:c.name, hd:c.hd, spell:c.spell, book:"SRD"}));
+  const names = new Set(srd.map(o => spellKey(o.name)));
+  return [...srd, ...classLibList("class").filter(e => !names.has(spellKey(e.name))).map(e => ({key:"lib:" + e.id, name:e.name, hd:e.cls.hd, spell:e.cls.spell, book:e.book || "Mine", lib:e}))];
+}
+const PREPARED_CASTERS = {cleric:"full", druid:"full", wizard:"full", paladin:"half", artificer:"half"};
+const THIRD_CASTER_SUBS = /^(eldritch knight|arcane trickster)$/i;
+/* the multiclass spellcaster table (also a full caster's own) */
+const SLOT_TABLE = ["2", "3", "42", "43", "432", "433", "4331", "4332", "43331", "43332", "433321", "433321", "4333211", "4333211", "43332111", "43332111", "433321111", "433331111", "433332111", "433332211"]
+  .map(r => r.split("").map(Number));
+function slotsFor(casterLevel){ return casterLevel >= 1 ? [...SLOT_TABLE[Math.min(20, casterLevel) - 1], 0, 0, 0, 0, 0, 0, 0, 0].slice(0, 9) : []; }
 function classResources(id, x = {}, lv, sh){
   const R = [], cha = sheetMod(sh, "CHA");
   if (id === "barbarian" && x.rage_count) R.push(["rage", "Rage", x.rage_count > 99 ? 0 : x.rage_count, "long"]);
@@ -19442,81 +19522,147 @@ function classResources(id, x = {}, lv, sh){
   if (id === "paladin"){ R.push(["divine-sense", "Divine Sense", Math.max(1, 1 + cha), "long"]); if (lv >= 3) R.push(["channel", "Channel Divinity", 1, "short"]); }
   if (id === "sorcerer" && x.sorcery_points) R.push(["sorcery", "Sorcery points", x.sorcery_points, "long"]);
   if (id === "wizard") R.push(["arcane-recovery", "Arcane Recovery", 1, "long"]);
-  return R.filter(r => r[2] > 0).map(([k, name, max, reset]) => ({id:"cls-" + k, name, max:Math.min(20, max), reset}));
+  return R.filter(r => r[2] > 0).map(([k, name, max, reset]) => ({id:"cls-" + id + "-" + k, name, max:Math.min(20, max), reset}));
 }
-/* what a class gives at a level (and subclass, when it's one of the free ones) */
-function classGrant(cls, subName, level, sh){
+/* what one class gives at its level. multi: it isn't your first class, so only the multiclass proficiencies */
+function classGrant(cls, subName, level, sh, {multi = false, key = ""} = {}){
   const lv = Math.max(1, Math.min(20, Number(level) || 1));
-  const row = cls.levels.find(l => l.lv === lv) || cls.levels[0];
+  const row = cls.levels.find(l => l.lv === lv) || cls.levels[cls.levels.length - 1] || {};
   const sub = cls.sub.find(s => spellKey(s.name) === spellKey(subName || ""));
-  const desc = n => srdRules.features[cls.id + "|" + n] || "";
+  const desc = n => sub?.features?.[n] || cls.features?.[n] || srdRules?.features?.[cls.id + "|" + n] || "";
   const features = [];
-  for (const l of cls.levels) if (l.lv <= lv) for (const n of l.f) features.push({n, lvl:l.lv, d:desc(n)});
-  if (sub) for (const [L, names] of Object.entries(sub.levels)) if (Number(L) <= lv) for (const n of names) features.push({n, lvl:Number(L), d:desc(n), sub:sub.name});
+  for (const l of cls.levels) if (l.lv <= lv) for (const n of l.f) features.push({n, lvl:l.lv, d:desc(n), cls:cls.name});
+  if (sub) for (const [L, names] of Object.entries(sub.levels || {})) if (Number(L) <= lv) for (const n of names) features.push({n, lvl:Number(L), d:desc(n), sub:sub.name, cls:cls.name});
   features.sort((a, b) => a.lvl - b.lvl);
-  return {id:cls.id, name:cls.name, sub:sub?.name || "", level:lv, hd:cls.hd, saves:cls.saves, armor:cls.armor, weapons:cls.weapons, tools:cls.tools,
-    skillChoice:cls.skills, otherChoices:cls.otherChoices, spell:cls.spell, pact:cls.id === "warlock", prepared:PREPARED_CASTERS[cls.id] || "",
-    slots:row.s || [], cantrips:row.c || 0, known:row.k || 0, features, resources:classResources(cls.id, row.x, lv, sh),
+  let caster = cls.caster || "", slots = row.s || [];
+  if (!caster && sub && (THIRD_CASTER_SUBS.test(sub.name) || sub.caster === "third")){ caster = "third"; slots = lv >= 3 ? slotsFor(Math.ceil(lv / 3)) : []; }
+  const m = cls.multi || {armor:(cls.armor || []).filter(a => /^(light|medium) armou?r$|^shields?$/i.test(a)), weapons:[], tools:[], skills:null};
+  return {key, id:cls.id, name:cls.name, sub:sub?.name || "", level:lv, hd:cls.hd, multi,
+    saves:multi ? [] : cls.saves, armor:multi ? m.armor : cls.armor, weapons:multi ? m.weapons : cls.weapons, tools:multi ? m.tools : cls.tools,
+    skillChoice:multi ? m.skills : cls.skills, otherChoices:multi ? [] : (cls.otherChoices || []),
+    spell:cls.spell || (caster === "third" ? "INT" : ""), caster, pact:caster === "pact", prepared:PREPARED_CASTERS[cls.id] || "",
+    slots, cantrips:row.c || 0, known:row.k || 0, features, resources:classResources(cls.id, row.x, lv, sh),
     jack:cls.id === "bard" && lv >= 2, asi:cls.levels.filter(l => l.lv <= lv && l.asi).length, subFrom:cls.sub[0]?.from || 3,
-    subOptions:cls.sub.map(s => s.name)};
+    subOptions:cls.sub.map(s => s.name), subFlavor:cls.sub[0]?.flavor || "", req:cls.multi?.req || [], reqAny:cls.multi?.reqAny || []};
 }
+/* a class you type yourself: just its name, level and hit die */
+function customGrant(r){
+  return {key:"custom", id:"", name:r.name || "Custom class", sub:r.sub || "", level:r.level, hd:Number(r.hd) || 8, custom:true, saves:[], armor:[], weapons:[], tools:[],
+    skillChoice:null, otherChoices:[], spell:"", caster:"", slots:[], cantrips:0, known:0, features:[], resources:[], asi:0, subOptions:[], req:[], reqAny:[]};
+}
+/* the classes on a sheet; b131 sheets had a single grants.class */
+function classRows(sh){
+  if (Array.isArray(sh.classes) && sh.classes.length) return sh.classes;
+  const g = sheetGrants(sh).class;
+  return g ? [{key:"srd:" + g.id, name:g.name, level:g.level, sub:g.sub || ""}] : [];
+}
+const SRD_CASTER = {bard:"full", cleric:"full", druid:"full", sorcerer:"full", wizard:"full", paladin:"half", ranger:"half", warlock:"pact"};
+function classGrantsOf(sh){
+  const g = sheetGrants(sh);
+  if (Array.isArray(g.classes)) return g.classes;
+  return g.class ? [{...g.class, caster:g.class.caster ?? SRD_CASTER[g.class.id] ?? ""}] : [];
+}
+/* slots from every class that casts (warlock's pact magic apart) */
+function classSlotTable(gs){
+  const casters = gs.filter(g => g.caster && g.caster !== "pact" && (g.slots || []).some(Boolean));
+  if (!casters.length) return [];
+  if (casters.length === 1) return casters[0].slots;
+  const cl = casters.reduce((t, g) => t + (g.caster === "full" ? g.level : g.caster === "half" ? Math.floor(g.level / 2) : g.caster === "half-up" ? Math.ceil(g.level / 2) : g.caster === "third" ? Math.floor(g.level / 3) : 0), 0);
+  return slotsFor(cl);
+}
+function classPact(gs){
+  const w = gs.find(g => g.caster === "pact"); if (!w) return null;
+  const i = (w.slots || []).findIndex(n => n > 0);
+  return i < 0 ? null : {lvl:i + 1, total:w.slots[i]};
+}
+const hitDiceText = gs => gs.filter(g => g.hd).map(g => g.level + "d" + g.hd).join(" + ");
 function hpAverage(hd){ return Math.floor(hd / 2) + 1; }
-function suggestedHp(sh, hd, lv){
-  const con = sheetMod(sh, "CON");
-  return Math.max(1, hd + con) + Math.max(0, lv - 1) * Math.max(1, hpAverage(hd) + con);
+/* full first hit die, then the average for every other level */
+function suggestedHp(sh, gs){
+  const con = sheetMod(sh, "CON"); let hp = 0, first = true;
+  for (const g of gs) for (let i = 0; i < g.level; i++){ hp += Math.max(1, (first ? g.hd : hpAverage(g.hd)) + con); first = false; }
+  return hp;
 }
-/* put a class (at the sheet's level) on the sheet; things you changed yourself are kept */
-function applyClass(cls, opts = {}){
-  const sh = seData(), prev = sheetGrants(sh).class || null, patch = {}, kept = [];
-  const lv = Math.max(1, Math.min(20, Number(opts.level ?? sh.level) || 1));
-  const g = cls ? classGrant(cls, opts.sub ?? sh.subclass, lv, sh) : null;
-  if (g){ patch.charClass = g.name; patch.level = String(lv); }
+/* put the classes on the sheet; anything you changed yourself is kept */
+function applyClasses(rows){
+  const sh = seData(), prevGs = classGrantsOf(sh), patch = {}, kept = [];
+  rows = (rows || []).filter(r => r && (r.key || r.name)).map(r => ({key:r.key || "custom", name:r.name || "", level:Math.max(1, Math.min(20, Number(r.level) || 1)), sub:r.sub || "", ...(r.key === "custom" || !r.key ? {hd:Number(r.hd) || 8} : {})}));
+  const gs = rows.map((r, i) => { const c = classByKey(r.key); if (c){ r.name = c.name; return classGrant(c, r.sub, r.level, sh, {multi:i > 0, key:r.key}); } return customGrant(r); });
+  patch.classes = rows;
+  if (rows.length){
+    patch.level = String(rows.reduce((t, r) => t + r.level, 0));
+    patch.charClass = rows.length > 1 ? rows.map(r => (r.name || "Class") + " " + r.level).join(" / ") : rows[0].name;
+    patch.subclass = rows.map(r => r.sub).filter(Boolean).join(" / ");
+  } else if (prevGs.length){ patch.charClass = ""; patch.subclass = ""; }
   const same = (cur, old) => !String(cur ?? "").trim() || String(cur).trim() === String(old ?? "").trim();
-  const hdOld = prev ? prev.level + "d" + prev.hd : "", hdNew = g ? lv + "d" + g.hd : "";
-  if (same(sh.hitDice, hdOld)) patch.hitDice = hdNew; else if (g && sh.hitDice !== hdNew) kept.push("hit dice");
-  if (same(sh.spellAbility, prev?.spell)) patch.spellAbility = g?.spell || ""; else if (g?.spell && sh.spellAbility !== g.spell) kept.push("spellcasting ability");
+  const hdNew = hitDiceText(gs);
+  if (same(sh.hitDice, hitDiceText(prevGs))) patch.hitDice = hdNew; else if (gs.length && sh.hitDice !== hdNew) kept.push("hit dice");
+  const spNew = gs.find(g => g.spell)?.spell || "", spOld = prevGs.find(g => g.spell)?.spell || "";
+  if (same(sh.spellAbility, spOld)) patch.spellAbility = spNew; else if (spNew && sh.spellAbility !== spNew) kept.push("spellcasting ability");
   /* slots follow the class table unless you set your own */
-  const sp = sheetSpells(sh), slots = {...sp.slots}, oldS = prev?.slots || [], newS = g?.slots || [];
+  const sp = sheetSpells(sh), slots = {...sp.slots};
+  const oldS = classSlotTable(prevGs);
+  const newS = classSlotTable(gs);
   const differs = t => [1,2,3,4,5,6,7,8,9].some(n => spellSlot(sp, n).total !== (t[n - 1] || 0));
-  if (!differs(oldS)){
+  const nextSp = {...sp};
+  if (!differs(oldS) || (sheetGrants(sh).class?.pact && !sp.pact)){
     for (let n = 1; n <= 9; n++){
       const total = newS[n - 1] || 0, used = Math.min(spellSlot(sp, n).used, total);
       if (total) slots[n] = {total, used}; else delete slots[n];
     }
-    patch.spells = {...sp, slots};
-  } else if (g && differs(newS)) kept.push("spell slots");
-  /* the class's limited-use features; your own are left alone */
-  const res = (sh.resources || []).filter(r => !String(r.id || "").startsWith("cls-") || g?.resources.some(x => x.id === r.id))
-    .map(r => { const n = g?.resources.find(x => x.id === r.id); return n ? {...r, name:n.name, max:n.max, reset:n.reset, used:Math.min(r.used || 0, n.max)} : r; });
-  for (const n of g?.resources || []) if (!res.some(r => r.id === n.id)) res.push({...n, used:0});
+    nextSp.slots = slots;
+  } else if (differs(newS)) kept.push("spell slots");
+  const pact = classPact(gs);
+  if (pact) nextSp.pact = {...pact, used:Math.min(Number(sp.pact?.used) || 0, pact.total)}; else delete nextSp.pact;
+  patch.spells = nextSp;
+  /* the classes' limited-use features; your own are left alone */
+  const given = gs.flatMap(g => g.resources);
+  const res = (sh.resources || []).filter(r => !String(r.id || "").startsWith("cls-") || given.some(x => x.id === r.id))
+    .map(r => { const n = given.find(x => x.id === r.id); return n ? {...r, name:n.name, max:n.max, reset:n.reset, used:Math.min(r.used || 0, n.max)} : r; });
+  for (const n of given) if (!res.some(r => r.id === n.id)) res.push({...n, used:0});
   patch.resources = res;
-  if (g && !String(sh.maxHp || "").trim()){ patch.maxHp = String(suggestedHp(sh, g.hd, lv)); }
+  /* hit points follow the average while you haven't set your own */
+  if (gs.length && (!String(sh.maxHp || "").trim() || (prevGs.length && String(sh.maxHp) === String(suggestedHp(sh, prevGs))))) patch.maxHp = String(suggestedHp(sh, gs));
   const grants = {...sheetGrants(sh)};
-  if (g) grants.class = g; else delete grants.class;
+  delete grants.class;
+  if (gs.length) grants.classes = gs; else delete grants.classes;
   patch.grants = grants;
   seSet(patch);
-  if (kept.length) toast("Kept your own " + kept.join(", ") + ". The class's are listed on this page.", 6000);
+  if (kept.length) toast("Kept your own " + kept.join(", ") + ". The classes' are listed on this page.", 6000);
+}
+/* can this character take a level in that class? (13 in the right scores) */
+function multiclassReqNote(sh, c){
+  const req = c.multi?.req || [], any = c.multi?.reqAny || [];
+  const miss = req.filter(([a, n]) => sheetScore(sh, a) < n);
+  if (any.length && !any.some(([a, n]) => sheetScore(sh, a) >= n)) miss.push([any.map(([a]) => a).join(" or "), any[0][1]]);
+  return miss.length ? "Usually needs " + miss.map(([a, n]) => a + " " + n).join(" and ") : "";
 }
 /* how many spells the rules expect, for gentle notes on the Spells page */
 function spellRuleNotes(sh){
-  const g = sheetGrants(sh).class; if (!g || !srdRules && !g.features) return [];
-  const sp = sheetSpells(sh), lv = g.level, notes = [];
-  if (!g.spell) return sp.list.length ? [{warn:false, text:g.name + "s don't cast spells from their class; spells here come from somewhere else (a race, feat or item)."}] : [];
-  const cantrips = sp.list.filter(s => s.lvl === 0).length;
-  if (g.cantrips) notes.push({warn:cantrips !== g.cantrips, text:"Cantrips: " + cantrips + " on the sheet; a level " + lv + " " + g.name + " knows " + g.cantrips + "."});
-  const levelled = sp.list.filter(s => s.lvl > 0);
-  if (g.known) notes.push({warn:levelled.length !== g.known, text:"Spells known: " + levelled.length + "; a level " + lv + " " + g.name + " knows " + g.known + "."});
-  else if (g.prepared){
-    const mod = sheetMod(sh, g.spell), cap = Math.max(1, mod + (g.prepared === "half" ? Math.floor(lv / 2) : lv));
-    const prep = levelled.filter(s => s.prep).length;
-    notes.push({warn:prep > cap, text:"Prepared: " + prep + " of " + cap + " (" + ABILITY_FULL[g.spell] + " modifier + " + (g.prepared === "half" ? "half your " : "your ") + g.name.toLowerCase() + " level)."});
+  const gs = classGrantsOf(sh); if (!gs.length) return [];
+  const sp = sheetSpells(sh), notes = [], casters = gs.filter(g => g.spell);
+  const who = g => g.name + " " + g.level;
+  if (!casters.length) return sp.list.length ? [{warn:false, text:gs.map(g => g.name).join(" and ") + (gs.length > 1 ? " don't" : "s don't") + " cast spells from their class; spells here come from somewhere else (a race, feat or item)."}] : [];
+  const cantrips = sp.list.filter(s => s.lvl === 0).length, cDue = casters.reduce((t, g) => t + g.cantrips, 0);
+  if (cDue) notes.push({warn:cantrips !== cDue, text:"Cantrips: " + cantrips + " on the sheet; " + casters.filter(g => g.cantrips).map(g => "a level " + g.level + " " + g.name + " knows " + g.cantrips).join(", ") + "."});
+  const levelled = sp.list.filter(s => s.lvl > 0), knowers = casters.filter(g => g.known), preparers = casters.filter(g => !g.known && g.prepared);
+  const cap = g => Math.max(1, sheetMod(sh, g.spell) + (g.prepared === "half" ? Math.floor(g.level / 2) : g.level));
+  if (knowers.length && !preparers.length){
+    const due = knowers.reduce((t, g) => t + g.known, 0);
+    notes.push({warn:levelled.length !== due, text:"Spells known: " + levelled.length + "; " + knowers.map(g => "a level " + g.level + " " + g.name + " knows " + g.known).join(", ") + "."});
+  } else if (preparers.length && !knowers.length){
+    const due = preparers.reduce((t, g) => t + cap(g), 0), prep = levelled.filter(s => s.prep).length;
+    notes.push({warn:prep > due, text:"Prepared: " + prep + " of " + due + " (" + preparers.map(g => who(g) + ": " + ABILITY_FULL[g.spell] + " modifier + " + (g.prepared === "half" ? "half its" : "its") + " level").join("; ") + ")."});
+  } else if (preparers.length){
+    notes.push({warn:false, text:"Spells: " + levelled.length + " on the sheet (" + [...knowers.map(g => who(g) + " knows " + g.known), ...preparers.map(g => who(g) + " prepares up to " + cap(g))].join(", ") + ")."});
   }
-  const maxLvl = g.slots.reduce((m, n, i) => n ? i + 1 : m, 0);
+  if (casters.length > 1 && new Set(casters.map(g => g.spell)).size > 1) notes.push({warn:false, text:"Each class casts with its own ability: " + casters.map(g => g.name + " " + ABILITY_FULL[g.spell]).join(", ") + ". The sheet's numbers use " + (ABILITY_FULL[sh.spellAbility] || "the ability set on Class & level") + "."});
+  const pact = classPact(gs), maxLvl = Math.max(classSlotTable(gs).reduce((m, n, i) => n ? i + 1 : m, 0), pact?.lvl || 0);
   const high = levelled.filter(s => s.lvl > maxLvl);
-  if (high.length) notes.push({warn:true, text:high.map(s => s.name).slice(0, 4).join(", ") + (high.length > 4 ? "…" : "") + (high.length === 1 ? " is" : " are") + " above the highest slot a level " + lv + " " + g.name + " has (" + (maxLvl ? "level " + maxLvl : "none yet") + ")."});
+  if (high.length) notes.push({warn:true, text:high.map(s => s.name).slice(0, 4).join(", ") + (high.length > 4 ? "…" : "") + (high.length === 1 ? " is" : " are") + " above your highest spell slot (" + (maxLvl ? "level " + maxLvl : "none yet") + ")."});
+  if (pact) notes.push({warn:false, text:"Pact slots: " + pact.total + " × level " + pact.lvl + " (from Warlock), back on a short rest."});
   return notes;
 }
-
 /* ---- the Race page ---- */
 let seRacePick = null;   /* the race being looked at, before or after it's applied */
 function seRace(page, sh){
@@ -19663,63 +19809,100 @@ function parseTraitLines(text){
 }
 
 /* ---- the Class & level page ---- */
-function seClass(page, sh){
-  const ready = rulesReady(), g = sheetGrants(sh).class, lv = sheetLevel(sh) || 1;
-  if (!ready){
-    const m = document.createElement("div"); m.className = "se-hint";
-    m.textContent = srdRulesFailed ? "The free classes couldn't be loaded (are you offline?). You can still type everything in below." : "Loading the free classes…";
-    page.appendChild(m);
-  }
+let seClassAdding = false;   /* the "add another class" picker is open */
+function seClassPicker(onPick, {exclude = [], multi = false, sh} = {}){
   const grid = document.createElement("div"); grid.className = "se-picks";
-  for (const c of srdRules?.classes || []){
-    const b = document.createElement("button"); b.className = "se-pick" + (g?.id === c.id ? " on applied" : "");
-    b.append(Object.assign(document.createElement("b"), {textContent:c.name}), Object.assign(document.createElement("span"), {textContent:"d" + c.hd + (c.spell ? " · " + c.spell + " caster" : "")}));
-    b.addEventListener("click", () => { if (g?.id !== c.id){ pushUndo(); applyClass(c); } renderSheetEditor(); });
+  for (const o of classOptions()){
+    if (exclude.includes(o.key)) continue;
+    const b = document.createElement("button"); b.className = "se-pick";
+    const c = multi ? classByKey(o.key) : null, note = c ? multiclassReqNote(sh, c) : "";
+    b.append(Object.assign(document.createElement("b"), {textContent:o.name}), Object.assign(document.createElement("span"), {textContent:"d" + o.hd + (o.spell ? " · " + o.spell + " caster" : "") + (o.book !== "SRD" ? " · " + o.book : "")}));
+    if (note){ b.appendChild(Object.assign(document.createElement("span"), {className:"se-pickwarn", textContent:note})); }
+    b.addEventListener("click", () => onPick(o));
     grid.appendChild(b);
   }
-  const cu = document.createElement("button"); cu.className = "se-pick" + (!g && String(sh.charClass || sh.classLevel || "").trim() ? " on" : "");
-  cu.append(Object.assign(document.createElement("b"), {textContent:"Custom or multiclass"}), Object.assign(document.createElement("span"), {textContent:"Type it in"}));
-  cu.addEventListener("click", () => { if (g){ pushUndo(); applyClass(null); } renderSheetEditor(); });
+  const cu = document.createElement("button"); cu.className = "se-pick";
+  cu.append(Object.assign(document.createElement("b"), {textContent:"Custom class"}), Object.assign(document.createElement("span"), {textContent:"Type it in"}));
+  cu.addEventListener("click", () => onPick({key:"custom", name:"", hd:8}));
   grid.appendChild(cu);
-  page.appendChild(grid);
-
-  /* level, with Level up */
-  const lvRow = document.createElement("div"); lvRow.className = "se-inline se-lvrow";
-  const lvF = seField("Level", sh.level || (g ? String(g.level) : ""), v => { seSet({level:v}); }, {type:"number"});
-  const lvIn = lvF.querySelector("input"); lvIn.min = 1; lvIn.max = 20;
-  lvIn.addEventListener("change", () => { const c = srdClass(seData().charClass); if (g && c) applyClass(c, {level:lvIn.value}); renderSheetEditor(); });
-  const up = document.createElement("button"); up.className = "bz-btn p"; up.textContent = "Level up ›"; up.disabled = lv >= 20;
-  up.addEventListener("click", () => levelUpDialog());
-  lvRow.append(lvF, up);
-  if (g){
-    const subF = seField(g.subOptions.length ? "Subclass (" + srdRules.classes.find(c => c.id === g.id)?.sub[0]?.flavor + ")" : "Subclass", sh.subclass, v => seSet({subclass:v}), {placeholder:g.subOptions[0] || ""});
-    const si = subF.querySelector("input"), dlId = "seSubList";
-    const dl = document.createElement("datalist"); dl.id = dlId; for (const n of g.subOptions) dl.appendChild(new Option(n, n));
-    si.setAttribute("list", dlId); subF.appendChild(dl);
-    si.addEventListener("change", () => { const c = srdClass(seData().charClass); if (c) applyClass(c, {sub:si.value}); renderSheetEditor(); });
-    if (lv >= g.subFrom && !String(sh.subclass || "").trim()) subF.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:"At level " + g.subFrom + " a " + g.name + " picks a subclass. " + (g.subOptions.length ? g.subOptions.join(", ") + " is the free one; you can type any other." : "")}));
-    lvRow.appendChild(subF);
-  } else {
-    lvRow.append(seField("Class", sh.charClass || sh.classLevel, v => seSet({charClass:v}), {placeholder:"Fighter 3 / Wizard 2"}), seField("Subclass", sh.subclass, v => seSet({subclass:v})));
+  return grid;
+}
+function seClass(page, sh){
+  const ready = rulesReady(), rows = classRows(sh).map(r => ({...r})), gs = classGrantsOf(sh), lv = sheetLevel(sh) || 1;
+  const bar = document.createElement("div"); bar.className = "se-inline se-racebar";
+  bar.append(Object.assign(document.createElement("span"), {className:"se-hint", textContent:rows.length ? "" : "Choose the class you start as. You can add more classes (multiclass) after."}));
+  bar.appendChild(Object.assign(document.createElement("span"), {style:"flex:1"}));
+  const imp = document.createElement("button"); imp.className = "bz-btn"; imp.textContent = "Import classes…";
+  imp.addEventListener("click", async () => { if (await importClassesDialog()) renderSheetEditor(); });
+  bar.appendChild(imp); page.appendChild(bar);
+  if (!ready){
+    const m = document.createElement("div"); m.className = "se-hint";
+    m.textContent = srdRulesFailed ? "The free classes couldn't be loaded (are you offline?). Your own classes and Custom class still work." : "Loading the free classes…";
+    page.appendChild(m);
   }
-  page.appendChild(lvRow);
+  const legacyText = !rows.length && String(sh.charClass || sh.classLevel || "").trim();
+  if (!rows.length){
+    if (legacyText) page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"This sheet says “" + legacyText + "”. Pick it below to have the sheet fill in what it gives."}));
+    page.appendChild(seClassPicker(o => { pushUndo(); applyClasses([{key:o.key, name:o.name, level:lv, sub:sh.subclass && !/\//.test(sh.subclass) ? sh.subclass : "", hd:o.hd}]); renderSheetEditor(); }, {sh}));
+  } else {
+    /* one row per class: level, subclass, remove */
+    const list = document.createElement("div"); list.className = "se-classrows";
+    rows.forEach((r, i) => {
+      const g = gs[i] || customGrant(r);
+      const row = document.createElement("div"); row.className = "se-classrow";
+      const nm = document.createElement("div"); nm.className = "se-classname";
+      if (r.key === "custom"){
+        nm.appendChild(seField(i ? "Class" : "Class (your first)", r.name, v => { rows[i].name = v; seSet({classes:rows.map(x => ({...x}))}); }, {placeholder:"Blood Hunter"}));
+        nm.querySelector("input").addEventListener("change", () => { applyClasses(rows); renderSheetEditor(); });
+        const hd = seField("Hit die", "d" + (r.hd || 8), () => {}, {});
+        const hi = hd.querySelector("input"); hi.addEventListener("change", () => { rows[i].hd = parseInt(hi.value.replace(/\D/g, ""), 10) || 8; applyClasses(rows); renderSheetEditor(); });
+        nm.appendChild(hd);
+      } else {
+        nm.append(Object.assign(document.createElement("b"), {textContent:r.name}), Object.assign(document.createElement("span"), {className:"se-hint", textContent:i ? "multiclass · d" + g.hd : "first class · d" + g.hd}));
+      }
+      const lvF = seField("Level", String(r.level), () => {}, {type:"number"});
+      const li = lvF.querySelector("input"); li.min = 1; li.max = 20;
+      li.addEventListener("change", () => { pushUndo(); rows[i].level = Math.max(1, Math.min(20, parseInt(li.value, 10) || 1)); applyClasses(rows); renderSheetEditor(); });
+      const subF = seField(g.subFlavor || "Subclass", r.sub, () => {}, {placeholder:g.subOptions?.[0] || ""});
+      const si = subF.querySelector("input"), dlId = "seSubList" + i;
+      if (g.subOptions?.length){ const dl = document.createElement("datalist"); dl.id = dlId; for (const n of g.subOptions) dl.appendChild(new Option(n, n)); si.setAttribute("list", dlId); subF.appendChild(dl); }
+      si.addEventListener("change", () => { pushUndo(); rows[i].sub = si.value.trim(); applyClasses(rows); renderSheetEditor(); });
+      if (r.level >= (g.subFrom || 3) && !r.sub && !g.custom) subF.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:"At level " + g.subFrom + " a " + g.name + " picks " + (/^[aeiou]/i.test(g.subFlavor || "s") ? "an " : "a ") + (g.subFlavor || "subclass").toLowerCase() + "." + (g.subOptions.length ? " Choices here: " + g.subOptions.join(", ") + "; you can type any other." : "")}));
+      const x = document.createElement("button"); x.className = "se-spl-x"; x.textContent = "✕"; x.title = i ? "Remove this class" : "Change or remove your first class";
+      x.addEventListener("click", () => { pushUndo(); applyClasses(rows.filter((_, j) => j !== i)); renderSheetEditor(); });
+      row.append(nm, lvF, subF, x);
+      list.appendChild(row);
+    });
+    page.appendChild(list);
+    const tools = document.createElement("div"); tools.className = "se-inline se-lvrow";
+    const up = document.createElement("button"); up.className = "bz-btn p"; up.textContent = "Level up ›"; up.disabled = lv >= 20;
+    up.addEventListener("click", () => levelUpDialog());
+    const add = document.createElement("button"); add.className = "bz-btn"; add.textContent = seClassAdding ? "Cancel adding" : "＋ Add another class (multiclass)";
+    add.addEventListener("click", () => { seClassAdding = !seClassAdding; renderSheetEditor(); });
+    tools.append(up, add, Object.assign(document.createElement("span"), {className:"se-hint", textContent:"Character level " + lv + (lv > 20 ? " (over 20, the usual most)" : "")}));
+    page.appendChild(tools);
+    if (seClassAdding){
+      page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"A new class starts at level 1. Multiclassing usually needs 13 or more in the main scores of both classes; the sheet warns, it doesn't stop you."}));
+      page.appendChild(seClassPicker(o => { pushUndo(); seClassAdding = false; applyClasses([...rows, {key:o.key, name:o.name, level:1, sub:"", hd:o.hd}]); renderSheetEditor(); }, {exclude:rows.map(r => r.key).filter(k => k !== "custom"), multi:true, sh}));
+    }
+  }
 
-  if (g){
+  for (const g of gs){
+    if (g.custom) continue;
     const box = document.createElement("div"); box.className = "se-block se-gives";
-    box.appendChild(Object.assign(document.createElement("h3"), {textContent:"A level " + g.level + " " + g.name + (g.sub ? " (" + g.sub + ")" : "") + " gets"}));
-    const lines = [["Hit dice", g.level + "d" + g.hd + " (d" + g.hd + " per level)"], ["Proficiency bonus", fmtMod(sheetProf(sh))], ["Saving throws", g.saves.map(a => ABILITY_FULL[a]).join(", ")]];
+    box.appendChild(Object.assign(document.createElement("h3"), {textContent:"A level " + g.level + " " + g.name + (g.sub ? " (" + g.sub + ")" : "") + " gets" + (g.multi ? " as a multiclass" : "")}));
+    const lines = [["Hit dice", g.level + "d" + g.hd]];
+    if (!g.multi) lines.push(["Saving throws", g.saves.map(a => ABILITY_FULL[a]).join(", ")]);
     if (g.armor.length) lines.push(["Armour", g.armor.join(", ")]);
     if (g.weapons.length) lines.push(["Weapons", g.weapons.join(", ")]);
     if (g.tools.length) lines.push(["Tools", g.tools.join(", ")]);
     if (g.skillChoice) lines.push(["Skills", "Choose " + g.skillChoice.n + (g.skillChoice.from.length >= 18 ? " (any)" : " from " + g.skillChoice.from.join(", ")) + " on Skills & proficiencies"]);
     for (const o of g.otherChoices || []) lines.push(["Also", o]);
     if (g.spell){
-      lines.push(["Spellcasting", ABILITY_FULL[g.spell] + (g.pact ? " (pact magic: slots come back on a short rest)" : "")]);
-      const sl = g.slots.map((n, i) => n ? n + "×" + ordinalLevel(i + 1) : "").filter(Boolean).join(", ");
-      if (sl) lines.push(["Spell slots", sl]);
+      lines.push(["Spellcasting", ABILITY_FULL[g.spell] + (g.pact ? " (pact magic: its slots come back on a short rest)" : "")]);
       if (g.cantrips) lines.push(["Cantrips known", String(g.cantrips)]);
       if (g.known) lines.push(["Spells known", String(g.known)]);
-      if (g.prepared) lines.push(["Spells prepared", Math.max(1, sheetMod(sh, g.spell) + (g.prepared === "half" ? Math.floor(g.level / 2) : g.level)) + " (" + ABILITY_FULL[g.spell] + " modifier + " + (g.prepared === "half" ? "half " : "") + "level)"]);
+      if (g.prepared && !g.known) lines.push(["Spells prepared", Math.max(1, sheetMod(sh, g.spell) + (g.prepared === "half" ? Math.floor(g.level / 2) : g.level)) + " (" + ABILITY_FULL[g.spell] + " modifier + " + (g.prepared === "half" ? "half " : "") + "level)"]);
     }
     if (g.resources.length) lines.push(["Limited use", g.resources.map(r => r.name + " " + r.max + "/" + (r.reset === "short" ? "short rest" : "long rest")).join(", ")]);
     const dl = document.createElement("dl"); dl.className = "se-dl";
@@ -19735,14 +19918,19 @@ function seClass(page, sh){
     box.appendChild(tl);
     page.appendChild(box);
   }
+  if (gs.length > 1){
+    const sl = classSlotTable(gs).map((n, i) => n ? n + "×" + ordinalLevel(i + 1) : "").filter(Boolean).join(", "), pact = classPact(gs);
+    if (sl || pact) page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"Spell slots" + (gs.filter(g => g.caster && g.caster !== "pact").length > 1 ? " (multiclass table)" : "") + ": " + (sl || "none") + (pact ? "; pact slots " + pact.total + "×" + ordinalLevel(pact.lvl) : "") + "."}));
+  }
 
   const own = document.createElement("div"); own.className = "se-block";
   own.appendChild(Object.assign(document.createElement("h3"), {textContent:"On the sheet"}));
+  if (!rows.length) own.append(seGrid("2fr 1fr 2fr", seField("Class", sh.charClass || sh.classLevel, v => seSet({charClass:v})), seField("Level", sh.level, v => seSet({level:v}), {type:"number"}), seField("Subclass", sh.subclass, v => seSet({subclass:v}))));
   const pbF = document.createElement("div"); pbF.className = "se-field";
   const pl = document.createElement("label"); pl.textContent = "Proficiency bonus";
   const pr = document.createElement("div"); pr.className = "se-inline";
   const auto = document.createElement("label"); const ac = document.createElement("input"); ac.type = "checkbox"; ac.checked = !sh.profManual;
-  auto.append(ac, " From level (" + fmtMod(2 + Math.floor((Math.max(1, sheetLevel(sh)) - 1) / 4)) + ")");
+  auto.append(ac, " From level (" + fmtMod(2 + Math.floor((Math.max(1, Math.min(20, sheetLevel(sh) || 1)) - 1) / 4)) + ")");
   const pv = document.createElement("input"); pv.type = "number"; pv.value = sh.profBonus ?? 2; pv.disabled = !sh.profManual && !!sheetLevel(sh); pv.style.width = "64px";
   ac.addEventListener("change", () => { seSet({profManual:!ac.checked}); renderSheetEditor(); });
   pv.addEventListener("input", () => seSet({profBonus:Number(pv.value) || 0})); pv.addEventListener("keydown", e => e.stopPropagation());
@@ -19756,11 +19944,12 @@ function seClass(page, sh){
   sel.append(sl, s);
   own.append(seGrid("1fr 1fr", pbF, sel));
   const hpF = seField("Max HP", sh.maxHp, v => seSet({maxHp:v}), {type:"number"});
-  const hd = g?.hd || parseInt(String(sh.hitDice || "").split("d")[1], 10);
-  if (hd){
-    const sug = suggestedHp(sh, hd, lv);
+  const hdOne = parseInt(String(sh.hitDice || "").split("d")[1], 10);
+  const sugGs = gs.length ? gs : hdOne ? [{level:lv, hd:hdOne}] : [];
+  if (sugGs.length){
+    const sug = suggestedHp(sh, sugGs);
     const h = document.createElement("div"); h.className = "se-hint";
-    h.append("Average for level " + lv + ": " + sug + " ");
+    h.append("Average for these levels: " + sug + " ");
     if (String(sug) !== String(sh.maxHp)){ const u = document.createElement("button"); u.className = "se-linkbtn"; u.textContent = "Use " + sug; u.addEventListener("click", () => { seSet({maxHp:String(sug)}); renderSheetEditor(); }); h.appendChild(u); }
     hpF.appendChild(h);
   }
@@ -19769,46 +19958,74 @@ function seClass(page, sh){
   const jk = document.createElement("label"); jk.className = "se-check";
   const jc = document.createElement("input"); jc.type = "checkbox"; jc.checked = sheetJack(sh);
   jc.addEventListener("change", () => seSet({jack:jc.checked}));
-  jk.append(jc, " Jack of All Trades (half proficiency on every check you aren't proficient in)" + (g?.jack ? " — from Bard" : ""));
+  jk.append(jc, " Jack of All Trades (half proficiency on every check you aren't proficient in)" + (gs.some(g => g.jack) ? " — from Bard" : ""));
   own.appendChild(jk);
-  own.append(seField(g ? "More features & traits (your own)" : "Features & traits", sh.features, v => seSet({features:v}), {area:true, rows:6, hint:"Feats and anything else. Shows on the sheet's Features & Traits tab" + (g ? ", after the class's features." : ".")}));
+  own.append(seField(gs.length ? "More features & traits (your own)" : "Features & traits", sh.features, v => seSet({features:v}), {area:true, rows:6, hint:"Feats and anything else. Shows on the sheet's Features & Traits tab" + (gs.length ? ", after the class features." : ".")}));
   page.appendChild(own);
 }
-/* one level more: hit points (average or roll), and what the new level brings */
+/* one level more: which class, hit points (average or roll), and what it brings */
 async function levelUpDialog(){
   const sh = seData(); if (!sh) return;
-  const lv = sheetLevel(sh) || 0, next = Math.min(20, lv + 1), cls = srdClass(sh.charClass), gOld = sheetGrants(sh).class;
-  const hd = (cls && gOld ? cls.hd : 0) || parseInt(String(sh.hitDice || "").split("d")[1], 10) || 8;
-  const con = sheetMod(sh, "CON"), avg = Math.max(1, hpAverage(hd) + con);
-  const g = cls && gOld ? classGrant(cls, sh.subclass, next, sh) : null;
-  let gain = avg;
+  const rows = classRows(sh).map(r => ({...r})), gs = classGrantsOf(sh), con = sheetMod(sh, "CON");
+  const lv = sheetLevel(sh) || 0;
+  let pickIdx = 0, newKey = "", gain = 0;
   const res = await askOpen({
-    title:"Level up to " + next,
+    title:"Level up to " + Math.min(30, lv + 1),
     build(body){
       const w = document.createElement("div"); w.id = "askMsg"; w.className = "se-lvup";
+      const which = document.createElement("select"); which.className = "se-lvsel";
+      rows.forEach((r, i) => which.appendChild(new Option(r.name + " " + r.level + " → " + (r.level + 1), "row:" + i)));
+      if (rows.length) for (const o of classOptions().filter(o => !rows.some(r => r.key === o.key))) which.appendChild(new Option("New class: " + o.name + " 1", "new:" + o.key));
+      const info = document.createElement("div");
       const hp = document.createElement("div"); hp.className = "se-inline";
       const show = document.createElement("b");
+      const a = document.createElement("button"); a.className = "bz-btn";
+      const r = document.createElement("button"); r.className = "bz-btn";
+      let hd = 8;
       const set = n => { gain = n; show.textContent = "+" + n + " hit points"; };
-      const a = document.createElement("button"); a.className = "bz-btn"; a.textContent = "Average (" + hpAverage(hd) + fmtMod(con).replace("+0", "") + ")";
-      const r = document.createElement("button"); r.className = "bz-btn"; r.textContent = "🎲 Roll d" + hd;
-      a.addEventListener("click", () => set(avg));
+      const draw = () => {
+        const v = which.value || "row:0";
+        let g = null, gNext = null, c = null;
+        if (v.startsWith("row:")){
+          pickIdx = Number(v.slice(4)); newKey = "";
+          const row = rows[pickIdx]; g = gs[pickIdx] || (row ? customGrant(row) : null); c = row ? classByKey(row.key) : null;
+          hd = g?.hd || parseInt(String(sh.hitDice || "").split("d")[1], 10) || 8;
+          gNext = c && row ? classGrant(c, row.sub, row.level + 1, sh, {multi:pickIdx > 0}) : null;
+        } else {
+          newKey = v.slice(4); c = classByKey(newKey); hd = c?.hd || 8;
+          gNext = c ? classGrant(c, "", 1, sh, {multi:true}) : null;
+        }
+        a.textContent = "Average (" + hpAverage(hd) + (con ? fmtMod(con) : "") + ")"; r.textContent = "🎲 Roll d" + hd;
+        set(Math.max(1, hpAverage(hd) + con));
+        info.textContent = "";
+        const lines = [];
+        const pbNew = 2 + Math.floor(Math.min(19, lv) / 4);
+        if (!sh.profManual && pbNew !== sheetProf(sh)) lines.push("Proficiency bonus becomes " + fmtMod(pbNew) + ".");
+        if (newKey && c){
+          const note = multiclassReqNote(sh, c); if (note) lines.push(note + " to multiclass into " + c.name + " (a guide; you can go ahead).");
+          if (gNext) lines.push("Gains: " + [...gNext.armor, ...gNext.weapons, ...gNext.tools].join(", ") + (gNext.skillChoice ? (gNext.armor.length ? ", " : "") + "one skill from its list" : "") + ".");
+        }
+        if (gNext){
+          const had = new Set((newKey ? [] : g?.features || []).map(f => f.n));
+          const fresh = gNext.features.filter(f => f.lvl === gNext.level && !had.has(f.n) && f.n !== "Ability Score Improvement");
+          if (fresh.length) lines.push("New: " + fresh.map(f => f.n).join(", ") + ".");
+          const before = classSlotTable(gs), afterGs = newKey ? [...gs, gNext] : gs.map((x, i) => i === pickIdx ? gNext : x), after = classSlotTable(afterGs);
+          const sl = after.map((n, i) => n > (before[i] || 0) ? (n - (before[i] || 0)) + " more " + ordinalLevel(i + 1) + "-level slot" + (n - (before[i] || 0) > 1 ? "s" : "") : "").filter(Boolean);
+          if (sl.length) lines.push("Spell slots: " + sl.join(", ") + ".");
+          const gOld = newKey ? {cantrips:0, known:0, asi:0} : g;
+          if (gNext.cantrips > gOld.cantrips) lines.push("Learn " + (gNext.cantrips - gOld.cantrips) + " more cantrip" + (gNext.cantrips - gOld.cantrips > 1 ? "s" : "") + ".");
+          if (gNext.known > gOld.known) lines.push("Learn " + (gNext.known - gOld.known) + " more spell" + (gNext.known - gOld.known > 1 ? "s" : "") + ".");
+          if (gNext.asi > gOld.asi) lines.push("Ability Score Improvement: +2 to one score or +1 to two (or a feat). Add it on Ability scores.");
+          if (gNext.level === gNext.subFrom && !(rows[pickIdx]?.sub) && !newKey) lines.push("Choose your " + (gNext.subFlavor || "subclass").toLowerCase() + " on Class & level.");
+        } else lines.push("Add any new features on Class & level; the hit points use d" + hd + ".");
+        for (const l of lines) info.appendChild(Object.assign(document.createElement("p"), {textContent:l}));
+      };
+      a.addEventListener("click", () => set(Math.max(1, hpAverage(hd) + con)));
       r.addEventListener("click", () => { const x = showRoll("hit points", "1d" + hd + (con ? fmtMod(con) : ""), ""); if (x) set(Math.max(1, x.total)); });
-      set(avg); hp.append(a, r, show); w.appendChild(hp);
-      const lines = [];
-      const pbOld = sheetProf(sh), pbNew = 2 + Math.floor((next - 1) / 4);
-      if (!sh.profManual && pbNew !== pbOld) lines.push("Proficiency bonus becomes " + fmtMod(pbNew) + ".");
-      if (g){
-        const had = new Set((gOld.features || []).map(f => f.n));
-        const fresh = g.features.filter(f => f.lvl === next && !had.has(f.n) && f.n !== "Ability Score Improvement");
-        if (fresh.length) lines.push("New: " + fresh.map(f => f.n).join(", ") + ".");
-        const sl = g.slots.map((n, i) => n > (gOld.slots[i] || 0) ? (n - (gOld.slots[i] || 0)) + " more " + ordinalLevel(i + 1) + "-level slot" + (n - (gOld.slots[i] || 0) > 1 ? "s" : "") : "").filter(Boolean);
-        if (sl.length) lines.push("Spell slots: " + sl.join(", ") + ".");
-        if (g.cantrips > gOld.cantrips) lines.push("Learn " + (g.cantrips - gOld.cantrips) + " more cantrip" + (g.cantrips - gOld.cantrips > 1 ? "s" : "") + ".");
-        if (g.known > gOld.known) lines.push("Learn " + (g.known - gOld.known) + " more spell" + (g.known - gOld.known > 1 ? "s" : "") + ".");
-        if (g.asi > gOld.asi) lines.push("Ability Score Improvement: +2 to one score or +1 to two (or a feat). Add it on Ability scores.");
-        if (next === g.subFrom && !String(sh.subclass || "").trim()) lines.push("Choose your subclass on this page.");
-      } else lines.push("Add any new features on this page; the hit points use your hit dice (d" + hd + ").");
-      for (const l of lines) w.appendChild(Object.assign(document.createElement("p"), {textContent:l}));
+      which.addEventListener("change", draw);
+      if (rows.length > 1 || classOptions().length) { const l = document.createElement("label"); l.className = "se-inline"; l.append("Level up in ", which); if (rows.length) w.appendChild(l); }
+      hp.append(a, r, show); w.append(hp, info);
+      draw();
       body.appendChild(w);
       return {focus:() => a.focus()};
     },
@@ -19817,13 +20034,19 @@ async function levelUpDialog(){
   if (!res) return;
   pushUndo();
   const s2 = seData(), hpNow = sheetHp(s2);
-  seSet({level:String(next), maxHp:String((Number(s2.maxHp) || 0) + gain), curHp:String(hpNow.cur + gain)});
-  if (cls && gOld) applyClass(cls, {level:next});
-  else if (/^\d+d\d+$/.test(String(s2.hitDice || "").trim())) seSet({hitDice:next + "d" + hd});
-  toast("Level " + next + "! +" + gain + " hit points.");
+  seSet({maxHp:String((Number(s2.maxHp) || 0) + gain), curHp:String(hpNow.cur + gain)});
+  if (rows.length){
+    if (newKey){ const c = classByKey(newKey); rows.push({key:newKey, name:c?.name || "", level:1, sub:""}); }
+    else rows[pickIdx].level = Math.min(20, rows[pickIdx].level + 1);
+    applyClasses(rows);
+  } else {
+    const next = lv + 1;
+    seSet({level:String(next)});
+    if (/^\d+d\d+$/.test(String(s2.hitDice || "").trim())) seSet({hitDice:next + "d" + String(s2.hitDice).split("d")[1]});
+  }
+  toast("Level " + (sheetLevel(seData()) || lv + 1) + "! +" + gain + " hit points.");
   renderSheetEditor();
 }
-
 /* ---- importing races from a link or pasted text ---- */
 const RACE_SITES = {
   "dnd5e.wikidot.com": {isRace:u => /^\/lineage:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/lineages?$/i.test(u.pathname), canon:u => "https://dnd5e.wikidot.com" + u.pathname},
@@ -19833,7 +20056,36 @@ const RACE_SITES = {
 };
 const RECOMMENDED_RACE_LINKS = [["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/lineage"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Races"]];
 const RACE_SKIP_TRAITS = /^(ability score increases?|age|alignment|size|speed|languages?|creature type|type)$/i;
-/* a race page's text → one race per "Source:" section (pages often have an old and a new version) */
+/* what a list of "Name. Text" traits says about a race (or subrace) */
+function raceFromTraits(name, traits){
+  const T = n => traits.find(t => new RegExp("^" + n + "$", "i").test(t.n))?.d || "";
+  const asi = T("ability score increases?") || "";
+  const ab = {}, FULL = ABILITY_WORD;
+  for (const m of asi.matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma) score (?:increases|increase|goes up) by (\d)/gi)) ab[FULL[m[1].toLowerCase()]] = Number(m[2]);
+  for (const m of asi.matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma) and (strength|dexterity|constitution|intelligence|wisdom|charisma) scores (?:each )?increase by (\d)/gi)){ ab[FULL[m[1].toLowerCase()]] = Number(m[3]); ab[FULL[m[2].toLowerCase()]] = Number(m[3]); }
+  let abChoose = null;
+  if (!Object.keys(ab).length){
+    if (/by 2[^.]*different[^.]*by 1/i.test(asi)) abChoose = {amounts:[2, 1], from:[]};
+    else if (/(two|2) different ability scores[^.]*by 1/i.test(asi)) abChoose = {amounts:[1, 1], from:[]};
+    else if (/one ability score[^.]*by (\d)/i.test(asi)) abChoose = {amounts:[Number(/one ability score[^.]*by (\d)/i.exec(asi)[1])], from:[]};
+  } else if (/(one|two) other ability scores? of your choice[^.]*by (\d)/i.test(asi)){
+    const m = /(one|two) other ability scores? of your choice[^.]*by (\d)/i.exec(asi);
+    abChoose = {amounts:Array(m[1].toLowerCase() === "two" ? 2 : 1).fill(Number(m[2])), from:SHEET_ABILITIES.filter(a => !ab[a])};
+  }
+  const sizeT = T("size"), size = (/\b(Small or Medium|Medium or Small)\b/i.exec(sizeT) || /\bsize is (Tiny|Small|Medium|Large)\b/i.exec(sizeT) || /\b(Tiny|Small|Medium|Large)\b/.exec(sizeT) || [])[1] || "";
+  const all = traits.map(t => t.d).join("\n");
+  const speed = parseInt((/walking speed (?:is|of|increases to) (\d+) feet/i.exec(all) || /(\d+)\s*feet/i.exec(T("speed")) || [])[1], 10) || 0;
+  const dv = T("superior darkvision") || T("darkvision");
+  const senses = dv ? "Darkvision " + ((/(\d+)\s*feet/i.exec(dv) || [])[1] || 60) + " ft" : "";
+  const langT = T("languages?");
+  const langs = (((/write ([^.]+)/i.exec(langT) || [])[1]) || "").split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim()).filter(x => /^[A-Z][a-z]+$/.test(x));
+  const langChoose = /one (?:other|extra|additional) language/i.test(langT) ? 1 : /two (?:other|extra|additional) languages/i.test(langT) ? 2 : 0;
+  const skills = [...new Set([...all.matchAll(/proficiency in the ([A-Z][A-Za-z ,]+?) skills?\b/g)].flatMap(m => m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)).map(x => x.trim()).filter(s => SKILL_AB[s]))];
+  return {name, ab, abChoose, size, speed, senses, langs, langChoose, skills, traits:traits.filter(t => !RACE_SKIP_TRAITS.test(t.n)).map(t => ({n:t.n, d:t.d.trim()}))};
+}
+/* a race page's text → one race per "Source:" section (pages often have an old
+   and a new version); subrace headings ("Hill Dwarf") inside a section become
+   its subraces */
 function parseRaceText(text){
   const lines = String(text || "").replace(/\r/g, "").split("\n").map(l => l.trim());
   const first = lines.findIndex(Boolean); if (first < 0) return [];
@@ -19845,46 +20097,35 @@ function parseRaceText(text){
   }
   chunks.push(cur);
   const isName = n => n.split(/\s+/).length <= 6 && n.split(/\s+/).every(w => /^[A-Z(]/.test(w) || /^(of|the|and|a|an|to|in|or|with)$/.test(w));
+  const traitRe = /^([A-Z][A-Za-z'’ ()/-]{1,48}?)\.\s+(.+)$/;
+  const isTrait = l => { const m = traitRe.exec(l); return !!m && isName(m[1]); };
   const races = [];
   for (const ch of chunks){
-    const traits = [];
-    for (const l of ch.lines){
-      const m = /^([A-Z][A-Za-z'’ ()/-]{1,48}?)\.\s+(.+)$/.exec(l);
-      if (m && isName(m[1])) traits.push({n:m[1].trim(), d:m[2].trim()});
-      else if (l && traits.length && traits[traits.length - 1].d.length < 4000 && !/^(source|back to|see also)/i.test(l)) traits[traits.length - 1].d += "\n" + l;
-      else if (!l && traits.length) traits[traits.length - 1].done = true;
+    /* segments: a short title line followed by traits starts a new one */
+    const segs = [{head:"", traits:[]}];
+    ch.lines.forEach((l, i) => {
+      if (!l) return;
+      const next = ch.lines.slice(i + 1).find(Boolean) || "";
+      if (!isTrait(l) && l.length <= 40 && !/[.:!?]$/.test(l) && isName(l) && isTrait(next)){ segs.push({head:l, traits:[]}); return; }
+      const m = traitRe.exec(l), seg = segs[segs.length - 1];
+      if (m && isName(m[1])) seg.traits.push({n:m[1].trim(), d:m[2].trim()});
+      else if (seg.traits.length && seg.traits[seg.traits.length - 1].d.length < 4000 && !/^(source|back to|see also)/i.test(l)) seg.traits[seg.traits.length - 1].d += "\n" + l;
+    });
+    const hasAsi = s => s.traits.some(t => /^ability score increases?$/i.test(t.n));
+    const groups = [];
+    for (const s of segs){
+      if (!s.traits.length) continue;
+      if (!groups.length || (hasAsi(s) && groups.some(hasAsi))) groups.push({...s, traits:[...s.traits]});
+      else groups[groups.length - 1].traits.push(...s.traits);
     }
-    const T = n => traits.find(t => new RegExp("^" + n + "$", "i").test(t.n))?.d || "";
-    const asi = T("ability score increases?") || "";
-    if (!asi && !T("speed") && !T("size")) continue;   /* not a race section */
-    const ab = {}, FULL = {strength:"STR", dexterity:"DEX", constitution:"CON", intelligence:"INT", wisdom:"WIS", charisma:"CHA"};
-    for (const m of asi.matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma) score (?:increases|increase|goes up) by (\d)/gi)) ab[FULL[m[1].toLowerCase()]] = Number(m[2]);
-    for (const m of asi.matchAll(/\b(strength|dexterity|constitution|intelligence|wisdom|charisma) and (strength|dexterity|constitution|intelligence|wisdom|charisma) scores (?:each )?increase by (\d)/gi)){ ab[FULL[m[1].toLowerCase()]] = Number(m[3]); ab[FULL[m[2].toLowerCase()]] = Number(m[3]); }
-    let abChoose = null;
-    if (!Object.keys(ab).length){
-      if (/by 2[^.]*different[^.]*by 1/i.test(asi)) abChoose = {amounts:[2, 1], from:[]};
-      else if (/(two|2) different ability scores[^.]*by 1/i.test(asi)) abChoose = {amounts:[1, 1], from:[]};
-      else if (/one ability score[^.]*by (\d)/i.test(asi)) abChoose = {amounts:[Number(/one ability score[^.]*by (\d)/i.exec(asi)[1])], from:[]};
-    } else if (/(one|two) other ability scores? of your choice[^.]*by (\d)/i.test(asi)){
-      const m = /(one|two) other ability scores? of your choice[^.]*by (\d)/i.exec(asi);
-      abChoose = {amounts:Array(m[1].toLowerCase() === "two" ? 2 : 1).fill(Number(m[2])), from:SHEET_ABILITIES.filter(a => !ab[a])};
-    }
-    const sizeT = T("size"), size = (/\b(Small or Medium|Medium or Small)\b/i.exec(sizeT) || /\bsize is (Tiny|Small|Medium|Large)\b/i.exec(sizeT) || /\b(Tiny|Small|Medium|Large)\b/.exec(sizeT) || [])[1] || "";
-    const all = traits.map(t => t.d).join("\n");
-    const speed = parseInt((/walking speed (?:is|of) (\d+) feet/i.exec(all) || /(\d+)\s*feet/i.exec(T("speed")) || [])[1], 10) || 0;
-    const dv = T("superior darkvision") || T("darkvision");
-    const senses = dv ? ((T("superior darkvision") ? "Darkvision " : "Darkvision ") + ((/(\d+)\s*feet/i.exec(dv) || [])[1] || 60) + " ft") : "";
-    const langT = T("languages?");
-    const langs = (((/write ([^.]+)/i.exec(langT) || [])[1]) || "").split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim())
-      .filter(x => /^[A-Z][a-z]+$/.test(x));
-    const langChoose = /one (?:other|extra|additional) language/i.test(langT) ? 1 : /two (?:other|extra|additional) languages/i.test(langT) ? 2 : 0;
-    const skills = [...new Set([...all.matchAll(/proficiency in the ([A-Z][A-Za-z ,]+?) skills?\b/g)].flatMap(m => m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)).map(x => x.trim()).filter(s => SKILL_AB[s]))];
+    const main = groups[0];
+    if (!main || (!hasAsi(main) && !main.traits.some(t => /^(speed|size)$/i.test(t.n)))) continue;   /* not a race section */
     const name = chunks.filter(c => c.lines.some(Boolean)).length > 1 && ch.src ? base + " (" + ch.src.replace(/^Mordenkainen Presents: /, "").replace(/, page.*$/i, "").slice(0, 40) + ")" : base;
-    races.push(normRace({name, ab, abChoose, size, speed, senses, langs, langChoose, skills,
-      traits:traits.filter(t => !RACE_SKIP_TRAITS.test(t.n)).map(t => ({n:t.n, d:t.d})), book:ch.src}));
-    races[races.length - 1].book = ch.src;
+    const race = raceFromTraits(name, main.traits);
+    race.sub = groups.slice(1).map(g => { const r = raceFromTraits(g.head, g.traits); return {name:g.head, ab:r.ab, skills:r.skills, traits:r.traits, speed:r.speed, senses:r.senses}; });
+    const n = normRace({...race, book:ch.src}); n.book = ch.src;
+    races.push(n);
   }
-  /* several sections that read the same are one race */
   const seen = new Set();
   return races.filter(r => { const k = spellKey(r.name); if (seen.has(k)) return false; seen.add(k); return true; });
 }
@@ -19918,34 +20159,451 @@ async function importRacesFromLink(url, {onProgress = () => {}, stopped = () => 
   }
   return {found, failed, stopped:stopped()};
 }
-async function importRacesDialog(){
+/* ---- your libraries of classes, subclasses and backgrounds ----
+   Same rules as the spell and race libraries: kept in the workspace
+   (state.classLib, state.bgLib) and each in its own Drive file, never in the
+   app's published files. An entry imported again from the same page, or with
+   the same name, is updated instead of doubled. */
+function libList(prop){ return Object.values(state[prop] || {}).sort((a, b) => a.name.localeCompare(b.name)); }
+function libPut(prop, name, data, src = {}, match = () => true){
+  const nm = String(name || "").trim().slice(0, 120); if (!nm) return null;
+  state[prop] = state[prop] || {};
+  const t = now(), list = Object.values(state[prop]);
+  const old = list.find(e => match(e) && src.url && e.url === src.url) || list.find(e => match(e) && spellKey(e.name) === spellKey(nm));
+  if (old){ state[prop][old.id] = {...old, ...data, name:nm, ...src, updatedAt:t}; return "updated"; }
+  const id = uid(prop.replace(/Lib$/, ""));
+  state[prop][id] = {id, name:nm, ...data, ...src, addedAt:t, updatedAt:t};
+  return "added";
+}
+const cut = (v, n) => String(v ?? "").slice(0, n);
+const cutList = (a, n = 40, len = 120) => (Array.isArray(a) ? a : []).map(x => cut(x, len)).filter(Boolean).slice(0, n);
+const cutNum = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
+function cutFeatures(f){ const out = {}; for (const [k, v] of Object.entries(f || {}).slice(0, 120)) out[cut(k, 120)] = cut(v, 8000); return out; }
+function normClass(c){
+  return {id:cut(c.id || spellKey(c.name).replace(/\s+/g, "-"), 60), name:cut(c.name, 80), hd:[4, 6, 8, 10, 12].includes(Number(c.hd)) ? Number(c.hd) : 8,
+    saves:cutList(c.saves, 6, 3).filter(a => SHEET_ABILITIES.includes(a)), armor:cutList(c.armor), weapons:cutList(c.weapons), tools:cutList(c.tools),
+    skills:c.skills ? {n:cutNum(c.skills.n, 1, 6), from:cutList(c.skills.from, 18).filter(s => SKILL_AB[s])} : null, otherChoices:cutList(c.otherChoices, 6, 300),
+    spell:SHEET_ABILITIES.includes(c.spell) ? c.spell : "", caster:["full", "half", "half-up", "third", "pact"].includes(c.caster) ? c.caster : "",
+    levels:(Array.isArray(c.levels) ? c.levels : []).slice(0, 20).map(l => ({lv:cutNum(l.lv, 1, 20), pb:cutNum(l.pb, 2, 6), asi:!!l.asi, f:cutList(l.f, 12),
+      c:cutNum(l.c, 0, 10), k:cutNum(l.k, 0, 30), s:(Array.isArray(l.s) ? l.s : []).slice(0, 9).map(n => cutNum(n, 0, 9)), x:{}})),
+    sub:[], features:cutFeatures(c.features), multi:c.multi ? {req:(c.multi.req || []).slice(0, 3), reqAny:(c.multi.reqAny || []).slice(0, 3), armor:cutList(c.multi.armor), weapons:cutList(c.multi.weapons), tools:cutList(c.multi.tools), skills:c.multi.skills || null} : null};
+}
+function normSub(s){
+  const levels = {};
+  for (const [L, names] of Object.entries(s.levels || {}).slice(0, 20)) levels[cutNum(L, 1, 20)] = cutList(names, 10);
+  return {name:cut(s.name, 80), flavor:cut(s.flavor, 60), desc:cut(s.desc, 3000), from:cutNum(s.from, 1, 20) || 3, levels, features:cutFeatures(s.features), caster:s.caster === "third" ? "third" : ""};
+}
+function classLibPut(cls, src){ const c = normClass(cls); return libPut("classLib", c.name, {kind:"class", cls:c}, src, e => e.kind === "class"); }
+function subclassLibPut(className, sub, src){
+  const s = normSub(sub);
+  return libPut("classLib", s.name, {kind:"subclass", className:cut(className, 80), sub:s}, src, e => e.kind === "subclass" && spellKey(e.className) === spellKey(className));
+}
+
+/* ---- backgrounds ---- */
+function normBg(b){
+  return {name:cut(b.name, 80), skills:cutList(b.skills, 6).filter(s => SKILL_AB[s]), skillChoice:b.skillChoice ? {n:cutNum(b.skillChoice.n, 1, 4), from:cutList(b.skillChoice.from, 18).filter(s => SKILL_AB[s])} : null,
+    tools:cutList(b.tools, 8), toolNote:cut(b.toolNote, 200), langs:cutList(b.langs, 6), langChoose:cutNum(b.langChoose, 0, 4), equipment:cutList(b.equipment, 20, 200),
+    feature:b.feature?.n ? {n:cut(b.feature.n, 120), d:cut(b.feature.d, 6000)} : null,
+    personality:cutList(b.personality, 12, 400), ideals:cutList(b.ideals, 12, 400), bonds:cutList(b.bonds, 12, 400), flaws:cutList(b.flaws, 12, 400)};
+}
+function bgLibPut(bg, src){ const b = normBg(bg); return libPut("bgLib", b.name, {bg:b}, src); }
+function bgOptions(){
+  const srd = (srdRules?.backgrounds || []).map(b => ({key:"srd:" + spellKey(b.name), name:b.name, bg:b, book:"SRD"}));
+  const names = new Set(srd.map(o => spellKey(o.name)));
+  return [...srd, ...libList("bgLib").filter(e => !names.has(spellKey(e.name))).map(e => ({key:"lib:" + e.id, name:e.name, bg:e.bg, book:e.book || "Mine", lib:e}))];
+}
+function bgGrant(opt, ch = {}){
+  const b = opt.bg, skills = [...b.skills, ...(ch.skills || []).filter(Boolean)];
+  return {key:opt.key, name:opt.name, skills:[...new Set(skills)], tools:[...b.tools, ...splitList(ch.tool)], languages:[...b.langs, ...splitList(ch.lang)],
+    langChoose:b.langChoose, toolNote:b.toolNote || "", skillChoice:b.skillChoice || null, feature:b.feature, equipment:b.equipment || [], choices:ch};
+}
+function applyBackground(opt, ch){
+  const sh = seData(), prev = sheetGrants(sh).background, grants = {...sheetGrants(sh)}, patch = {};
+  if (opt){ grants.background = bgGrant(opt, ch); patch.background = opt.name; }
+  else { delete grants.background; if (prev && sh.background === prev.name) patch.background = ""; }
+  patch.grants = grants;
+  seSet(patch);
+}
+let seBgPick = null;
+function seBackground(page, sh){
+  const ready = rulesReady(), g = sheetGrants(sh).background;
+  const bar = document.createElement("div"); bar.className = "se-inline se-racebar";
+  const q = document.createElement("input"); q.type = "search"; q.placeholder = "Search backgrounds"; q.className = "se-search"; q.value = seBackground.q || "";
+  q.addEventListener("keydown", e => e.stopPropagation());
+  const imp = document.createElement("button"); imp.className = "bz-btn"; imp.textContent = "Import backgrounds…";
+  imp.addEventListener("click", async () => { if (await importBackgroundsDialog()) renderSheetEditor(); });
+  bar.append(q, imp); page.appendChild(bar);
+  if (!ready && srdRulesFailed) page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"The free background couldn't be loaded (are you offline?). Your own backgrounds still work."}));
+  const opts = bgOptions();
+  const look = seBgPick && seBgPick.card === seCardId ? (seBgPick.key === "custom" ? "custom" : opts.find(o => o.key === seBgPick.key)) : g ? opts.find(o => o.key === g.key) : (String(sh.background || "").trim() ? "custom" : null);
+  const grid = document.createElement("div"); grid.className = "se-picks";
+  const draw = () => {
+    grid.textContent = "";
+    const term = spellKey(q.value);
+    for (const o of opts){
+      if (term && !spellKey(o.name).includes(term)) continue;
+      const b = document.createElement("button"); b.className = "se-pick" + (look && look !== "custom" && look.key === o.key ? " on" : "") + (g?.key === o.key ? " applied" : "");
+      b.append(Object.assign(document.createElement("b"), {textContent:o.name}), Object.assign(document.createElement("span"), {textContent:o.book}));
+      b.addEventListener("click", () => { seBgPick = {card:seCardId, key:o.key}; if (g?.key !== o.key){ pushUndo(); applyBackground(o, {}); } renderSheetEditor(); });
+      grid.appendChild(b);
+    }
+    const c = document.createElement("button"); c.className = "se-pick" + (look === "custom" ? " on" : "");
+    c.append(Object.assign(document.createElement("b"), {textContent:"Custom background"}), Object.assign(document.createElement("span"), {textContent:"Type it in"}));
+    c.addEventListener("click", () => { seBgPick = {card:seCardId, key:"custom"}; if (g){ pushUndo(); applyBackground(null); } renderSheetEditor(); });
+    grid.appendChild(c);
+  };
+  q.addEventListener("input", () => { seBackground.q = q.value; draw(); });
+  draw(); page.appendChild(grid);
+  if (look && look !== "custom" && g && g.key === look.key){
+    const box = document.createElement("div"); box.className = "se-block se-gives";
+    box.appendChild(Object.assign(document.createElement("h3"), {textContent:look.name + " gives"}));
+    const ch = g.choices || {};
+    const redo = next => { applyBackground(look, next); renderSheetEditor(); };
+    if (look.bg.skillChoice){
+      const row = document.createElement("div"); row.className = "se-inline"; row.append("Skills: ");
+      for (let i = 0; i < look.bg.skillChoice.n; i++){
+        const s = document.createElement("select"); s.appendChild(new Option("Choose…", ""));
+        for (const o of look.bg.skillChoice.from.length ? look.bg.skillChoice.from : SHEET_SKILLS.map(([n]) => n)) s.appendChild(new Option(o, o));
+        s.value = ch.skills?.[i] || "";
+        s.addEventListener("change", () => { const k = [...(ch.skills || [])]; k[i] = s.value; redo({...ch, skills:k}); });
+        row.appendChild(s);
+      }
+      box.appendChild(row);
+    }
+    const quiet = (label, field, ph) => box.appendChild(seField(label, ch[field], v => { const s2 = seData(); seSet({grants:{...sheetGrants(s2), background:bgGrant(look, {...(sheetGrants(s2).background?.choices || {}), [field]:v})}}); }, {placeholder:ph}));
+    if (look.bg.langChoose) quiet("Language" + (look.bg.langChoose > 1 ? "s" : "") + " of your choice (" + look.bg.langChoose + ")", "lang", "Elvish, Dwarvish");
+    if (look.bg.toolNote) quiet("Tool of your choice (" + look.bg.toolNote + ")", "tool", "");
+    const lines = [];
+    if (g.skills.length) lines.push(["Skills", g.skills.join(", ")]);
+    if (g.tools.length) lines.push(["Tools", g.tools.join(", ")]);
+    if (g.languages.length || g.langChoose) lines.push(["Languages", g.languages.length ? g.languages.join(", ") : g.langChoose + " of your choice"]);
+    if (g.equipment.length) lines.push(["Equipment", g.equipment.join(", ")]);
+    const dl = document.createElement("dl"); dl.className = "se-dl";
+    for (const [k, v] of lines) dl.append(Object.assign(document.createElement("dt"), {textContent:k}), Object.assign(document.createElement("dd"), {textContent:v}));
+    box.appendChild(dl);
+    if (g.equipment.length){
+      const eq = document.createElement("button"); eq.className = "se-linkbtn"; eq.textContent = "Add this equipment to my Inventory";
+      eq.addEventListener("click", () => {
+        const s2 = seData(), have = new Set(String(s2.equipment || "").split(/\n+/).map(x => spellKey(x)));
+        const add = g.equipment.filter(x => !have.has(spellKey(x)));
+        seSet({equipment:[String(s2.equipment || "").trim(), ...add].filter(Boolean).join("\n")});
+        toast(add.length ? add.length + " item" + (add.length > 1 ? "s" : "") + " added to Equipment." : "Already in your Equipment.");
+      });
+      box.appendChild(eq);
+    }
+    if (g.feature){
+      const d = document.createElement("details"); d.className = "se-traits";
+      d.append(Object.assign(document.createElement("summary"), {textContent:"Feature: " + g.feature.n}), Object.assign(document.createElement("p"), {textContent:g.feature.d}));
+      box.appendChild(d);
+    }
+    if (look.lib){
+      const rm = document.createElement("button"); rm.className = "se-pageadd"; rm.textContent = "Remove " + look.name + " from my backgrounds";
+      rm.addEventListener("click", async () => {
+        if (!(await askConfirm({title:"Remove " + look.name + "?", message:"It leaves your background library. Sheets that use it keep what it gave them.", okLabel:"Remove", danger:true}))) return;
+        pushUndo(); delete state.bgLib[look.lib.id]; markDirty(); seBgPick = null; renderSheetEditor();
+      });
+      box.appendChild(rm);
+    }
+    page.appendChild(box);
+  }
+  const own = document.createElement("div"); own.className = "se-block";
+  own.appendChild(Object.assign(document.createElement("h3"), {textContent:"Personality"}));
+  if (look === "custom" || !g) own.append(seField("Background", sh.background, v => seSet({background:v}), {big:true}));
+  /* the background's suggested characteristics: pick one or roll for it */
+  const ideas = look && look !== "custom" ? look.bg : null;
+  const trait = (label, field, list) => {
+    const f = seField(label, sh[field], v => seSet({[field]:v}), {area:true, rows:4});
+    if (list?.length){
+      const row = document.createElement("div"); row.className = "se-inline se-suggest";
+      const s = document.createElement("select"); s.appendChild(new Option("Suggestions…", ""));
+      list.forEach((t, i) => s.appendChild(new Option(t.length > 90 ? t.slice(0, 88) + "…" : t, String(i))));
+      const use = t => { const cur = String(seData()[field] || "").trim(); seSet({[field]:cur ? cur + "\n" + t : t}); renderSheetEditor(); };
+      s.addEventListener("change", () => { if (s.value !== "") use(list[Number(s.value)]); });
+      const r = document.createElement("button"); r.className = "bz-btn"; r.textContent = "🎲 Roll";
+      r.addEventListener("click", () => use(list[rollD(list.length) - 1]));
+      row.append(s, r); f.appendChild(row);
+    }
+    return f;
+  };
+  own.append(seGrid("1fr 1fr", trait("Personality traits", "personality", ideas?.personality), trait("Ideals", "ideals", ideas?.ideals)));
+  own.append(seGrid("1fr 1fr", trait("Bonds", "bonds", ideas?.bonds), trait("Flaws", "flaws", ideas?.flaws)));
+  page.appendChild(own);
+}
+
+/* ---- reading pages: backgrounds, classes and subclasses ---- */
+const ABILITY_WORD = {strength:"STR", dexterity:"DEX", constitution:"CON", intelligence:"INT", wisdom:"WIS", charisma:"CHA"};
+const COUNT_WORD = {one:1, two:2, three:3, four:4, five:5, a:1, an:1, "1":1, "2":2, "3":3, "4":4};
+const isUaSource = src => /unearthed arcana|playtest|\bUA\b/i.test(src || "");
+/* "Choose two from Arcana, History and Medicine" → {n:2, from:[…]} */
+function readSkillChoice(t){
+  const m = /(one|two|three|four|five|a|an|\d)\b[^:,.]*?(?:from|of the following|among)\s*:?\s*(.+)$/i.exec(t || "");
+  if (!m && /any (one|two|three|four)/i.test(t || "")) return {n:COUNT_WORD[/any (one|two|three|four)/i.exec(t)[1].toLowerCase()], from:SHEET_SKILLS.map(([n]) => n)};
+  if (!m) return null;
+  const from = m[2].split(/,\s*(?:or\s+|and\s+)?|\s+(?:or|and)\s+/).map(x => x.replace(/[.;]$/, "").trim()).filter(x => SKILL_AB[x]);
+  return {n:COUNT_WORD[m[1].toLowerCase()] || 1, from:from.length ? from : SHEET_SKILLS.map(([n]) => n)};
+}
+function parseBackgroundText(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n").map(l => l.trim());
+  const first = lines.findIndex(Boolean); if (first < 0) return [];
+  const name = lines[first].replace(/\s*\(5e Background\)\s*$/i, "").replace(/^background:\s*/i, "").trim().slice(0, 80);
+  const field = re => { const l = lines.find(x => re.test(x)); return l ? l.replace(re, "").trim() : ""; };
+  const sk = field(/^Skill Proficienc(?:y|ies)\s*:\s*/i), tl = field(/^Tool Proficienc(?:y|ies)\s*:\s*/i), lg = field(/^Languages?\s*:\s*/i), eq = field(/^Equipment\s*:\s*/i);
+  const src = field(/^Source\s*:\s*/i);
+  if (!sk && !lines.some(l => /^Feature\s*:/i.test(l))) return [];
+  const bg = {name, book:src};
+  const fixed = sk.split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.replace(/[.;]$/, "").trim()).filter(x => SKILL_AB[x]);
+  if (/choice|choose|following/i.test(sk)){ bg.skillChoice = readSkillChoice(sk); bg.skills = /plus|and one/i.test(sk) ? fixed.slice(0, 1) : []; } else bg.skills = fixed;
+  if (tl && !/^none/i.test(tl)){ if (/choice|one type/i.test(tl)) bg.toolNote = tl; else bg.tools = tl.split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim()).filter(Boolean); }
+  const lm = /(one|two|three|any one|any two)/i.exec(lg);
+  if (lg && /choice|any/i.test(lg)) bg.langChoose = COUNT_WORD[(lm?.[1] || "one").replace(/^any /i, "").toLowerCase()] || 1;
+  else if (lg && !/^none/i.test(lg)) bg.langs = lg.split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim()).filter(x => /^[A-Z]/.test(x));
+  if (eq) bg.equipment = eq.replace(/\.$/, "").split(/,\s*(?:and\s+)?/).map(x => x.trim()).filter(Boolean);
+  const fi = lines.findIndex(l => /^Feature\s*:/i.test(l));
+  if (fi >= 0){
+    const body = [];
+    for (const l of lines.slice(fi + 1)){
+      if (/^(suggested characteristics|variant|d\d+\s*\||personality trait|feature\s*:)/i.test(l)) break;
+      if (l) body.push(l);
+      if (body.join(" ").length > 4000) break;
+    }
+    bg.feature = {n:lines[fi].replace(/^Feature\s*:\s*/i, "").trim(), d:body.join("\n")};
+  }
+  /* d8 | Personality Trait tables */
+  const table = re => {
+    const i = lines.findIndex(l => re.test(l)); if (i < 0) return [];
+    const out = [];
+    for (const l of lines.slice(i + 1)){
+      const m = /^\d+\s*\|\s*(.+?)\s*\|?\s*$/.exec(l);
+      if (m) out.push(m[1].replace(/\s*\|\s*$/, "")); else if (l && out.length) break;
+    }
+    return out;
+  };
+  bg.personality = table(/^d\d+\s*\|\s*Personality Trait/i); bg.ideals = table(/^d\d+\s*\|\s*Ideal/i);
+  bg.bonds = table(/^d\d+\s*\|\s*Bond/i); bg.flaws = table(/^d\d+\s*\|\s*Flaw/i);
+  return [Object.assign(normBg(bg), {book:src})];
+}
+function pageRootOf(doc){ return doc.querySelector("#page-content") || doc.querySelector("#mw-content-text .mw-parser-output") || doc.querySelector("#mw-content-text") || doc.querySelector(".bloc") || doc.body; }
+function pageTitleOf(doc){
+  return (doc.querySelector(".page-title")?.textContent || doc.querySelector("#firstHeading")?.textContent || doc.title.replace(/\s*-\s*(DND 5th Edition|D&D Wiki).*$/i, ""))
+    .replace(/\s+/g, " ").replace(/\s*\(5e (Class|Subclass|Background|Race|Archetype)\)\s*$/i, "").replace(/^5e SRD:\s*/i, "").trim();
+}
+/* each heading and the text under it */
+function pageSections(root){
+  const out = []; let cur = null;
+  const walk = el => {
+    for (const c of el.children){
+      if (/^H[1-6]$/.test(c.tagName)){ cur = {h:c.textContent.replace(/\s+/g, " ").trim(), lvl:Number(c.tagName[1]), parts:[]}; out.push(cur); }
+      else if (c.querySelector("h1,h2,h3,h4,h5,h6") && c.tagName !== "TABLE") walk(c);
+      else if (cur && c.tagName !== "TABLE" && !/^(SCRIPT|STYLE)$/.test(c.tagName)) cur.parts.push(pageTextOf(c));
+    }
+  };
+  walk(root);
+  return out.map(s => ({h:s.h, lvl:s.lvl, text:s.parts.join("\n").replace(/\n{3,}/g, "\n\n").trim()}));
+}
+/* the class table: Level | Proficiency Bonus | Features | Cantrips Known | 1st … */
+function readLevelTable(root){
+  for (const t of root.querySelectorAll("table")){
+    const rows = [...t.querySelectorAll("tr")].map(tr => [...tr.children].map(td => td.textContent.replace(/\s+/g, " ").trim()));
+    const first = rows.findIndex(r => /^1(st)?$/i.test(r[0] || ""));
+    if (first < 1) continue;
+    const head = rows[first - 1].map(h => h.toLowerCase());
+    if (!head.some(h => /feature/.test(h))) continue;
+    const body = rows.slice(first).filter(r => /^\d+(st|nd|rd|th)?$/i.test(r[0] || ""));
+    if (body.length >= 10) return {head, body};
+  }
+  return null;
+}
+function deriveCaster(levels, name){
+  if (/warlock/i.test(name)) return "pact";
+  const at = l => levels.find(x => x.lv === l)?.s || [];
+  const top = at(20).reduce((m, n, i) => n ? i + 1 : m, 0);
+  if (!top) return "";
+  if (top >= 9) return "full";
+  if (top === 5) return at(1).some(Boolean) ? "half-up" : "half";
+  return top <= 4 ? "third" : "half";
+}
+function parseClassHtml(html, url){
+  const doc = new DOMParser().parseFromString(html, "text/html"), root = pageRootOf(doc);
+  const name = pageTitleOf(doc).replace(/^class:\s*/i, "");
+  const text = pageTextOf(root);
+  const line = label => (new RegExp("^\\s*" + label + "\\s*:\\s*(.+)$", "im").exec(text) || [])[1]?.trim() || "";
+  const list = t => /^none\b/i.test(t) ? [] : t.replace(/\.$/, "").split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim()).filter(Boolean).map(x => x.charAt(0).toUpperCase() + x.slice(1));
+  const tbl = readLevelTable(root);
+  if (!tbl) return null;
+  const col = re => tbl.head.findIndex(h => re.test(h));
+  const fI = col(/feature/), pI = col(/proficiency/), cI = col(/cantrips/), kI = col(/spells known/), slotLvI = col(/slot level/), slotsI = col(/^spell slots$/);
+  const ord = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"].map(o => tbl.head.indexOf(o));
+  const num = v => parseInt(String(v || "").replace(/[^\d]/g, ""), 10) || 0;
+  const levels = tbl.body.slice(0, 20).map((r, i) => {
+    const f = String(r[fI] || "").split(/,\s*/).map(x => x.trim()).filter(x => x && !/^[—–-]$/.test(x));
+    let s = ord.map(j => j >= 0 ? num(r[j]) : 0);
+    if (slotLvI >= 0 && slotsI >= 0){ s = Array(9).fill(0); const L = num(r[slotLvI]); if (L) s[L - 1] = num(r[slotsI]); }
+    return {lv:i + 1, pb:pI >= 0 ? num(r[pI]) : 2 + Math.floor(i / 4), asi:f.some(x => /^ability score improvement/i.test(x)), f, c:cI >= 0 ? num(r[cI]) : 0, k:kI >= 0 ? num(r[kI]) : 0, s};
+  });
+  const features = {};
+  for (const s of pageSections(root)) if (s.text && levels.some(l => l.f.some(n => spellKey(n) === spellKey(s.h) || spellKey(n.replace(/\s*\(.*\)$/, "")) === spellKey(s.h)))){
+    for (const l of levels) for (const n of l.f) if (spellKey(n) === spellKey(s.h) || spellKey(n.replace(/\s*\(.*\)$/, "")) === spellKey(s.h)) features[n] = s.text.slice(0, 8000);
+  }
+  const hd = Number((/Hit Dice\s*:\s*1d(\d+)/i.exec(text) || [])[1]) || 8;
+  const saves = line("Saving Throws").split(/,\s*(?:and\s+)?|\s+and\s+/).map(w => ABILITY_WORD[w.trim().toLowerCase()]).filter(Boolean);
+  const sk = line("Skills");
+  const spell = ABILITY_WORD[((/(strength|dexterity|constitution|intelligence|wisdom|charisma) is your spellcasting ability/i.exec(text) || [])[1] || "").toLowerCase()] || "";
+  const tools = line("Tools");
+  const cls = {name, hd, saves, armor:list(line("Armou?r")), weapons:list(line("Weapons")), tools:/choice/i.test(tools) ? [] : list(tools), otherChoices:/choice/i.test(tools) ? ["Tools: " + tools] : [],
+    skills:readSkillChoice(sk), spell, levels, features};
+  cls.caster = deriveCaster(levels, name);
+  /* multiclassing: "you gain the following proficiencies: light armor, medium armor, shields" */
+  const mm = /multiclass[\s\S]{0,400}?gain the following proficienc(?:y|ies)\s*:?\s*([^.\n]+)/i.exec(text);
+  if (mm){ const items = list(mm[1]); cls.multi = {req:[], reqAny:[], armor:items.filter(x => /armou?r|shield/i.test(x)), weapons:items.filter(x => /weapon/i.test(x)), tools:items.filter(x => /tool|kit|supplies/i.test(x)), skills:/skill/i.test(mm[1]) ? {n:1, from:SHEET_SKILLS.map(([n]) => n)} : null}; }
+  /* the subclasses it links to */
+  const base = new URL(url), host = spellSiteHost(base), slug = base.pathname.replace(/^\//, "");
+  const subs = [], seen = new Set();
+  for (const a of root.querySelectorAll("a[href]")){
+    let u; try { u = new URL(a.getAttribute("href"), base); } catch (_) { continue; }
+    const path = decodeURIComponent(u.pathname);
+    const ok = host === "dnd5e.wikidot.com" ? new RegExp("^/" + slug + ":[a-z0-9-]+$", "i").test(path) : /_\(5e_Subclass\)$/i.test(path);
+    if (!ok || spellSiteHost(u) !== host) continue;
+    const link = "https://" + host + u.pathname;
+    if (seen.has(link.toLowerCase())) continue; seen.add(link.toLowerCase());
+    const around = a.closest("tr, li, p")?.textContent || "";
+    subs.push({url:link, name:a.textContent.replace(/\s+/g, " ").replace(/\s*\(UA\)\s*$/i, "").trim(), ua:/\(UA\)|unearthed arcana|playtest/i.test(a.textContent + " " + around)});
+  }
+  return {cls, subs};
+}
+function parseSubclassHtml(html, url, {className = "", name = ""} = {}){
+  const doc = new DOMParser().parseFromString(html, "text/html"), root = pageRootOf(doc);
+  const title = pageTitleOf(doc);
+  const nm = name || title.replace(/^[^:]+:\s*/, "").trim();
+  const text = pageTextOf(root);
+  const src = (/^Source\s*:\s*(.+)$/im.exec(text) || [])[1]?.trim() || "";
+  const levelOf = t => Number((/\((\d+)(?:st|nd|rd|th)[- ]level\)/i.exec(t) || /(\d+)(?:st|nd|rd|th)[- ]level\b/i.exec(t) || [])[1]) || 0;
+  const features = {}, levels = {};
+  let desc = "", started = false, caster = "";
+  for (const s of pageSections(root)){
+    if (!s.h || spellKey(s.h) === spellKey(nm) || /^(table of contents|source)/i.test(s.h)) { if (!started && s.text) desc += s.text + "\n"; continue; }
+    const L = levelOf(s.h) || levelOf(s.text.slice(0, 300));
+    if (!L && !started){ desc += s.text + "\n"; continue; }
+    started = true;
+    const n = s.h.replace(/\s*\(\d+(?:st|nd|rd|th)[- ]level\)\s*$/i, "").trim();
+    const lv = L || Number(Object.keys(levels).pop()) || 3;
+    (levels[lv] = levels[lv] || []).push(n);
+    features[n] = s.text.slice(0, 8000);
+    if (/^spellcasting$/i.test(n)) caster = "third";
+  }
+  if (!Object.keys(levels).length) return null;
+  const from = Math.min(...Object.keys(levels).map(Number));
+  const cn = className || (title.includes(":") ? title.split(":")[0].trim() : (Object.keys(ABILITY_WORD).length && ((srdRules?.classes || []).find(c => new RegExp("\\b" + c.name + "\\b", "i").test(text))?.name || "")));
+  return {className:cn, sub:{name:nm, desc:desc.trim().slice(0, 3000), from, levels, features, caster}, book:src};
+}
+
+/* ---- sites, and reading classes, subclasses and backgrounds from links ---- */
+const WIKIDOT_CLASSES = ["artificer", "barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin", "ranger", "rogue", "sorcerer", "warlock", "wizard"];
+const CLASS_SITES = {
+  "dnd5e.wikidot.com": {isClass:u => WIKIDOT_CLASSES.includes(u.pathname.replace(/^\//, "").toLowerCase()), isSub:u => /^\/([a-z-]+):[a-z0-9-]+$/i.test(u.pathname) && WIKIDOT_CLASSES.includes(u.pathname.slice(1).split(":")[0].toLowerCase()), isList:() => false},
+  "www.dandwiki.com": {isClass:u => /_\(5e_Class\)$/i.test(decodeURIComponent(u.pathname)), isSub:u => /_\(5e_Subclass\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*(Classes|Subclasses)[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"}
+};
+const BG_SITES = {
+  "dnd5e.wikidot.com": {isItem:u => /^\/background:[a-z0-9-]+$/i.test(u.pathname), isList:u => /^\/backgrounds?$/i.test(u.pathname)},
+  "www.dandwiki.com": {isItem:u => /_\(5e_Background\)$/i.test(decodeURIComponent(u.pathname)), isList:u => /^\/wiki\/5e_[^/:]*Backgrounds[^/:]*$/i.test(decodeURIComponent(u.pathname)), book:() => "D&D Wiki (homebrew)"},
+  "www.aidedd.org": {isItem:() => true, isList:() => false}
+};
+/* every link on a page that `ok` accepts, once each */
+function pageLinks(html, base, ok){
+  const doc = new DOMParser().parseFromString(html, "text/html"), host = spellSiteHost(base), seen = new Map();
+  for (const a of doc.querySelectorAll("a[href]")){
+    let u; try { u = new URL(a.getAttribute("href"), base); } catch (_) { continue; }
+    if (spellSiteHost(u) !== host || !ok(u)) continue;
+    const link = "https://" + host + u.pathname, k = link.toLowerCase();
+    if (!seen.has(k)) seen.set(k, {url:link, name:a.textContent.replace(/\s+/g, " ").trim(), ua:/\(UA\)/i.test(a.textContent)});
+  }
+  return [...seen.values()];
+}
+/* reads a few pages at a time; each job returns how it went */
+async function runJobs(jobs, {onProgress = () => {}, stopped = () => false, width = 3} = {}){
+  let done = 0; onProgress(0, jobs.length, "");
+  for (let i = 0; i < jobs.length && !stopped(); i += width)
+    await Promise.all(jobs.slice(i, i + width).map(async j => { try { await j.run(); } catch (e){ if (e.fatal) throw e; j.fail?.(e); } onProgress(++done, jobs.length, j.name || ""); }));
+}
+function importTally(){ return {added:0, updated:0, skipped:0, failed:[], note(r){ if (r === "added") this.added++; else if (r === "updated") this.updated++; }}; }
+async function importBackgroundsFromLink(url, {onProgress, stopped, skipUa = true} = {}){
+  let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
+  const host = spellSiteHost(u), site = BG_SITES[host];
+  if (!site) throw Object.assign(new Error("Links from " + Object.keys(BG_SITES).map(h => h.replace(/^www\./, "")).join(", ") + " only, for now."), {fatal:true});
+  const links = site.isList(u) ? pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isItem(v) && !site.isList(v)) : [{url:"https://" + host + u.pathname + u.search, name:""}];
+  if (!links.length) throw Object.assign(new Error("No background pages were linked from that page."), {fatal:true});
+  const t = importTally();
+  await runJobs(links.map(l => ({name:l.name, fail:() => t.failed.push(l.name || l.url), run:async () => {
+    const bgs = parseBackgroundText(wikiPageText(await fetchSpellPage(l.url)));
+    if (!bgs.length) throw new Error("not a background");
+    for (const b of bgs){ if (skipUa && isUaSource(b.book)){ t.skipped++; continue; } t.note(bgLibPut(b, {url:l.url, book:site.book ? site.book() : (b.book || host.replace(/^www\./, "")), src:host})); }
+  }})), {onProgress, stopped});
+  return t;
+}
+async function importClassesFromLink(url, {onProgress, stopped, skipUa = true} = {}){
+  let u; try { u = new URL(url.trim()); } catch (_) { throw Object.assign(new Error("That isn't a web address."), {fatal:true}); }
+  const host = spellSiteHost(u), site = CLASS_SITES[host];
+  if (!site) throw Object.assign(new Error("Links from " + Object.keys(CLASS_SITES).map(h => h.replace(/^www\./, "")).join(" or ") + " only, for now."), {fatal:true});
+  const t = importTally(), book = b => site.book ? site.book() : (b || host.replace(/^www\./, ""));
+  const subJob = (link, className, name) => ({name:name || link, fail:() => t.failed.push(name || link), run:async () => {
+    const r = parseSubclassHtml(await fetchSpellPage(link), link, {className, name});
+    if (!r) throw new Error("not a subclass");
+    if (skipUa && isUaSource(r.book)){ t.skipped++; return; }
+    t.note(subclassLibPut(r.className || className, r.sub, {url:link, book:book(r.book), src:host}));
+  }});
+  const classJob = async link => {
+    const html = await fetchSpellPage(link), r = parseClassHtml(html, link);
+    if (!r) throw Object.assign(new Error("That page has no class table CORKBORK can read."), {fatal:links.length === 1});
+    /* the free classes are built in; only their subclasses are added */
+    if (!srdClass(r.cls.name)) t.note(classLibPut(r.cls, {url:link, book:book(""), src:host}));
+    return r;
+  };
+  let links = [];
+  if (site.isList(u)) links = pageLinks(await fetchSpellPage("https://" + host + u.pathname), u, v => site.isClass(v) || site.isSub(v)).map(l => l.url);
+  else links = ["https://" + host + u.pathname];
+  const jobs = [];
+  for (const link of links){
+    const lu = new URL(link);
+    if (site.isSub(lu)){ jobs.push(subJob(link, host === "dnd5e.wikidot.com" ? (WIKIDOT_CLASSES.find(c => c === lu.pathname.slice(1).split(":")[0].toLowerCase()) || "").replace(/^./, c => c.toUpperCase()) : "", "")); continue; }
+    try {
+      const r = await classJob(link);
+      for (const s of r.subs) if (!(skipUa && s.ua)) jobs.push(subJob(s.url, r.cls.name, s.name)); else t.skipped++;
+    } catch (e){ if (e.fatal) throw e; t.failed.push(link); }
+  }
+  await runJobs(jobs, {onProgress, stopped});
+  return t;
+}
+
+/* ---- one import window for each kind: a link first, pasting below ---- */
+async function libImportDialog(K){
   let pasted = [], changed = 0;
   const res = await askOpen({
-    title:"Import races",
-    wide:true,
+    title:K.title, wide:true,
     build(body){
       const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import";
       const h1 = document.createElement("b"); h1.textContent = "From a link";
       const row = document.createElement("div"); row.className = "spl-row";
-      const url = document.createElement("input"); url.type = "text"; url.value = RECOMMENDED_RACE_LINKS[0][1]; url.dataset.enterOwn = "1";
+      const url = document.createElement("input"); url.type = "text"; url.value = K.links[0][1]; url.dataset.enterOwn = "1";
       const go = document.createElement("button"); go.textContent = "Import"; go.className = "spl-btn";
       row.append(url, go);
       const hint = document.createElement("div"); hint.className = "sub spl-rec";
       hint.append("Supported sites: ");
-      RECOMMENDED_RACE_LINKS.forEach(([label, link], i) => {
+      K.links.forEach(([label, link], i) => {
         const b = document.createElement("button"); b.type = "button"; b.className = "spl-link"; b.textContent = label; b.title = link;
         b.addEventListener("click", () => { url.value = link; check(); url.focus(); });
-        if (i) hint.append(" and "); hint.append(b);
+        if (i) hint.append(i === K.links.length - 1 ? " and " : ", "); hint.append(b);
       });
-      hint.append(" (a list of races, or one race’s page), or one race page from aidedd.org.");
+      hint.append(K.hint);
       const warn = document.createElement("div"); warn.className = "spl-warn"; warn.hidden = true;
       const check = () => {
         let u = null; try { u = new URL(url.value.trim()); } catch (_) {}
-        const bad = !!url.value.trim() && (!u || !RACE_SITES[spellSiteHost(u)]);
+        const bad = !!url.value.trim() && (!u || !K.sites[spellSiteHost(u)]);
         warn.hidden = !bad; go.disabled = bad;
-        warn.textContent = !u ? "That isn’t a web address." : "CORKBORK can’t read races from " + u.hostname + ". Use one of the supported sites, or paste the race below.";
+        warn.textContent = !u ? "That isn’t a web address." : "CORKBORK can’t read " + K.what + " from " + u.hostname + ". Use one of the supported sites" + (K.paste ? ", or paste below." : ".");
       };
       url.addEventListener("input", check);
+      const uaWrap = document.createElement("label"); uaWrap.className = "spl-check";
+      const ua = document.createElement("input"); ua.type = "checkbox"; ua.checked = true;
+      uaWrap.append(ua, " Skip playtest (Unearthed Arcana) " + K.what);
       const status = document.createElement("div"); status.className = "spl-status";
       const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
       let stop = false, running = false;
@@ -19953,12 +20611,10 @@ async function importRacesDialog(){
         if (running){ stop = true; go.textContent = "Stopping…"; return; }
         running = true; stop = false; go.textContent = "Stop"; url.disabled = true; bar.hidden = false; fill.style.width = "0"; status.textContent = "Reading…";
         try {
-          const r = await importRacesFromLink(url.value, {stopped:() => stop, onProgress:(d, t) => { fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = t > 1 ? "Reading " + d + " of " + t : "Reading…"; }});
-          let added = 0, updated = 0;
-          for (const f of r.found){ const k = raceLibPut(f.race, f.src); if (k === "added") added++; else if (k === "updated") updated++; }
-          if (added || updated){ markDirty(); changed += added + updated; }
-          const parts = [added && added + " added", updated && updated + " updated", r.failed.length && r.failed.length + " couldn't be read"].filter(Boolean);
-          status.textContent = (r.stopped ? "Stopped. " : "Done. ") + (parts.length ? parts.join(", ") + "." : "Nothing new.");
+          const r = await K.fromLink(url.value, {skipUa:ua.checked, stopped:() => stop, onProgress:(d, t, n) => { fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = t > 1 ? "Reading " + d + " of " + t + (n ? " — " + n : "") : "Reading…"; }});
+          if (r.added || r.updated){ markDirty(); changed += r.added + r.updated; }
+          const parts = [r.added && r.added + " added", r.updated && r.updated + " updated", r.skipped && r.skipped + " playtest skipped", r.failed.length && r.failed.length + " couldn't be read"].filter(Boolean);
+          status.textContent = (stop ? "Stopped. " : "Done. ") + (parts.length ? parts.join(", ") + "." : "Nothing new.");
           if (r.failed.length) status.title = "Couldn't read: " + r.failed.join(", ");
           $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
         } catch (e){ status.textContent = e.message; }
@@ -19966,25 +20622,228 @@ async function importRacesDialog(){
       };
       go.addEventListener("click", run);
       url.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); run(); } else if (e.key !== "Escape") e.stopPropagation(); });
-      const or = document.createElement("div"); or.className = "spl-or"; or.textContent = "or";
-      const h2 = document.createElement("b"); h2.textContent = "Paste a race";
-      const ta = document.createElement("textarea"); ta.rows = 6; ta.placeholder = "Paste a race’s page: its name on the first line, then traits like “Ability Score Increase. Your Wisdom score increases by 2.”";
-      const list = document.createElement("div"); list.className = "spl-found";
-      const draw = () => {
-        pasted = parseRaceText(ta.value); list.textContent = "";
-        if (!ta.value.trim()) return;
-        list.appendChild(Object.assign(document.createElement("div"), {className:"spl-found-h", textContent:pasted.length ? "Found: " + pasted.map(r => r.name + (raceLibFind(r.name) ? " (replaces yours)" : "")).join(", ") : "No race found yet. It needs a name, then traits such as Ability Score Increase, Size or Speed."}));
-      };
-      ta.addEventListener("input", draw);
-      ta.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
-      wrap.append(h1, row, warn, hint, bar, status, or, h2, ta, list);
+      wrap.append(h1, row, warn, hint, uaWrap, bar, status);
+      if (K.paste){
+        const or = document.createElement("div"); or.className = "spl-or"; or.textContent = "or";
+        const h2 = document.createElement("b"); h2.textContent = K.paste.label;
+        const ta = document.createElement("textarea"); ta.rows = 6; ta.placeholder = K.paste.placeholder;
+        const list = document.createElement("div"); list.className = "spl-found";
+        const draw = () => {
+          pasted = K.paste.parse(ta.value); list.textContent = "";
+          if (!ta.value.trim()) return;
+          list.appendChild(Object.assign(document.createElement("div"), {className:"spl-found-h", textContent:pasted.length ? "Found: " + pasted.map(p => p.name + (p.have ? " (replaces yours)" : "")).join(", ") : K.paste.none}));
+        };
+        ta.addEventListener("input", draw);
+        ta.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+        wrap.append(or, h2, ta, list);
+      }
+      const all = document.createElement("button"); all.type = "button"; all.className = "spl-all"; all.textContent = "Import everything official at once…";
+      all.addEventListener("click", () => { askClose(null); setTimeout(() => importOfficialDialog().then(n => { if (n && seCardId) renderSheetEditor(); }), 50); });
+      wrap.appendChild(all);
       body.appendChild(wrap);
       return {focus:() => url.focus()};
     },
-    buttons:[{label:"Cancel", value:null}, {label:"Add", primary:true, value:() => pasted}]
+    buttons:[{label:"Cancel", value:null}, {label:K.paste ? "Add" : "Done", primary:true, value:() => pasted}]
   });
-  for (const r of res || []){ raceLibPut(r, {book:r.book || "Pasted"}); changed++; }
-  if (res?.length){ markDirty(); toast(res.length + " race" + (res.length > 1 ? "s" : "") + " in your race library."); }
+  for (const p of res || []){ p.put(); changed++; }
+  if (res?.length){ markDirty(); toast(res.length + " added to your " + K.what + "."); }
+  return changed;
+}
+function importRacesDialog(){
+  return libImportDialog({title:"Import races", what:"races", sites:RACE_SITES, links:RECOMMENDED_RACE_LINKS,
+    hint:" (a list of races, or one race’s page), or one race page from aidedd.org.",
+    fromLink:async (url, o) => { const r = await importRacesFromLink(url, o), t = importTally(); t.failed = r.failed;
+      for (const f of r.found){ if (o.skipUa && isUaSource(f.race.book)){ t.skipped++; continue; } t.note(raceLibPut(f.race, f.src)); } return t; },
+    paste:{label:"Paste a race", placeholder:"Paste a race’s page: its name on the first line, then traits like “Ability Score Increase. Your Wisdom score increases by 2.”",
+      none:"No race found yet. It needs a name, then traits such as Ability Score Increase, Size or Speed.",
+      parse:text => parseRaceText(text).map(r => ({name:r.name, have:!!raceLibFind(r.name), put:() => raceLibPut(r, {book:r.book || "Pasted"})}))}});
+}
+function importBackgroundsDialog(){
+  return libImportDialog({title:"Import backgrounds", what:"backgrounds", sites:BG_SITES,
+    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/backgrounds"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Backgrounds"]],
+    hint:" (a list of backgrounds, or one background’s page), or one page from aidedd.org.",
+    fromLink:importBackgroundsFromLink,
+    paste:{label:"Paste a background", placeholder:"Paste a background’s page: its name, then lines like “Skill Proficiencies: Insight, Religion” and “Feature: …”",
+      none:"No background found yet. It needs a name, then Skill Proficiencies or a Feature.",
+      parse:text => parseBackgroundText(text).map(b => ({name:b.name, have:libList("bgLib").some(e => spellKey(e.name) === spellKey(b.name)), put:() => bgLibPut(b, {book:b.book || "Pasted"})}))}});
+}
+function importClassesDialog(){
+  return libImportDialog({title:"Import classes", what:"classes", sites:CLASS_SITES,
+    links:[["dnd5e.wikidot.com", "https://dnd5e.wikidot.com/artificer"], ["dandwiki.com (homebrew)", "https://www.dandwiki.com/wiki/5e_Classes"]],
+    hint:". A class page brings its subclasses too (for the free classes, only the subclasses are added); a subclass page adds just that one.",
+    fromLink:importClassesFromLink});
+}
+
+/* ---- everything official at once (dnd5e.wikidot.com), or just what you tick ---- */
+const OFFICIAL_KINDS = [
+  {id:"spell", label:"Spells", index:"https://dnd5e.wikidot.com/spells"},
+  {id:"race", label:"Races", index:"https://dnd5e.wikidot.com/lineage"},
+  {id:"class", label:"Classes and subclasses", index:""},
+  {id:"background", label:"Backgrounds", index:"https://dnd5e.wikidot.com/backgrounds"}
+];
+/* what the site has, marked with what you already have or comes built in */
+async function scanOfficial(kinds, {onProgress = () => {}, stopped = () => false} = {}){
+  const items = [], W = "dnd5e.wikidot.com";
+  await loadSrdSpells().catch(() => {}); await loadSrdRules().catch(() => {});
+  const urlIn = (prop, url) => libList(prop).some(e => e.url && e.url.toLowerCase() === url.toLowerCase());
+  const steps = kinds.length + (kinds.includes("class") ? WIKIDOT_CLASSES.length - 1 : 0);
+  let done = 0; const tick = n => onProgress(++done, steps, n);
+  if (kinds.includes("spell")){
+    const u = new URL(OFFICIAL_KINDS[0].index), html = await fetchSpellPage(u.href);
+    for (const l of wikiSpellLinks(html, u.href)){
+      const built = (srdSpells || []).some(s => spellKey(s.n) === spellKey(l.name));
+      items.push({kind:"spell", name:l.name, url:l.url, ua:/\(UA\)|\(HB\)/i.test(l.name), built, have:!built && !!spellLibFind(l.name.replace(/\s*\((UA|HB)\)\s*$/i, ""))});
+    }
+    tick("spells");
+  }
+  if (kinds.includes("race") && !stopped()){
+    const u = new URL(OFFICIAL_KINDS[1].index);
+    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => RACE_SITES[W].isRace(v))) items.push({kind:"race", name:l.name, url:l.url, ua:l.ua, built:false, have:raceLibList().some(e => e.url === l.url)});
+    tick("races");
+  }
+  if (kinds.includes("background") && !stopped()){
+    const u = new URL(OFFICIAL_KINDS[3].index);
+    for (const l of pageLinks(await fetchSpellPage(u.href), u, v => BG_SITES[W].isItem(v))){
+      const built = (srdRules?.backgrounds || []).some(b => spellKey(b.name) === spellKey(l.name));
+      items.push({kind:"background", name:l.name, url:l.url, ua:l.ua, built, have:!built && urlIn("bgLib", l.url)});
+    }
+    tick("backgrounds");
+  }
+  if (kinds.includes("class")){
+    for (const slug of WIKIDOT_CLASSES){
+      if (stopped()) break;
+      const url = "https://" + W + "/" + slug;
+      try {
+        const html = await fetchSpellPage(url), r = parseClassHtml(html, url);
+        if (r){
+          const srd = srdClass(r.cls.name);
+          if (!srd) items.push({kind:"class", name:r.cls.name, url, ua:false, built:false, have:urlIn("classLib", url), cls:r.cls});
+          for (const s of r.subs){
+            const built = !!srd && srd.sub.some(x => spellKey(s.name).includes(spellKey(x.name)));
+            items.push({kind:"subclass", name:s.name, className:r.cls.name, url:s.url, ua:s.ua, built, have:!built && urlIn("classLib", s.url)});
+          }
+        }
+      } catch (e){ if (e.fatal) throw e; }
+      tick(slug);
+    }
+  }
+  return items;
+}
+async function importOfficial(items, {skipUa = true, onProgress, stopped} = {}){
+  const t = {spell:importTally(), race:importTally(), class:importTally(), background:importTally()}, src = {src:"dnd5e.wikidot.com"};
+  const jobs = items.map(it => ({name:it.name, fail:() => t[it.kind === "subclass" ? "class" : it.kind].failed.push(it.name), run:async () => {
+    if (it.kind === "spell"){
+      const r = await importSpellsFromLink(it.url, {skipUa, update:true});
+      for (const p of r.found) t.spell.note(spellLibPut(p));
+      t.spell.skipped += r.skipped || 0; if (r.failed.length || !r.found.length && !r.skipped) t.spell.failed.push(it.name);
+    } else if (it.kind === "race"){
+      const rs = parseRaceText(wikiPageText(await fetchSpellPage(it.url)));
+      if (!rs.length) throw new Error("no race");
+      for (const r of rs){ if (skipUa && isUaSource(r.book)){ t.race.skipped++; continue; } t.race.note(raceLibPut(r, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})); }
+    } else if (it.kind === "background"){
+      const bs = parseBackgroundText(wikiPageText(await fetchSpellPage(it.url)));
+      if (!bs.length) throw new Error("no background");
+      for (const b of bs){ if (skipUa && isUaSource(b.book)){ t.background.skipped++; continue; } t.background.note(bgLibPut(b, {...src, url:it.url, book:b.book || "dnd5e.wikidot.com"})); }
+    } else if (it.kind === "class"){
+      t.class.note(classLibPut(it.cls, {...src, url:it.url, book:"dnd5e.wikidot.com"}));
+    } else if (it.kind === "subclass"){
+      const r = parseSubclassHtml(await fetchSpellPage(it.url), it.url, {className:it.className, name:it.name});
+      if (!r) throw new Error("no subclass");
+      if (skipUa && isUaSource(r.book)){ t.class.skipped++; return; }
+      t.class.note(subclassLibPut(it.className, r.sub, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"}));
+    }
+  }}));
+  await runJobs(jobs, {onProgress, stopped});
+  return t;
+}
+async function importOfficialDialog(){
+  let changed = 0;
+  await askOpen({
+    title:"Import official content", wide:true,
+    build(body){
+      const wrap = document.createElement("div"); wrap.id = "askMsg"; wrap.className = "spl-import off-import";
+      wrap.appendChild(Object.assign(document.createElement("div"), {className:"sub", textContent:"Reads dnd5e.wikidot.com, which has the official books beyond the free rules CORKBORK comes with. Everything goes into your own libraries (on this device and in your Drive), never into the app. Homebrew isn’t included; add it from each Import button."}));
+      const kindsRow = document.createElement("div"); kindsRow.className = "off-kinds";
+      const kindBox = {};
+      for (const k of OFFICIAL_KINDS){ const l = document.createElement("label"); l.className = "spl-check"; const c = document.createElement("input"); c.type = "checkbox"; c.checked = true; kindBox[k.id] = c; l.append(c, " " + k.label); kindsRow.appendChild(l); }
+      const uaWrap = document.createElement("label"); uaWrap.className = "spl-check";
+      const ua = document.createElement("input"); ua.type = "checkbox"; ua.checked = true; uaWrap.append(ua, " Skip playtest (Unearthed Arcana) content");
+      const haveWrap = document.createElement("label"); haveWrap.className = "spl-check";
+      const have = document.createElement("input"); have.type = "checkbox"; have.checked = true; haveWrap.append(have, " Skip what I already have (so running it again only adds what’s new)");
+      const row = document.createElement("div"); row.className = "spl-row";
+      const find = document.createElement("button"); find.className = "spl-btn"; find.textContent = "Find what’s there";
+      const go = document.createElement("button"); go.className = "spl-btn"; go.textContent = "Import"; go.disabled = true;
+      row.append(find, go);
+      const bar = document.createElement("div"); bar.className = "spl-bar"; const fill = document.createElement("i"); bar.appendChild(fill); bar.hidden = true;
+      const status = document.createElement("div"); status.className = "spl-status";
+      const list = document.createElement("div"); list.className = "off-list";
+      let items = [], stop = false, running = false;
+      const progress = (d, t, n) => { bar.hidden = false; fill.style.width = (t ? 100 * d / t : 0) + "%"; status.textContent = (running === "scan" ? "Looking: " : "Importing ") + d + " of " + t + (n ? " — " + n : ""); };
+      const count = () => { const n = items.filter(i => i.on).length; go.disabled = !n || !!running; go.textContent = "Import " + n; };
+      const drawList = () => {
+        list.textContent = "";
+        for (const k of OFFICIAL_KINDS){
+          const mine = items.filter(i => (i.kind === "subclass" ? "class" : i.kind) === k.id && !i.built && !(ua.checked && i.ua));
+          if (!mine.length) continue;
+          const d = document.createElement("details"); d.className = "off-kind";
+          const s = document.createElement("summary");
+          const on = () => mine.filter(i => i.on).length;
+          const lab = document.createElement("span"); const sync = () => { lab.textContent = k.label + ": " + on() + " of " + mine.length + " ticked" + (mine.some(i => i.have) ? " (" + mine.filter(i => i.have).length + " you have)" : ""); count(); };
+          const allB = document.createElement("button"); allB.type = "button"; allB.className = "spl-link"; allB.textContent = "all";
+          const noneB = document.createElement("button"); noneB.type = "button"; noneB.className = "spl-link"; noneB.textContent = "none";
+          s.append(lab, " · ", allB, " · ", noneB); d.appendChild(s);
+          const grid = document.createElement("div"); grid.className = "off-items";
+          const boxes = [];
+          for (const it of mine){
+            const l = document.createElement("label"); l.className = "spl-check";
+            const c = document.createElement("input"); c.type = "checkbox"; c.checked = it.on; boxes.push([c, it]);
+            c.addEventListener("change", () => { it.on = c.checked; sync(); });
+            l.append(c, " " + it.name + (it.className ? " (" + it.className + ")" : "") + (it.have ? " ✓" : ""));
+            grid.appendChild(l);
+          }
+          const setAll = v => { for (const [c, it] of boxes){ c.checked = v; it.on = v; } sync(); };
+          allB.addEventListener("click", e => { e.preventDefault(); setAll(true); });
+          noneB.addEventListener("click", e => { e.preventDefault(); setAll(false); });
+          d.appendChild(grid); list.appendChild(d); sync();
+        }
+        count();
+      };
+      const applyDefaults = () => { for (const i of items) i.on = !i.built && !(ua.checked && i.ua) && !(have.checked && i.have); drawList(); };
+      ua.addEventListener("change", applyDefaults); have.addEventListener("change", applyDefaults);
+      find.addEventListener("click", async () => {
+        if (running){ stop = true; return; }
+        running = "scan"; stop = false; find.textContent = "Stop"; go.disabled = true; status.textContent = "Looking…";
+        try {
+          items = await scanOfficial(OFFICIAL_KINDS.filter(k => kindBox[k.id].checked).map(k => k.id), {onProgress:progress, stopped:() => stop});
+          applyDefaults();
+          const n = items.filter(i => i.on).length;
+          status.textContent = n ? "Found " + n + " new. Untick anything you don’t want (open a group to pick), then Import." : "Nothing new to import.";
+        } catch (e){ status.textContent = e.message; }
+        running = false; find.textContent = "Find what’s there"; count();
+      });
+      go.addEventListener("click", async () => {
+        if (running === "import"){ stop = true; go.textContent = "Stopping…"; return; }
+        const pick = items.filter(i => i.on); if (!pick.length) return;
+        running = "import"; stop = false; find.disabled = true; go.disabled = false; go.textContent = "Stop";
+        try {
+          const t = await importOfficial(pick, {skipUa:ua.checked, onProgress:progress, stopped:() => stop});
+          const sum = Object.entries(t).map(([k, v]) => [k, v]).filter(([, v]) => v.added || v.updated || v.failed.length || v.skipped);
+          changed += Object.values(t).reduce((n, v) => n + v.added + v.updated, 0);
+          if (changed) markDirty();
+          status.textContent = (stop ? "Stopped. " : "Done. ") + (sum.length ? sum.map(([k, v]) => ({spell:"Spells", race:"Races", class:"Classes", background:"Backgrounds"})[k] + ": " + [v.added && v.added + " added", v.updated && v.updated + " updated", v.skipped && v.skipped + " playtest skipped", v.failed.length && v.failed.length + " couldn’t be read"].filter(Boolean).join(", ")).join("; ") + "." : "Nothing new.");
+          const failed = Object.values(t).flatMap(v => v.failed); if (failed.length) status.title = "Couldn't read: " + failed.join(", ");
+          for (const i of pick) i.have = true;
+          applyDefaults();
+          $("#askRow .primary") && ($("#askRow .primary").textContent = "Done");
+        } catch (e){ status.textContent = e.message; }
+        running = false; find.disabled = false; count();
+      });
+      wrap.append(kindsRow, uaWrap, haveWrap, row, bar, status, list);
+      body.appendChild(wrap);
+      return {focus:() => find.focus()};
+    },
+    buttons:[{label:"Close", primary:true, value:null}]
+  });
   return changed;
 }
 /* ---------------- D&D sheet: the window (viewer, or editor pages) ---------- */
@@ -20038,14 +20897,18 @@ function renderSheetEditor(){
   const t = document.createElement("div"); t.className = "se-edtitle"; t.textContent = "Editing: " + (sh.name || "New Character");
   const done = document.createElement("button"); done.className = "bz-btn p"; done.textContent = "Done editing";
   done.addEventListener("click", () => { seMode = "view"; renderSheetEditor(); });
-  head.append(t, done);
+  /* everything official in one go: spells, races, classes, backgrounds */
+  const hub = document.createElement("button"); hub.className = "bz-btn"; hub.textContent = "Import official content\u2026";
+  hub.title = "Spells, races, classes and backgrounds from dnd5e.wikidot.com, all at once or picked";
+  hub.addEventListener("click", async () => { if (await importOfficialDialog()) renderSheetEditor(); });
+  head.append(t, hub, done);
   const body = document.createElement("div"); body.className = "se-edbody";
   const nav = document.createElement("div"); nav.className = "se-nav";
   const filled = [
     !!(sh.name && sh.name.trim()), !!(sh.race || "").trim(), !!(sh.charClass || sh.classLevel || "").trim() && !!sheetLevel(sh),
     SHEET_ABILITIES.some(a => Number(sh.abilities?.[a]) !== 10), Object.values(sh.skills || {}).some(Boolean),
     sheetSpells(sh).list.length > 0, (sh.attacks || []).some(a => a.name) || !!(sh.equipment || "").trim(),
-    !!(sh.background || sh.personality || "").trim(), (sh.notesPages || []).some(p => (p || "").trim())
+    !!(sh.background || sh.personality || "").trim() || !!sheetGrants(sh).background, (sh.notesPages || []).some(p => (p || "").trim())
   ];
   SE_PAGES.forEach((n, i) => {
     const a = document.createElement("button"); a.className = "se-navb" + (i === sePage ? " on" : "");
@@ -20261,10 +21124,11 @@ function seAbilities(page, sh){
     grid.appendChild(cell);
   }
   page.appendChild(grid);
-  if (gr.class?.asi){
-    const used = SHEET_ABILITIES.reduce((t, a) => t + Math.max(0, Number(sh.abilityBonus?.asi?.[a]) || 0), 0), due = gr.class.asi * 2;
+  const asiGs = classGrantsOf(sh).filter(g => g.asi), asiN = asiGs.reduce((t, g) => t + g.asi, 0);
+  if (asiN){
+    const used = SHEET_ABILITIES.reduce((t, a) => t + Math.max(0, Number(sh.abilityBonus?.asi?.[a]) || 0), 0), due = asiN * 2;
     page.appendChild(Object.assign(document.createElement("div"), {className:used === due ? "se-hint se-ok" : "se-warn",
-      textContent:"A level " + gr.class.level + " " + gr.class.name + " has had " + gr.class.asi + " Ability Score Improvement" + (gr.class.asi > 1 ? "s" : "") + ": +" + due + " to place (+2 to one score or +1 to two, each time; a feat can replace one). Placed: +" + used + "."}));
+      textContent:asiGs.map(g => "Level " + g.level + " " + g.name).join(" and ") + (asiGs.length > 1 ? " have" : " has") + " had " + asiN + " Ability Score Improvement" + (asiN > 1 ? "s" : "") + ": +" + due + " to place (+2 to one score or +1 to two, each time; a feat can replace one). Placed: +" + used + "."}));
   }
   const over = SHEET_ABILITIES.filter(a => sheetScore(sh, a) > 20);
   if (over.length) page.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:over.join(", ") + " is over 20, the usual most for a player character."}));
@@ -20285,22 +21149,26 @@ function seSkills(page, sh){
     const c = document.createElement("input"); c.type = "checkbox"; c.checked = saveProf(sh, ab);
     c.addEventListener("change", () => { seSet({saves:{...seData().saves, [ab]:c.checked}}); renderSheetEditor(); });
     l.append(c, " " + ABILITY_FULL[ab] + " ", Object.assign(document.createElement("b"), {textContent:fmtMod(saveBonus(sh, ab))}));
-    if (sheetGrants(sh).class?.saves?.includes(ab)) l.title = "From " + sheetGrants(sh).class.name;
+    if (classGrantsOf(sh)[0]?.saves?.includes(ab)) l.title = "From " + classGrantsOf(sh)[0].name;
     sg.appendChild(l);
   }
   saves.appendChild(sg); page.appendChild(saves);
   const sk = document.createElement("div"); sk.className = "se-block"; sk.innerHTML = "<h3>Skills</h3>";
   const hint = document.createElement("div"); hint.className = "se-hint"; hint.textContent = "Tap a skill to step through: none, proficient, expertise." + (sheetJack(sh) ? " Jack of All Trades gives half on the rest." : ""); sk.appendChild(hint);
   /* what the class and race say to pick; a guide, never a limit */
-  const gr = sheetGrants(sh), gs = gr.race?.skills || [];
-  if (gs.length) sk.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"From " + gr.race.name + ": " + gs.join(", ") + "."}));
-  const choice = gr.class?.skillChoice;
-  if (choice){
-    const from = choice.from.length >= 18 ? SHEET_SKILLS.map(([n]) => n) : choice.from;
-    const have = from.filter(n => skillBase(sh, n) >= 1 && !gs.includes(n)).length;
-    sk.appendChild(Object.assign(document.createElement("div"), {className:have === choice.n ? "se-hint se-ok" : "se-warn",
-      textContent:gr.class.name + ": choose " + choice.n + (choice.from.length >= 18 ? " skills (any)" : " from " + from.join(", ")) + ". You have " + have + "." + (have === choice.n ? " \u2713" : "")}));
+  const gr = sheetGrants(sh), gs = [...(gr.race?.skills || []), ...(gr.background?.skills || [])];
+  if (gr.race?.skills?.length) sk.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"From " + gr.race.name + ": " + gr.race.skills.join(", ") + "."}));
+  if (gr.background?.skills?.length) sk.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"From " + gr.background.name + " (background): " + gr.background.skills.join(", ") + "."}));
+  /* each class's pick (a multiclass gets fewer); counted from skills that aren't granted, in order */
+  const picks = classGrantsOf(sh).filter(g => g.skillChoice).map(g => ({g, choice:g.skillChoice, from:g.skillChoice.from.length >= 18 ? SHEET_SKILLS.map(([n]) => n) : g.skillChoice.from}));
+  const used = new Set(gs);
+  for (const p of picks){
+    const mine = p.from.filter(n => skillBase(sh, n) >= 1 && !used.has(n)).slice(0, p.choice.n);
+    mine.forEach(n => used.add(n));
+    sk.appendChild(Object.assign(document.createElement("div"), {className:mine.length === p.choice.n ? "se-hint se-ok" : "se-warn",
+      textContent:p.g.name + (p.g.multi ? " (multiclass)" : "") + ": choose " + p.choice.n + (p.choice.from.length >= 18 ? " skill" + (p.choice.n > 1 ? "s" : "") + " (any)" : " from " + p.from.join(", ")) + ". You have " + mine.length + "." + (mine.length === p.choice.n ? " \u2713" : "")}));
   }
+  const choice = picks[0]?.choice;
   const list = document.createElement("div"); list.className = "se-skilllist";
   for (const [name, ab] of SHEET_SKILLS){
     const lvl = skillBase(sh, name);
@@ -20308,7 +21176,7 @@ function seSkills(page, sh){
     const shown = skillProfLevel(sh, name);
     r.innerHTML = '<i class="bz-dot' + (shown >= 2 ? " exp" : shown >= 1 ? " on" : shown > 0 ? " half" : "") + '"></i><span class="bz-ska">' + ab + "</span>";
     r.append(name, Object.assign(document.createElement("b"), {textContent:fmtMod(skillBonus(sh, name))}));
-    r.title = ["Not proficient", "Proficient", "Expertise"][lvl >= 2 ? 2 : lvl >= 1 ? 1 : 0] + (sh.skills?.[name] === undefined && lvl ? " (from " + gr.race.name + ")" : "");
+    r.title = ["Not proficient", "Proficient", "Expertise"][lvl >= 2 ? 2 : lvl >= 1 ? 1 : 0] + (sh.skills?.[name] === undefined && lvl ? " (from " + ((gr.race?.skills || []).includes(name) ? gr.race.name : gr.background?.name) + ")" : "");
     if (choice && (choice.from.length >= 18 || choice.from.includes(name))) r.classList.add("cls");
     r.addEventListener("click", () => { const next = lvl >= 2 ? 0 : lvl >= 1 ? 2 : 1; seSet({skills:{...seData().skills, [name]:next || false}}); renderSheetEditor(); });
     list.appendChild(r);
@@ -20316,15 +21184,16 @@ function seSkills(page, sh){
   sk.appendChild(list); page.appendChild(sk);
   /* your own, added to what the race and class give (shown under each) */
   const pf = (label, kind, ph) => {
-    const given = [...(gr.race?.[kind] || []).map(x => [x, gr.race.name]), ...(gr.class?.[kind] || []).map(x => [x, gr.class.name])];
+    const given = [...(gr.race?.[kind] || []).map(x => [x, gr.race.name]), ...(gr.background?.[kind] || []).map(x => [x, gr.background.name]), ...classGrantsOf(sh).flatMap(c => (c[kind] || []).map(x => [x, c.name]))];
     const f = seField(label + (given.length ? " (more of your own)" : ""), sh[PROF_FIELD[kind]], v => seSet({[PROF_FIELD[kind]]:v}), {placeholder:ph});
     if (given.length) f.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:"Already: " + given.map(([x, w]) => x + " (" + w + ")").join(", ")}));
+    if (kind === "languages" && gr.background?.langChoose && !splitList(gr.background.choices?.lang).length) f.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:gr.background.name + " also gives " + gr.background.langChoose + " language" + (gr.background.langChoose > 1 ? "s" : "") + " of your choice (set it on Background & personality)."}));
     if (kind === "languages" && gr.race?.langChoose && !splitList(gr.race.choices?.lang).length) f.appendChild(Object.assign(document.createElement("div"), {className:"se-warn", textContent:gr.race.name + " also knows " + gr.race.langChoose + " language" + (gr.race.langChoose > 1 ? "s" : "") + " of your choice (set it on the Race page)."}));
     return f;
   };
   page.append(seGrid("1fr 1fr", pf("Armour", "armor", "Light, medium, shields"), pf("Weapons", "weapons", "Simple weapons, scimitars")));
   page.append(seGrid("1fr 1fr", pf("Tools", "tools", "Herbalism kit"), pf("Languages", "languages", "Common, Elvish")));
-  for (const o of gr.class?.otherChoices || []) page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:gr.class.name + ": " + o + " (add them above)."}));
+  for (const c of classGrantsOf(sh)) for (const o of c.otherChoices || []) page.appendChild(Object.assign(document.createElement("div"), {className:"se-hint", textContent:c.name + ": " + o + " (add them above)."}));
   if (String(sh.otherProfs || "").trim()) page.append(seField("Other proficiencies (from before)", sh.otherProfs, v => seSet({otherProfs:v}), {area:true, rows:3, hint:"From the old sheet. Move these into the boxes above when you like."}));
 }
 /* 6 · Spells: the spell list editor (search, import, library, slots, prepared) */
@@ -20373,11 +21242,6 @@ function seEquipment(page, sh){
   page.append(seField("Equipment", sh.equipment, v => seSet({equipment:v}), {area:true, rows:8, hint:"One item per line. Coins are kept on the sheet's Inventory tab."}));
 }
 /* 8 · Background & personality */
-function seBackground(page, sh){
-  page.append(seField("Background", sh.background, v => seSet({background:v}), {big:true}));
-  page.append(seGrid("1fr 1fr", seField("Personality traits", sh.personality, v => seSet({personality:v}), {area:true, rows:4}), seField("Ideals", sh.ideals, v => seSet({ideals:v}), {area:true, rows:4})));
-  page.append(seGrid("1fr 1fr", seField("Bonds", sh.bonds, v => seSet({bonds:v}), {area:true, rows:4}), seField("Flaws", sh.flaws, v => seSet({flaws:v}), {area:true, rows:4})));
-}
 /* 9 · Notes: one or more pages */
 function seNotes(page, sh){
   (sh.notesPages || [""]).forEach((txt, i) => {
@@ -20404,7 +21268,8 @@ const SRD_SPELLS_FILE = "spells-srd-2014.json";
 const SRD_CREDIT = "Free spell details: SRD 5.1 © Wizards of the Coast, CC BY 4.0.";
 function sheetSpells(sh){
   const sp = sh?.spells || {};
-  return { slots: sp.slots && typeof sp.slots === "object" ? sp.slots : {}, list: Array.isArray(sp.list) ? sp.list : [] };
+  const pact = sp.pact && Number(sp.pact.total) > 0 ? {lvl:Math.max(1, Math.min(5, Number(sp.pact.lvl) || 1)), total:Math.min(4, Number(sp.pact.total)), used:Math.max(0, Math.min(Number(sp.pact.total), Number(sp.pact.used) || 0))} : null;
+  return { slots: sp.slots && typeof sp.slots === "object" ? sp.slots : {}, list: Array.isArray(sp.list) ? sp.list : [], ...(pact ? {pact} : {}) };
 }
 function seSetSpells(fn){
   const cur = sheetSpells(seData());
@@ -20858,7 +21723,9 @@ async function importSpellsDialog(){
       file.addEventListener("change", async () => { const f = file.files[0]; file.value = ""; if (!f) return;
         if (f.size > 5e6){ toast("That file is too big for a spell list."); return; }
         ta.value = await f.text(); draw(); });
-      wrap.append(h1, row, warn, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list);
+      const all = document.createElement("button"); all.type = "button"; all.className = "spl-all"; all.textContent = "Import everything official at once (spells, races, classes, backgrounds)\u2026";
+      all.addEventListener("click", () => { askClose(null); setTimeout(() => importOfficialDialog().then(n => { if (n && seCardId) renderSheetEditor(); }), 50); });
+      wrap.append(h1, row, warn, hint, uaWrap, upWrap, bar, status, or, h2, ta, fileBtn, file, list, all);
       body.appendChild(wrap);
       return { focus:() => url.focus() };
     },
@@ -21326,7 +22193,7 @@ async function buildSheetPdf(sh){
   const doc = new PdfDoc(), {m, top} = SHEET_PDF, pb = sheetProf(sh);
   const ab = k => sheetScore(sh, k), mod = k => sheetMod(sh, k);
   const sp = sheetSpells(sh), st = spellStats(sh);
-  const caster = !!st || sp.list.length > 0 || Object.values(sp.slots).some(s => Number(s?.total) > 0);
+  const caster = !!st || sp.list.length > 0 || !!sp.pact || Object.values(sp.slots).some(s => Number(s?.total) > 0);
   const overflow = [];
   doc.page();
   /* ---------- page 1 ---------- */
@@ -21511,7 +22378,8 @@ async function buildSheetPdf(sh){
         doc.text(String(l), x + 12, by + 14.5, {f:"TB", size:13, align:"center", gray:1});
         if (l === 0) doc.text("CANTRIPS", x + 24, by + 12.5, {f:"HB", size:5.4, gray:1, spacing:.35});
         else {
-          const slot = spellSlot(sp, l);
+          /* pact slots print with the slots of their level */
+          const slot = {total:Math.min(9, spellSlot(sp, l).total + (sp.pact?.lvl === l ? sp.pact.total : 0))};
           doc.rect(x + 24, by + 4, 20, 12, {r:3, fill:1, stroke:null});
           if (slot.total) doc.text(String(slot.total), x + 34, by + 13, {f:"HB", size:8, align:"center"});
           doc.text("SLOTS", x + 49, by + 12.5, {f:"HB", size:5.4, gray:1, spacing:.35});
@@ -22576,11 +23444,12 @@ function syncLooksOffline(e){
 const SPELL_SYNC_KEY = "sync:spells", RACE_SYNC_KEY = "sync:races";
 const LIBRARY_FILES = [
   {prop:"spellLib", tag:"spelllib", file:"spell-library.json", field:"spells", key:SPELL_SYNC_KEY, what:"spell library"},
-  {prop:"raceLib", tag:"racelib", file:"race-library.json", field:"races", key:RACE_SYNC_KEY, what:"race library"}
+  {prop:"raceLib", tag:"racelib", file:"race-library.json", field:"races", key:RACE_SYNC_KEY, what:"race library"},
+  {prop:"classLib", tag:"classlib", file:"class-library.json", field:"classes", key:"sync:classes", what:"class library"},
+  {prop:"bgLib", tag:"bglib", file:"background-library.json", field:"backgrounds", key:"sync:backgrounds", what:"background library"}
 ];
-async function syncLibraryFile(layout, L){
+async function syncLibraryFile(layout, L, file){
   const st = Object.assign({rev:"", base:{}}, await idbGetRaw(L.key) || {});
-  const file = await driveFind(L.tag, layout.root);
   const newer = (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0);
   if (file && file.headRevisionId !== st.rev){
     let remote;
@@ -22601,7 +23470,12 @@ async function syncLibraryFile(layout, L){
   }
   await idbSet(L.key, st);
 }
-async function syncSpellLibrary(layout){ for (const L of LIBRARY_FILES) await syncLibraryFile(layout, L); }
+/* one Drive lookup finds every library file, so an idle check stays cheap */
+async function syncSpellLibrary(layout){
+  const q = "(" + LIBRARY_FILES.map(L => `appProperties has { key='corkbork' and value='${L.tag}' }`).join(" or ") + `) and trashed=false and '${layout.root}' in parents`;
+  const j = await driveJson(`/drive/v3/files?q=${driveQ(q)}&fields=files(id,name,headRevisionId,modifiedTime,appProperties)&spaces=drive&pageSize=20`);
+  for (const L of LIBRARY_FILES) await syncLibraryFile(layout, L, (j.files || []).find(f => f.appProperties?.corkbork === L.tag) || null);
+}
 /* The poll runs every minute. When neither Drive nor this workspace has
    changed since the last full pass, there is nothing to send or merge, so it
    stops after the one small lookup; a full pass still runs every 10 minutes. */
@@ -22802,7 +23676,7 @@ $("#syncOff").addEventListener("click", async () => {
   SYNC.clientId = ""; SYNC.token = null; SYNC.layout = null;
   SAFE_STORE.del("cb_token"); SAFE_STORE.del("cb_hint"); SAFE_STORE.del("cb_refresh");
   clearInterval(cloudPoll);
-  try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); await idbDel(SPELL_SYNC_KEY); await idbDel(RACE_SYNC_KEY); } catch (_) {}
+  try { await idbDel(SYNC_BASE_KEY); await idbDel(SYNC_STATE_KEY); for (const L of LIBRARY_FILES) await idbDel(L.key); } catch (_) {}
   refreshSyncUI();
   toast("Disconnected. Your boards stay on this device; the CORKBORK folder stays in your Drive.");
 });
@@ -22961,6 +23835,11 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b132", [
+    "Import official content\u2026 (top of Edit character) reads spells, races, classes, subclasses and backgrounds from dnd5e.wikidot.com in one go. Find what\u2019s there lists everything new, with playtest and what you have or what\u2019s built in left out; untick anything you don\u2019t want. Running it again only adds what\u2019s new.",
+    "Multiclassing: add more classes on Class & level. Each has its own level and subclass; saving throws come from your first class, later ones give their multiclass proficiencies, spell slots use the multiclass table and Warlock pact slots are kept apart. Level up asks which class (or a new one) and warns when scores are under 13.",
+    "Backgrounds: Background & personality lists your backgrounds (Acolyte is built in). Picking one adds its skills, tools, languages and feature, can add its equipment, and suggests (or rolls) personality traits, ideals, bonds and flaws. Import classes\u2026 and Import backgrounds\u2026 read a page or a list from wikidot or dandwiki (homebrew)."
+  ]],
   ["b131", [
     "D&D sheet races: Edit character \u203a Race lists the free races (Hill Dwarf, High Elf, Half-Elf\u2026). Picking one fills in ability bonuses, speed, size, darkvision, languages, proficiencies and traits, with its choices (Half-Elf\u2019s +1s, Dragonborn ancestry). Change race and the old one\u2019s part comes off; anything you typed yourself stays.",
     "Import races\u2026 reads a race or a whole race list from dnd5e.wikidot.com or dandwiki.com (or pasted text) into your race library, synced through Drive. Custom race lets you type your own and save it for other sheets.",
@@ -23007,10 +23886,6 @@ const PATCH_NOTES = [
   ["b120", [
     "Pinch to zoom on phones and iPads is smooth: the first finger no longer keeps dragging the board (or a card) while you pinch.",
     "Countdown sits bare like the clock. The Mood tracker can show this week, this month or the whole year, and neither it nor the Calendar has an Edit button now (right-click → Edit still works)."
-  ]],
-  ["b119", [
-    "Edit board is simpler: the tile shows exactly how the board will look as you change it; then Name, every Jewel colour and gradient, a small scrolling icon grid with search (or Automatic, which follows the name), and Tags.",
-    "On phones and iPads each list item shows its calendar button, so you can give it a due date without hovering."
   ]]
 ];
 function renderPatchNotes(){
