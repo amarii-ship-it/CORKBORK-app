@@ -1178,6 +1178,8 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 .se-linkbtn{background:none; border:none; color:var(--acc); text-decoration:underline; cursor:pointer; font:inherit; padding:0;}
 .se-asgc input.se-asgi{font:13px Georgia; padding:2px 0; background:#FBF6EC;}
 .se-skrow.cls{background:#F7F0E1;}
+.se-hand, .se-hand b{color:#2F7FD0 !important;} .se-hand .bz-dot{border-color:#2F7FD0;} .se-hand .bz-dot.on, .se-hand .bz-dot.exp{background:#2F7FD0;}
+.se-skfrom{font:10px Verdana; color:#8A7550; margin-left:4px;}
 .se-field .se-inline label{text-transform:none; font:12px Verdana; letter-spacing:0; color:#2C2415; display:flex; align-items:center; gap:4px;}
 .se-lvup p{font:13px/1.5 Georgia; margin:6px 0;}
 .se-lvup .se-inline{gap:8px; margin-bottom:8px;}
@@ -4340,7 +4342,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b143";
+window.BUILD = "b144";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19816,6 +19818,7 @@ function raceGrant(opt, ch = {}){
 function applyRace(opt, ch){
   const sh = seData(), prev = sheetGrants(sh).race || {}, patch = {}, kept = [];
   const g = opt ? raceGrant(opt, ch) : null;
+  if ((prev.key || "") !== (g?.key || "")) Object.assign(patch, HAND_CLEAR);
   patch.race = g ? g.name : (String(sh.race || "") === (prev.name || "") ? "" : sh.race);
   for (const [f, lab] of [["speed", "speed"], ["size", "size"], ["senses", "senses"]]){
     const cur = String(sh[f] || "").trim(), old = String(prev[f] || "").trim(), val = g ? g[f] : "";
@@ -20279,6 +20282,7 @@ function applyClasses(rows, {quiet = false} = {}){
   rows = (rows || []).filter(r => r && (r.key || r.name)).map(r => ({key:r.key || "custom", name:r.name || "", level:Math.max(1, Math.min(20, Number(r.level) || 1)), sub:r.sub || "", ...(r.key === "custom" || !r.key ? {hd:Number(r.hd) || 8} : {})}));
   const gs = rows.map((r, i) => { const c = classByKey(r.key); if (c){ r.name = c.name; return classGrant(c, r.sub, r.level, sh, {multi:i > 0, key:r.key}); } return customGrant(r); });
   patch.classes = rows;
+  if (!quiet && classRows(sh).map(r => r.key + r.name).join("|") !== rows.map(r => r.key + r.name).join("|")) Object.assign(patch, HAND_CLEAR);
   if (rows.length){
     patch.level = String(rows.reduce((t, r) => t + r.level, 0));
     patch.charClass = rows.length > 1 ? rows.map(r => (r.name || "Class") + " " + r.level).join(" / ") : rows[0].name;
@@ -21455,8 +21459,11 @@ function applyBackground(opt, ch){
   if (opt){ grants.background = bgGrant(opt, ch); patch.background = opt.name; }
   else { delete grants.background; if (prev && sh.background === prev.name) patch.background = ""; }
   patch.grants = grants;
+  if ((prev?.key || "") !== (grants.background?.key || "")) Object.assign(patch, HAND_CLEAR);
   seSet(patch);
 }
+/* a new race, background, class or feat gives its own proficiencies: ticks set by hand before give way */
+const HAND_CLEAR = {skills:{}, saves:{}};
 /* ---- 2 · Background ----
    Pick it from the list; what it gives and asks for follows, then the
    character's own details: Character, Physical and Personal
@@ -22015,7 +22022,8 @@ function applyFeats(list){
   if (gs.some(g => g.effect.lucky) && !res.some(r => r.id === "feat-lucky")) res.push({id:"feat-lucky", name:"Lucky (luck points)", max:3, used:0, reset:"long"});
   const grants = {...sheetGrants(sh)};
   if (gs.length) grants.feats = gs; else delete grants.feats;
-  seSet({feats:list, abilityBonus:bonus, resources:res, grants});
+  const keys = l => l.map(f => f.key).sort().join("|");
+  seSet({feats:list, abilityBonus:bonus, resources:res, grants, ...(keys(sheetFeats(sh)) !== keys(list) ? HAND_CLEAR : {})});
 }
 /* prerequisites the sheet can check: scores, spellcasting, armour, race */
 function featReqNote(sh, F){
@@ -22864,6 +22872,9 @@ function seRollGroups(sh){
 }
 /* the old Skills & proficiencies page, now a card: ticks you set yourself */
 function seSkillsBody(host, sh){
+  host.appendChild(bzEl("div", "se-builtin", "Normally leave this alone: your class, background, race and feats tick everything for you. Only change something your DM gives you (or takes away). Changes made by hand show in blue, and go back to normal when you change your race, background, class or feats."));
+  const handN = Object.keys(sh.skills || {}).length + Object.keys(sh.saves || {}).length;
+  if (handN){ const u = bzEl("button", "bz-btn", "Undo " + handN + " change" + (handN > 1 ? "s" : "") + " made by hand"); u.addEventListener("click", () => { pushUndo(); seSet({...HAND_CLEAR}); renderSheetEditor(); }); host.appendChild(u); }
   const saves = bzEl("div", "se-block"); saves.innerHTML = "<h3>Saving throws</h3>";
   const sg = bzEl("div", "se-checkgrid");
   for (const ab of SHEET_ABILITIES){
@@ -22871,6 +22882,7 @@ function seSkillsBody(host, sh){
     c.addEventListener("change", () => { seSet({saves:{...seData().saves, [ab]:c.checked}}); renderSheetEditor(); });
     l.append(c, " " + ABILITY_FULL[ab] + " ", bzEl("b", "", fmtMod(saveBonus(sh, ab))));
     if (classGrantsOf(sh)[0]?.saves?.includes(ab)) l.title = "From " + classGrantsOf(sh)[0].name;
+    if (typeof sh.saves?.[ab] === "boolean"){ l.classList.add("se-hand"); l.title = "Set by hand" + (l.title ? " (" + l.title.toLowerCase() + " by default)" : ""); }
     sg.appendChild(l);
   }
   saves.appendChild(sg); host.appendChild(saves);
@@ -22885,6 +22897,8 @@ function seSkillsBody(host, sh){
     r.innerHTML = '<i class="bz-dot' + (shown >= 2 ? " exp" : shown >= 1 ? " on" : shown > 0 ? " half" : "") + '"></i><span class="bz-ska">' + ab + "</span>";
     r.append(name, bzEl("b", "", fmtMod(skillBonus(sh, name))));
     r.title = ["Not proficient", "Proficient", "Expertise"][lvl >= 2 ? 2 : lvl >= 1 ? 1 : 0] + (sh.skills?.[name] === undefined && lvl ? " (from " + skillSource(sh, name) + ")" : "");
+    if (sh.skills?.[name] !== undefined){ r.classList.add("se-hand"); r.title += " \u2014 set by hand"; }
+    else if (lvl) r.insertBefore(bzEl("small", "se-skfrom", skillSource(sh, name)), r.querySelector("b"));
     r.addEventListener("click", () => { const next = lvl >= 2 ? 0 : lvl >= 1 ? 2 : 1; seSet({skills:{...seData().skills, [name]:next || false}}); renderSheetEditor(); });
     list.appendChild(r);
   }
@@ -25805,6 +25819,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b144", [
+    "D&D sheet: changing your race, background, class or feats now updates every proficiency, replacing ticks you set by hand. On Abilities \u203a Saving Throws, Skills & Proficiencies, ticks set by hand show in blue (with Undo), and each skill says where it comes from."
+  ]],
   ["b143", [
     "D&D sheet: a class's spell list now hides spells that don't say which classes cast them (imported before b142); Every class's spells still shows them. Import official content now fetches those spells again instead of skipping them, so they get their class lists."
   ]],
