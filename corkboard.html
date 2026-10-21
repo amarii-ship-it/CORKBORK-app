@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b159";
+window.BUILD = "b160";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6682,6 +6682,28 @@ async function ocrPdfPage(){
    that can't run script open there: PDFs, ordinary pictures, sound, video
    and plain text. Anything else (web pages, SVG, Office files…) downloads. */
 const SAFE_OPEN_TYPE = /^(application\/pdf|image\/(png|jpe?g|gif|webp|avif|bmp|x-icon)|audio\/|video\/|text\/plain)/i;
+/* JSON for something that may be bigger than the browser's longest string
+   (about 500 MB: a workspace full of pictures). Objects are written field by
+   field down to `depth` levels, so no one piece is ever the whole thing. */
+function jsonPieces(v, depth = 3, out = []){
+  if (depth <= 0 || !v || typeof v !== "object" || Array.isArray(v) || typeof v.toJSON === "function"){ out.push(JSON.stringify(v) ?? "null"); return out; }
+  out.push("{"); let first = true;
+  for (const [k, x] of Object.entries(v)){
+    if (x === undefined || typeof x === "function" || typeof x === "symbol") continue;
+    out.push((first ? "" : ",") + JSON.stringify(k) + ":"); first = false;
+    jsonPieces(x, depth - 1, out);
+  }
+  out.push("}"); return out;
+}
+const jsonBlob = (v, depth) => new Blob(jsonPieces(v, depth), {type:"application/json"});
+/* about how big the workspace is as JSON, without building it */
+function jsonSize(v, depth = 3){
+  if (typeof v === "string") return v.length + 2;
+  if (depth <= 0 || !v || typeof v !== "object") return (JSON.stringify(v) ?? "null").length;
+  let n = 2;
+  for (const [k, x] of Object.entries(v)) if (x !== undefined) n += k.length + 4 + jsonSize(x, depth - 1);
+  return n;
+}
 function downloadBlob(blob, name){
   const url = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = url; a.download = name || "file"; document.body.appendChild(a); a.click(); a.remove();
@@ -16679,7 +16701,7 @@ async function backupNow(){
 async function saveCopy(){
   if (!await saveNow()) return false;
   try {
-    const files=[], seen=new Set(), workspace=new File([JSON.stringify(state)],"CORKBORK-workspace.json",{type:"application/json"});
+    const files=[], seen=new Set(), workspace=new File(jsonPieces(state),"CORKBORK-workspace.json",{type:"application/json"});
     Object.defineProperty(workspace,"webkitRelativePath",{value:"CORKBORK-workspace.json"}); files.push(workspace);
     let sourceBytes=0, largest=0;
     for (const c of Object.values(state.cards)){
@@ -19591,7 +19613,7 @@ async function exportBoardFile(boardId){
   const v = validateWorkspace({schemaVersion:1, rootBoardId:data.root, boards:data.boards, cards:data.cards, labels:data.labels, settings:{}});
   if (!v.ok){ toast("Not exported: the board has a problem (" + v.errors[0] + ").", 9000); return false; }
   const {missing, dropped, ...file} = data;
-  downloadBlob(new Blob([JSON.stringify(file)], {type:"application/json"}), String(data.title).replace(/[\\/:*?"<>|]+/g, "_").trim() + ".corkboard");
+  downloadBlob(jsonBlob(file), String(data.title).replace(/[\\/:*?"<>|]+/g, "_").trim() + ".corkboard");
   toast("Exported \u201c" + data.title + "\u201d: " + Object.keys(data.cards).length + " cards" + (Object.keys(data.boards).length > 1 ? " on " + Object.keys(data.boards).length + " boards" : "") + "." + (dropped ? " " + dropped + " shortcut" + (dropped > 1 ? "s" : "") + " to boards outside it left out." : "") + " Send the file; they use Import a board.", 9000);
   return true;
 }
@@ -20581,7 +20603,7 @@ async function renderSnapshots(){
     dl.addEventListener("click", async () => {
       const snap = await idbGet(snapKey(ts));
       if (!snap) return;
-      const blob = new Blob([JSON.stringify(snap)], { type: "application/json" });
+      const blob = jsonBlob(snap);
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "corkbork-" + new Date(ts).toISOString().slice(0,19).replace(/[:T]/g,"-") + ".json";
@@ -20930,7 +20952,7 @@ function fillSettings(){
   $("#blockSnapToggle").checked = state.settings?.blockSnap !== false;
   $("#boundedPanToggle").checked = state.settings?.boundedPan !== false;
   refreshSyncUI();
-  const bytes = JSON.stringify(state).length;
+  const bytes = jsonSize(state, 4);
   const mb = bytes / (1024*1024);
   const nb = Object.keys(state.boards).length, nc = Object.keys(state.cards).length;
   $("#statsLine").textContent =
@@ -29010,6 +29032,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b160", [
+    "Very big workspaces (like a whole Milanote import): Settings opens without the \u201cInvalid string length\u201d error, and Save a copy, board export and restore point downloads are written in pieces."
+  ]],
   ["b159", [
     "Milanote export script: very big exports no longer stop with \u201cInvalid string length\u201d. Pictures are saved in smaller parts, and a single file over 250 MB stays in Milanote and comes in as a note saying so."
   ]],
@@ -29060,9 +29085,6 @@ const PATCH_NOTES = [
   ]],
   ["b147", [
     "Import: the Mages of Strixhaven (Unearthed Arcana) now read. Their shared pages list features as paragraphs under \u201c1st-Level \u2026 Features\u201d with no headings, and a class\u2019s own link can lead to a page with no features, so the shared page is read instead."
-  ]],
-  ["b146", [
-    "Import: subclasses shared by several classes (Unearthed Arcana\u2019s Mages of Strixhaven, like Mage of Silverquill) now import. The wiki keeps them on one shared page, which the reader didn\u2019t look for, so the whole import stopped."
   ]],
 ];
 function renderPatchNotes(){
