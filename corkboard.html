@@ -4342,7 +4342,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b145";
+window.BUILD = "b146";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -21759,7 +21759,8 @@ function parseClassHtml(html, url){
   for (const a of root.querySelectorAll("a[href]")){
     let u; try { u = new URL(a.getAttribute("href"), base); } catch (_) { continue; }
     const path = decodeURIComponent(u.pathname);
-    const ok = host === "dnd5e.wikidot.com" ? new RegExp("^/" + slug + ":[a-z0-9-]+$", "i").test(path) : /_\(5e_Subclass\)$/i.test(path);
+    /* a subclass shared by several classes (the Strixhaven mages) is a /multisubclass: page */
+    const ok = host === "dnd5e.wikidot.com" ? new RegExp("^/(" + slug + "|multisubclass):[a-z0-9-]+$", "i").test(path) : /_\(5e_Subclass\)$/i.test(path);
     if (!ok || spellSiteHost(u) !== host) continue;
     const link = "https://" + host + u.pathname;
     if (seen.has(link.toLowerCase())) continue; seen.add(link.toLowerCase());
@@ -21767,6 +21768,19 @@ function parseClassHtml(html, url){
     subs.push({url:link, name:a.textContent.replace(/\s+/g, " ").replace(/\s*\(UA\)\s*$/i, "").trim(), ua:/\(UA\)|unearthed arcana|playtest/i.test(a.textContent + " " + around)});
   }
   return {cls, subs};
+}
+/* a subclass page; a class's link to a shared subclass may point at /bard:x when
+   the page is /multisubclass:x, so that's tried next */
+async function fetchSubclassPage(url){
+  try { return {html:await fetchSpellPage(url), url}; }
+  catch (e){
+    const m = /^(https:\/\/dnd5e\.wikidot\.com)\/(?!multisubclass:)[a-z-]+:([a-z0-9-]+)$/i.exec(url);
+    if (!m || !(e.status === 404 || e.status === 410)) throw e;
+    for (const alt of [m[1] + "/multisubclass:" + m[2], m[1] + "/multisubclass:" + m[2].replace(/-ua$/i, "") + "-ua"]){
+      try { return {html:await fetchSpellPage(alt), url:alt}; } catch (e2){ if (!(e2.status === 404 || e2.status === 410)) throw e2; }
+    }
+    throw e;
+  }
 }
 function parseSubclassHtml(html, url, {className = "", name = ""} = {}){
   const doc = new DOMParser().parseFromString(html, "text/html"), root = pageRootOf(doc);
@@ -21847,10 +21861,10 @@ async function importClassesFromLink(url, {onProgress, stopped, skipUa = true} =
   if (!site) throw Object.assign(new Error("Links from " + Object.keys(CLASS_SITES).map(h => h.replace(/^www\./, "")).join(" or ") + " only, for now."), {fatal:true});
   const t = importTally(), book = b => site.book ? site.book() : (b || host.replace(/^www\./, ""));
   const subJob = (link, className, name) => ({name:name || link, fail:e => t.failed.push((name || link) + " (" + (e?.message || "unreadable") + ")"), run:async () => {
-    const r = parseSubclassHtml(await fetchSpellPage(link), link, {className, name});
+    const pg = await fetchSubclassPage(link), r = parseSubclassHtml(pg.html, pg.url, {className, name});
     if (!r) throw new Error("not a subclass");
     if (skipUa && isUaSource(r.book)){ t.skipped++; return; }
-    t.later.push(() => t.note(subclassLibPut(r.className || className, r.sub, {url:link, book:book(r.book), src:host})));
+    t.later.push(() => t.note(subclassLibPut(r.className || className, r.sub, {url:pg.url, book:book(r.book), src:host})));
   }});
   const classJob = async link => {
     const html = await fetchSpellPage(link), r = parseClassHtml(html, link);
@@ -22230,7 +22244,7 @@ async function readOfficial(items, {skipUa = true, onProgress, stopped} = {}){
     } else if (it.kind === "class"){
       puts.push(["class", () => classLibPut(it.cls, {...src, url:it.url, book:"dnd5e.wikidot.com"})]);
     } else if (it.kind === "subclass"){
-      const r = parseSubclassHtml(await fetchSpellPage(it.url), it.url, {className:it.className, name:it.name});
+      const pg = await fetchSubclassPage(it.url), r = parseSubclassHtml(pg.html, pg.url, {className:it.className, name:it.name});
       if (!r) throw new Error("no subclass features found on the page");
       puts.push(["class", skipUa && isUaSource(r.book) ? "skipped" : () => subclassLibPut(it.className, r.sub, {...src, url:it.url, book:r.book || "dnd5e.wikidot.com"})]);
     }
@@ -25818,6 +25832,9 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b146", [
+    "Import: subclasses shared by several classes (Unearthed Arcana\u2019s Mages of Strixhaven, like Mage of Silverquill) now import. The wiki keeps them on one shared page, which the reader didn\u2019t look for, so the whole import stopped."
+  ]],
   ["b145", [
     "D&D sheet: the import notice\u2019s button now says Import content\u2026 (How? is gone; the import window has its own help). A background\u2019s equipment listed with \u201cValue: \u2026 Weight: \u2026\u201d (Charlatan\u2019s disguise kit) now becomes the real item, with its details."
   ]],
@@ -25867,11 +25884,6 @@ const PATCH_NOTES = [
     "Import official content\u2026 (top of Edit character) reads spells, races, classes, subclasses and backgrounds from dnd5e.wikidot.com in one go. Find what\u2019s there lists everything new, with playtest and what you have or what\u2019s built in left out; untick anything you don\u2019t want. Running it again only adds what\u2019s new.",
     "Multiclassing: add more classes on Class & level. Each has its own level and subclass; saving throws come from your first class, later ones give their multiclass proficiencies, spell slots use the multiclass table and Warlock pact slots are kept apart. Level up asks which class (or a new one) and warns when scores are under 13.",
     "Backgrounds: Background & personality lists your backgrounds (Acolyte is built in). Picking one adds its skills, tools, languages and feature, can add its equipment, and suggests (or rolls) personality traits, ideals, bonds and flaws. Import classes\u2026 and Import backgrounds\u2026 read a page or a list from wikidot or dandwiki (homebrew)."
-  ]],
-  ["b131", [
-    "D&D sheet races: Edit character \u203a Race lists the free races (Hill Dwarf, High Elf, Half-Elf\u2026). Picking one fills in ability bonuses, speed, size, darkvision, languages, proficiencies and traits, with its choices (Half-Elf\u2019s +1s, Dragonborn ancestry). Change race and the old one\u2019s part comes off; anything you typed yourself stays.",
-    "Import races\u2026 reads a race or a whole race list from dnd5e.wikidot.com or dandwiki.com (or pasted text) into your race library, synced through Drive. Custom race lets you type your own and save it for other sheets.",
-    "Classes: Class & level lists the 12 free classes. Picking one sets hit dice, saving throws, proficiencies, spellcasting, spell slots, limited-use features and class features for your level. Level up adds hit points (average or roll) and shows what\u2019s new. Skills, Ability scores and Spells now say what the class expects (skills to pick, improvements to place, spells known or prepared), as a guide, never a limit."
   ]],
 ];
 function renderPatchNotes(){
