@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b157";
+window.BUILD = "b158";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19944,6 +19944,7 @@ async function importMilanoteFiles(files){
     let j; try { j = JSON.parse(await f.text()); } catch (_) { throw new Error("“" + f.name + "” isn’t a CORKBORK export file."); }
     if (j?.format === "corkbork-milanote") main = j;
     else if (j?.format === "corkbork-milanote-pictures") parts.push(j);
+    else if (j?.format === BOARD_FILE_FORMAT) throw new Error("“" + f.name + "” is a CORKBORK board file, not a Milanote export. Open it with Share › Import a board…. The Milanote file ends in .milanote.json.");
     else throw new Error("“" + f.name + "” isn’t a Milanote export from CORKBORK’s script.");
   }
   if (!main) throw new Error("Choose the main .milanote.json file too (the one without “pictures” in its name).");
@@ -20020,6 +20021,7 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
   if (part && Object.keys(assets).length){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; }
   save({format:"corkbork-milanote", version:2, root, exportId, exportedAt:new Date().toISOString(), elements, comments, users, assets, pictureParts:part, failed}, title + ".milanote.json");
   console.log("CORKBORK: done.", fetched.size, "boards,", Object.keys(elements).length, "items,", urls.size - failed.length, "pictures and files" + (part ? " in " + part + " parts" : "") + ".", failed.length ? failed.length + " couldn't be downloaded." : "");
+  alert("CORKBORK: export finished. Your Downloads now has " + title + ".milanote.json" + (part ? " and " + part + " pictures file" + (part > 1 ? "s" : "") : "") + ". Import them all together in CORKBORK.");
 })();`;
 async function openMilanoteImport(){
   const v = await askOpen({title:"Import from Milanote", wide:true, build(body){
@@ -28990,6 +28992,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b158", [
+    "Import from Milanote: the export script tells you with a pop-up when it\u2019s finished, and choosing a .corkboard file there says it\u2019s a CORKBORK board file and where to open it."
+  ]],
   ["b157", [
     "Top bar: Snap, then Centre view, then Zoom. Tables are titled Table.",
     "Import from Milanote: newer drawings and sketch pages, tables, and colour swatches (with their names) now come in. A card CORKBORK can\u2019t show yet (like a map) comes in as a note with its name and address instead of being left out."
@@ -29040,9 +29045,6 @@ const PATCH_NOTES = [
   ]],
   ["b145", [
     "D&D sheet: the import notice\u2019s button now says Import content\u2026 (How? is gone; the import window has its own help). A background\u2019s equipment listed with \u201cValue: \u2026 Weight: \u2026\u201d (Charlatan\u2019s disguise kit) now becomes the real item, with its details."
-  ]],
-  ["b144", [
-    "D&D sheet: changing your race, background, class or feats now updates every proficiency, replacing ticks you set by hand. On Abilities \u203a Saving Throws, Skills & Proficiencies, ticks set by hand show in blue (with Undo), and each skill says where it comes from."
   ]],
 ];
 function renderPatchNotes(){
