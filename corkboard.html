@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b158";
+window.BUILD = "b159";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19729,6 +19729,9 @@ function milanoteToBoardFile(data, assets = {}){
   const bid = id => "mb" + id, cid = id => "mc" + id;
   const pos = el => ({x:Math.round((Number(el.location?.position?.x) || 0) * MN_UNIT), y:Math.round((Number(el.location?.position?.y) || 0) * MN_UNIT)});
   const asset = url => url && (assets[url] || null);
+  /* files the script left in Milanote because they were too big to carry */
+  const tooBig = plainObject(data.tooBig) ? data.tooBig : {};
+  const why = url => tooBig[url] ? " (too big to bring over: " + Math.round(Number(tooBig[url]) / 1048576) + " MB; it\u2019s still in Milanote)" : null;
   const iconFor = (icon, title) => {
     if (icon && typeof icon === "object"){
       if (icon.type === "emoji" && icon.emoji) return String(icon.emoji).slice(0, 8);
@@ -19825,14 +19828,14 @@ function milanoteToBoardFile(data, assets = {}){
       const im = c.image || {}, url = im.original || im.huge || im.large;
       const dataUrl = asset(url);
       const caption = c.showCaption && c.caption ? mnPlain(c.caption) : "";
-      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F5BC} " + (c.file?.filename || "Picture") + " (its picture wasn’t in the export)"}; }
+      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F5BC} " + (c.file?.filename || "Picture") + (why(url) || " (its picture wasn’t in the export)")}; }
       const w = width || 270, nat = im.width && im.height ? [im.width, im.height] : null;
       return {...base, type:"image", dataUrl, caption, naturalW:nat?.[0], naturalH:nat?.[1], w, h:nat ? Math.round(w * nat[1] / nat[0]) + (caption ? 28 : 0) : 220,
         fileName:c.file?.filename || "image", fileType:c.file?.mime || "", fileSize:c.file?.size || 0};
     }
     if (type === "FILE"){
       const f = c.file || {}, dataUrl = asset(f.url);
-      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F4CE} " + (f.filename || "File") + " (not in the export)"}; }
+      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F4CE} " + (f.filename || "File") + (why(f.url) || " (not in the export)")}; }
       return {...base, type:"file", fileName:f.filename || "file", fileType:f.mime || "", fileSize:f.size || 0, dataUrl, w:width || 280, h:150};
     }
     if (type === "LINK"){
@@ -19866,6 +19869,7 @@ function milanoteToBoardFile(data, assets = {}){
     /* audio, video, maps and anything else new: keep what can be kept */
     const media = c.file || c.media || c.audio || c.video || null;
     if (media?.url && asset(media.url)) return {...base, type:"file", fileName:media.filename || media.name || type.toLowerCase(), fileType:media.mime || "", fileSize:media.size || 0, dataUrl:asset(media.url), w:width || 280, h:150};
+    if (media?.url && why(media.url)){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F4CE} " + (media.filename || media.name || type.toLowerCase()) + why(media.url)}; }
     const addr = safeWebUrl(c.link?.url || c.url || c.location?.url || c.mapUrl || media?.url || "");
     if (addr) return {...base, type:"link", url:addr, title:c.title || c.link?.title || c.location?.name || type.charAt(0) + type.slice(1).toLowerCase(), w:width || 280, h:120};
     /* never drop a card: what can't be rebuilt yet stays as a note with every
@@ -19969,11 +19973,20 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
   /* CORKBORK: export the Milanote board you're looking at, every board inside
      it, and their pictures and files, for CORKBORK's Import from Milanote.
      It only reads your own boards and saves files to this computer. */
-  const PART_MB = 250;
+  const PART_MB = 150, TOO_BIG_MB = 250;
   const root = location.pathname.split("/")[1];
   const exportId = Date.now().toString(36);
   const elements = {}, comments = {}, users = {}, fetched = new Set(), queue = [root], failed = [];
-  const save = (obj, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], {type:"application/json"})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
+  /* each picture goes in as its own piece, so no single string has to hold a
+     whole part (the browser caps strings at about 500 MB) */
+  const save = (obj, name) => {
+    const {assets, ...rest} = obj, pieces = [JSON.stringify(rest).slice(0, -1) + (Object.keys(rest).length ? "," : "") + '"assets":{'];
+    Object.entries(assets || {}).forEach(([k, v], i) => pieces.push((i ? "," : "") + JSON.stringify(k) + ":", JSON.stringify(v)));
+    pieces.push("}}");
+    const a = document.createElement("a"), href = URL.createObjectURL(new Blob(pieces, {type:"application/json"}));
+    a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 120000);
+  };
   const getBoards = async ids => {
     const q = new URLSearchParams({excludeSelf:"false", loadAncestors:"false", canvasOrder:"false", ids:ids.join(",")});
     const r = await fetch("/api/boards?" + q, {credentials:"include"});
@@ -20008,20 +20021,25 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
   }
   const title = (elements[root]?.content?.title || "milanote").replace(/[\\/:*?"<>|]+/g, "_");
   let assets = {}, size = 0, part = 0, n = 0;
+  const tooBig = {};
+  const flush = async () => { if (!Object.keys(assets).length) return; part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; size = 0; await new Promise(r => setTimeout(r, 1500)); };
   for (const u of urls){
     try {
       const r = await fetch(u, {credentials:"include"}); if (!r.ok) throw new Error(r.status);
       const b = await r.blob();
-      const d = await new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsDataURL(b); });
-      assets[u] = d; size += d.length;
+      if (b.size > TOO_BIG_MB * 1048576){ tooBig[u] = b.size; console.log("CORKBORK: too big to bring over (" + Math.round(b.size / 1048576) + " MB):", u); }
+      else {
+        const d = await new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsDataURL(b); });
+        if (size && size + d.length > PART_MB * 1048576) await flush();
+        assets[u] = d; size += d.length;
+      }
     } catch (e){ failed.push(u); }
     if (++n % 10 === 0) console.log("CORKBORK: pictures and files", n, "of", urls.size);
-    if (size > PART_MB * 1048576){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; size = 0; await new Promise(r => setTimeout(r, 1500)); }
   }
-  if (part && Object.keys(assets).length){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; }
-  save({format:"corkbork-milanote", version:2, root, exportId, exportedAt:new Date().toISOString(), elements, comments, users, assets, pictureParts:part, failed}, title + ".milanote.json");
-  console.log("CORKBORK: done.", fetched.size, "boards,", Object.keys(elements).length, "items,", urls.size - failed.length, "pictures and files" + (part ? " in " + part + " parts" : "") + ".", failed.length ? failed.length + " couldn't be downloaded." : "");
-  alert("CORKBORK: export finished. Your Downloads now has " + title + ".milanote.json" + (part ? " and " + part + " pictures file" + (part > 1 ? "s" : "") : "") + ". Import them all together in CORKBORK.");
+  if (part) await flush();
+  save({format:"corkbork-milanote", version:2, root, exportId, exportedAt:new Date().toISOString(), elements, comments, users, assets, pictureParts:part, failed, tooBig}, title + ".milanote.json");
+  console.log("CORKBORK: done.", fetched.size, "boards,", Object.keys(elements).length, "items,", urls.size - failed.length - Object.keys(tooBig).length, "pictures and files" + (part ? " in " + part + " parts" : "") + ".", failed.length ? failed.length + " couldn't be downloaded." : "");
+  alert("CORKBORK: export finished. Your Downloads now has " + title + ".milanote.json" + (part ? " and " + part + " pictures file" + (part > 1 ? "s" : "") : "") + ". Import them all together in CORKBORK." + (Object.keys(tooBig).length ? " " + Object.keys(tooBig).length + " file(s) over " + TOO_BIG_MB + " MB stay in Milanote; they come in as notes saying so." : ""));
 })();`;
 async function openMilanoteImport(){
   const v = await askOpen({title:"Import from Milanote", wide:true, build(body){
@@ -28992,6 +29010,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b159", [
+    "Milanote export script: very big exports no longer stop with \u201cInvalid string length\u201d. Pictures are saved in smaller parts, and a single file over 250 MB stays in Milanote and comes in as a note saying so."
+  ]],
   ["b158", [
     "Import from Milanote: the export script tells you with a pop-up when it\u2019s finished, and choosing a .corkboard file there says it\u2019s a CORKBORK board file and where to open it."
   ]],
@@ -29042,9 +29063,6 @@ const PATCH_NOTES = [
   ]],
   ["b146", [
     "Import: subclasses shared by several classes (Unearthed Arcana\u2019s Mages of Strixhaven, like Mage of Silverquill) now import. The wiki keeps them on one shared page, which the reader didn\u2019t look for, so the whole import stopped."
-  ]],
-  ["b145", [
-    "D&D sheet: the import notice\u2019s button now says Import content\u2026 (How? is gone; the import window has its own help). A background\u2019s equipment listed with \u201cValue: \u2026 Weight: \u2026\u201d (Charlatan\u2019s disguise kit) now becomes the real item, with its details."
   ]],
 ];
 function renderPatchNotes(){
