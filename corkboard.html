@@ -413,7 +413,7 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 /* b154 calm pass: each tool keeps its own colour as a soft tint behind it;
    the icon itself is the theme's text colour (dark on light themes, light
    on dark ones), bigger, with a small quiet label */
-.tool{--hue:var(--text-dim); width:56px; height:42px; border-radius:7px;
+.tool{--hue:var(--text-dim); width:56px; height:40px; border-radius:7px;
   font-size:8px; font-weight:600; color:var(--text);
   background:color-mix(in srgb, var(--hue) var(--tint, 15%), transparent);}
 .tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 15%) + 13%), transparent); box-shadow:none; color:var(--text);}
@@ -456,7 +456,7 @@ body.in-card #toolDraw{display:none;}
 #binFloat .tool.droptarget svg{stroke:var(--hue) !important;}
 body.focus-mode #binFloat{display:none !important;}
 /* space, not lines, between groups */
-.railDivider{width:44px; height:10px; margin:0; background:transparent;}
+.railDivider{width:44px; height:6px; margin:0; background:transparent;}
 .tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
 /* cards lighter than the board, lifted by a shadow instead of an outline */
 .card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
@@ -1589,6 +1589,80 @@ input.inline-title{
 .card.type-sketch.clear .ink-hit{stroke:transparent; stroke-opacity:0; pointer-events:stroke; cursor:move;}
 .card.type-sketch.clear.selected{pointer-events:auto; outline:1px dashed var(--accent); outline-offset:2px;}
 .card.type-sketch.clear .rsz{pointer-events:auto;}
+/* lines (b156) */
+.card.type-line{background:transparent; border:none; box-shadow:none; overflow:visible; pointer-events:none;}
+.card.type-line.selected, .card.type-line.selected:not(.dragging){outline:none;}
+.card.type-line .rsz{display:none;}
+.card.type-line .line-svg{position:absolute; left:0; top:0; width:1px; height:1px; overflow:visible;}
+.card.type-line .line-hit{stroke:transparent; stroke-width:16; pointer-events:stroke; cursor:move;}
+.card.type-line .line-head{stroke:none;}
+.card.type-line.selected .line-path{filter:drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 80%, transparent));}
+.card.type-line .lh{position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:var(--surface);
+  border:2px solid var(--accent); display:none; pointer-events:auto; cursor:grab; z-index:3; touch-action:none;}
+.card.type-line .lh-m{width:10px; height:10px; margin:-5px 0 0 -5px; border-width:1.5px;}
+.card.type-line.selected .lh{display:block;}
+.card.type-line .line-label{position:absolute; transform:translate(-50%, -50%); padding:2px 7px; border-radius:5px; white-space:nowrap;
+  background:var(--canvas); color:var(--text); font-size:12px; font-weight:600; pointer-events:auto; cursor:text; max-width:260px; overflow:hidden; text-overflow:ellipsis;}
+.card.type-line .line-label.editing{outline:2px solid var(--edit); min-width:40px; text-overflow:clip;}
+.card.line-target{box-shadow:0 0 0 2px var(--accent) !important;}
+body.line-mode #canvas, body.line-mode #canvas .card{cursor:crosshair;}
+#railLine .rl-dot{display:block; width:18px; height:18px; border-radius:50%; margin-bottom:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.2);}
+#railLine .rl-w{display:block; width:22px; background:var(--text); border-radius:3px; margin:6px 0 8px;}
+#railLine .tool.on{background:color-mix(in srgb, var(--accent) 26%, transparent);}
+/* comments (b156) */
+/* inside the card's corner: most cards clip anything outside their box */
+.cmt-pin{position:absolute; top:6px; right:6px; z-index:7; min-width:22px; height:22px; padding:0 6px; border-radius:11px 11px 11px 3px;
+  background:#3B6FE0; color:#FFFFFF; font:700 11px/22px var(--font-ui, system-ui); box-shadow:0 1px 4px rgba(0,0,0,.25); pointer-events:auto;}
+.cmt-pin:hover{filter:brightness(1.1);}
+.card.type-note .cmt-pin{right:34px;}   /* clear of the note's full-screen button */
+.card.type-board .cmt-pin{top:0; right:0;}
+#cmtPanel{position:fixed; z-index:150; width:min(320px, calc(100vw - 16px)); max-height:min(460px, 70vh); display:none; flex-direction:column;
+  background:var(--surface); color:var(--text); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.22); overflow:hidden;}
+#cmtPanel.open{display:flex;}
+#cmtPanel .cmt-top{display:flex; align-items:center; gap:6px; padding:9px 10px 6px 14px;}
+#cmtPanel .cmt-top b{flex:1; font-size:13px;}
+#cmtPanel .cmt-resolve{font-size:12px; padding:3px 8px; border-radius:6px; color:var(--text-dim);}
+#cmtPanel .cmt-resolve:hover, #cmtPanel .cmt-x:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text);}
+#cmtPanel .cmt-x{width:26px; height:26px; border-radius:6px; color:var(--text-dim);}
+#cmtPanel .cmt-list{overflow-y:auto; padding:0 14px; display:flex; flex-direction:column; gap:10px;}
+.cmt-row{display:flex; flex-direction:column; gap:3px;}
+.cmt-head{display:flex; align-items:center; gap:7px; font-size:12px;}
+.cmt-head b{font-weight:700;}
+.cmt-time{color:var(--text-dim); font-size:11px;}
+.cmt-acts{margin-left:auto; display:flex; gap:2px;}
+.cmt-acts button{font-size:11px; color:var(--text-dim); padding:1px 5px; border-radius:5px;}
+.cmt-acts button:hover{color:var(--text); background:color-mix(in srgb, var(--text) 8%, transparent);}
+.cmt-face{width:20px; height:20px; border-radius:50%; color:#FFFFFF; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+.cmt-text{font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; padding-left:27px;}
+.cmt-text.editing{outline:2px solid var(--edit); border-radius:4px;}
+#cmtPanel .cmt-compose{display:flex; gap:6px; align-items:flex-end; padding:10px 12px 12px;}
+#cmtPanel .cmt-reply{flex:1; resize:none; font:inherit; font-size:13px; padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--surface-hi); color:var(--text);}
+#cmtPanel .cmt-send{padding:7px 12px; border-radius:8px;}
+#cmtPanel .cmt-tip{font-size:11px; color:var(--text-dim); padding:0 14px 10px;}
+.card.type-comment{background:color-mix(in srgb, #3B6FE0 7%, var(--surface)); border-color:transparent; border-radius:6px; padding:10px 12px 8px; gap:8px;}
+.card.type-comment .cmt-card-list{display:flex; flex-direction:column; gap:8px;}
+.card.type-comment .cmt-more{font-size:11px; color:var(--text-dim);}
+.card.type-comment .cmt-replybtn{align-self:flex-start; color:#3B6FE0; font-size:12px; font-weight:600; padding:0;}
+/* documents and colour palettes (b156) */
+.card.type-doc{background:transparent; border-color:transparent; box-shadow:none; align-items:center; padding-top:8px; overflow:visible;}
+.card.type-doc .doc-icon svg{width:56px; height:66px;}
+.card.type-doc .doc-sheet{fill:var(--surface); stroke:color-mix(in srgb, var(--text) 25%, transparent); stroke-width:1.5;}
+.card.type-doc .doc-fold{fill:color-mix(in srgb, var(--text) 8%, var(--surface)); stroke:color-mix(in srgb, var(--text) 25%, transparent); stroke-width:1.5; stroke-linejoin:round;}
+.card.type-doc .doc-lines{fill:none; stroke:var(--text); stroke-width:2; stroke-linecap:round;}
+.card.type-doc .doc-title{margin-top:8px; font-size:13px; font-weight:700; text-align:center; max-width:100%; padding:0 4px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
+.card.type-doc .doc-count{font-size:11px; color:var(--text-dim);}
+.card.type-doc.selected{outline-offset:2px;}
+.card.type-palette{padding:8px; gap:6px;}
+.card.type-palette .pal-title{font-size:12px; font-weight:700; color:var(--text-dim); padding:0 2px;}
+.card.type-palette .pal-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:6px;}
+.card.type-palette .pal-sw{height:84px; border-radius:5px; display:flex; align-items:flex-end; justify-content:flex-start; padding:6px 7px;
+  font:600 11px/1 ui-monospace, Consolas, monospace; letter-spacing:.02em; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);}
+.card.type-palette .pal-add{height:84px; border-radius:5px; font-size:22px; color:var(--text-dim);
+  border:1.5px dashed color-mix(in srgb, var(--text) 25%, transparent);}
+.card.type-palette .pal-add:hover{color:var(--text); background:color-mix(in srgb, var(--text) 5%, transparent);}
+#toolLine{--hue:oklch(72% .13 305);}
+.tool[data-type="doc"]{--hue:oklch(72% .13 250);} .tool[data-type="palette"]{--hue:oklch(72% .13 60);} .tool[data-type="comment"]{--hue:oklch(72% .13 260);}
+body.in-card #toolLine{display:none;}
 .ink-live{position:absolute; left:0; top:0; width:1px; height:1px; overflow:visible; pointer-events:none; z-index:2147483000;}
 .ink-live .ink-ring{fill:color-mix(in srgb, var(--text) 8%, transparent); stroke:var(--text); stroke-opacity:.6;}
 body.drawing #canvas, body.drawing #canvas .card{cursor:crosshair;}
@@ -3121,6 +3195,9 @@ table.tb input.is-formula{color:var(--edit); font-weight:600;}
 #noteFullClose{width:34px; height:34px; border-radius:50%; font-size:18px; flex:none;}
 #noteFullClose:hover{background:var(--surface);}
 #noteFullTitle{font-weight:650; font-size:14px; min-width:70px;}
+#noteFullName{font:inherit; font-size:15px; font-weight:600; min-width:0; width:min(360px, 40vw); padding:5px 9px; border-radius:7px;
+  border:1px solid transparent; background:transparent; color:var(--text);}
+#noteFullName:hover, #noteFullName:focus{border-color:var(--border); background:var(--surface); outline:none;}
 #noteFullCount{flex:1; font-size:12px;}
 #noteFullFormat{flex:none; min-height:34px; background:var(--surface-hi); border-bottom:1px solid var(--border);}
 body.note-full-open #textBarWrap{position:static; width:100%;}
@@ -3557,6 +3634,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><path d="M5 19L19 5 M12 5h7v7"/></svg>Arrow</button>
     <button class="tool" id="toolDraw" title="Draw (P) — circle and mark up pictures, or draw anywhere">
       <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.6L15.8 4.8a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z M13.5 7l3.5 3.5"/></svg>Draw</button>
+    <button class="tool" id="toolLine" title="Line — drag on the board to draw a line; drop an end on a card to attach it">
+      <svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/></svg>Line</button>
     <button class="tool" data-type="link" title="Link [L]">
       <svg viewBox="0 0 24 24"><path d="M9 15l6-6 M8 12l-2.5 2.5a3.5 3.5 0 0 0 5 5L13 17 M16 12l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7"/></svg>Link</button>
     <div class="railDivider"></div>
@@ -3596,6 +3675,12 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;">
       <button class="tool" data-type="table" title="Table [E] — an editable grid with formulas">
         <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M4 15h16 M9.5 5v14 M15 5v14"/></svg>Table</button>
+      <button class="tool" data-type="doc" title="Document — long writing, kept as a small card; double-click to open">
+        <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4 M9 11h3 M10.5 11v5 M13.5 13h2 M13.5 16h2"/></svg>Document</button>
+      <button class="tool" data-type="palette" title="Colour palette — a set of colours; + adds one next to the others">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="5" height="10" rx="1"/><rect x="9.5" y="7" width="5" height="10" rx="1"/><rect x="15.5" y="7" width="5" height="10" rx="1"/></svg>Colours</button>
+      <button class="tool" data-type="comment" title="Comment — a note to the people you share the board with">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-4 3.5V16H4z"/></svg>Comment</button>
       <button class="tool" data-type="sketch" title="Sketch — a blank page to draw on">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7.5 15c1.8-4 3.4-4.6 4.2-2.6s2.2 1.6 4.8-3.4"/></svg>Sketch</button>
       <button class="tool" data-type="card" title="Card [D] — a character/item/place; mentions of its name auto-link in notes">
@@ -3603,6 +3688,14 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button class="tool" data-type="sheet" title="Character Sheet [R] — a fillable D&D 5e character sheet">
         <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z M14 3v4h4 M9 12h6 M9 15h6 M9 18h4"/></svg><span style="font-size:9.5px; letter-spacing:-.2px;">D&amp;D sheet</span></button>
       </div>
+    </div>
+    <div id="railLine" class="railset railtemp" style="display:none">
+      <button class="tool" id="rlColor" title="Line colour"><i class="rl-dot"></i>Color</button>
+      <button class="tool" id="rlStart" title="Arrow at the start"><svg viewBox="0 0 24 24"><path d="M20 12H5 M10 7l-5 5 5 5"/></svg>Start</button>
+      <button class="tool" id="rlEnd" title="Arrow at the end"><svg viewBox="0 0 24 24"><path d="M4 12h15 M14 7l5 5-5 5"/></svg>End</button>
+      <button class="tool" id="rlLabel" title="Label"><svg viewBox="0 0 24 24"><path d="M3 12h4 M17 12h4"/><rect x="7.5" y="9" width="9" height="6" rx="1.5"/></svg>Label</button>
+      <button class="tool" id="rlDash" title="Dashed"><svg viewBox="0 0 24 24"><path d="M4 20l2.5-2.5 M9 15l2.5-2.5 M14 10l2.5-2.5 M19 5l1-1"/></svg>Dashed</button>
+      <button class="tool" id="rlWeight" title="Weight"><i class="rl-w"></i>Weight</button>
     </div>
     <div id="railCard" class="railset railtemp" style="display:none">
       <button class="tool" id="rcColor" title="Note color">
@@ -3957,6 +4050,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div id="noteFullBar">
     <button id="noteFullClose" title="Back to board (Esc)">✕</button>
     <span id="noteFullTitle">Note</span>
+    <input id="noteFullName" type="text" maxlength="200" placeholder="Untitled document" aria-label="Document title">
     <span id="noteFullCount" class="meta"></span>
     <button id="noteFullDone" class="barbtn">Back to board</button>
   </div>
@@ -4452,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b155";
+window.BUILD = "b156";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4546,7 +4640,7 @@ let lastIntegrityReport = null;
 
 const VALID_CARD_TYPES = new Set([
   "note","image","link","todo","board","column","grid","heading",
-  "card","sheet","block","file","table","widget","sketch"
+  "card","sheet","block","file","table","widget","sketch","line","comment","doc","palette"
 ]);
 const plainObject = value => !!value && typeof value === "object" && !Array.isArray(value);
 /* A workspace is a graph of references. JSON parsing alone says nothing
@@ -5880,7 +5974,7 @@ function renderBoard(){
 
    To give another card type auto height later, add it to AUTO_H_TYPES — no
    other change is needed. */
-const AUTO_H_TYPES = { note:1, heading:1 };
+const AUTO_H_TYPES = { note:1, heading:1, palette:1, comment:1 };
 const AUTO_H_MIN = 60;
 const AUTO_H_SLOP = 2;          /* ignore sub-pixel churn */
 
@@ -6098,6 +6192,10 @@ function buildCardEl(c){
   else if (c.type === "table") buildTable(c, el);
   else if (c.type === "widget") buildWidget(c, el);
   else if (c.type === "sketch") buildSketch(c, el);
+  else if (c.type === "line") buildLine(c, el);
+  else if (c.type === "comment") buildCommentCard(c, el);
+  else if (c.type === "doc") buildDoc(c, el);
+  else if (c.type === "palette") buildPalette(c, el);
   else if (c.type === "board"){
     el.style.setProperty("--bscale", (c.w || 150) / 150);
     const b = board(c.boardId);   /* board title is authoritative — every shortcut stays in sync */
@@ -6154,6 +6252,7 @@ function buildCardEl(c){
      resizes. On a board card the handle rides the TILE instead. */
   const tileHost = c.type === "board" ? el.querySelector(".btile") : null;
   if (tileHost) tileHost.appendChild(rsz); else el.appendChild(rsz);
+  addCommentPin(c, el);
   return el;
 }
 
@@ -8623,7 +8722,8 @@ function defaultSize(type){
            todo:{w:260,h:220}, board:{w:150,h:150}, column:{w:340,h:140},
            grid:{w:320,h:180}, heading:{w:360,h:56}, card:{w:290,h:132}, sheet:{w:420,h:520},
            block:{w:340,h:220}, file:{w:280,h:150}, folder:{w:150,h:150}, table:{w:420,h:260},
-           widget:{w:200,h:178}, sketch:{w:420,h:300} }[type];
+           widget:{w:200,h:178}, sketch:{w:420,h:300}, line:{w:208,h:28}, comment:{w:280,h:110},
+           doc:{w:150,h:160}, palette:{w:292,h:120} }[type];
 }
 const isContainer = c => c && (c.type === "column" || c.type === "grid");
 function maxZ(){
@@ -8648,6 +8748,9 @@ function addCard(type, wx, wy, extra={}, toUnsorted=false){
     /* new sheets show the full Beyond view on the board */
     if (!extra.sheetView){ c.sheetView = "beyond"; if (!extra.w) c.w = SHEET_VIEW_SIZES.beyond.w; if (!extra.h) c.h = SHEET_VIEW_SIZES.beyond.h; }
   }
+  if (type === "doc"){ c.title = c.title || ""; if (c.html === undefined) c.html = ""; }
+  if (type === "palette"){ c.colors = Array.isArray(c.colors) ? c.colors : ["#8C6A4A", "#C9A227", "#5D7B6F"]; }
+  if (type === "comment"){ c.comments = c.comments || []; }
   /* a sketch page: white, ready to draw on */
   if (type === "sketch"){ if (c.bg === undefined) c.bg = "#FFFFFF"; c.ink = c.ink || {vw:c.w, vh:c.h, s:[]}; }
   if (type === "file"){ c.fileName = c.fileName || "File"; c.fileType = c.fileType || "";
@@ -8965,7 +9068,13 @@ function openNoteFull(id){
   noteFullId = id;
   const ed = $("#noteFullEd");
   ed.innerHTML = noteHtml(c);
-  $("#noteFullTitle").textContent = c.type === "heading" ? "Heading" : "Note";
+  $("#noteFullTitle").textContent = c.type === "heading" ? "Heading" : c.type === "doc" ? "Document" : "Note";
+  /* a document has its own title, typed here */
+  const nm = $("#noteFullName");
+  nm.style.display = c.type === "doc" ? "" : "none";
+  nm.value = c.title || "";
+  nm.oninput = () => { patchCard(noteFullId, {title:nm.value.slice(0, 200)}); markDirty(); };
+  nm.onkeydown = e => { e.stopPropagation(); if (e.key === "Enter"){ e.preventDefault(); $("#noteFullEd").focus(); } };
   const count = () => {
     const words = (ed.textContent || "").trim().split(/\s+/).filter(Boolean).length;
     $("#noteFullCount").textContent = words === 1 ? "1 word" : words + " words";
@@ -9634,6 +9743,9 @@ function enterEdit(c){
   if (c.type === "note" || c.type === "heading") editNote(c, el);
   else if (c.type === "board") openBoard(c.boardId);
   else if (c.type === "sketch") setDrawMode(true);
+  else if (c.type === "line") editLineLabel(c.id);
+  else if (c.type === "comment") openComments(c.id, true);
+  else if (c.type === "doc") openNoteFull(c.id);
   else if (c.type === "link") openLinkDialog(c);
   else if (c.type === "todo")
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "List" }));
@@ -11305,7 +11417,7 @@ $("#entOk").addEventListener("click", () => {
 
 /* ---- tags (stored as state.labels / card.labelIds, the names they had before b118) ----
    One tag per name: adding a name that exists reuses it. */
-const TAGGABLE = new Set(["note","image","link","todo","card","board","block","file","table","column","grid","heading","sheet","sketch"]);
+const TAGGABLE = new Set(["note","image","link","todo","card","board","block","file","table","column","grid","heading","sheet","sketch","doc","palette"]);
 function findTagByName(name){
   const n = String(name || "").trim().toLowerCase();
   return Object.values(state.labels || {}).find(l => (l.name || "").trim().toLowerCase() === n) || null;
@@ -11595,7 +11707,7 @@ function updateRail(){
   if (onCard) mode = "cardpage";     /* board tools + a card-tools section */
   else {
     const sel = [...selection];
-    if (sel.length >= 1 && sel.every(id => card(id))) mode = "card";
+    if (sel.length >= 1 && sel.every(id => card(id))) mode = sel.every(id => card(id).type === "line") ? "line" : "card";
     if (mode === "card")
       $("#rcColor").style.display = (sel.length && sel.every(id => card(id)?.type === "note")) ? "flex" : "none";
   }
@@ -11613,6 +11725,8 @@ function updateRail(){
   $("#railCardEnd").style.display   = (mode === "cardpage") ? "block" : "none";
   $("#railNotice").style.display    = "none";
   $("#railCard").style.display     = mode === "card"  ? "flex" : "none";
+  $("#railLine").style.display     = mode === "line"  ? "flex" : "none";
+  if (mode === "line") refreshLineRail();
   if (mode !== "card"){ $("#colorPop").classList.remove("open"); $("#labelPop").classList.remove("open"); }
 }
 function closeRailPops(){
@@ -12096,6 +12210,9 @@ function openCtx(x, y, c){
       });
   });
   sub("More\u2026", more => {
+    /* Comment sits here so the top of the menu stays short (b151) */
+    if (c.type !== "comment" && c.type !== "line" && !shareReadOnly())
+      more(cmtList(c).length ? "Comments (" + cmtList(c).length + ")" : "Comment", () => { if (c.commentsDone){ patchCard(c.id, {commentsDone:undefined}); renderBoard(); } openComments(c.id, true); });
       more("Duplicate board\u2026", async () => {
         /* three real outcomes, so this is a three-button dialog rather than the
            OK/Cancel pun the native confirm forced it into */
@@ -12301,9 +12418,10 @@ function deepCopyBoard(srcBoardId, parentBoardId, boardIdMap){
   boardIdMap[srcBoardId] = nid;
   state.boards[nid] = { id: nid, title: src.title, parentId: parentBoardId,
     cardIds: [], unsortedIds: [], viewport: { ...(src.viewport || {panX:0,panY:0,zoom:1}) } };
+  const copied = {};
   const cloneInto = (cid) => {
     const c = card(cid); if (!c) return null;
-    const id2 = uid("c");
+    const id2 = uid("c"); copied[cid] = id2;
     const nc = cloneCardShallow(c);
     nc.id = id2; nc.createdAt = now(); nc.updatedAt = now();
     if (nc.type === "board" && !nc.shortcut)
@@ -12314,6 +12432,10 @@ function deepCopyBoard(srcBoardId, parentBoardId, boardIdMap){
   };
   state.boards[nid].cardIds = src.cardIds.map(cloneInto).filter(Boolean);
   state.boards[nid].unsortedIds = src.unsortedIds.map(cloneInto).filter(Boolean);
+  for (const id of state.boards[nid].cardIds){
+    const c = state.cards[id]; if (c?.type !== "line") continue;
+    for (const k of ["a", "b"]) if (c[k]?.id) c[k] = copied[c[k].id] ? {...c[k], id:copied[c[k].id]} : (({id, ...rest}) => rest)(c[k]);
+  }
   return nid;
 }
 function duplicateBoard(srcCard, withContents){
@@ -12418,6 +12540,7 @@ function edgePoint(c, tx, ty){
 }
 function drawConnectors(){
   if (!connectorSvg.isConnected) return;
+  layoutLines(false);
   [...connectorSvg.querySelectorAll("g")].forEach(g => g.remove());
   const conns = cur().connectors || [];
   for (const con of conns){
@@ -12452,7 +12575,7 @@ function drawConnectors(){
     connectorSvg.appendChild(g);
   }
 }
-let arrowMode = false, arrowFrom = null;
+let arrowMode = false, arrowFrom = null, lastCardDragAt = 0;
 $("#toolArrow").addEventListener("click", () => {
   arrowMode = !arrowMode; arrowFrom = null;
   $("#toolArrow").classList.toggle("armed", arrowMode);
@@ -12463,6 +12586,15 @@ $("#toolArrow").addEventListener("click", () => {
    than the view centre. It is a chooser, not a placeable card type, so
    dragging it should do nothing rather than half-imitate Image/File. */
 $("#toolUpload").addEventListener("click", () => openUploadPicker(viewCenterWorld()));
+$("#toolDraw").addEventListener("click", () => setDrawMode(!drawMode));
+$("#toolLine").addEventListener("click", () => setLineMode(!lineMode));
+$("#rlColor").addEventListener("click", () => openColorPicker({current:selectedLines()[0]?.color || "", allowNone:true, noneLabel:"Default (the text colour)",
+  onPick:v => { if (v && (isGradient(v) || !/^#[0-9a-f]{3,8}$/i.test(v))) return; patchLines(() => ({color:v || undefined})); }}));
+$("#rlStart").addEventListener("click", () => patchLines(c => ({heads:toggleHead(c, "start")})));
+$("#rlEnd").addEventListener("click", () => patchLines(c => ({heads:toggleHead(c, "end")})));
+$("#rlDash").addEventListener("click", () => { const on = !selectedLines()[0]?.dashed; patchLines(() => ({dashed:on || undefined})); });
+$("#rlWeight").addEventListener("click", () => { const w = ((Number(selectedLines()[0]?.weight) || 0) + 1) % 3; patchLines(() => ({weight:w || undefined})); });
+$("#rlLabel").addEventListener("click", () => { const c = selectedLines()[0]; if (c) editLineLabel(c.id); });
 $("#railMore").addEventListener("click", () => {
   const p = $("#morePop"), r = $("#railMore").getBoundingClientRect();
   p.style.top = Math.min(r.top / uiz(), innerHeight / uiz() - 160) + "px";
@@ -12679,6 +12811,7 @@ function openConnectorMenu(x, y, cid){
   ctx.style.top  = clamp(y/z, 4, innerHeight/z - r.height/z - 4) + "px";
 }
 function updateConnectorsDuringDrag(){
+  layoutLines(true);
   const conns = cur().connectors || []; if (!conns.length) return;
   /* read live positions from the DOM elements being dragged */
   const livePos = id => {
@@ -13291,6 +13424,483 @@ canvasEl.addEventListener("pointerdown", e => {
   inkBegin(e);
 }, true);
 
+/* ---------------- lines (b156) ----------------
+   The Line tool draws a line by dragging on the board. A line is a card
+   (type "line"), so it selects, moves, copies, deletes, undoes and syncs
+   like everything else. Its ends are stored relative to the card's x/y
+   (c.a, c.b); an end dropped on a card attaches to it ({id}) and then
+   follows that card, meeting its edge. Dragging the middle handle bends it.
+   While a line is selected the toolbar shows its options: colour, start and
+   end arrowheads, label, dashed and weight. Arrow (click two cards) stays as
+   it was; this is the free-hand line Milanote has. */
+const LINE_WEIGHTS = [2, 3.5, 6];
+const LINE_PAD = 14;
+let lineMode = false, lineDraft = null;
+const lineColour = c => c.color && /^#[0-9a-f]{3,8}$/i.test(c.color) ? c.color : "var(--text)";
+const lineWeight = c => LINE_WEIGHTS[Math.max(0, Math.min(2, Number(c.weight) || 0))];
+/* a card's live box: while it is being dragged its element is ahead of the state */
+function lineLiveBox(id, live){
+  const c = card(id); if (!c) return null;
+  if (live){
+    const el = elForCard(id);
+    if (el && el.style.left) return {x:parseFloat(el.style.left), y:parseFloat(el.style.top), w:c.w, h:c.h};
+  }
+  return {x:c.x, y:c.y, w:c.w, h:c.h};
+}
+/* the line's two ends and its bend point in board coordinates */
+function lineGeom(c, live){
+  const own = lineLiveBox(c.id, live) || {x:c.x, y:c.y};
+  const onBoard = id => id && card(id) && card(id).type !== "line" && cur().cardIds.includes(id);
+  const raw = e => onBoard(e?.id) ? (() => { const b = lineLiveBox(e.id, live); return {x:b.x + b.w / 2, y:b.y + b.h / 2, box:b}; })()
+                                   : {x:own.x + (Number(e?.x) || 0), y:own.y + (Number(e?.y) || 0)};
+  const A0 = raw(c.a), B0 = raw(c.b);
+  const A = A0.box ? edgePoint(A0.box, B0.x, B0.y) : A0;
+  const B = B0.box ? edgePoint(B0.box, A0.x, A0.y) : B0;
+  const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2, len = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+  const nx = -(B.y - A.y) / len, ny = (B.x - A.x) / len, bend = Number(c.bend) || 0;
+  const M = {x:mx + nx * bend, y:my + ny * bend};                 /* the point the curve passes through */
+  const Q = {x:2 * M.x - mx, y:2 * M.y - my};                      /* its quadratic control point */
+  return {A:{x:A.x, y:A.y}, B:{x:B.x, y:B.y}, M, Q, own, nx, ny};
+}
+function lineHead(tip, from, w){
+  const dx = tip.x - from.x, dy = tip.y - from.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+  const s = 5 + w * 1.6;
+  return `M${tip.x} ${tip.y}L${tip.x - ux * s - uy * s * .55} ${tip.y - uy * s + ux * s * .55}L${tip.x - ux * s + uy * s * .55} ${tip.y - uy * s - ux * s * .55}Z`;
+}
+function layoutLine(c, el, live){
+  const g = lineGeom(c, live), o = g.own;
+  const rel = p => ({x:p.x - o.x, y:p.y - o.y});
+  const A = rel(g.A), B = rel(g.B), Q = rel(g.Q), M = rel(g.M);
+  const w = lineWeight(c), col = lineColour(c);
+  const d = c.bend ? `M${A.x} ${A.y}Q${Q.x} ${Q.y} ${B.x} ${B.y}` : `M${A.x} ${A.y}L${B.x} ${B.y}`;
+  const svg = el.querySelector("svg.line-svg");
+  const [hit, path, hs, he] = svg.children;
+  hit.setAttribute("d", d); path.setAttribute("d", d);
+  path.setAttribute("stroke", col); path.setAttribute("stroke-width", String(w));
+  path.setAttribute("stroke-dasharray", c.dashed ? `${w * 3} ${w * 2.2}` : "");
+  const heads = c.heads || "none";
+  hs.setAttribute("d", heads === "start" || heads === "both" ? lineHead(A, c.bend ? Q : B, w) : "");
+  he.setAttribute("d", heads === "end" || heads === "both" ? lineHead(B, c.bend ? Q : A, w) : "");
+  hs.setAttribute("fill", col); he.setAttribute("fill", col);
+  const put = (k, p) => { const h = el.querySelector(".lh-" + k); if (h){ h.style.left = p.x + "px"; h.style.top = p.y + "px"; } };
+  put("a", A); put("b", B); put("m", M);
+  const lab = el.querySelector(".line-label");
+  if (lab){ lab.style.left = M.x + "px"; lab.style.top = M.y + "px"; }
+}
+function buildLine(c, el){
+  const svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", "line-svg");
+  svg.setAttribute("fill", "none"); svg.setAttribute("stroke-linecap", "round");
+  for (const cls of ["line-hit", "line-path", "line-head", "line-head"]){
+    const p = document.createElementNS(SVGNS, "path"); p.setAttribute("class", cls); svg.appendChild(p);
+  }
+  el.appendChild(svg);
+  for (const k of ["a", "b", "m"]){
+    const h = document.createElement("div"); h.className = "lh lh-" + k; h.dataset.end = k;
+    h.title = k === "m" ? "Drag to curve the line" : "Drag to move this end; drop it on a card to attach";
+    h.addEventListener("pointerdown", e => lineHandleDown(e, c.id, k));
+    el.appendChild(h);
+  }
+  if (c.label){
+    const lab = document.createElement("div"); lab.className = "line-label"; lab.textContent = c.label;
+    lab.addEventListener("dblclick", e => { e.stopPropagation(); editLineLabel(c.id); });
+    el.appendChild(lab);
+  }
+  layoutLine(c, el, false);
+}
+/* bring every line on the board in line with where its cards are now */
+function layoutLines(live){
+  for (const id of cur().cardIds){
+    const c = card(id); if (c?.type !== "line") continue;
+    const el = elForCard(id); if (el) layoutLine(c, el, live);
+  }
+}
+/* store a line from its board-coordinate ends: x/y become the top-left of its
+   box and both ends are kept relative to it (attached ends keep their card) */
+function lineRecord(base, A, B, aId, bId, bend){
+  const x0 = Math.min(A.x, B.x) - LINE_PAD, y0 = Math.min(A.y, B.y) - LINE_PAD;
+  const x = Math.floor(x0), y = Math.floor(y0);
+  const w = Math.max(8, Math.ceil(Math.max(A.x, B.x) + LINE_PAD - x)), h = Math.max(8, Math.ceil(Math.max(A.y, B.y) + LINE_PAD - y));
+  const end = (P, id) => { const e = {x:Math.round((P.x - x) * 10) / 10, y:Math.round((P.y - y) * 10) / 10}; if (id) e.id = id; return e; };
+  const out = {...base, x, y, w, h, a:end(A, aId), b:end(B, bId)};
+  if (bend) out.bend = Math.round(bend * 10) / 10; else delete out.bend;
+  return out;
+}
+function setLineMode(on){
+  on = !!on;
+  if (on && (inCardPage() || currentBoardId === TRASH_ID || shareReadOnly())) return;
+  if (on && drawMode) setDrawMode(false);
+  if (on && arrowMode){ arrowMode = false; arrowFrom = null; $("#toolArrow").classList.remove("armed"); }
+  lineMode = on;
+  $("#toolLine")?.classList.toggle("armed", on);
+  document.body.classList.toggle("line-mode", on);
+  if (!on){ lineDraft?.el.remove(); lineDraft = null; }
+}
+/* which card (not a line) is under the pointer, for attaching an end */
+function lineCardAt(x, y, skip){
+  for (const el of document.elementsFromPoint(x, y)){
+    const ce = el.closest?.("#world > .card"); if (!ce) continue;
+    const c = card(ce.dataset.id);
+    if (c && c.type !== "line" && c.id !== skip && !c.locked) return c.id;
+  }
+  return null;
+}
+function lineSnapPoint(id, toward){
+  const c = card(id); if (!c) return toward;
+  return edgePoint(c, toward.x, toward.y);
+}
+canvasEl.addEventListener("pointerdown", e => {
+  if (!lineMode || drawMode) return;
+  if (e.target.closest?.("#binFloat, #drawerFab, #drawer, #modeBar, .scrollbar, #trashBar")) return;
+  if (pinch || (e.pointerType === "mouse" && e.button !== 0) || spaceDown) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const start = screenToWorld(e.clientX, e.clientY), aId = lineCardAt(e.clientX, e.clientY);
+  const svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", "ink-live");
+  const path = document.createElementNS(SVGNS, "path");
+  path.setAttribute("stroke", "var(--text)"); path.setAttribute("stroke-width", "2"); path.setAttribute("fill", "none");
+  path.setAttribute("stroke-linecap", "round"); svg.appendChild(path); worldEl.appendChild(svg);
+  lineDraft = {el:svg, start, aId, end:start, bId:null, sx:e.clientX, sy:e.clientY};
+  const move = ev => {
+    if (!lineDraft) return;
+    const p = screenToWorld(ev.clientX, ev.clientY);
+    lineDraft.bId = lineCardAt(ev.clientX, ev.clientY, lineDraft.aId);
+    lineDraft.end = p;
+    const A = lineDraft.aId ? lineSnapPoint(lineDraft.aId, p) : lineDraft.start;
+    const B = lineDraft.bId ? lineSnapPoint(lineDraft.bId, A) : p;
+    path.setAttribute("d", `M${A.x} ${A.y}L${B.x} ${B.y}`);
+    worldEl.querySelectorAll(".card.line-target").forEach(x => x.classList.remove("line-target"));
+    if (lineDraft.bId) elForCard(lineDraft.bId)?.classList.add("line-target");
+  };
+  const up = ev => {
+    removeEventListener("pointermove", move, true); removeEventListener("pointerup", up, true); removeEventListener("pointercancel", up, true);
+    worldEl.querySelectorAll(".card.line-target").forEach(x => x.classList.remove("line-target"));
+    const D = lineDraft; svg.remove(); lineDraft = null;
+    if (!D || ev.type === "pointercancel") return;
+    let A = D.start, B = D.end;
+    /* a click without a drag still makes a line, ready to be shaped */
+    if (Math.hypot(ev.clientX - D.sx, ev.clientY - D.sy) < 6){ B = {x:A.x + 180, y:A.y}; D.bId = null; }
+    if (D.aId && D.aId === D.bId) D.bId = null;
+    if (D.aId) A = lineSnapPoint(D.aId, B);
+    if (D.bId) B = lineSnapPoint(D.bId, A);
+    pushUndo();
+    const id = uid("c");
+    state.cards[id] = lineRecord({id, type:"line", z:maxZ() + 1, createdAt:now(), updatedAt:now()}, A, B, D.aId, D.bId, 0);
+    cur().cardIds.push(id);
+    markDirty(); setLineMode(false); renderBoard(); setSelection([id]);
+  };
+  addEventListener("pointermove", move, true); addEventListener("pointerup", up, true); addEventListener("pointercancel", up, true);
+}, true);
+
+/* dragging a selected line's end or middle */
+function lineHandleDown(e, id, k){
+  e.stopPropagation(); e.preventDefault();
+  const c0 = card(id); if (!c0 || c0.pinned || shareReadOnly()) return;
+  const el = elForCard(id); if (!el) return;
+  const g0 = lineGeom(c0, false);
+  let A = g0.A, B = g0.B, aId = c0.a?.id || null, bId = c0.b?.id || null, bend = Number(c0.bend) || 0, moved = false;
+  const sx = e.clientX, sy = e.clientY;
+  const preview = ev => {
+    const p = screenToWorld(ev.clientX, ev.clientY);
+    if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 2) moved = true;
+    worldEl.querySelectorAll(".card.line-target").forEach(x => x.classList.remove("line-target"));
+    if (k === "m"){
+      const len = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+      bend = ((p.x - (A.x + B.x) / 2) * -(B.y - A.y) + (p.y - (A.y + B.y) / 2) * (B.x - A.x)) / len;
+      if (Math.abs(bend) < 6 / zoom) bend = 0;
+    } else {
+      const on = lineCardAt(ev.clientX, ev.clientY, k === "a" ? bId : aId);
+      if (on) elForCard(on)?.classList.add("line-target");
+      if (k === "a"){ aId = on; A = on ? lineSnapPoint(on, B) : p; } else { bId = on; B = on ? lineSnapPoint(on, A) : p; }
+    }
+    const tmp = lineRecord(card(id), A, B, aId, bId, bend);
+    el.style.left = tmp.x + "px"; el.style.top = tmp.y + "px"; el.style.width = tmp.w + "px"; el.style.height = tmp.h + "px";
+    layoutLine(tmp, el, false);
+  };
+  const up = () => {
+    removeEventListener("pointermove", preview, true); removeEventListener("pointerup", up, true); removeEventListener("pointercancel", up, true);
+    worldEl.querySelectorAll(".card.line-target").forEach(x => x.classList.remove("line-target"));
+    if (!moved){ renderBoard(); return; }
+    pushUndo();
+    state.cards[id] = {...lineRecord(card(id), A, B, aId, bId, bend), updatedAt:now()};
+    markDirty(); renderBoard();
+  };
+  addEventListener("pointermove", preview, true); addEventListener("pointerup", up, true); addEventListener("pointercancel", up, true);
+}
+
+/* ---- the line's options, in the toolbar while lines are selected ---- */
+function selectedLines(){ return [...selection].map(card).filter(c => c?.type === "line"); }
+function patchLines(fn){
+  const ls = selectedLines(); if (!ls.length) return;
+  pushUndo();
+  for (const c of ls) patchCard(c.id, fn(c));
+  markDirty(); renderBoard(); refreshLineRail();
+}
+function refreshLineRail(){
+  const ls = selectedLines(), c = ls[0]; if (!c) return;
+  const heads = c.heads || "none";
+  $("#rlStart").classList.toggle("on", heads === "start" || heads === "both");
+  $("#rlEnd").classList.toggle("on", heads === "end" || heads === "both");
+  $("#rlDash").classList.toggle("on", !!c.dashed);
+  $("#rlWeight").querySelector("i").style.height = [2, 3.5, 6][Number(c.weight) || 0] + "px";
+  $("#rlColor").querySelector("i").style.background = lineColour(c);
+}
+function toggleHead(c, which){
+  const h = c.heads || "none", s = h === "start" || h === "both", en = h === "end" || h === "both";
+  const ns = which === "start" ? !s : s, ne = which === "end" ? !en : en;
+  return ns && ne ? "both" : ns ? "start" : ne ? "end" : "none";
+}
+async function editLineLabel(id){
+  const c = card(id); if (!c) return;
+  const el = elForCard(id); if (!el) return;
+  /* typed in place on the line, not in a dialog */
+  let lab = el.querySelector(".line-label");
+  if (!lab){ lab = document.createElement("div"); lab.className = "line-label"; el.appendChild(lab); layoutLine(c, el, false); }
+  lab.contentEditable = "plaintext-only"; lab.classList.add("editing"); lab.focus();
+  const r = document.createRange(); r.selectNodeContents(lab); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  const done = save => {
+    lab.removeEventListener("blur", onBlur); lab.contentEditable = "false"; lab.classList.remove("editing");
+    const v = lab.textContent.replace(/\s+/g, " ").trim().slice(0, 200);
+    if (save && v !== (c.label || "")){ pushUndo(); patchCard(id, {label:v || undefined}); markDirty(); }
+    invalidateCardEls(id); renderBoard();
+  };
+  const onBlur = () => done(true);
+  lab.addEventListener("blur", onBlur);
+  lab.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Enter"){ e.preventDefault(); lab.blur(); }
+    if (e.key === "Escape"){ e.preventDefault(); lab.removeEventListener("blur", onBlur); done(false); }
+  });
+  lab.addEventListener("pointerdown", e => e.stopPropagation());
+}
+
+/* ---------------- comments (b157) ----------------
+   Any card can carry a thread (c.comments: [{id, who, col, at, text, edited?}]).
+   A card with comments shows a numbered pin; the pin opens the thread in a
+   small floating panel beside the card, not a dialog, with a reply box at
+   the bottom. "Comment" on a card's right-click menu starts a thread; the
+   Comment tool (under More) places a comment on the bare board. Resolve
+   hides the pin until someone replies. Comments merge one by one when two
+   people add them at once (see syncMergeRecord). Names and colours come from
+   Settings › Appearance › Your name and colour. */
+let cmtOpenId = null;
+const cmtList = c => Array.isArray(c?.comments) ? c.comments.filter(m => m && typeof m.text === "string") : [];
+function cmtAgo(t){
+  const s = Math.max(0, (Date.now() - (Number(t) || 0)) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + (s < 120 ? " minute ago" : " minutes ago");
+  if (s < 86400) return Math.floor(s / 3600) + (s < 7200 ? " hour ago" : " hours ago");
+  if (s < 86400 * 7) return Math.floor(s / 86400) + (s < 172800 ? " day ago" : " days ago");
+  return new Date(Number(t)).toLocaleDateString();
+}
+const cmtColourOk = v => typeof v === "string" && /^#[0-9a-f]{3,8}$/i.test(v) ? v : "#8A8F98";
+function cmtFace(m){
+  const f = document.createElement("span"); f.className = "cmt-face";
+  f.style.background = cmtColourOk(m.col);
+  f.textContent = (String(m.who || "?").trim().charAt(0) || "?").toUpperCase();
+  return f;
+}
+/* one comment: face, name, time, text, and Edit / Delete on your own */
+function cmtRow(cardId, m, inPanel){
+  const row = document.createElement("div"); row.className = "cmt-row"; row.dataset.mid = m.id;
+  const head = document.createElement("div"); head.className = "cmt-head";
+  const nm = document.createElement("b"); nm.textContent = String(m.who || "Someone").slice(0, 40);
+  const tm = document.createElement("span"); tm.className = "cmt-time"; tm.textContent = cmtAgo(m.at) + (m.edited ? " · edited" : "");
+  head.append(cmtFace(m), nm, tm);
+  const body = document.createElement("div"); body.className = "cmt-text"; body.textContent = m.text;
+  row.append(head, body);
+  if (inPanel && !shareReadOnly() && (m.who || "") === (meName() || "")){
+    const acts = document.createElement("span"); acts.className = "cmt-acts";
+    const ed = document.createElement("button"); ed.textContent = "Edit";
+    ed.addEventListener("click", () => cmtEdit(cardId, m.id, body));
+    const del = document.createElement("button"); del.textContent = "Delete";
+    del.addEventListener("click", () => cmtSet(cardId, cmtList(card(cardId)).filter(x => x.id !== m.id)));
+    acts.append(ed, del); head.appendChild(acts);
+  }
+  return row;
+}
+function cmtSet(id, list, extra){
+  const c = card(id); if (!c) return;
+  pushUndo();
+  if (!list.length && c.type === "comment"){
+    const b = cur(); b.cardIds = b.cardIds.filter(x => x !== id); delete state.cards[id]; closeComments();
+  } else patchCard(id, {comments:list.length ? list : undefined, ...(extra || {})});
+  markDirty(); renderBoard();
+  if (cmtOpenId === id) renderCommentPanel();
+}
+function cmtAdd(id, text){
+  text = String(text || "").trim().slice(0, 4000); if (!text) return;
+  const c = card(id); if (!c) return;
+  const m = {id:uid("m"), who:meName() || "Me", col:meColor() || "#8A8F98", at:Date.now(), text};
+  cmtSet(id, [...cmtList(c), m], {commentsDone:undefined});
+}
+function cmtEdit(id, mid, body){
+  body.contentEditable = "plaintext-only"; body.classList.add("editing"); body.focus();
+  const r = document.createRange(); r.selectNodeContents(body); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  const finish = save => {
+    body.contentEditable = "false"; body.classList.remove("editing");
+    const v = body.textContent.trim();
+    if (save && v) cmtSet(id, cmtList(card(id)).map(x => x.id === mid && x.text !== v ? {...x, text:v.slice(0, 4000), edited:true} : x));
+    else renderCommentPanel();
+  };
+  body.addEventListener("blur", () => finish(true), {once:true});
+  body.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); body.blur(); }
+    if (e.key === "Escape"){ e.preventDefault(); body.textContent = ""; body.blur(); }
+  });
+}
+function cmtPanel(){
+  let p = $("#cmtPanel"); if (p) return p;
+  p = document.createElement("div"); p.id = "cmtPanel";
+  p.addEventListener("pointerdown", e => e.stopPropagation());
+  p.addEventListener("keydown", e => e.stopPropagation());
+  document.body.appendChild(p);
+  return p;
+}
+function openComments(id, focusReply = true){
+  const c = card(id); if (!c) return;
+  cmtOpenId = id; renderCommentPanel(focusReply);
+}
+function closeComments(){ cmtOpenId = null; $("#cmtPanel")?.classList.remove("open"); }
+function placeCommentPanel(){
+  const p = $("#cmtPanel"), el = cmtOpenId && elForCard(cmtOpenId);
+  if (!p || !el) return;
+  const r = el.getBoundingClientRect(), z = uiz(), w = p.offsetWidth || 300, h = p.offsetHeight || 200;
+  let x = r.right / z + 10, y = r.top / z;
+  if (x + w > innerWidth / z - 8) x = Math.max(8, r.left / z - w - 10);
+  y = Math.max(52, Math.min(y, innerHeight / z - h - 12));
+  p.style.left = x + "px"; p.style.top = y + "px";
+}
+function renderCommentPanel(focusReply){
+  const c = card(cmtOpenId); if (!c){ closeComments(); return; }
+  const p = cmtPanel(); p.textContent = "";
+  const head = document.createElement("div"); head.className = "cmt-top";
+  const t = document.createElement("b"); const n = cmtList(c).length;
+  t.textContent = n ? (n === 1 ? "1 comment" : n + " comments") : "Comment";
+  const res = document.createElement("button"); res.className = "cmt-resolve"; res.title = "Resolve — hides the pin until someone replies"; res.textContent = "✓ Resolve";
+  res.style.display = n && c.type !== "comment" ? "" : "none";
+  res.addEventListener("click", () => { pushUndo(); patchCard(c.id, {commentsDone:true}); markDirty(); closeComments(); renderBoard(); });
+  const x = document.createElement("button"); x.className = "cmt-x"; x.textContent = "✕"; x.title = "Close";
+  x.addEventListener("click", closeComments);
+  head.append(t, res, x); p.appendChild(head);
+  const list = document.createElement("div"); list.className = "cmt-list";
+  for (const m of cmtList(c)) list.appendChild(cmtRow(c.id, m, true));
+  p.appendChild(list);
+  if (!shareReadOnly()){
+    const box = document.createElement("textarea"); box.className = "cmt-reply"; box.rows = 2;
+    box.placeholder = n ? "Reply…" : "Write a comment…";
+    const send = document.createElement("button"); send.className = "primary cmt-send"; send.textContent = n ? "Reply" : "Comment";
+    const go = () => { const v = box.value; box.value = ""; cmtAdd(c.id, v); };
+    send.addEventListener("click", go);
+    box.addEventListener("keydown", e => {
+      e.stopPropagation();
+      if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); go(); }
+      if (e.key === "Escape"){ e.preventDefault(); closeComments(); }
+    });
+    const row = document.createElement("div"); row.className = "cmt-compose"; row.append(box, send);
+    p.appendChild(row);
+    if (!meName()){ const tip = document.createElement("div"); tip.className = "cmt-tip"; tip.textContent = "Tip: set your name and colour in Settings › Appearance."; p.appendChild(tip); }
+  }
+  p.classList.add("open");
+  if (focusReply) p.querySelector(".cmt-reply")?.focus();
+  list.scrollTop = list.scrollHeight;
+  placeCommentPanel();
+}
+/* the numbered pin on a card that has a thread */
+function addCommentPin(c, el){
+  const n = cmtList(c).length;
+  if (!n || c.commentsDone || c.type === "comment") return;
+  const pin = document.createElement("button"); pin.className = "cmt-pin"; pin.textContent = n > 99 ? "99+" : String(n);
+  pin.title = n === 1 ? "1 comment" : n + " comments";
+  pin.addEventListener("pointerdown", e => e.stopPropagation());
+  pin.addEventListener("click", e => { e.stopPropagation(); cmtOpenId === c.id ? closeComments() : openComments(c.id, false); });
+  el.appendChild(pin);
+}
+/* a comment on the bare board: the thread itself is the card */
+function buildCommentCard(c, el){
+  const list = document.createElement("div"); list.className = "cmt-card-list";
+  const ms = cmtList(c);
+  for (const m of ms.slice(-3)) list.appendChild(cmtRow(c.id, m, false));
+  if (ms.length > 3){ const more = document.createElement("div"); more.className = "cmt-more"; more.textContent = (ms.length - 3) + " earlier"; list.prepend(more); }
+  if (!ms.length){ const e0 = document.createElement("div"); e0.className = "cmt-more"; e0.textContent = "Empty comment"; list.appendChild(e0); }
+  const rep = document.createElement("button"); rep.className = "cmt-replybtn"; rep.textContent = "Reply";
+  rep.addEventListener("pointerdown", e => e.stopPropagation());
+  rep.addEventListener("click", e => { e.stopPropagation(); openComments(c.id, true); });
+  el.append(list, rep);
+}
+document.addEventListener("pointerdown", e => {
+  if (!cmtOpenId) return;
+  if (e.target.closest?.("#cmtPanel, .cmt-pin, .cmt-replybtn, #ctx")) return;
+  closeComments();
+}, true);
+
+/* ---------------- documents (b156) ----------------
+   A document is long writing kept as a small card on the board: an icon,
+   its title and a word count, like Milanote's. Double-click opens it in the
+   full-page editor (the same one notes use), with its title at the top. */
+const docWords = c => String(c.text || "").trim().split(/\s+/).filter(Boolean).length;
+function buildDoc(c, el){
+  const ic = document.createElement("div"); ic.className = "doc-icon";
+  ic.innerHTML = '<svg viewBox="0 0 40 48"><path class="doc-sheet" d="M4 2h22l10 10v32a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path class="doc-fold" d="M26 2v10h10"/><path class="doc-lines" d="M10 22h8 M14 22v12 M21 26h9 M21 30h9 M10 38h20"/></svg>';
+  const t = document.createElement("div"); t.className = "doc-title"; t.textContent = c.title || "Untitled document";
+  const n = docWords(c), w = document.createElement("div"); w.className = "doc-count"; w.textContent = n === 1 ? "1 word" : n + " words";
+  el.append(ic, t, w);
+}
+
+/* ---------------- colour palettes (b156) ----------------
+   A palette card holds a row of colours. + adds one right next to the
+   others, so a palette grows in one place instead of as loose swatches.
+   Click a colour to change, copy or remove it; "Add to my palettes" makes
+   the whole set available in every colour picker. */
+const palColours = c => (Array.isArray(c.colors) ? c.colors : []).filter(v => /^#[0-9a-f]{6}$/i.test(v));
+function palInk(hex){
+  const n = parseInt(hex.slice(1), 16), l = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; })
+    .reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0);
+  return l > .4 ? "#1D1D1F" : "#FFFFFF";
+}
+function buildPalette(c, el){
+  if (c.title){ const h = document.createElement("div"); h.className = "pal-title"; h.textContent = c.title; el.appendChild(h); }
+  const grid = document.createElement("div"); grid.className = "pal-grid";
+  palColours(c).forEach((hex, i) => {
+    const sw = document.createElement("button"); sw.className = "pal-sw"; sw.style.background = hex; sw.style.color = palInk(hex);
+    sw.textContent = hex.toUpperCase(); sw.title = hex.toUpperCase() + " — click for options";
+    sw.addEventListener("click", e => { if (palJustDragged(c.id)) return; e.stopPropagation(); openPalMenu(c.id, i, sw); });
+    grid.appendChild(sw);
+  });
+  if (!shareReadOnly()){
+    const add = document.createElement("button"); add.className = "pal-add"; add.textContent = "+"; add.title = "Add a colour";
+    add.addEventListener("click", e => {
+      if (palJustDragged(c.id)) return; e.stopPropagation();
+      openColorPicker({current:"", onPick:v => {
+        if (!v || !/^#[0-9a-f]{6}$/i.test(v)) return;
+        pushUndo(); patchCard(c.id, {colors:[...palColours(card(c.id)), v.toUpperCase()]}); markDirty(); renderBoard();
+      }});
+    });
+    grid.appendChild(add);
+  }
+  el.appendChild(grid);
+}
+/* a press on a swatch that turned into a drag of the card is not a click */
+function palJustDragged(){ return Date.now() - lastCardDragAt < 350; }
+function openPalMenu(id, i, anchor){
+  const c = card(id), hex = palColours(c)[i]; if (!hex) return;
+  closeCtx(); ctx.innerHTML = "";
+  const item = (label, fn) => { const b = document.createElement("button"); b.textContent = label; b.addEventListener("click", () => { closeCtx(); fn(); }); ctx.appendChild(b); };
+  const set = list => { pushUndo(); patchCard(id, {colors:list}); markDirty(); renderBoard(); };
+  if (!shareReadOnly()) item("Change colour…", () => openColorPicker({current:hex, onPick:v => {
+    if (!v || !/^#[0-9a-f]{6}$/i.test(v)) return;
+    const list = [...palColours(card(id))]; list[i] = v.toUpperCase(); set(list);
+  }}));
+  item("Copy " + hex.toUpperCase(), async () => { try { await navigator.clipboard.writeText(hex.toUpperCase()); toast("Copied " + hex.toUpperCase() + "."); } catch (_) { toast(hex.toUpperCase()); } });
+  if (!shareReadOnly() && i > 0) item("Move left", () => { const l = [...palColours(card(id))]; [l[i - 1], l[i]] = [l[i], l[i - 1]]; set(l); });
+  if (!shareReadOnly() && i < palColours(c).length - 1) item("Move right", () => { const l = [...palColours(card(id))]; [l[i + 1], l[i]] = [l[i], l[i + 1]]; set(l); });
+  item("Add all to my palettes", () => exportPalette(palColours(card(id)), card(id).title || "Palette"));
+  if (!shareReadOnly()) item("Remove", () => set(palColours(card(id)).filter((_, j) => j !== i)));
+  ctx.classList.add("open");
+  const r = anchor.getBoundingClientRect(), z = uiz();
+  ctx.style.left = (r.left / z) + "px"; ctx.style.top = (r.bottom / z + 4) + "px";
+}
+
 /* Fingers report far more often than the screen redraws. Moving the board
    on every report made it stutter; it now moves once per frame, from the
    one zoom and one shift the fingers made since the last frame, in a
@@ -13554,6 +14164,7 @@ function startCardDrag(e, cardEl){
     $("#drawer").classList.remove("droptarget"); $("#drawerFab").classList.remove("droptarget");
     if (drag) setDepositing(drag.members.map(m => m.id), false);
     if (!drag) return;
+    if (drag.moved) lastCardDragAt = Date.now();
     if (!drag.moved){
       /* click without drag: second click on an already-selected note/heading starts text editing */
       if (!e.shiftKey && already && selection.size === 1 &&
@@ -14111,6 +14722,8 @@ document.addEventListener("keydown", e => {
     } return;
   }
   if (e.key === "Escape" && drawMode){ e.preventDefault(); setDrawMode(false); return; }
+  if (e.key === "Escape" && lineMode){ e.preventDefault(); setLineMode(false); return; }
+  if (e.key === "Escape" && cmtOpenId){ e.preventDefault(); closeComments(); return; }
   if (e.key === "Escape"){
     if (arrowMode){ arrowMode = false; arrowFrom = null; $("#toolArrow").classList.remove("armed"); canvasEl.style.cursor = ""; }
     setSelection([]); closeCtx(); closeSearch(); $("#zoomPanel").classList.remove("open"); return;
@@ -14291,6 +14904,8 @@ function createFromTool(type, p){
   if (type === "card"){ setTimeout(() => { const el=worldEl.querySelector(`.card[data-id="${c.id}"]`); if(el) el.classList.add('new-card'); }, 0); }
   /* a fresh board just appears, in a jewel gradient; Edit is on its right-click menu */
   if (type === "todo"){ focusAddTodo = c.id; renderBoard(); }
+  if (type === "comment") openComments(c.id, true);
+  if (type === "doc") openNoteFull(c.id);
   if (type === "sketch"){ setDrawMode(true); if (inkPrefs.tool !== "pen" && inkPrefs.tool !== "hl"){ inkPrefs.tool = "pen"; renderDrawBar(); } }
 }
 
@@ -18999,6 +19614,8 @@ function importBoardData(data, {fresh = false} = {}){
     for (const k of ["childIds", "attachedIds"]) if (c[k]) n[k] = mapC(c[k]);
     if (c.labelIds) n.labelIds = c.labelIds.map(l => lMap[l]).filter(Boolean);
     if (Array.isArray(c.relations)) n.relations = c.relations.map(r => ({...r, id:cMap[r.id]})).filter(r => r.id);
+    /* a line's attached ends follow their cards to the new IDs */
+    for (const k of ["a", "b"]) if (c.type === "line" && c[k]?.id){ n[k] = {...c[k]}; if (cMap[c[k].id]) n[k].id = cMap[c[k].id]; else delete n[k].id; }
     state.cards[cMap[id]] = n;
   }
   const at = viewCenterWorld(), sz = defaultSize("board"), look = plainObject(data.look) ? data.look : {};
@@ -19081,7 +19698,15 @@ function mnPlain(doc){
 function milanoteToBoardFile(data, assets = {}){
   const E = data?.elements;
   if (!plainObject(E) || !E[data.root] || E[data.root].elementType !== "BOARD") throw new Error("That isn’t a CORKBORK export of a Milanote board.");
-  const report = {boards:0, cards:0, missingPictures:0, lines:0, skipped:{}};
+  const report = {boards:0, cards:0, missingPictures:0, lines:0, drawings:0, comments:0, skipped:{}};
+  /* comments arrive beside the elements; names come from the export's users list (names only) */
+  const users = plainObject(data.users) ? data.users : {};
+  const CMT_COLOURS = ["#C97D74", "#3B9ED0", "#56A36F", "#8B5CF6", "#E0792D", "#C33C84", "#2F9A9A"];
+  const cmtCol = uidv => CMT_COLOURS[[...String(uidv || "")].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) % CMT_COLOURS.length];
+  const threadMsgs = tid => Object.values(plainObject(data.comments) ? data.comments : {})
+    .filter(m => m && m.threadId === tid).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .map(m => ({id:"m" + (m._id || uid("m")), who:String(users[m.userId] || "Someone").slice(0, 40), col:cmtCol(m.userId), at:Number(m.createdAt) || t,
+      text:(typeof m.text === "string" ? m.text : mnPlain(m.text)).slice(0, 4000)})).filter(m => m.text);
   const skip = t => { report.skipped[t] = (report.skipped[t] || 0) + 1; };
   const kidsOf = new Map();
   for (const el of Object.values(E)){
@@ -19132,11 +19757,41 @@ function milanoteToBoardFile(data, assets = {}){
         accent:mnColour(c.color || c.originalColor, MN_ACCENT) || undefined, icon:iconFor(c.icon || c.originalIcon, c.title || c.originalTitle)};
       return {...base, type:"note", w:width || 260, h:80, text:"→ " + (c.title || c.originalTitle || "a board") + " (shortcut to a board outside this export)"};
     }
-    if (type === "CARD" || type === "DOCUMENT"){
+    if (type === "DOCUMENT"){
+      const doc = c.textContent;
+      return {...base, type:"doc", title:String(c.title || "").slice(0, 200), html:mnHtml(doc), text:mnPlain(doc), w:150, h:160};
+    }
+    if (type === "ANNOTATION"){
+      /* a Milanote drawing: its paths as one drawing card, in Milanote's own units */
+      const dr = c.drawing || {}, paths = Array.isArray(dr.paths) ? dr.paths : [];
+      const vw = Number(dr.width) > 0 ? Number(dr.width) : 60, vh = Number(dr.height) > 0 ? Number(dr.height) : vw;
+      const s2 = paths.map(pp => ({c:mnColour(pp.color, MN_ACCENT) || "#2A2C2E", w:Math.max(0.5, (Number(pp.size) || 4) * 0.45),
+        p:(Array.isArray(pp.points) ? pp.points : []).flatMap(q => [Number(q?.[0]), Number(q?.[1])]).filter(Number.isFinite).map(v => Math.round(v * 10) / 10)}))
+        .filter(st => st.p.length >= 2);
+      if (!s2.length){ skip("empty drawing"); return null; }
+      const w = Math.round((Number(c.width) > 0 ? c.width : vw / MN_UNIT) * MN_UNIT);
+      const h = Math.round(Number(c.height) > 0 ? c.height * MN_UNIT : w * vh / vw);
+      report.drawings++;
+      const card = {...base, type:"sketch", w, h, ink:{vw, vh, s:s2}};
+      if (c.transparent?.enabled === false) card.bg = "#FFFFFF";
+      return card;
+    }
+    if (type === "COMMENT_THREAD"){
+      const msgs = threadMsgs(c.threadId || el.id);
+      if (!msgs.length){ skip("comment with no text in the export"); return null; }
+      report.comments += msgs.length;
+      return {...base, type:"comment", comments:msgs, w:280, h:110};
+    }
+    if (type === "COLOR" || type === "COLOR_SWATCH" || type === "SWATCH"){
+      const hexes = [...JSON.stringify(c).matchAll(/#[0-9a-f]{6}\b/gi)].map(m => m[0].toUpperCase());
+      if (!hexes.length){ skip(type); return null; }
+      return {...base, type:"palette", colors:[hexes[0]], w:width || 110, h:120};
+    }
+    if (type === "CARD"){
       const doc = c.textContent;
       const blocks = doc?.content || [];
       const headingOnly = type === "CARD" && blocks.length > 0 && blocks.every(b => b.type === "heading" || (b.type === "paragraph" && !b.content));
-      const html = (type === "DOCUMENT" && c.title ? "<p><b>" + mnHtml({type:"text", text:c.title}) + "</b></p>" : "") + mnHtml(doc);
+      const html = mnHtml(doc);
       if (headingOnly && c.transparent?.enabled) return {...base, type:"heading", w:Math.max(300, width || 360), h:56, html, text:mnPlain(doc)};
       const card = {...base, type:"note", w:width || 260, h:120, html, text:mnPlain(doc)};
       const bg = mnColour(c.background?.color, MN_FILL); if (bg) card.bg = bg;
@@ -19184,6 +19839,11 @@ function milanoteToBoardFile(data, assets = {}){
       const acc = mnColour(c.background?.color, MN_ACCENT); if (acc) card.accent = acc;
       return card;
     }
+    /* audio, video, maps and anything else new: keep what can be kept */
+    const media = c.file || c.media || c.audio || c.video || null;
+    if (media?.url && asset(media.url)) return {...base, type:"file", fileName:media.filename || media.name || type.toLowerCase(), fileType:media.mime || "", fileSize:media.size || 0, dataUrl:asset(media.url), w:width || 280, h:150};
+    const addr = safeWebUrl(c.link?.url || c.url || c.location?.url || c.mapUrl || media?.url || "");
+    if (addr) return {...base, type:"link", url:addr, title:c.title || c.link?.title || c.location?.name || type.charAt(0) + type.slice(1).toLowerCase(), w:width || 280, h:120};
     skip(type); return null;
   };
   const makeBoard = el => {
@@ -19195,6 +19855,7 @@ function milanoteToBoardFile(data, assets = {}){
     const canvas = bySection(el.id, "CANVAS");
     for (const k of canvas){
       if (k.elementType === "LINE") continue;
+      if (k.elementType === "COMMENT_THREAD" && k.location?.section === "ATTACHED") continue;
       const kc = makeCard(k); if (!kc) continue;
       kc.z = z++; cards[kc.id] = kc; b.cardIds.push(kc.id); report.cards++;
       if (kc.type === "board" && !kc.shortcut) boards[kc.boardId].parentId = id;
@@ -19204,18 +19865,39 @@ function milanoteToBoardFile(data, assets = {}){
       kc.z = z++; cards[kc.id] = kc; b.unsortedIds.push(kc.id); report.cards++;
       if (kc.type === "board" && !kc.shortcut) boards[kc.boardId].parentId = id;
     }
-    /* a line joining two cards becomes an arrow; loose lines and drawings have no CORKBORK equivalent yet */
+    /* every line becomes a CORKBORK line; an end snapped to a card on this board stays attached to it */
     for (const k of canvas.filter(k => k.elementType === "LINE")){
-      const s = k.content?.start || {}, e = k.content?.end || {};
-      const from = s.elementId && cid(s.elementId), to = e.elementId && cid(e.elementId);
-      if (from && to && b.cardIds.includes(from) && b.cardIds.includes(to)){
-        const hs = k.content.startStyle && k.content.startStyle !== "NONE", he = k.content.endStyle && k.content.endStyle !== "NONE";
-        b.connectors.push({id:uid("cn"), from, to, color:null, label:mnPlain(k.content?.lineLabel) || "", heads:hs && he ? "both" : hs ? "start" : he ? "end" : "none"});
-        report.lines++;
-      } else skip("loose line");
+      const lc = k.content || {}, at = pos(k), s0 = lc.start || {}, e0 = lc.end || {};
+      const from = s0.elementId && b.cardIds.includes(cid(s0.elementId)) ? cid(s0.elementId) : null;
+      const to = e0.elementId && b.cardIds.includes(cid(e0.elementId)) ? cid(e0.elementId) : null;
+      const centre = id => { const q = cards[id]; return {x:q.x + q.w / 2, y:q.y + q.h / 2}; };
+      let A = from ? centre(from) : {x:at.x + (Number(s0.x) || 0) * MN_UNIT, y:at.y + (Number(s0.y) || 0) * MN_UNIT};
+      let B = to ? centre(to) : {x:at.x + (Number(e0.x) || 0) * MN_UNIT, y:at.y + (Number(e0.y) || 0) * MN_UNIT};
+      if (from) A = edgePoint(cards[from], B.x, B.y);
+      if (to) B = edgePoint(cards[to], A.x, A.y);
+      if (from && from === to) continue;
+      const hs = lc.startStyle && lc.startStyle !== "NONE", he = lc.endStyle && lc.endStyle !== "NONE";
+      const wgt = Number(lc.lineWeight) || 2;
+      const line = lineRecord({id:"ml" + (k.id || k._id), type:"line", z:z++, createdAt:k.meta?.createdTime || t, updatedAt:k.meta?.modifiedTime || t},
+        A, B, from, to, Number(lc.control?.perpMag) || 0);
+      line.heads = hs && he ? "both" : hs ? "start" : he ? "end" : "none";
+      if (lc.lineStyle && lc.lineStyle !== "SOLID") line.dashed = true;
+      if (wgt > 4) line.weight = 2; else if (wgt > 2) line.weight = 1;
+      const col = mnColour(lc.color, MN_ACCENT); if (col) line.color = col;
+      const lab = lc.lineLabelEnabled !== false && lc.lineLabel ? (typeof lc.lineLabel === "string" ? lc.lineLabel : mnPlain(lc.lineLabel)) : "";
+      if (lab) line.label = lab.slice(0, 200);
+      cards[line.id] = line; b.cardIds.push(line.id); report.lines++;
     }
   };
   makeBoard(E[data.root]);
+  for (const el of Object.values(E)){
+    if (el.elementType !== "COMMENT_THREAD" || el.location?.section !== "ATTACHED") continue;
+    const target = cards[cid(el.location.parentId)];
+    if (!target){ skip("comment on something that wasn't imported"); continue; }
+    const msgs = threadMsgs(el.content?.threadId || el.id);
+    if (!msgs.length){ skip("comment with no text in the export"); continue; }
+    target.comments = [...(target.comments || []), ...msgs]; report.comments += msgs.length;
+  }
   /* a shortcut to a board that didn't come along becomes a note naming it */
   for (const c of Object.values(cards)) if (c.type === "board" && !boards[c.boardId]){
     cards[c.id] = {id:c.id, type:"note", x:c.x, y:c.y, z:c.z, w:260, h:80, createdAt:c.createdAt, updatedAt:c.updatedAt,
@@ -19245,8 +19927,9 @@ async function importMilanoteFiles(files){
   const id = importBoardData(file, {fresh:true});
   const rep = file.report, skipped = Object.entries(rep.skipped).map(([k, n]) => n + " " + k.toLowerCase().replace(/_/g, " ") + (n > 1 ? "s" : "")).join(", ");
   toast("Imported “" + file.title + "” from Milanote: " + rep.boards + " board" + (rep.boards === 1 ? "" : "s") + ", " + rep.cards + " cards" +
-    (rep.lines ? ", " + rep.lines + " arrows" : "") + "." + (rep.missingPictures ? " " + rep.missingPictures + " pictures weren’t in the export (shown as notes)." : "") +
-    (skipped ? " Left out (no CORKBORK equivalent yet): " + skipped + "." : ""), 14000);
+    (rep.lines ? ", " + rep.lines + " lines" : "") + (rep.drawings ? ", " + rep.drawings + " drawings" : "") + (rep.comments ? ", " + rep.comments + " comments" : "") +
+    "." + (rep.missingPictures ? " " + rep.missingPictures + " pictures weren’t in the export (shown as notes)." : "") +
+    (skipped ? " Left out: " + skipped + "." : ""), 14000);
   return {id, report:rep};
 }
 /* What the person pastes into their Milanote tab's console. Kept as plain
@@ -19258,7 +19941,7 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
   const PART_MB = 250;
   const root = location.pathname.split("/")[1];
   const exportId = Date.now().toString(36);
-  const elements = {}, fetched = new Set(), queue = [root], failed = [];
+  const elements = {}, comments = {}, users = {}, fetched = new Set(), queue = [root], failed = [];
   const save = (obj, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], {type:"application/json"})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
   const getBoards = async ids => {
     const q = new URLSearchParams({excludeSelf:"false", loadAncestors:"false", canvasOrder:"false", ids:ids.join(",")});
@@ -19271,11 +19954,21 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
     if (!batch.length) continue;
     batch.forEach(id => fetched.add(id));
     const j = await getBoards(batch);
+    for (const [id, m] of Object.entries(j.comments || {})) comments[id] = {_id:m._id || id, threadId:m.threadId, userId:m.userId, text:m.text, createdAt:m.createdAt};
     for (const [id, el] of Object.entries(j.elements || {})){
       elements[id] = el;
       if ((el.elementType === "BOARD" || el.elementType === "COLUMN") && !fetched.has(id) && !queue.includes(id)) queue.push(id);
     }
     console.log("CORKBORK: read", fetched.size, "boards,", Object.keys(elements).length, "items…");
+  }
+  /* who wrote each comment: names only */
+  const people = [...new Set(Object.values(comments).map(m => m.userId).filter(Boolean))];
+  for (let i = 0; i < people.length; i += 40){
+    try {
+      const r = await fetch("/api/users?ids=" + people.slice(i, i + 40).join(","), {credentials:"include"});
+      const j = r.ok ? await r.json() : {};
+      for (const [id, u] of Object.entries(j.users || {})) users[id] = u?.name?.givenName || u?.name?.displayName || "";
+    } catch (e){}
   }
   const urls = new Set();
   for (const el of Object.values(elements)){
@@ -19295,7 +19988,7 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
     if (size > PART_MB * 1048576){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; size = 0; await new Promise(r => setTimeout(r, 1500)); }
   }
   if (part && Object.keys(assets).length){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; }
-  save({format:"corkbork-milanote", version:1, root, exportId, exportedAt:new Date().toISOString(), elements, assets, pictureParts:part, failed}, title + ".milanote.json");
+  save({format:"corkbork-milanote", version:2, root, exportId, exportedAt:new Date().toISOString(), elements, comments, users, assets, pictureParts:part, failed}, title + ".milanote.json");
   console.log("CORKBORK: done.", fetched.size, "boards,", Object.keys(elements).length, "items,", urls.size - failed.length, "pictures and files" + (part ? " in " + part + " parts" : "") + ".", failed.length ? failed.length + " couldn't be downloaded." : "");
 })();`;
 async function openMilanoteImport(){
@@ -19303,7 +19996,7 @@ async function openMilanoteImport(){
     const p = (html, cls) => { const d = document.createElement("div"); d.className = cls || "meta"; d.innerHTML = html; body.appendChild(d); return d; };
     p("Milanote’s own exports don’t keep your layout, so CORKBORK uses a short script that reads your board straight from Milanote, with every board inside it, its pictures and files, and where everything sits.");
     p("<b>1.</b> In Chrome, open the board in Milanote (your Home board brings everything). <b>2.</b> Press F12 and open the <b>Console</b> tab. <b>3.</b> Press Copy script below, paste it there and press Enter (if Chrome refuses, type <i>allow pasting</i> first). <b>4.</b> Wait for “CORKBORK: done”. Big boards save a few numbered “pictures” files as well. <b>5.</b> Press Choose files and pick all of them together.", "");
-    p("The script only reads your own boards and saves files to your computer. It isn’t made by Milanote, so a change on their side could stop it working. Loose lines and drawings don’t come over yet.");
+    p("The script only reads your own boards and saves files to your computer. It isn’t made by Milanote, so a change on their side could stop it working. Lines, drawings, documents and comments come over too (comments need a file made with this version of the script).");
     const row = document.createElement("div"); row.className = "share-row";
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "primary"; copy.textContent = "Copy script";
     copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(MILANOTE_EXPORT_SCRIPT); toast("Script copied. Paste it into the Milanote tab’s console."); } catch (_) { toast("Couldn’t copy. Select the script on the next line and copy it."); } });
@@ -25955,6 +26648,18 @@ function syncMergeRecord(base, local, remote, localNewer, conflicts){
     if (syncSame(b, l)){ if (r !== undefined) out[k] = r; continue; }
     if (syncSame(b, r)){ if (l !== undefined) out[k] = l; continue; }
     if (SYNC_ID_LISTS.has(k) && (Array.isArray(l) || Array.isArray(r))){ out[k] = syncMergeIdList(b, l, r); continue; }
+    if (k === "comments" && (Array.isArray(l) || Array.isArray(r))){
+      /* two people commenting at once: keep both; a delete on either side wins; an edit goes to the newer side */
+      const bm = new Map((b || []).map(m => [m?.id, m])), rm = new Map((r || []).map(m => [m?.id, m])), lm = new Map((l || []).map(m => [m?.id, m]));
+      const merged = [];
+      for (const m of l || []){
+        if (bm.has(m.id) && !rm.has(m.id)) continue;
+        const rv = rm.get(m.id);
+        merged.push(rv && !syncSame(rv, m) && syncSame(bm.get(m.id), m) ? rv : rv && !syncSame(rv, m) && !localNewer ? rv : m);
+      }
+      for (const m of r || []) if (!lm.has(m.id) && !bm.has(m.id)) merged.push(m);
+      out[k] = merged.sort((x, y) => (Number(x.at) || 0) - (Number(y.at) || 0)); continue;
+    }
     if (k === "connectors" && (Array.isArray(l) || Array.isArray(r))){
       const key = cn => (cn?.id) || (cn?.from + ">" + cn?.to);
       const bm = new Map((b || []).map(cn => [key(cn), cn])), rm = new Map((r || []).map(cn => [key(cn), cn]));
@@ -28255,6 +28960,11 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b156", [
+    "Line (toolbar, under Draw): drag on the board to draw a line; drop an end on a card and it stays attached when the card moves. Select a line to drag its ends or bend it from the middle, and to set its colour, arrows, label, dashes and weight in the toolbar. The Draw button now works (only P did before).",
+    "Under More: Document (a card with a title and word count that opens full page), Colours (a palette; + adds a colour next to the others) and Comment. Comment on any card from right-click › More…; a numbered pin opens the thread, with replies and Resolve.",
+    "Import from Milanote now brings lines, drawings, documents, colours and comments (with who wrote them; make a new export with the updated script)."
+  ]],
   ["b155", [
     "Draw (P, or Draw in the toolbar): pen, highlighter, an eraser for whole lines and a pixel eraser that rubs out just what you touch, with colours, three sizes, undo and Done (Esc). Circle or draw over a picture and the drawing stays on it when the picture moves or grows; drawing on the bare board makes one drawing per session. Sketch (under More) is a blank page to draw on. Two fingers still pan and zoom; after you use a pen, fingers only pan.",
     "D&D sheets: an open sheet now ends below its boxes instead of running to the bottom of the screen, and the Simple and Full views use the sheet's page and accent colours like Beyond. The Sheet tool is now called Table."
@@ -28302,12 +29012,6 @@ const PATCH_NOTES = [
   ]],
   ["b143", [
     "D&D sheet: a class's spell list now hides spells that don't say which classes cast them (imported before b142); Every class's spells still shows them. Import official content now fetches those spells again instead of skipping them, so they get their class lists."
-  ]],
-  ["b142", [
-    "D&D sheet: Edit character now works like D&D Beyond. Steps across the top (Home, Class, Background, Race, Abilities, Equipment) with \u2039 \u203a arrows, your name and picture on every page, and a blue ! wherever a choice is still to make. Each feature is a card that opens, with its choices inside.",
-    "Home holds the character\u2019s preferences: which sources the pickers offer (free rules, official books you imported, homebrew), Customize Your Origin, milestone or XP, fixed or rolled hit points, prerequisites for feats and multiclassing (on: what you don\u2019t qualify for can\u2019t be picked), level-scaled spells, encumbrance, coin weight, scores or modifiers on top, and dice rolling.",
-    "Class: skills, Expertise, Fighting Style, Metamagic, Invocations and your subclass are chosen in their cards, and each Ability Score Improvement is +1/+1 or a feat. Manage HP: fixed or rolled per level, a bonus, an override. Each class has a Spells tab to Learn, Add or Prepare its spells. Background: Character Details, Physical and Personal Characteristics, and Notes. Abilities: standard array, rolled groups or point buy, and a breakdown of every score.",
-    "Equipment: starting equipment or gold, then real items (the free equipment and magic items) to wield, wear and attune, with quantities, weight and encumbrance, and your coins. Armour sets your AC, wielded weapons show under Actions, and magic items change scores, AC and saves. Spells you import again now keep which classes cast them."
   ]],
 ];
 function renderPatchNotes(){
