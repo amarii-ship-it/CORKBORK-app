@@ -4372,7 +4372,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b150";
+window.BUILD = "b151";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11859,36 +11859,16 @@ function openCtx(x, y, c){
     b.addEventListener("click", e => { e.stopPropagation(); if (!pop.classList.contains("open")) show(); });
     ctx.append(b, pop);
   };
-  add(isFav(c.id) ? "★ Unfavourite" : "☆ Favourite", () => toggleFav(c.id));
+  /* order: open and edit first, then marks (share, favourite, private, tags,
+     lock), then the side menus, Delete last */
+  const isBoard = c.type === "board" && !!board(c.boardId);
   if (c.type === "board"){
     add("Open", () => openBoard(c.boardId));
     add("Create shortcut", () => createShortcut(c));
-    add("Export images (.zip)", () => exportBoardImages(c.boardId));
-    add("Export board (to send)\u2026", () => exportBoardFile(c.boardId));
+    add("Edit\u2026 (title, icon, color)", () => openBoardDialog(c));
     if (board(c.boardId)?.joined) add("\u{1F465} Shared with you\u2026", () => openShareDialog(c.boardId));
-    else if (board(c.boardId)?.share) add("\u{1F465} Sharing\u2026 (links, stop)", () => openShareDialog(c.boardId));
-    else if (!shareSessionForBoard(c.boardId) && !boardIsPrivate(c.boardId)) add("\u{1F465} Share live\u2026", () => openShareDialog(c.boardId));
-    add("Edit… (title, icon, color)", () => openBoardDialog(c));
-    if (board(c.boardId)) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
-      : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
-    add("Duplicate board…", async () => {
-      /* three real outcomes, so this is a three-button dialog rather than the
-         OK/Cancel pun the native confirm forced it into */
-      const choice = await askOpen({
-        title: "Duplicate \u201c" + (board(c.boardId)?.title || "board") + "\u201d?",
-        build(body){
-          const m = document.createElement("div"); m.id = "askMsg";
-          m.textContent = "Copy everything inside it, or just its style?";
-          const d = document.createElement("span"); d.className = "sub";
-          d.textContent = "Style only keeps the name, icon and colour, and leaves the copy empty.";
-          m.appendChild(d); body.appendChild(m); return {};
-        },
-        buttons: [ { label:"Cancel", value:null }, { label:"Style only", value:"style" },
-                   { label:"With contents", value:"all", primary:true } ]
-      });
-      if (!choice) return;
-      duplicateBoard(c, choice === "all");
-    });
+    else if (board(c.boardId)?.share) add("\u{1F465} Sharing\u2026", () => openShareDialog(c.boardId));
+    else if (!shareSessionForBoard(c.boardId) && !boardIsPrivate(c.boardId)) add("\u{1F465} Share", () => openShareDialog(c.boardId));
   }
   else if (c.type === "card") add("Open card page…", () => openCardPage(c.id));
   else if (c.type === "sheet"){
@@ -11920,14 +11900,17 @@ function openCtx(x, y, c){
     p.style.top = Math.max(4, Math.min(y / z, innerHeight / z - 320)) + "px";
     $("#labelNew").focus();
   };
-  if (TAGGABLE.has(c.type) && c.type !== "image") add("Tags…", openTagsFor);
+  add(isFav(c.id) ? "\u2605 Unfavourite" : "\u2606 Favourite", () => toggleFav(c.id));
+  if (isBoard) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
+    : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
+  if (TAGGABLE.has(c.type) && c.type !== "image") add("Add tags", openTagsFor);
   if (c.type === "todo"){
     add("List colour…", () => openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
     add(c.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(c.id, c.calOn === false));
   }
   /* Same payload Ctrl+C writes, reachable without the keyboard. On a single
      image it copies the picture itself, for pasting anywhere. */
-  add("Copy", async () => {
+  const copyCard = async () => {
     const many = selection.has(c.id) && selection.size > 1;
     if (c.type === "image" && !many && cardCanOpen(c)){
       try {
@@ -11941,7 +11924,7 @@ function openCtx(x, y, c){
     /* clear any stray text selection first, or the copy handler defers to it */
     try { window.getSelection().removeAllRanges(); } catch(err){}
     document.execCommand("copy");
-  });
+  };
   if (c.type === "image") add("View full size", () => openLightbox(c.id));
   if (c.type === "image" && cardCanOpen(c)) add("Download image", () => downloadStoredImage(c));
   if (c.type === "link"){
@@ -11959,14 +11942,14 @@ function openCtx(x, y, c){
   }
   if (c.type === "link" && c.url) add("Open link in new tab",
     () => { const u = safeWebUrl(c.url); if (u) window.open(u, "_blank", "noopener"); });
-  if (c.type !== "board" && !isContainer(c)) add("Duplicate", () => {
+  const duplicateCard = () => {
     pushUndo();
     const id = uid("c");
     const copy = {...c, id, x: c.x+24, y: c.y+24, z: maxZ()+1, createdAt: now(), updatedAt: now()};
     if (c.type === "todo") copy.items = c.items.map(it => ({...it, id: uid("t")}));
     state.cards[id] = copy; cur().cardIds.push(id);
     markDirty(); renderAll();
-  });
+  };
   if (c.type === "column") add(c.collapsed ? "Expand column" : "Collapse column", () => {
     pushUndo(); patchCard(c.id, { collapsed:!c.collapsed }); markDirty(); renderBoard();
   });
@@ -11977,7 +11960,11 @@ function openCtx(x, y, c){
     markDirty(); renderBoard();
     toast(c.pinned ? "Unlocked." : "Locked in place: it won't move or change until you unlock it.");
   });
-  sub("Send to", to => {
+  if (isBoard) sub("Export\u2026", ex => {
+    ex("Export images (.zip)", () => exportBoardImages(c.boardId));
+    ex("Export board (.corkboard)", () => exportBoardFile(c.boardId));
+  });
+  sub("Send to\u2026", to => {
     to("Front", () => { pushUndo(); patchCard(c.id, { z: maxZ()+1 }); markDirty(); renderBoard(); });
     to("Back", () => { pushUndo(); patchCard(c.id, { z: minZ()-1 }); markDirty(); renderBoard(); });
     if (cur().cardIds.includes(c.id))
@@ -11989,10 +11976,30 @@ function openCtx(x, y, c){
         markDirty(); renderAll();
       });
   });
-  sub("More", more => {
+  sub("More\u2026", more => {
+      more("Duplicate board\u2026", async () => {
+        /* three real outcomes, so this is a three-button dialog rather than the
+           OK/Cancel pun the native confirm forced it into */
+        const choice = await askOpen({
+          title: "Duplicate \u201c" + (board(c.boardId)?.title || "board") + "\u201d?",
+          build(body){
+            const m = document.createElement("div"); m.id = "askMsg";
+            m.textContent = "Copy everything inside it, or just its style?";
+            const d = document.createElement("span"); d.className = "sub";
+            d.textContent = "Style only keeps the name, icon and colour, and leaves the copy empty.";
+            m.appendChild(d); body.appendChild(m); return {};
+          },
+          buttons: [ { label:"Cancel", value:null }, { label:"Style only", value:"style" },
+                     { label:"With contents", value:"all", primary:true } ]
+        });
+        if (!choice) return;
+        duplicateBoard(c, choice === "all");
+      });
+    more("Copy", copyCard);
+    if (c.type !== "board" && !isContainer(c)) more("Duplicate", duplicateCard);
     if (c.type === "image") more("Copy image address", () => copyImageAddress(c));
     if (c.type === "image") more("Edit metadata\u2026", () => editImageMetadata(c));
-    if (c.type === "image") more("Tags\u2026", openTagsFor);
+    if (c.type === "image") more("Add tags", openTagsFor);
     if (c.type === "image" && cardCanOpen(c)){
       more("Open image in new tab", async () => {
         const w = window.open("about:blank", "_blank"); if (!w){ toast("The browser blocked the new tab."); return; }
@@ -13416,8 +13423,14 @@ canvasEl.addEventListener("wheel", e => {
   e.preventDefault();
   if (e.ctrlKey || e.metaKey || state.settings?.wheelZoom){
     if (pinchGesture) return;
-    const d = clamp(e.deltaY, -60, 60);   /* cap so a fast fling/notch can't jump zoom too far */
-    zoomAt(e.clientX, e.clientY, Math.pow(1.0006, -d));
+    /* A laptop trackpad pinch arrives as many small ctrl+wheel steps (a few
+       pixels each); a mouse wheel as big notches (~100). The old single rate
+       made a whole pinch move only ~7%, so a pinch now follows the fingers
+       (about 2x per 60 px of pinch), and a wheel notch is ~15%. */
+    const pinch = e.ctrlKey && e.deltaMode === 0 && Math.abs(e.deltaY) < 50;
+    const f = pinch ? Math.exp(-clamp(e.deltaY, -50, 50) * 0.0115)
+                    : Math.pow(1.0014, -clamp(e.deltaY * (e.deltaMode === 1 ? 33 : 1), -120, 120));
+    zoomAt(e.clientX, e.clientY, f);
   } else {
     const z = uiz(); panX -= e.deltaX/z; panY -= e.deltaY/z; applyViewport();
   }
@@ -27146,49 +27159,53 @@ async function shareReconcile(){
 
 /* ---- the sharing window ---- */
 let shareDialogRefresh = null;
+/* Share opens straight on the links: an unshared board starts sharing as the
+   window opens. Stop sharing (or Leave) sits beside Close. */
 async function openShareDialog(boardId){
   const b = board(boardId); if (!b) return;
   const s = (b.share && shareSessions.get(b.share.room)) || (b.joined && shareSessions.get(b.joined.room)) || shareSessionForBoard(boardId);
   const rootId = s?.rootId || boardId, root = board(rootId);
-  await askOpen({title:"Share live: “" + (root?.title || "board") + "”", wide:true, build(body){
+  if (!root) return;
+  const guest = !!root.joined;
+  let starting = !root.share && !guest, failed = "";
+  const choice = await askOpen({title:"Share: \u201c" + (root.title || "board") + "\u201d", wide:true, build(body){
     const fill = () => {
       body.innerHTML = "";
       const msg = (text, cls) => { const d = document.createElement("div"); d.className = cls || "meta"; d.textContent = text; body.appendChild(d); return d; };
       const row = (label, value, buttons) => {
         const r = document.createElement("div"); r.className = "share-row";
         const l = document.createElement("b"); l.textContent = label; r.appendChild(l);
-        if (value !== null){ const inp = document.createElement("input"); inp.readOnly = true; inp.value = value; inp.addEventListener("focus", () => inp.select()); r.appendChild(inp); }
+        const inp = document.createElement("input"); inp.readOnly = true; inp.value = value; inp.addEventListener("focus", () => inp.select()); r.appendChild(inp);
         for (const [text, fn, cls] of buttons){ const btn = document.createElement("button"); btn.type = "button"; btn.textContent = text; if (cls) btn.className = cls; btn.addEventListener("click", fn); r.appendChild(btn); }
         body.appendChild(r);
       };
       const copy = async text => { try { await navigator.clipboard.writeText(text); toast("Link copied."); } catch (_) { toast("Select the link and copy it."); } };
-      const live = shareSessions.get(root?.share?.room || root?.joined?.room || "");
-      if (root?.share){
-        msg("Anyone with a link can open this board. Changes show up for everyone in about a second. It stays in your Google Drive; the server keeps an encrypted copy it can’t read.");
-        row("Edit link", shareLink(root.share.room, root.share.edit, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.edit, root.share.key)), "primary"], ["New link", async () => { if (await askConfirm({title:"Replace the edit link?", message:"Everyone using the current edit link is disconnected and loses their copy. Send the new link to whoever should keep access.", okLabel:"Replace"})) shareReplaceLink(rootId, "edit").catch(e => toast(e.message)); }]]);
-        row("View link", shareLink(root.share.room, root.share.view, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.view, root.share.key))], ["New link", async () => { if (await askConfirm({title:"Replace the view link?", message:"Everyone using the current view link is disconnected. Send the new link to whoever should keep access.", okLabel:"Replace"})) shareReplaceLink(rootId, "view").catch(e => toast(e.message)); }]]);
-        msg("Status: " + shareStatusText(live) + (live?.peers?.length ? ". Here now: " + live.peers.map(p => p.name + (p.role === "view" ? " (viewing)" : "")).join(", ") : ""));
-        row("", null, [["Stop sharing", async () => { if (await stopSharing(rootId)) askClose(null); }, "askdanger"]]);
-      } else if (root?.joined){
-        msg((live?.role === "view" ? "You can look at this board but not change it. " : "Changes you make show up for everyone in about a second. ") + "It isn’t saved to your Google Drive: it stays with its owner, and this device keeps a copy so it opens offline.");
-        msg("Status: " + shareStatusText(live) + (live?.peers?.length ? ". Here now: " + live.peers.map(p => p.name).join(", ") : ""));
-        row("", null, [["Leave this shared board", async () => { askClose(null); leaveSharedBoard(rootId); }, "askdanger"]]);
-      } else {
-        msg("Share this board, its sub-boards and its pictures with people, live: whatever anyone changes shows up for everyone in about a second. You get an edit link and a view-only link to send.");
-        msg("It stays in your Google Drive. The server keeps an encrypted copy (so it opens when your computer is off) that it can’t read: the key is only in the links.");
-        if (!meName()) msg("Tip: set your name and colour in Settings › Appearance, so people see who is editing.");
-        row("", null, [["Start sharing", async ev => {
-          ev.target.disabled = true; ev.target.textContent = "Starting…";
-          try { await startSharing(rootId); toast("Shared. Copy a link and send it."); fill(); }
-          catch (e){ toast("Couldn’t share: " + e.message, 8000); ev.target.disabled = false; ev.target.textContent = "Start sharing"; }
-        }, "primary"]]);
+      const live = shareSessions.get(root.share?.room || root.joined?.room || "");
+      const status = () => msg("Status: " + shareStatusText(live) + (live?.peers?.length ? ". Here now: " + live.peers.map(p => p.name + (p.role === "view" ? " (viewing)" : "")).join(", ") : ""));
+      if (failed){ msg("Couldn\u2019t start sharing: " + failed); return; }
+      if (starting){ msg("Starting\u2026 making the links."); return; }
+      if (root.share){
+        const replace = which => async () => { if (await askConfirm({title:"Replace the " + which + " link?", message:"Everyone using the current " + which + " link is disconnected" + (which === "edit" ? " and loses their copy" : "") + ". Send the new link to whoever should keep access.", okLabel:"Replace"})) shareReplaceLink(rootId, which).catch(e => toast(e.message)); };
+        row("Edit link", shareLink(root.share.room, root.share.edit, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.edit, root.share.key)), "primary"], ["New link", replace("edit")]]);
+        row("View link", shareLink(root.share.room, root.share.view, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.view, root.share.key))], ["New link", replace("view")]]);
+        msg("Anyone with a link can open this board; changes show up for everyone in about a second. It stays in your Google Drive. The server keeps an encrypted copy it can\u2019t read.");
+        if (!meName()) msg("Tip: set your name and colour in Settings \u203a Appearance, so people see who is editing.");
+        status();
+      } else if (guest){
+        msg((live?.role === "view" ? "You can look at this board but not change it. " : "Changes you make show up for everyone in about a second. ") + "It isn\u2019t saved to your Google Drive: it stays with its owner, and this device keeps a copy so it opens offline.");
+        status();
       }
     };
     shareDialogRefresh = fill;
     fill();
+    if (starting) startSharing(rootId)
+      .then(() => { starting = false; toast("Shared. Copy a link and send it."); fill(); })
+      .catch(e => { starting = false; failed = e.message; fill(); });
     return {};
-  }, buttons:[{label:"Close", value:null, primary:true}]});
+  }, buttons:[guest ? {label:"Leave this board", value:"leave", danger:true} : {label:"Stop sharing", value:"stop", danger:true}, {label:"Close", value:null, primary:true}]});
   shareDialogRefresh = null;
+  if (choice === "stop"){ if (board(rootId)?.share) stopSharing(rootId); else if (starting) toast("Still starting; open Share again to stop it."); }
+  else if (choice === "leave") leaveSharedBoard(rootId);
 }
 async function openJoinDialog(){
   const link = await askText({title:"Open a shared board", message:"Paste the link someone sent you.", placeholder:shareAppUrl() + "#join=…", okLabel:"Open"});
@@ -27301,6 +27318,10 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b151", [
+    "Shorter right-click menus: Open, Create shortcut, Edit; then Share, Favourite, Make private, Add tags, Lock in place; then Export\u2026, Send to\u2026 and More\u2026 (Duplicate, Copy); Delete last. Share opens straight on the links, with Stop sharing beside Close.",
+    "Pinch-zoom on a laptop trackpad follows your fingers (it moved only about 7% before); a ctrl+mouse-wheel notch is a bigger step too."
+  ]],
   ["b150", [
     "Fixes from testing: bold, italic and underline in notes stay after you finish typing. The Image and Upload tools work again when the master archive folder needs your OK after a restart (no more \u201cUser activation is required\u201d error); what you add is kept and copied to the folder at its next update.",
     "D&D sheet colour (Edit character \u203a Home): light and deep rows of CORKBORK\u2019s jewel colours, and More colours\u2026 opens the full picker (every palette, your own palettes, any colour by code). Light colours get dark writing so the sheet stays readable.",
@@ -27353,13 +27374,6 @@ const PATCH_NOTES = [
   ]],
   ["b136", [
     "D&D sheet: each page now says plainly what\u2019s built in (for example, 1 feat) and has a button to import the rest of that kind. How to add more (top of Edit character) walks through it step by step. The import window\u2019s Spells / Races / Classes / Backgrounds / Feats toggles are clearer and remembered."
-  ]],
-  ["b135", [
-    "D&D sheet feats: Ability scores has a Feats section. Pick a feat in place of an Ability Score Improvement (or untick that for one your race gives); its +1 goes where you choose, and Resilient, Tough, Alert, Observant, Mobile and Lucky change the sheet's numbers. Prerequisites are checked and flagged, never blocked.",
-    "Import feats\u2026 reads a feat list or page from dnd5e.wikidot.com or dandwiki (homebrew), or pasted text, into your feat library (synced through Drive). Import official content now includes feats too."
-  ]],
-  ["b134", [
-    "D&D sheet: the Jack of All Trades tick box is gone. It now comes only from a class that has the feature (Bard from 2nd level, or an imported class or subclass that lists it), and Class & level says so when it applies."
   ]],
 ];
 function renderPatchNotes(){
