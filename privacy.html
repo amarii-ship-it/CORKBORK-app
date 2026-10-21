@@ -15,12 +15,23 @@
 <p>Last updated: October 2026.</p>
 
 <h2>The short version</h2>
-<p>CORKBORK has no server and no accounts. Your boards, notes and files are saved in your own browser and, if you connect it, in your own Google Drive. Nobody else, including the people who make CORKBORK, receives or can see them.</p>
+<p>CORKBORK has no accounts. Your boards, notes and files are saved in your own browser and, if you connect it, in your own Google Drive. Nobody else, including the people who make CORKBORK, receives or can see them.</p>
+<p>The one exception is a board you choose to share live. CORKBORK's server keeps an encrypted copy of that board so the people you share it with can open it. The key is only in the share links, so the server, and the people who make CORKBORK, cannot read it.</p>
 
 <h2>What is stored, and where</h2>
 <ul>
   <li><b>On your device:</b> everything you create, in your browser's own storage, and optionally in a folder you choose on your computer.</li>
-  <li><b>In your Google Drive</b>, only if you press Connect Google Drive: a folder named <code>CORKBORK</code> holding your boards, pictures and original files. Boards you mark private are never uploaded.</li>
+  <li><b>In your Google Drive</b>, only if you press Connect Google Drive: a folder named <code>CORKBORK</code> holding your boards, pictures and original files. Boards you mark private are never uploaded. Boards other people share with you are not saved to your Drive either; they stay with their owner.</li>
+  <li><b>On CORKBORK's server</b>, only for boards you share live (see below), and only encrypted.</li>
+</ul>
+
+<h2>Shared boards</h2>
+<p>When you press Start sharing, CORKBORK makes a room for that board on its server (a Cloudflare Worker). Your browser encrypts the board, its sub-boards, cards, labels and pictures before sending them, with a key that exists only in the share links, after the <code>#</code>, which browsers never send to any server. The room keeps the latest encrypted copy so the board opens when your computer is off, and passes each change to everyone who has the board open.</p>
+<ul>
+  <li>The server can see random room and record ids, how big records and pictures are, and when they change. It cannot see titles, text or pictures.</li>
+  <li>While someone has the board open, the room knows the name and colour they set in CORKBORK, to show the others who is there. It doesn't store them.</li>
+  <li>Anyone who has a link can open the board, and an edit link can change it. Send links only to people you trust. The owner can replace a link (the old one stops working) or stop sharing at any time.</li>
+  <li>Stop sharing deletes the room and everything in it, pictures included. The board stays in the owner's own workspace and Drive.</li>
 </ul>
 
 <h2>Google access</h2>
@@ -28,6 +39,7 @@
 <p>CORKBORK's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Data from Google is used only to save and sync your own work for you, is never sold, never used for advertising, and never shared with anyone.</p>
 
 <h2>Other connections</h2>
+<p>Signing in to Google goes through CORKBORK's sign-in helper, which passes Google's sign-in passes back to your browser and keeps nothing. If you press Send to developer in the Bug List, the report text, the name you set in CORKBORK, the app version and your device type are added to a file in CORKBORK's GitHub repository. When you import spells or other game content from a link, the helper fetches those public wiki pages for your browser.</p>
 <p>When you paste a link, CORKBORK may ask a public preview service for that page's title and picture. Some tools (Word layout view, text recognition) download open-source helper code the first time you use them. None of these receive your boards or files.</p>
 
 <h2>Removing your data</h2>

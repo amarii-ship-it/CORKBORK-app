@@ -179,6 +179,23 @@ body.narrow-nav #crumbs button, body.narrow-nav #cpCrumbs button{max-width:160px
 }
 #barTitle:hover{background:var(--surface); color:var(--accent);}
 #barTitle:empty{display:none;}
+/* shared board: status, then who else has it open */
+#sharePeers{display:none; align-items:center; gap:4px; flex:none;}
+#sharePeers.show{display:flex;}
+#sharePeers .sp-status{font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:10px; border:1px solid var(--border); color:var(--text); background:var(--surface); white-space:nowrap;}
+#sharePeers .sp-live, #sharePeers .sp-status:not(.sp-offline):not(.sp-connecting):not(.sp-ended):not(.sp-denied):not(.sp-unavailable){border-color:#2f9e5a; color:#2f9e5a;}
+#sharePeers .sp-offline, #sharePeers .sp-connecting{border-color:#c98a1b; color:#c98a1b;}
+#sharePeers .sp-peer{width:22px; height:22px; border-radius:50%; background:var(--peer, #888); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--bar-bg, var(--surface));}
+#sharePeers .sp-more{font-size:11px; color:var(--text-dim, var(--text));}
+.card.peer-editing{outline:2px solid var(--peer, #888); outline-offset:2px;}
+.card.peer-live{outline:2px dashed var(--peer, #888); outline-offset:2px;}
+.card .peer-tag{position:absolute; left:-2px; top:-21px; z-index:5; background:var(--peer, #888); color:#fff; font:700 11px/1 system-ui, sans-serif; padding:4px 7px; border-radius:5px 5px 5px 0; white-space:nowrap; pointer-events:none;}
+.share-ghost{position:absolute; border:2px dashed var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text); background:rgba(127,127,127,.08); pointer-events:none;}
+.share-row{display:flex; align-items:center; gap:8px; margin:10px 0; flex-wrap:wrap;}
+.share-row b{min-width:70px; font-size:13px;}
+.share-row input{flex:1; min-width:180px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); font-size:12px;}
+.share-row button{padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-weight:600; font-size:12.5px;}
+.share-row button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
 #barCentre.crowded{visibility:hidden;}
 /* narrow windows: fold buttons into ••• instead of letting them fall off */
 #topbar .bar-folded{display:none !important;}
@@ -1437,6 +1454,12 @@ body.focus-mode #focusExit{display:flex;}
 .tool-row{display:grid; grid-template-columns:96px 34px 1fr; gap:10px; align-items:baseline; padding:7px 4px; border-bottom:1px solid var(--border); font-size:13px;}
 .tool-row kbd, .setsec .meta kbd{font:600 11px/1.2 var(--font-ui); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-align:center;}
 .setup-steps li{margin-bottom:12px;}
+.me-picker{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;}
+.me-picker input[type=text]{padding:6px 9px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); font-size:13px; width:180px; border-left:5px solid var(--me, var(--border));}
+.me-swatches{display:flex; gap:5px; flex-wrap:wrap; align-items:center;}
+.me-swatch{width:20px; height:20px; border-radius:50%; border:2px solid transparent; padding:0; cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,.15) inset;}
+.me-swatch.sel{border-color:var(--text);}
+.me-custom{width:24px; height:22px; padding:0; border:1px solid var(--border); border-radius:5px; background:none; cursor:pointer;}
 .setup-act{display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;}
 .setup-act button{padding:6px 12px; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:12.5px;}
 #welcomeBar{position:fixed; left:50%; top:46px; transform:translate(-50%,-140%); z-index:170; display:flex; align-items:center; gap:10px;
@@ -2396,7 +2419,6 @@ body.focus-mode #textBarWrap{display:none;}
   background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px;}
 .bugdock .bd-row{display:flex; gap:6px;}
 .bugdock .bd-row button{flex:1;}
-.bugdock #bugName{padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:12.5px;}
 .bugdock .bd-send{background:#2F6FE4 !important; border-color:#2F6FE4 !important; color:#fff !important; font-weight:600;}
 .bugdock .bd-add{background:var(--surface); border:1px solid var(--border); padding:6px; cursor:pointer; border-radius:4px; color:var(--text);}
 .bugdock .bd-add:hover{background:var(--accent);}
@@ -3236,6 +3258,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
        the bar's normal flow with the other tools. -->
   <div id="barCentre">
     <button id="barTitle" title="Back to Home"></button>
+    <div id="sharePeers" aria-live="polite"></div>
   </div>
   <div id="barCardGroup"></div>
   <div id="barSpacer"></div>
@@ -3560,7 +3583,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button id="mbTimer" title="Writing sprint timer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V9 M9 2h6 M18 6l1.5-1.5"/></svg>
       </button>
-      <button id="mbExport" title="Share: export this board, its images, or import a board">
+      <button id="mbExport" title="Share: share this board live, export a copy, or open what someone sent you">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4 M8 8l4-4 4 4 M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
       </button>
     </div>
@@ -3983,7 +4006,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <button id="bugClose" class="bd-x" title="Close">✕</button>
   </div>
   <textarea id="bugInput" placeholder="Describe a bug or a suggestion" rows="4"></textarea>
-  <input id="bugName" type="text" placeholder="Your name (optional)" maxlength="60">
   <div class="bd-row">
     <button id="bugSend" class="bd-add bd-send">Send to developer</button>
     <button id="bugAdd" class="bd-add" title="Keep it in your own list only">Keep private</button>
@@ -4000,6 +4022,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <h2>First time setup</h2>
     <div class="meta">Every step is optional, and all of it is in Settings later.</div>
     <ol class="first-run-steps setup-steps">
+      <li><b>What’s your name?</b> People you share boards with see it, in your colour, on whatever you’re editing.
+        <div class="setup-act me-picker" id="setupMe"></div></li>
       <li><b>Sync your devices.</b> Saves to your Google Drive so your PC, iPad and phone share one workspace.
         <div class="setup-act"><button id="setupDrive">Connect Google Drive</button><span id="setupDriveState" class="meta"></span></div></li>
       <li id="setupFolderStep"><b>Keep a folder copy on this computer.</b> Make a folder called <b>CORKBORK</b> in Documents, then choose it.
@@ -4088,6 +4112,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <div class="meta" id="statsLine" style="margin-bottom:12px;"></div>
 
       <div class="setsec" data-sec="appearance">
+        <div class="themeblock">
+          <span class="themelabel">Your name and colour</span>
+          <div class="meta">Shown to people you share boards with. It follows you to your other devices.</div>
+          <div class="me-picker" id="settingsMe"></div>
+        </div>
         <label>Interface size
           <select id="uiScaleSel">
             <option value="small">Small (85%)</option>
@@ -4342,7 +4371,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b148";
+window.BUILD = "b149";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5015,6 +5044,7 @@ function markDirty(){
   state.lastModified = now();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 500);
+  shareSchedule();
 }
 /* ---- several tabs at once ----------------------------------------------
    Every tab can edit. Each tab remembers the copy it last read or wrote
@@ -5125,6 +5155,7 @@ function tabApply(merged){
   selection = new Set([...selection].filter(id => state.cards[id]));
   if (look(state.settings) !== lookBefore && typeof applyTheme === "function"){ try { applyTheme(); } catch (_) {} }
   tabRenderPending = true; tabFlushRender();
+  shareSchedule();
 }
 function tabFlushRender(){
   clearTimeout(tabRenderTimer);
@@ -5514,7 +5545,7 @@ function fitToContent(){
 }
 
 /* ---------------- rendering ---------------- */
-function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); }
+function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); }
 
 function boardCardFor(bid){
   for (const c of Object.values(state.cards))
@@ -5708,7 +5739,7 @@ function renderBoard(){
        points at. The cache only watched the card, so moving something into a
        board left the tile reading its old count until a full reload. Board
        cards therefore carry the count they were drawn with. */
-    const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") :
+    const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") + (board(c.boardId)?.share ? ":shared" : board(c.boardId)?.joined ? ":joined" : "") :
       (c.type === "column" || c.type === "grid")
         ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") :
       c.type === "widget" && c.widget === "calendar" ? calSignature(id) : null;
@@ -5723,7 +5754,7 @@ function renderBoard(){
     keep.add(el);
     if (el.parentNode !== worldEl) worldEl.appendChild(el);
   }
-  for (const ch of [...worldEl.children]) if (!keep.has(ch)) ch.remove();
+  for (const ch of [...worldEl.children]) if (!keep.has(ch) && !ch.classList.contains("share-ghost")) ch.remove();
   const vp = b.viewport || {panX:0,panY:0,zoom:1};
   panX = vp.panX; panY = vp.panY; zoom = vp.zoom;
   applyViewport(false);
@@ -5731,6 +5762,7 @@ function renderBoard(){
   requestAnimationFrame(fitAutoHeights);
   renderStickLinks();
   if (tagFilter || document.body.classList.contains("tag-filtering")) applyTagFilter();
+  if (shareSessions.size) shareDecorate();
 }
 
 /* ---------------- auto height ----------------
@@ -5985,7 +6017,7 @@ function buildCardEl(c){
        title would fire on top of it and force rename even on the icon. */
     const n = document.createElement("div"); n.className = "bcount";
     n.textContent = !b ? "board was deleted"
-      : (boardIsPrivate(c.boardId) ? "\u{1F512} private · " : "") + (c.shortcut ? "shortcut · " : "") + subBoardCounts(c.boardId);
+      : (board(c.boardId)?.share ? "\u{1F465} shared · " : board(c.boardId)?.joined ? "\u{1F465} shared with you · " : boardIsPrivate(c.boardId) ? "\u{1F512} private · " : "") + (c.shortcut ? "shortcut · " : "") + subBoardCounts(c.boardId);
     wrap.append(tile, t, n); el.appendChild(wrap);
   }
 
@@ -8857,9 +8889,10 @@ function editNote(c, el){
   el.appendChild(ed); el.classList.add("editing-note");
   const setEmpty = () => ed.classList.toggle("is-empty", !ed.textContent.trim() && !ed.querySelector("img"));
   setEmpty();
-  ed.addEventListener("input", () => { setEmpty(); growNoteWhileTyping(c.id); });
+  ed.addEventListener("input", () => { setEmpty(); growNoteWhileTyping(c.id); shareLiveTyping(c.id, ed); });
   growNoteWhileTyping(c.id);
   activeEditor = { cardId: c.id, ed, cardEl: el, commit: deferRender => commit(deferRender) };
+  shareHere(c.id);
   updateRail();
   try { document.execCommand("styleWithCSS", false, true); } catch(e){}
   ed.focus();
@@ -8903,6 +8936,7 @@ function editNote(c, el){
       }
       if (Object.keys(patch).length){ pushUndo(); patchCard(c.id, patch); markDirty(); }
     }
+    shareHere(null); shareTypingDone(c.id);
     closeRailPops(); updateRail();
     if (!deferRender) renderBoard();
   };
@@ -9468,6 +9502,7 @@ function enterEdit(c){
   if (!el) return;
   if (c.locked){ toast("This board is private on another device. Open it there."); return; }
   if (c.pinned){ toast("Locked in place. Right-click (or long-press) it and choose Unlock to change it."); return; }
+  if (c.type !== "board" && shareReadOnly()){ toast("This shared board is view-only."); return; }
   if (c.type === "note" || c.type === "heading") editNote(c, el);
   else if (c.type === "board") openBoard(c.boardId);
   else if (c.type === "link") openLinkDialog(c);
@@ -11818,6 +11853,9 @@ function openCtx(x, y, c){
     add("Create shortcut", () => createShortcut(c));
     add("Export images (.zip)", () => exportBoardImages(c.boardId));
     add("Export board (to send)\u2026", () => exportBoardFile(c.boardId));
+    if (board(c.boardId)?.joined) add("\u{1F465} Shared with you\u2026", () => openShareDialog(c.boardId));
+    else if (board(c.boardId)?.share) add("\u{1F465} Sharing\u2026 (links, stop)", () => openShareDialog(c.boardId));
+    else if (!shareSessionForBoard(c.boardId) && !boardIsPrivate(c.boardId)) add("\u{1F465} Share live\u2026", () => openShareDialog(c.boardId));
     add("Edit… (title, icon, color)", () => openBoardDialog(c));
     if (board(c.boardId)) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
       : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
@@ -12817,6 +12855,8 @@ function startCardDrag(e, cardEl){
      selection, so the normal note-text safeguard is unnecessary there. */
   if (e.pointerType === "mouse" && !e.target.closest?.(".chead")) e.preventDefault();
   const id = cardEl.dataset.id, c = card(id);
+  /* a view-only shared board: select, don't move */
+  if (shareReadOnly()){ setSelection([id]); return; }
   const headerGesture = c.type === "column" && !!e.target.closest?.(".chead");
   if (arrowMode){ e.stopPropagation(); arrowClickCard(id); return; }
   const already = selection.has(id);
@@ -12919,6 +12959,7 @@ function startCardDrag(e, cardEl){
       }
     }
     updateConnectorsDuringDrag();
+    shareLiveDrag(drag.members);
     $("#drawer").classList.toggle("droptarget", overDrawer(ev));
     overTrash(ev);
     overDeleteBin(ev);
@@ -18349,10 +18390,16 @@ boardFileInput.addEventListener("change", async () => {
 $("#mbExport").addEventListener("click", async () => {
   const v = await askOpen({title:"Share boards", build(body){
     const m = document.createElement("div"); m.id = "askMsg";
-    m.textContent = "Export this board to send to someone (everything on it, sub-boards and pictures included), or import a board someone sent you. Importing adds it here; nothing else changes.";
+    m.textContent = "Share this board live: everyone with the link sees changes as they happen. Or export a copy to send (everything on it, sub-boards and pictures included), or import a copy someone sent you. Importing adds it here; nothing else changes.";
     body.appendChild(m); return {};
-  }, buttons:[{label:"Cancel", value:null}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"Export this board", value:"export", primary:true}]});
-  if (v === "export") exportBoardFile(currentBoardId);
+  }, buttons:[{label:"Cancel", value:null}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"Open a shared link\u2026", value:"join"}, {label:"Export a copy", value:"export"},
+    {label:shareSessionForBoard(currentBoardId) ? "Sharing\u2026" : "Share live\u2026", value:"live", primary:true}]});
+  if (v === "live"){
+    if (currentBoardId === state.rootBoardId || currentBoardId === TRASH_ID) toast("Home and the Recycle Bin can\u2019t be shared. Open a board, or right-click a board card and choose Share live.", 7000);
+    else openShareDialog(currentBoardId);
+  }
+  else if (v === "join") openJoinDialog();
+  else if (v === "export") exportBoardFile(currentBoardId);
   else if (v === "zip") exportBoardImages(currentBoardId);
   else if (v === "import") boardFileInput.click();
 });
@@ -18622,7 +18669,7 @@ function closeOverlay(ov){
 }
 function openSettings(){
   if (!openOverlay("#settingsOverlay")) return;
-  fillSettings();
+  fillSettings(); fillMePickers();
 }
 let bugDockReclamp = null, drawerReclamp = null;
 function openBugList(){
@@ -18905,16 +18952,13 @@ function bugReportUrl(){ return location.origin === BUILTIN_CLIENT_ORIGIN && AUT
 async function sendBugReport(bug){
   const url = bugReportUrl(); if (!url) throw new Error("reports can only be sent from the CORKBORK website");
   const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
-    text:bug.text, name:SAFE_STORE.get("cb_bugName") || "", build:window.BUILD || "",
+    text:bug.text, name:meName() || SAFE_STORE.get("cb_bugName") || "", build:window.BUILD || "",
     device:(navigator.userAgentData?.platform || navigator.platform || "") + " · " + innerWidth + "×" + innerHeight})});
   if (!r.ok){ let why = ""; try { why = (await r.json()).error || ""; } catch (_) {} throw new Error(why || "server error " + r.status); }
   const live = state.bugs.find(b => b.id === bug.id);
   if (live){ live.sent = Date.now(); markDirty(); }
 }
 /* SAFE_STORE is defined further down this script, so read it once the page has run */
-setTimeout(() => { $("#bugName").value = SAFE_STORE.get("cb_bugName") || ""; }, 0);
-$("#bugName").addEventListener("input", e => SAFE_STORE.set("cb_bugName", e.target.value.trim()));
-$("#bugName").addEventListener("keydown", e => e.stopPropagation());
 $("#bugSend").addEventListener("click", async () => {
   const v = $("#bugInput").value.trim(); if (!v) return;
   const bug = {id:uid("bug"), text:v, ts:Date.now(), sent:0};
@@ -18970,6 +19014,57 @@ function finishFirstRun(showNext=true){
   }
 }
 $("#firstRunDone").addEventListener("click", finishFirstRun);
+/* ---- your name and colour ----
+   Kept in the workspace settings, so it syncs to your other devices. Shared
+   boards show it on whatever you're editing; bug reports are signed with it. */
+const ME_COLORS = ["#e5484d","#f76b15","#e2a336","#46a758","#12a594","#0090ff","#3e63dd","#8e4ec6","#d6409f","#978365"];
+const meName = () => String(state?.settings?.me?.name || "").trim().slice(0, 40);
+function meColor(){
+  const c = state?.settings?.me?.color;
+  if (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c)) return c;
+  /* no pick yet: one per device, so two unnamed people still differ */
+  let seed = SAFE_STORE.get("cb_meSeed");
+  if (!seed){ seed = String(Math.floor(Math.random() * ME_COLORS.length)); SAFE_STORE.set("cb_meSeed", seed); }
+  return ME_COLORS[Number(seed) % ME_COLORS.length];
+}
+function setMe(patch){
+  const me = {...(state.settings?.me || {}), ...patch};
+  if (me.name !== undefined) me.name = String(me.name).trim().slice(0, 40);
+  state.settings = Object.assign({}, state.settings, {me});
+  markDirty();
+  fillMePickers();
+  if (typeof shareAnnounce === "function") shareAnnounce();
+}
+function buildMePicker(box){
+  if (!box || box.dataset.built) return;
+  box.dataset.built = "1";
+  const input = document.createElement("input");
+  input.type = "text"; input.maxLength = 40; input.placeholder = "Your name"; input.className = "me-name";
+  input.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") input.blur(); });
+  input.addEventListener("change", () => setMe({name:input.value}));
+  const sw = document.createElement("div"); sw.className = "me-swatches";
+  for (const col of ME_COLORS){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "me-swatch"; b.dataset.color = col; b.style.background = col; b.title = "Use this colour";
+    b.addEventListener("click", () => setMe({color:col}));
+    sw.appendChild(b);
+  }
+  const custom = document.createElement("input");
+  custom.type = "color"; custom.className = "me-custom"; custom.title = "Any colour";
+  custom.addEventListener("change", () => setMe({color:custom.value.toLowerCase()}));
+  sw.appendChild(custom);
+  box.append(input, sw);
+}
+function fillMePickers(){
+  for (const box of document.querySelectorAll(".me-picker")){
+    buildMePicker(box);
+    const input = box.querySelector(".me-name"), col = meColor();
+    if (document.activeElement !== input) input.value = meName();
+    box.style.setProperty("--me", col);
+    for (const b of box.querySelectorAll(".me-swatch")) b.classList.toggle("sel", b.dataset.color === col);
+    box.querySelector(".me-custom").value = col;
+  }
+}
 $("#firstRunArchive").addEventListener("click", () => $("#archiveChoose").click());
 $("#personalizeSkip").addEventListener("click", () => {
   state.settings = Object.assign({}, state.settings, { personalizationVersion:PERSONALIZATION_VERSION });
@@ -19031,7 +19126,7 @@ function refreshSetupSteps(){
     : ios ? "Tap Share, then Add to Home Screen."
     : "Use the install icon at the right of the address bar.";
 }
-function openFirstTimeSetup(){ refreshSetupSteps(); openOverlay("#firstRunOverlay"); }
+function openFirstTimeSetup(){ refreshSetupSteps(); fillMePickers(); openOverlay("#firstRunOverlay"); }
 $("#setupDrive").addEventListener("click", () => {
   closeOverlay("#firstRunOverlay"); openSettings();
   document.querySelector('.setnav[data-sec="data"]')?.click();
@@ -24786,7 +24881,8 @@ function syncPrivacy(ws){
   const walkBoard = (bid, priv, inTrash) => {
     const b = all[bid]; if (!b || seenBoards.has(bid)) return;
     seenBoards.add(bid);
-    const p = priv || !!b.private;
+    /* a shared board someone else owns is private too: it never goes to your Drive */
+    const p = priv || !!b.private || !!b.joined;
     if (p) boards.add(bid);
     for (const cid of [...(b.cardIds || []), ...(b.unsortedIds || [])]) walkCard(cid, p, inTrash);
   };
@@ -24795,7 +24891,7 @@ function syncPrivacy(ws){
   for (const bid of Object.keys(all)){
     if (seenBoards.has(bid)) continue;
     for (let at = all[bid], hops = 0; at && hops < 1000; at = all[at.parentId], hops++)
-      if (at.private || boards.has(at.id)){ boards.add(bid); break; }
+      if (at.private || at.joined || boards.has(at.id)){ boards.add(bid); break; }
     walkBoard(bid, boards.has(bid), false);
   }
   return {boards, cards};
@@ -25079,6 +25175,7 @@ function boardPrivacyInherited(bid){
 async function toggleBoardPrivate(bid){
   const b = board(bid); if (!b || bid === state.rootBoardId || bid === TRASH_ID) return;
   if (boardPrivacyInherited(bid)){ toast("This board is inside a private board, so it is private already."); return; }
+  if (b.share || b.joined || shareSessionForBoard(bid)){ toast("Shared boards can’t be private. Stop sharing it first, or move it out of the shared board."); return; }
   const making = !b.private;
   const ok = await askConfirm(making ? {
     title:"Make \u201c" + (b.title || "board") + "\u201d private?",
@@ -25899,6 +25996,1165 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 }
 
 
+/* ---------------- shared boards: live rooms ----------------
+   A shared board lives in a room on CORKBORK's Cloudflare helper
+   (cloudflare/auth-worker.js, ShareRoom). Everyone with the board open is
+   connected to it. Each board, card and label of the shared board is one
+   record in the room; an edit here is sent as the records it changed, and
+   records others change arrive and are put in place within a second.
+
+   The room can't read anything. Every record and picture is encrypted here
+   with a key that only exists in the share link, after the "#" (browsers
+   never send that part anywhere). The room keeps the latest encrypted copy,
+   so the board opens even when its owner's computer is off.
+
+   Where things are kept:
+   - the owner's board is an ordinary board in the owner's workspace. It
+     syncs to the owner's Google Drive like any other, so guests' edits end up
+     in the owner's Drive too. Its root carries `share` (room, tokens, key).
+   - a guest's copy is marked `joined` and is private: it never goes to the
+     guest's Drive. The link itself is remembered in settings.sharedJoins, so
+     the guest's other devices open it too.
+
+   Merging: the room numbers every record's versions. This device remembers
+   the last version it agreed with the room for each record (the base, kept
+   in local storage so it survives a restart or a week offline). A record
+   only changed here is sent; only changed in the room is taken; changed in
+   both is merged field by field, the way Drive sync merges, and long text
+   that loses is kept as a conflict copy, so nothing vanishes. A write the
+   room refuses (someone wrote first) is merged into the newer copy and sent
+   again.
+
+   Live: dragging a card or typing in a note sends throwaway "live" updates
+   ten times a second, which others draw at once; the finished edit is then
+   saved as usual. */
+const SHARE_LOCAL_BOARD_FIELDS = ["viewport", "share", "shareEnd", "joined", "private", "lastViewedAt"];
+const SHARE_LOCAL_CARD_FIELDS = ["archiveRef", "driveRef"];
+const SHARE_ASSET_MAX = 40 * 1024 * 1024;
+const SHARE_KEY_RE = /^(?:[cbl]:[A-Za-z0-9_.:-]{1,100}|m:root)$/;
+const SHARE_CLIENT = "t" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const shareSessions = new Map();          /* room id -> session */
+let shareProjGen = 0;                      /* bump to forget every cached projection */
+const shareProjCache = new WeakMap();      /* card object -> {gen, obj, json} */
+/* CORKBORK's helper, on the hosted site only (tests point this elsewhere) */
+function shareServerUrl(){ return location.origin === BUILTIN_CLIENT_ORIGIN && AUTH_WORKER_URL ? AUTH_WORKER_URL.replace(/\/+$/, "") : ""; }
+function shareAppUrl(){ return location.origin + location.pathname; }
+
+/* ---- encryption: AES-GCM, key from the link ---- */
+function shareB64(bytes){
+  const b = new Uint8Array(bytes); let s = "";
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function shareUnB64(s){
+  s = String(s || "").replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function shareKeys(keyB64){
+  const raw = shareUnB64(keyB64);
+  if (raw.length !== 32) throw new Error("This share link is incomplete. Ask for the link again.");
+  if (!globalThis.crypto?.subtle) throw new Error("This browser can't open shared boards (no encryption support here).");
+  return {aes:await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]),
+    mac:await crypto.subtle.importKey("raw", raw, {name:"HMAC", hash:"SHA-256"}, false, ["sign"])};
+}
+async function shareSeal(keys, bytes){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv}, keys.aes, bytes));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return out;
+}
+async function shareUnseal(keys, bytes){
+  bytes = new Uint8Array(bytes);
+  return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM", iv:bytes.subarray(0, 12)}, keys.aes, bytes.subarray(12)));
+}
+const shareEncText = async (keys, text) => shareB64(await shareSeal(keys, new TextEncoder().encode(text)));
+const shareDecText = async (keys, d) => new TextDecoder().decode(await shareUnseal(keys, shareUnB64(d)));
+/* a picture's name in the room: keyed, so equal pictures can't be recognised from outside */
+async function shareAssetId(keys, tokenId){
+  const sig = await crypto.subtle.sign("HMAC", keys.mac, new TextEncoder().encode("asset:" + tokenId));
+  return shareB64(new Uint8Array(sig)).slice(0, 43);
+}
+/* JSON with keys in a fixed order, so equal records compare equal */
+function shareCanon(v){
+  if (Array.isArray(v)) return "[" + v.map(x => x === undefined ? "null" : shareCanon(x)).join(",") + "]";
+  if (v && typeof v === "object")
+    return "{" + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ":" + shareCanon(v[k])).join(",") + "}";
+  return JSON.stringify(v === undefined ? null : v);
+}
+const shareKnownObj = kn => !kn ? null : kn.obj !== undefined ? kn.obj : (kn.obj = JSON.parse(kn.json));
+
+/* ---- links ---- */
+function shareLink(room, token, key){ return shareAppUrl() + "#join=" + room + "." + token + "." + key; }
+function shareParseLink(text){
+  const m = /#?join=([A-Za-z0-9_-]{16,40})\.([A-Za-z0-9_-]{16,60})\.([A-Za-z0-9_-]{40,46})/.exec(String(text || ""));
+  return m ? {room:m[1], token:m[2], key:m[3]} : null;
+}
+
+/* ---- which boards and cards belong to a shared board ---- */
+function shareMembers(rootId){
+  const boards = new Set(), cards = new Set(), placeholders = new Set(), labels = new Set();
+  const walkCard = cid => {
+    const c = state.cards[cid]; if (!c || cards.has(cid)) return;
+    cards.add(cid);
+    for (const l of c.labelIds || []) if (state.labels?.[l]) labels.add(l);
+    if (c.type === "board" && !c.shortcut){
+      const sub = state.boards[c.boardId];
+      /* a private board (or one shared on its own) stays out: others see a locked note */
+      if (sub && sub.id !== rootId && (sub.private || sub.share || sub.joined)){ placeholders.add(cid); return; }
+    }
+    for (const k of ["childIds", "attachedIds", "unsortedIds"]) for (const n of c[k] || []) walkCard(n);
+    if (c.type === "board" && !c.shortcut && c.boardId) walkBoard(c.boardId);
+  };
+  const walkBoard = bid => {
+    const b = state.boards[bid]; if (!b || boards.has(bid)) return;
+    boards.add(bid);
+    for (const cid of [...(b.cardIds || []), ...(b.unsortedIds || [])]) walkCard(cid);
+  };
+  walkBoard(rootId);
+  /* a shortcut to a board that isn't shared can't come along */
+  for (const cid of [...cards]){ const c = state.cards[cid]; if (c.type === "board" && c.shortcut && !boards.has(c.boardId)) cards.delete(cid); }
+  return {boards, cards, placeholders, labels};
+}
+function shareSessionForBoard(bid){
+  for (const s of shareSessions.values()) if (s.members?.boards.has(bid) || s.rootId === bid) return s;
+  return null;
+}
+function shareSessionForCard(cid){
+  for (const s of shareSessions.values()) if (s.members?.cards.has(cid)) return s;
+  return null;
+}
+function shareReadOnly(bid = currentBoardId){
+  const s = shareSessionForBoard(bid); return !!(s && s.role === "view");
+}
+
+/* ---- this device's copy, as room records ---- */
+function shareTileLook(rootId){
+  const t = Object.values(state.cards).find(c => c.type === "board" && !c.shortcut && c.boardId === rootId);
+  return t ? {icon:t.icon, iconTone:t.iconTone, accent:t.accent, w:t.w, h:t.h} : null;
+}
+function shareStripTooBig(s, v){
+  if (!s.tooBig.size) return v;
+  if (typeof v === "string"){
+    if (!v.includes(ASSET_TOKEN_PREFIX)) return v;
+    return v.replace(assetTokenPattern(), t => s.tooBig.has(t.slice(ASSET_TOKEN_PREFIX.length)) ? "" : t);
+  }
+  if (Array.isArray(v)) return v.map(x => shareStripTooBig(s, x));
+  if (v && typeof v === "object"){ const o = {}; for (const [k, x] of Object.entries(v)) o[k] = shareStripTooBig(s, x); return o; }
+  return v;
+}
+async function shareProjectCard(s, c, m){
+  /* a locked note's height is each screen's own (it is a note there, a board tile here) */
+  if (m.placeholders.has(c.id)){ const p = syncLockedPlaceholder(c); delete p.h; return {obj:p, json:shareCanon(p)}; }
+  const overlay = s.overlay.get(c.id);
+  let base = overlay ? null : shareProjCache.get(c);
+  if (base && base.gen !== shareProjGen) base = null;
+  if (!base){
+    const raw = {...c, ...(overlay || {})};
+    for (const f of SHARE_LOCAL_CARD_FIELDS) delete raw[f];
+    delete raw.trashPrivate;
+    /* a note's height follows its text, measured on each screen; screens with
+       different fonts would otherwise correct each other for ever */
+    if (shareAutoHeight(raw) || syncIsLockedCard(raw)) delete raw.h;
+    /* a file whose original is only in Drive or a folder travels with its bytes */
+    if (raw.type === "file" && (c.archiveRef || c.driveRef) && !raw.dataUrl){
+      const emb = s.embeds.get(shareEmbedKey(c));
+      if (emb === undefined) return null;
+      if (emb) raw.dataUrl = emb;
+    }
+    let obj = await mapStoredAssets(raw, "pack");
+    obj = shareStripTooBig(s, obj);
+    base = {gen:shareProjGen, obj, json:shareCanon(obj)};
+    if (!overlay) shareProjCache.set(c, base);
+  }
+  let obj = base.obj;
+  const fix = {};
+  for (const k of ["childIds", "attachedIds", "unsortedIds"])
+    if (Array.isArray(obj[k]) && obj[k].some(id => !m.cards.has(id))) fix[k] = obj[k].filter(id => m.cards.has(id));
+  if (Array.isArray(obj.relations) && obj.relations.some(r => !m.cards.has(r?.id))) fix.relations = obj.relations.filter(r => m.cards.has(r?.id));
+  if (Object.keys(fix).length){ obj = {...obj, ...fix}; return {obj, json:shareCanon(obj)}; }
+  return base;
+}
+const shareAutoHeight = c => !!(AUTO_H_TYPES[c.type] && c.autoH !== false && !c.locked);
+const shareEmbedKey = c => c.id + "|" + (c.driveRef?.sha256 || c.driveRef?.id || "") + "|" + (c.archiveRef?.path || c.archiveRef?.name || "");
+/* read the originals of shared file cards that aren't embedded (Drive or folder only) */
+async function shareLoadEmbeds(s, m){
+  const want = [...m.cards].map(id => state.cards[id]).filter(c => c && c.type === "file" && (c.archiveRef || c.driveRef) && !c.dataUrl && !s.embeds.has(shareEmbedKey(c)));
+  for (const c of want){
+    try {
+      const blob = await cardSourceBlob(c);
+      s.embeds.set(shareEmbedKey(c), blob.size > SHARE_ASSET_MAX ? "" : await blobToDataUrl(blob));
+    } catch (e){
+      s.embedFailures = (s.embedFailures || 0) + 1;
+      throw new Error("couldn’t read “" + (c.fileName || c.title || "a file") + "” to share it (" + e.message + ")");
+    }
+  }
+}
+/* every record this device would put in the room right now; null while the board isn't here */
+async function shareProject(s){
+  const root = state?.boards?.[s.rootId]; if (!root) return null;
+  const m = shareMembers(s.rootId);
+  s.members = m;
+  const map = new Map();
+  if (s.owner) map.set("m:root", (o => ({obj:o, json:shareCanon(o)}))({root:s.rootId, title:root.title || "Board", look:shareTileLook(s.rootId)}));
+  for (const bid of m.boards){
+    const b = state.boards[bid], o = {};
+    for (const [k, v] of Object.entries(b)) if (!SHARE_LOCAL_BOARD_FIELDS.includes(k)) o[k] = v;
+    if (bid === s.rootId) o.parentId = null;
+    o.cardIds = (b.cardIds || []).filter(id => m.cards.has(id));
+    o.unsortedIds = (b.unsortedIds || []).filter(id => m.cards.has(id));
+    if (Array.isArray(b.connectors)) o.connectors = b.connectors.filter(cn => m.cards.has(cn?.from) && m.cards.has(cn?.to));
+    const obj = shareStripTooBig(s, await mapStoredAssets(o, "pack"));
+    map.set("b:" + bid, {obj, json:shareCanon(obj)});
+  }
+  let waiting = false;
+  for (const cid of m.cards){
+    const p = await shareProjectCard(s, state.cards[cid], m);
+    if (!p){ waiting = true; continue; }
+    map.set("c:" + cid, p);
+  }
+  for (const lid of m.labels){ const obj = state.labels[lid]; map.set("l:" + lid, {obj, json:shareCanon(obj)}); }
+  return {map, waiting, m};
+}
+
+/* ---- sessions ---- */
+function shareStatusText(s){
+  if (!s) return "";
+  if (s.progress && s.status === "live") return "Uploading pictures: " + s.progress.done + " of " + s.progress.total + " (the others see the board when they\u2019re all up)";
+  return {connecting:"Connecting…", live:"Live", offline:"Offline — your changes are kept and sent when you’re back",
+    ended:"Sharing ended", denied:"This link no longer works", unavailable:"Sharing isn’t available here"}[s.status] || s.status;
+}
+async function shareOpenSession({room, token, key, rootId, owner, joinParent}){
+  let s = shareSessions.get(room);
+  if (s){ if (rootId && !s.rootId) s.rootId = rootId; return s; }
+  s = {room, token, keyB64:key, keys:await shareKeys(key), rootId:rootId || null, owner:!!owner, joinParent:joinParent || null,
+    role:owner ? "owner" : null, status:"connecting", ws:null, seq:0, known:new Map(), sending:new Map(), inflight:new Map(),
+    uploaded:new Set(), tooBig:new Set(), embeds:new Map(), overlay:new Map(), peers:[], sid:null, putSeq:0, retry:0,
+    catchup:null, chain:Promise.resolve(), liveAt:0, liveQueue:new Map(), meta:null, members:null, joinWaiters:[]};
+  shareSessions.set(room, s);
+  const saved = await idbGetRaw("share:" + room).catch(() => null);
+  if (saved && saved.v === 1){
+    s.seq = saved.seq || 0;
+    for (const [k, v, json] of saved.known || []) s.known.set(k, {v, json});
+    for (const id of saved.uploaded || []) s.uploaded.add(id);
+  }
+  shareConnect(s);
+  return s;
+}
+let shareSaveTimers = new Map();
+function shareSaveBase(s, now=false){
+  clearTimeout(shareSaveTimers.get(s.room));
+  const write = () => idbSet("share:" + s.room, {v:1, seq:s.seq, known:[...s.known].map(([k, kn]) => [k, kn.v, kn.json]), uploaded:[...s.uploaded]})
+    .catch(e => console.warn("Couldn't keep the shared board's base copy:", e));
+  if (now) return write();
+  shareSaveTimers.set(s.room, setTimeout(write, 1200));
+}
+function shareCloseSession(s, forget=false){
+  shareSessions.delete(s.room);
+  clearTimeout(s.reconnectTimer); clearInterval(s.pingTimer); clearTimeout(s.timer);
+  s.closing = true;
+  try { s.ws?.close(1000, "bye"); } catch (_) {}
+  if (forget){ clearTimeout(shareSaveTimers.get(s.room)); idbDel("share:" + s.room).catch(() => {}); }
+  shareUpdateBar();
+}
+function shareConnect(s){
+  const server = shareServerUrl();
+  if (!server){ s.status = "unavailable"; shareUpdateBar(); return; }
+  if (s.ws && (s.ws.readyState === 0 || s.ws.readyState === 1)) return;
+  if (["ended", "denied"].includes(s.status) || s.closing) return;
+  if (navigator.onLine === false){ s.status = "offline"; shareUpdateBar(); return; }
+  s.status = "connecting"; shareUpdateBar();
+  let ws;
+  try { ws = new WebSocket(server.replace(/^http/, "ws") + "/share/" + s.room + "/ws"); }
+  catch (e){ s.status = "offline"; shareRetry(s); return; }
+  s.ws = ws;
+  ws.onopen = () => {
+    const local = !!state?.boards?.[s.rootId];
+    ws.send(JSON.stringify({t:"hello", token:s.token, since:local ? s.seq : 0, name:meName(), color:meColor(), client:SHARE_CLIENT}));
+    clearInterval(s.pingTimer);
+    s.pingTimer = setInterval(() => { try { if (ws.readyState === 1) ws.send("ping"); } catch (_) {} }, 25000);
+  };
+  ws.onmessage = e => {
+    if (e.data === "pong") return;
+    let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    /* one message at a time, in order: decrypting is asynchronous */
+    s.chain = s.chain.then(() => shareOnMessage(s, m)).catch(err => { console.warn("Shared board message failed:", err); s.lastError = err.message; });
+  };
+  ws.onclose = () => {
+    clearInterval(s.pingTimer);
+    if (s.ws !== ws) return;
+    s.ws = null;
+    /* what was sent but not confirmed is sent again after reconnecting */
+    s.sending.clear(); s.inflight.clear();
+    if (["ended", "denied"].includes(s.status) || s.closing) return;
+    s.status = "offline"; s.peers = []; shareUpdateBar(); shareDecorate();
+    shareRetry(s);
+  };
+}
+function shareRetry(s){
+  clearTimeout(s.reconnectTimer);
+  const wait = [1000, 2000, 4000, 8000, 15000, 30000][Math.min(s.retry++, 5)];
+  s.reconnectTimer = setTimeout(() => shareConnect(s), wait);
+}
+addEventListener("online", () => { for (const s of shareSessions.values()){ s.retry = 0; shareConnect(s); } });
+addEventListener("offline", () => { for (const s of shareSessions.values()) try { s.ws?.close(); } catch (_) {} });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") for (const s of shareSessions.values()) if (!s.ws){ s.retry = 0; shareConnect(s); }
+});
+
+async function shareOnMessage(s, m){
+  if (m.t === "recs"){
+    if (m.done !== undefined){
+      /* a catch-up arrives in pieces; it is applied whole */
+      if (!s.catchup) s.catchup = {full:!!m.full, rows:[]};
+      s.catchup.rows.push(...(m.recs || []));
+      if (!m.done) return;
+      const {full, rows} = s.catchup; s.catchup = null;
+      await shareApply(s, rows, {full, seq:m.seq});
+    } else await shareApply(s, m.recs || [], {seq:m.seq});
+    return;
+  }
+  if (m.t === "welcome"){
+    s.sid = m.sid; s.role = m.role; s.status = "live"; s.retry = 0; s.peers = (m.peers || []).filter(p => p.sid !== s.sid);
+    shareUpdateBar(); shareDecorate();
+    for (const w of s.joinWaiters.splice(0)) w.resolve();
+    shareSchedule(s, 0);
+    return;
+  }
+  if (m.t === "ack"){
+    const items = s.inflight.get(m.id) || []; s.inflight.delete(m.id);
+    const versions = new Map(m.ok || []);
+    for (const it of items){
+      if (!versions.has(it.k)) continue;
+      s.known.set(it.k, {v:versions.get(it.k), json:it.json, obj:it.obj});
+      if (s.sending.get(it.k) === it) s.sending.delete(it.k);
+    }
+    const newer = [];
+    for (const [k, v, d, why] of m.rej || []){
+      const it = items.find(x => x.k === k); if (it && s.sending.get(k) === it) s.sending.delete(k);
+      if (why === "full"){ shareWarnOnce(s, "full", "The shared board is full (the room holds up to 500 MB of text). New changes to it aren’t being saved."); continue; }
+      if (why === "bad"){ console.warn("The room refused a record:", k); shareWarnOnce(s, "bad", "A card on the shared board is too large to share (over about 2 MB of text), so the others don\u2019t get it."); continue; }
+      newer.push([k, v, d, why]);
+    }
+    if (m.error === "view-only"){ s.role = "view"; shareUpdateBar(); }
+    if (newer.length) await shareApply(s, newer, {seq:m.seq});
+    if (m.seq > s.seq && !newer.length && !s.inflight.size) s.seq = m.seq;
+    shareSaveBase(s);
+    shareSchedule(s, 0);
+    return;
+  }
+  if (m.t === "live") return shareOnLive(s, m);
+  if (m.t === "peers"){ s.peers = (m.peers || []).filter(p => p.sid !== s.sid); shareUpdateBar(); shareDecorate(); return; }
+  if (m.t === "token"){
+    const root = state.boards[s.rootId];
+    if (root?.share && (m.which === "edit" || m.which === "view")){
+      root.share = {...root.share, [m.which]:m.token}; markDirty();
+      toast("New " + m.which + " link made. The old one stopped working; send the new one to whoever should keep access.", 7000);
+      if (shareDialogRefresh) shareDialogRefresh();
+    }
+    return;
+  }
+  if (m.t === "ended") return shareEnded(s);
+  if (m.t === "error" && m.code === "denied"){
+    s.status = "denied"; shareUpdateBar();
+    for (const w of s.joinWaiters.splice(0)) w.reject(new Error("This link doesn’t work any more. Ask for a new one."));
+    if (!s.owner && state.boards[s.rootId]) shareRemoveCopy(s, "Your link to “" + (state.boards[s.rootId]?.title || "a shared board") + "” was replaced by its owner, so your copy was removed.");
+    return;
+  }
+}
+function shareWarnOnce(s, key, msg){ s.warned = s.warned || new Set(); if (s.warned.has(key)) return; s.warned.add(key); toast(msg, 9000); }
+
+/* ---- sending this device's changes ---- */
+function shareSchedule(s, delay=80){
+  if (!shareSessions.size) return;
+  for (const x of s ? [s] : shareSessions.values()){
+    clearTimeout(x.timer);
+    x.timer = setTimeout(() => shareFlush(x), delay);
+  }
+}
+async function shareFlush(s){
+  if (s.status !== "live" || !state || workspaceLoadFailure) return;
+  if (s.flushing){ s.again = true; return; }
+  s.flushing = true;
+  try {
+    do {
+      s.again = false;
+      const P = await shareProject(s);
+      if (!P) break;
+      if (P.waiting){ await shareLoadEmbeds(s, P.m); s.again = true; continue; }
+      if (s.role === "view"){ await shareRevertView(s, P); break; }
+      const ops = [];
+      for (const [k, p] of P.map){
+        const sent = s.sending.get(k), was = sent ? sent.json : s.known.get(k)?.json;
+        if (was !== p.json && !shareRunaway(s, k)) ops.push({k, p});
+      }
+      for (const [k, kn] of s.known){
+        if (P.map.has(k) || kn.json === "null" || (k === "m:root" && !s.owner)) continue;
+        if (s.sending.get(k)?.json === "null") continue;
+        ops.push({k, p:null});
+      }
+      if (!ops.length) break;
+      if (!await shareUploadAssets(s, ops)){ s.again = true; continue; }
+      if (s.status !== "live" || !s.ws) break;
+      let batch = [], size = 0;
+      const send = () => {
+        if (!batch.length) return;
+        const id = "p" + (++s.putSeq);
+        s.inflight.set(id, batch);
+        for (const it of batch) s.sending.set(it.k, it);
+        s.ws.send(JSON.stringify({t:"put", id, ops:batch.map(it => [it.k, it.base, it.d])}));
+        batch = []; size = 0;
+      };
+      for (const {k, p} of ops){
+        const json = p ? p.json : "null";
+        const d = p ? await shareEncText(s.keys, json) : null;
+        batch.push({k, base:s.known.get(k)?.v || 0, d, json, obj:p ? p.obj : null});
+        size += (d ? d.length : 0) + k.length + 30;
+        if (size > 2_000_000 || batch.length >= 1000) send();
+      }
+      send();
+    } while (s.again);
+  } catch (e){
+    console.warn("Couldn't send changes to the shared board:", e);
+    s.lastError = e.message;
+    shareWarnOnce(s, "send:" + e.message, "Shared board: " + e.message + ". Trying again.");
+    clearTimeout(s.flushRetry); s.flushRetry = setTimeout(() => shareFlush(s), 5000);
+  } finally { s.flushing = false; }
+}
+/* A brake: one record written over and over (two screens correcting each
+   other) would use up the day's free requests. Past 40 writes a minute it
+   waits. Typing saves about every 1.5 s, well under that. */
+function shareRunaway(s, k){
+  s.rate = s.rate || new Map();
+  const now = Date.now(), list = (s.rate.get(k) || []).filter(t => now - t < 60000);
+  if (list.length >= 40){
+    s.rate.set(k, list);
+    if (!s.rateWarned?.has(k)){ (s.rateWarned = s.rateWarned || new Set()).add(k); console.warn("Shared board: " + k + " is changing too often; holding it for a minute."); }
+    clearTimeout(s.rateTimer); s.rateTimer = setTimeout(() => shareSchedule(s, 0), 60000 - (now - list[0]) + 50);
+    return true;
+  }
+  list.push(now); s.rate.set(k, list);
+  return false;
+}
+/* pictures go up before the records that use them, so nobody sees a broken one */
+async function shareUploadAssets(s, ops){
+  const ids = new Set();
+  for (const {p} of ops) if (p) for (const id of collectAssetTokens(p.obj).keys()) ids.add(id);
+  const todo = [...ids].filter(id => !s.uploaded.has(id) && !s.tooBig.has(id));
+  if (!todo.length) return true;
+  let grewTooBig = false, i = 0, done = 0;
+  const server = shareServerUrl();
+  const one = async () => {
+    while (i < todo.length){
+      const id = todo[i++];
+      const dataUrl = await idbGetRaw(ASSET_KEY_PREFIX + id);
+      if (typeof dataUrl !== "string") throw new Error("a picture is missing on this device");
+      const comma = dataUrl.indexOf(","), head = dataUrl.slice(5, comma);
+      if (approxDataBytes(dataUrl) > SHARE_ASSET_MAX || !/;base64$/i.test(head)){ s.tooBig.add(id); grewTooBig = true; continue; }
+      const bytes = shareUnB64(dataUrl.slice(comma + 1).replace(/[\r\n]/g, ""));
+      const headBytes = new TextEncoder().encode(head + "\n");
+      const plain = new Uint8Array(headBytes.length + bytes.length); plain.set(headBytes); plain.set(bytes, headBytes.length);
+      const r = await fetch(server + "/share/" + s.room + "/asset/" + await shareAssetId(s.keys, id),
+        {method:"PUT", headers:{Authorization:"Bearer " + s.token, "Content-Type":"application/octet-stream"}, body:await shareSeal(s.keys, plain)});
+      if (r.status === 413){ s.tooBig.add(id); grewTooBig = true; continue; }
+      if (r.status === 507) throw new Error("the shared board has no room for more pictures");
+      if (!r.ok) throw new Error("a picture didn’t upload (" + r.status + ")");
+      s.uploaded.add(id); done++;
+      s.progress = {done, total:todo.length}; shareSaveBase(s);
+      if (todo.length > 8 && done % 5 === 0){ toast("Sharing pictures\u2026 " + done + " of " + todo.length, 2500); if (shareDialogRefresh) shareDialogRefresh(); }
+    }
+  };
+  try { await Promise.all([0, 1, 2, 3].map(one)); } finally { s.progress = null; }
+  shareSaveBase(s);
+  if (grewTooBig){
+    shareProjGen++;
+    shareWarnOnce(s, "toobig", "Some files on the shared board are over 40 MB, so the others see them without their contents.");
+    return false;
+  }
+  return true;
+}
+/* a view link: changes here aren't kept, the room's copy is put back */
+async function shareRevertView(s, P){
+  const back = [];
+  for (const [k, p] of P.map){ const kn = s.known.get(k); if (kn && kn.json !== p.json) back.push([k, shareKnownObj(kn)]); }
+  for (const [k, kn] of s.known) if (!P.map.has(k) && kn.json !== "null") back.push([k, shareKnownObj(kn)]);
+  if (!back.length) return;
+  for (const [k, obj] of back) await shareInstall(s, k, obj);
+  shareRepair(s);
+  toast("This shared board is view-only, so that change wasn’t kept.", 4000);
+  shareAfterChange();
+}
+
+/* ---- taking the room's changes ---- */
+async function shareMissingAssets(objs){
+  const need = new Set();
+  for (const o of objs) for (const id of collectAssetTokens(o).keys()) need.add(id);
+  const missing = [];
+  for (const id of need) if (!(await idbHas(ASSET_KEY_PREFIX + id))) missing.push(id);
+  return missing;
+}
+/* a card whose picture is still on its way shows as an outline where it will be */
+function shareGhosts(recs, missing){
+  const want = new Set(missing), onBoard = new Set(board(currentBoardId)?.cardIds || []), out = [];
+  for (const r of recs) if (r.k === "b:" + currentBoardId && r.obj) for (const id of r.obj.cardIds || []) onBoard.add(id);
+  for (const r of recs){
+    if (r.k[0] !== "c" || !r.obj || !onBoard.has(r.k.slice(2))) continue;
+    if (![...collectAssetTokens(r.obj).keys()].some(t => want.has(t))) continue;
+    const g = document.createElement("div");
+    g.className = "share-ghost";
+    g.style.cssText = "left:" + (+r.obj.x || 0) + "px;top:" + (+r.obj.y || 0) + "px;width:" + (+r.obj.w || 200) + "px;height:" + (+r.obj.h || 150) + "px;";
+    g.textContent = "Loading picture\u2026";
+    worldEl.appendChild(g); out.push(g);
+  }
+  return out;
+}
+async function shareFetchAssets(s, objs, missing){
+  missing = missing || await shareMissingAssets(objs);
+  if (!missing.length) return;
+  const server = shareServerUrl();
+  let i = 0, done = 0;
+  const one = async () => {
+    while (i < missing.length){
+      const id = missing[i++];
+      const r = await fetch(server + "/share/" + s.room + "/asset/" + await shareAssetId(s.keys, id) + "?t=" + encodeURIComponent(s.token));
+      if (!r.ok) throw new Error("a picture didn’t download (" + r.status + ")");
+      const plain = await shareUnseal(s.keys, await r.arrayBuffer());
+      const nl = plain.indexOf(10);
+      const head = new TextDecoder().decode(plain.subarray(0, nl));
+      const b64 = shareB64(plain.subarray(nl + 1)).replace(/-/g, "+").replace(/_/g, "/");
+      const dataUrl = "data:" + head + "," + b64 + "=".repeat((4 - b64.length % 4) % 4);
+      await idbSet(ASSET_KEY_PREFIX + id, dataUrl);
+      assetTokenCache.set(dataUrl, ASSET_TOKEN_PREFIX + id);
+      s.uploaded.add(id); done++;
+      if (missing.length > 8 && done % 5 === 0) toast("Opening shared pictures… " + done + " of " + missing.length, 2500);
+    }
+  };
+  await Promise.all([0, 1, 2, 3, 4, 5].map(one));
+}
+async function shareApply(s, rows, {full=false, seq}={}){
+  const recs = [];
+  for (const [k, v, d] of rows){
+    if (typeof k !== "string" || !SHARE_KEY_RE.test(k)) continue;
+    let obj = null, json = "null";
+    if (d){
+      try { obj = JSON.parse(await shareDecText(s.keys, d)); json = shareCanon(obj); }
+      catch (_){ shareWarnOnce(s, "key", "A shared board’s data couldn’t be unlocked with this link."); continue; }
+    }
+    recs.push({k, v:Number(v) || 0, obj, json});
+  }
+  /* every picture first: a board only changes once all of it is here */
+  const objs = recs.map(r => r.obj).filter(Boolean), missing = await shareMissingAssets(objs);
+  const ghosts = missing.length ? shareGhosts(recs, missing) : [];
+  try { await shareFetchAssets(s, objs, missing); }
+  catch (e){
+    for (const g of ghosts) g.remove();
+    shareWarnOnce(s, "fetch", "Some shared pictures haven’t arrived yet (" + e.message + "). Trying again.");
+    setTimeout(() => { s.chain = s.chain.then(() => shareApply(s, rows, {full, seq})).catch(err => console.warn(err)); }, 4000);
+    return;
+  }
+  /* the outlines go once the cards are drawn */
+  if (ghosts.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const g of ghosts) g.remove(); }));
+  const meta = recs.find(r => r.k === "m:root" && r.obj);
+  if (meta){ s.meta = meta.obj; if (!s.rootId) s.rootId = meta.obj.root; }
+  if (!s.rootId){ if (seq > s.seq) s.seq = seq; return; }
+  const first = !state.boards[s.rootId];
+  if (first && !s.joining && !s.owner){ return; }    /* the board was removed here: nothing to apply to */
+  const P = first ? null : await shareProject(s);
+  if (full){
+    /* the room's copy is complete: what it has never seen is new here, what it marks deleted goes */
+    const inRoom = new Set(recs.map(r => r.k));
+    for (const k of [...s.known.keys()]) if (!inRoom.has(k)) s.known.delete(k);
+  }
+  const before = {cards:{...state.cards}, boards:JSON.parse(JSON.stringify(state.boards)), labels:{...(state.labels || {})}};
+  const prevKnown = new Map();
+  const changes = [], copies = [];
+  /* boards first, so cards land on a board that exists */
+  const order = r => r.k === "m:root" ? 0 : r.k[0] === "l" ? 1 : r.k[0] === "b" ? 2 : 3;
+  recs.sort((a, b) => order(a) - order(b) || a.v - b.v);
+  for (const r of recs){
+    const kn = s.known.get(r.k);
+    if (kn && kn.v >= r.v) continue;
+    const sent = s.sending.get(r.k);
+    const loc = P?.map.get(r.k) || null, lj = loc ? loc.json : "null";
+    if (!prevKnown.has(r.k)) prevKnown.set(r.k, kn);
+    s.known.set(r.k, {v:r.v, json:r.json, obj:r.obj});
+    if (r.k === "m:root") continue;
+    if (lj === r.json) continue;
+    let next;
+    if (!kn){
+      /* no common copy (an owner's other device, holding the board from Drive): the room's wins,
+         and long text that differs here is kept as a conflict copy */
+      next = r.obj;
+      if (loc && r.obj && r.k[0] === "c") shareConflictCopy(copies, r.k.slice(2), loc.obj, r.obj);
+    }
+    else if (lj === kn.json || !loc) next = r.obj;   /* only the room changed it (or it was deleted here and edited there) */
+    else if (!r.obj) next = loc.obj;                 /* deleted there, edited here: keep the edit */
+    else {
+      const conflicts = [];
+      next = syncMergeRecord(shareKnownObj(kn) || {}, loc.obj, r.obj, true, conflicts);
+      if (conflicts.length && r.k[0] === "c") copies.push({id:r.k.slice(2), conflicts, card:r.obj});
+    }
+    if (sent && sent.json === r.json) s.sending.delete(r.k);
+    changes.push([r.k, next]);
+  }
+  if (typeof seq === "number" && seq > s.seq) s.seq = seq;
+  if (!changes.length && !copies.length){ shareSaveBase(s); return; }
+  for (const [k, obj] of changes) if (!(s.owner && obj === null && (k[0] === "c" || k[0] === "b"))) await shareInstall(s, k, obj);
+  if (s.owner) shareOwnerRecycle(s, changes);
+  if (copies.length) syncAddConflictCopies(state, await Promise.all(copies.map(async c => ({...c,
+    card:await mapStoredAssets(c.card, "unpack"),
+    conflicts:await Promise.all(c.conflicts.map(async x => ({...x, value:await mapStoredAssets(x.value, "unpack")})))}))));
+  shareRepair(s);
+  const v = validateWorkspace(state);
+  if (!v.ok){
+    syncRepairWorkspace(state, new Set(Object.values(before.cards).filter(c => c.type === "board" && !c.shortcut).map(c => c.boardId)));
+    if (!validateWorkspace(state).ok){
+      state.cards = before.cards; state.boards = before.boards; state.labels = before.labels;
+      for (const [k, kn] of prevKnown) if (kn) s.known.set(k, kn); else s.known.delete(k);
+      console.warn("A shared board change didn't fit:", v.errors);
+      shareWarnOnce(s, "invalid", "A change to a shared board couldn’t be put in place. Reopen the board to get a fresh copy.");
+      return;
+    }
+  }
+  shareRebaseHistory(before, changes);
+  for (const [k] of changes) if (k[0] === "c") s.liveTouched?.delete(k.slice(2));
+  shareSaveBase(s);
+  shareAfterChange();
+}
+function shareConflictCopy(copies, id, localObj, remoteObj){
+  const conflicts = [];
+  for (const f of SYNC_TEXT_FIELDS) if (typeof localObj[f] === "string" && localObj[f].length > 20 && localObj[f] !== remoteObj[f]) conflicts.push({field:f, value:localObj[f]});
+  if (conflicts.length) copies.push({id, conflicts, card:localObj});
+}
+async function shareInstall(s, k, obj){
+  const id = k.slice(2);
+  if (k[0] === "c"){
+    const prior = state.cards[id];
+    if (!obj){ if (prior) delete state.cards[id]; return; }
+    /* the room only has a locked note for a board that is private here: only where it sits comes back */
+    if (prior && s.members?.placeholders.has(id)){
+      const pos = {};
+      for (const f of ["x", "y", "z"]) if (Number.isFinite(obj[f]) && obj[f] !== prior[f]) pos[f] = obj[f];
+      if (Object.keys(pos).length) state.cards[id] = {...prior, ...pos};
+      return;
+    }
+    if (syncIsLockedCard(obj) && prior && !syncIsLockedCard(prior)) return;
+    const full = scrubCard({...await mapStoredAssets(obj, "unpack"), id});
+    for (const f of SHARE_LOCAL_CARD_FIELDS) if (prior?.[f] !== undefined) full[f] = prior[f];
+    if (!Number.isFinite(full.h)) full.h = Number.isFinite(prior?.h) ? prior.h : shareAutoHeight(full) || full.locked ? AUTO_H_MIN : (defaultSize(full.type)?.h || 120);
+    if (full.type === "file" && prior && (prior.driveRef || prior.archiveRef) && prior.dataUrl === undefined) delete full.dataUrl;
+    state.cards[id] = full;
+  } else if (k[0] === "b"){
+    const prior = state.boards[id];
+    if (!obj){ if (prior && id !== s.rootId) delete state.boards[id]; return; }
+    const full = {...await mapStoredAssets(obj, "unpack"), id};
+    for (const f of SHARE_LOCAL_BOARD_FIELDS) if (prior?.[f] !== undefined) full[f] = prior[f]; else delete full[f];
+    if (!full.viewport) full.viewport = {panX:0, panY:0, zoom:1};
+    full.cardIds = Array.isArray(full.cardIds) ? [...full.cardIds] : [];
+    full.unsortedIds = Array.isArray(full.unsortedIds) ? [...full.unsortedIds] : [];
+    if (id === s.rootId){
+      full.parentId = prior ? prior.parentId : (s.joinParent || state.rootBoardId);
+      /* a guest's copy is private from the first moment: it must never reach their Drive */
+      if (!s.owner && !full.joined) full.joined = {room:s.room, token:s.token, key:s.keyB64};
+    }
+    /* cards here that never go to the room (shortcuts out, private boards) stay where they were */
+    if (prior) for (const lk of ["cardIds", "unsortedIds"])
+      for (const cid of prior[lk] || []) if (state.cards[cid] && !s.members?.cards.has(cid) && !full[lk].includes(cid)) full[lk].push(cid);
+    if (prior && Array.isArray(prior.connectors)){
+      full.connectors = Array.isArray(full.connectors) ? [...full.connectors] : [];
+      for (const cn of prior.connectors) if (!(s.members?.cards.has(cn.from) && s.members?.cards.has(cn.to)) && !full.connectors.some(x => x.id === cn.id)) full.connectors.push(cn);
+    }
+    state.boards[id] = full;
+  } else if (k[0] === "l"){
+    state.labels = state.labels || {};
+    if (!obj) delete state.labels[id];
+    else state.labels[id] = {...obj, id, color:safeCssColor(obj.color) || "#8A8F98"};
+  }
+}
+/* The owner never loses anything to someone else's delete: what others
+   deleted goes to the owner's Recycle Bin. A deleted board is kept whole,
+   with its cards, behind its card in the bin. */
+function shareOwnerRecycle(s, changes){
+  const goneBoards = new Set(changes.filter(([k, o]) => k[0] === "b" && o === null).map(([k]) => k.slice(2)));
+  const gone = changes.filter(([k, o]) => k[0] === "c" && o === null).map(([k]) => k.slice(2)).filter(id => state.cards[id]);
+  const home = id => Object.values(state.boards).find(b => b.cardIds?.includes(id) || b.unsortedIds?.includes(id));
+  const toBin = gone.filter(id => !goneBoards.has(home(id)?.id));
+  if (!toBin.length) return;
+  detachEverywhere(toBin);
+  const tb = trashBoard();
+  let i = tb.cardIds.length;
+  for (const id of toBin){
+    const c = state.cards[id];
+    state.cards[id] = {...c, x:60 + (i % 5) * (Math.max(c.w || 160, 160) + 30), y:60 + Math.floor(i / 5) * 260, updatedAt:now()};
+    if (!tb.cardIds.includes(id)) tb.cardIds.push(id);
+    i++;
+  }
+  shareWarnOnce(s, "recycled", "Something on \u201c" + (state.boards[s.rootId]?.title || "your shared board") + "\u201d was deleted by someone else. It\u2019s in your Recycle Bin.");
+}
+/* after records land: no dangling references inside the shared board */
+function shareRepair(s){
+  const root = state.boards[s.rootId]; if (!root) return;
+  const m = shareMembers(s.rootId);
+  const placed = new Set();
+  for (const b of Object.values(state.boards)){
+    for (const lk of ["cardIds", "unsortedIds"]) b[lk] = (b[lk] || []).filter(cid => state.cards[cid] && !placed.has(cid) && (placed.add(cid), true));
+    if (Array.isArray(b.connectors)) b.connectors = b.connectors.filter(cn => state.cards[cn?.from] && state.cards[cn?.to]);
+    if (b.parentId != null && !state.boards[b.parentId]) b.parentId = b.id === s.rootId ? state.rootBoardId : s.rootId;
+  }
+  for (const c of Object.values(state.cards)){
+    for (const lk of ["childIds", "attachedIds", "unsortedIds"]) if (Array.isArray(c[lk]) && c[lk].some(x => !state.cards[x] || placed.has(x))){
+      state.cards[c.id] = {...c, [lk]:c[lk].filter(x => state.cards[x] && !placed.has(x) && (placed.add(x), true))};
+    } else if (Array.isArray(c[lk])) for (const x of c[lk]) placed.add(x);
+    if (c.type === "board" && !state.boards[c.boardId]){
+      state.cards[c.id] = {...c, type:"note", text:(c.title || "Board") + " (its board was removed from the shared board)"};
+      delete state.cards[c.id].boardId;
+    }
+  }
+  /* a shared card that arrived without a place goes in the shared board's tray */
+  for (const k of s.known.keys()){
+    if (k[0] !== "c") continue;
+    const cid = k.slice(2);
+    if (state.cards[cid] && !placed.has(cid)){ root.unsortedIds.push(cid); placed.add(cid); }
+  }
+  void m;
+}
+/* undo should take back your own changes, not other people's */
+function shareRebaseHistory(before, changes){
+  const snaps = [...undoStack, ...redoStack, ...undoStack.map(x => x.after), ...redoStack.map(x => x.after)].filter(Boolean);
+  for (const [k, after] of changes){
+    if (k[0] !== "c" && k[0] !== "b") continue;
+    const id = k.slice(2), isCard = k[0] === "c";
+    const was = isCard ? before.cards[id] : before.boards[id];
+    const now = isCard ? state.cards[id] : state.boards[id];
+    for (const snap of snaps){
+      const map = isCard ? snap.cards : snap.boards; if (!map) continue;
+      const mine = map[id];
+      const same = isCard ? mine === was : syncSame(mine, was);
+      if (same){ if (now) map[id] = isCard ? now : syncClone(now); else delete map[id]; }
+      else if (mine && now && was) map[id] = syncMergeRecord(isCard ? was : syncClone(was), mine, isCard ? now : syncClone(now), true, []);
+    }
+    void after;
+  }
+}
+let shareRenderQueued = false;
+function shareAfterChange(){
+  entityIdxCache = null; privacyCache = null;
+  /* saved like any edit (to this device, and the owner's Drive); nothing is sent back */
+  markDirty();
+  if (shareRenderQueued) return;
+  shareRenderQueued = true;
+  requestAnimationFrame(function paint(){
+    if (drag || noteFullId){ setTimeout(() => requestAnimationFrame(paint), 250); return; }
+    shareRenderQueued = false;
+    if (!state.boards[currentBoardId]) currentBoardId = state.rootBoardId;
+    selection = new Set([...selection].filter(id => state.cards[id]));
+    renderAll();
+  });
+}
+
+/* ---- live movement and typing ---- */
+function shareLiveSend(cardId, patch){
+  const s = shareSessionForCard(cardId);
+  if (!s || s.status !== "live" || s.role === "view" || !s.ws) return;
+  s.liveQueue.set(cardId, {...(s.liveQueue.get(cardId) || {}), ...patch});
+  if (s.liveTimer) return;
+  const wait = Math.max(0, 90 - (Date.now() - s.liveAt));
+  s.liveTimer = setTimeout(async () => {
+    s.liveTimer = null; s.liveAt = Date.now();
+    const items = [...s.liveQueue]; s.liveQueue.clear();
+    const ops = [];
+    for (const [id, p] of items) ops.push(["c:" + id, await shareEncText(s.keys, JSON.stringify(p))]);
+    try { if (s.ws?.readyState === 1) s.ws.send(JSON.stringify({t:"live", ops})); } catch (_) {}
+  }, wait);
+}
+function shareLiveDrag(members){
+  if (!shareSessions.size || !drag) return;
+  for (const m of members){
+    const el = drag.els.get(m.id); if (!el) continue;
+    shareLiveSend(m.id, {x:parseFloat(el.style.left) || 0, y:parseFloat(el.style.top) || 0});
+  }
+}
+/* typing: shown to the others as it happens, and saved every couple of seconds */
+function shareLiveTyping(cardId, ed){
+  if (!shareSessions.size || !shareSessionForCard(cardId)) return;
+  const html = sanitizeHtml(ed.innerHTML);
+  shareLiveSend(cardId, {html, text:ed.textContent});
+  const s = shareSessionForCard(cardId);
+  clearTimeout(s.typingSave);
+  s.typingSave = setTimeout(() => {
+    if (activeEditor?.cardId !== cardId) return;
+    s.overlay.set(cardId, {html:sanitizeHtml(activeEditor.ed.innerHTML), text:activeEditor.ed.textContent});
+    shareSchedule(s, 0);
+  }, 1500);
+}
+function shareTypingDone(cardId){
+  for (const s of shareSessions.values()){ clearTimeout(s.typingSave); if (s.overlay.delete(cardId)) shareSchedule(s, 0); }
+}
+async function shareOnLive(s, m){
+  const peer = s.peers.find(p => p.sid === m.sid);
+  s.liveTouched = s.liveTouched || new Map();
+  let moved = false;
+  for (const [k, d] of m.ops || []){
+    if (typeof k !== "string" || !k.startsWith("c:")) continue;
+    let p; try { p = JSON.parse(await shareDecText(s.keys, d)); } catch (_) { continue; }
+    const id = k.slice(2);
+    if (activeEditor?.cardId === id || drag?.members?.some(x => x.id === id)) continue;
+    const el = elForCard(id); if (!el) continue;
+    if (Number.isFinite(p.x) && Number.isFinite(p.y)){ el.style.left = p.x + "px"; el.style.top = p.y + "px"; moved = true; }
+    if (typeof p.html === "string"){
+      const box = el.querySelector(".note-text, .h-text");
+      if (box) box.innerHTML = sanitizeHtml(p.html);
+    }
+    el.classList.add("peer-live");
+    if (peer) el.style.setProperty("--peer", peer.color);
+    s.liveTouched.set(id, Date.now());
+  }
+  if (moved) drawConnectors();
+  clearTimeout(s.liveSweep);
+  s.liveSweep = setTimeout(() => shareSweepLive(s), 2600);
+}
+/* live changes that were never followed by a saved one (they left mid-drag) are put back */
+function shareSweepLive(s){
+  let any = false;
+  for (const [id, at] of s.liveTouched || []){
+    if (Date.now() - at < 2500) continue;
+    s.liveTouched.delete(id); invalidateCardEls(id); any = true;
+  }
+  if (any && !drag) renderBoard();
+  if (s.liveTouched?.size){ clearTimeout(s.liveSweep); s.liveSweep = setTimeout(() => shareSweepLive(s), 1000); }
+}
+
+/* ---- who's here ---- */
+function shareHere(cardId){
+  for (const s of shareSessions.values()){
+    const mine = cardId && s.members?.cards.has(cardId) ? "c:" + cardId : null;
+    if (s.editingNow === mine) continue;
+    s.editingNow = mine;
+    try { if (s.ws?.readyState === 1) s.ws.send(JSON.stringify({t:"here", editing:mine})); } catch (_) {}
+  }
+}
+function shareAnnounce(){
+  for (const s of shareSessions.values())
+    try { if (s.ws?.readyState === 1) s.ws.send(JSON.stringify({t:"here", editing:s.editingNow || null, name:meName(), color:meColor()})); } catch (_) {}
+}
+/* the name tag on whatever someone else is editing */
+function shareDecorate(){
+  for (const el of worldEl.querySelectorAll(".card.peer-editing")){
+    el.classList.remove("peer-editing"); el.querySelector(":scope > .peer-tag")?.remove();
+  }
+  const s = shareSessionForBoard(currentBoardId); if (!s) return;
+  for (const p of s.peers){
+    if (!p.editing?.startsWith("c:")) continue;
+    const el = elForCard(p.editing.slice(2)); if (!el) continue;
+    el.classList.add("peer-editing"); el.style.setProperty("--peer", p.color);
+    const tag = document.createElement("span");
+    tag.className = "peer-tag"; tag.textContent = p.name + " is editing";
+    el.appendChild(tag);
+  }
+}
+function shareUpdateBar(){
+  const bar = $("#sharePeers"); if (!bar || !state) return;
+  const s = shareSessionForBoard(currentBoardId);
+  bar.textContent = "";
+  bar.classList.toggle("show", !!s);
+  if (!s) return;
+  const st = document.createElement("button");
+  st.className = "sp-status sp-" + s.status; st.type = "button";
+  st.textContent = s.status === "live" ? (s.role === "view" ? "View only" : "Shared") : s.status === "connecting" ? "Connecting…" : s.status === "offline" ? "Offline" : shareStatusText(s);
+  st.title = shareStatusText(s) + ". Click for sharing options.";
+  st.addEventListener("click", () => openShareDialog(s.rootId));
+  bar.appendChild(st);
+  for (const p of s.peers.slice(0, 6)){
+    const chip = document.createElement("span");
+    chip.className = "sp-peer"; chip.style.setProperty("--peer", p.color);
+    chip.textContent = (p.name || "?").trim().slice(0, 1).toUpperCase();
+    chip.title = p.name + (p.role === "view" ? " (viewing)" : "") + (p.editing ? " — editing" : "");
+    bar.appendChild(chip);
+  }
+  if (s.peers.length > 6){ const more = document.createElement("span"); more.className = "sp-more"; more.textContent = "+" + (s.peers.length - 6); bar.appendChild(more); }
+  queueFitTopbar();
+}
+
+/* ---- starting, joining, leaving, ending ---- */
+function shareNewKey(){ return shareB64(crypto.getRandomValues(new Uint8Array(32))); }
+async function startSharing(boardId){
+  const b = board(boardId);
+  if (!b || boardId === state.rootBoardId || boardId === TRASH_ID) throw new Error("Home and the Recycle Bin can’t be shared. Share a board inside them.");
+  if (b.joined) throw new Error("This board is someone else’s shared board. Only its owner can share it further.");
+  if (boardIsPrivate(boardId)) throw new Error("This board is private. Make it public first (right-click it).");
+  for (let at = board(b.parentId); at; at = board(at.parentId)) if (at.share || at.joined) throw new Error("This board is inside a shared board already, so it is shared with it.");
+  const server = shareServerUrl(); if (!server) throw new Error("Sharing works on the CORKBORK website, not from a file on this computer.");
+  const r = await fetch(server + "/share/new", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"});
+  let j = {}; try { j = await r.json(); } catch (_) {}
+  if (r.status === 404 || r.status === 501) throw new Error("sharing isn\u2019t switched on at the server yet (SETUP.md, Shared boards)");
+  if (!r.ok) throw new Error(j.error || "the server said " + r.status);
+  const key = shareNewKey();
+  b.share = {room:j.room, owner:j.owner, edit:j.edit, view:j.view, key, at:Date.now()};
+  markDirty(); await saveNow();
+  const s = await shareOpenSession({room:j.room, token:j.owner, key, rootId:boardId, owner:true});
+  await shareWaitLive(s, 20000);
+  /* the first upload, pictures included, carries on in the background */
+  shareSchedule(s, 0);
+  renderAll();
+  return s;
+}
+function shareWaitLive(s, ms){
+  if (s.status === "live") return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const w = {resolve, reject}; s.joinWaiters.push(w);
+    setTimeout(() => { const i = s.joinWaiters.indexOf(w); if (i >= 0){ s.joinWaiters.splice(i, 1); reject(new Error("couldn’t reach the sharing server")); } }, ms);
+  });
+}
+async function shareWaitIdle(s, ms){
+  const until = Date.now() + ms;
+  await shareFlush(s);
+  while (Date.now() < until){
+    if (!s.flushing && !s.inflight.size && !s.sending.size){ await s.chain; if (!s.flushing && !s.inflight.size) return; }
+    await new Promise(r => setTimeout(r, 120));
+  }
+  throw new Error("the shared board is taking a long time to upload; it keeps going in the background");
+}
+/* open a share link: the board arrives as a new board card where you're looking */
+async function joinSharedBoard(link, {quiet=false, cardId=null, parent=null, at=null}={}){
+  const p = typeof link === "string" ? shareParseLink(link) : link;
+  if (!p) throw new Error("That isn’t a CORKBORK share link.");
+  /* already here: just open it */
+  const mine = Object.values(state.boards).find(b => b.share?.room === p.room || b.joined?.room === p.room);
+  if (mine){ if (!quiet){ openBoard(mine.id); toast("You already have “" + (mine.title || "this board") + "”. Opened it."); } return mine.id; }
+  const parentId = parent && state.boards[parent] && !shareSessionForBoard(parent) ? parent : (shareSessionForBoard(currentBoardId) || currentBoardId === TRASH_ID ? state.rootBoardId : currentBoardId);
+  let s = shareSessions.get(p.room);
+  if (s && !s.joining) shareCloseSession(s, true);
+  s = await shareOpenSession({room:p.room, token:p.token, key:p.key, joinParent:parentId});
+  s.joining = true; s.known.clear(); s.seq = 0;
+  try {
+    await shareWaitLive(s, 30000);
+    await s.chain;
+    for (let i = 0; i < 600 && !state.boards[s.rootId || ""]; i++) await new Promise(r => setTimeout(r, 100));
+    const root = state.boards[s.rootId || ""];
+    if (!root) throw new Error(s.rootId ? "the shared board is empty or still uploading. Try again in a minute." : "the shared board hasn’t been set up by its owner yet");
+    root.joined = {room:p.room, token:p.token, key:p.key};
+    root.parentId = parentId;
+    const look = s.meta?.look || {};
+    const sz = defaultSize("board"), centre = at || viewCenterWorld(), t = now();
+    const id = cardId && !state.cards[cardId] ? cardId : (cardId && syncIsLockedCard(state.cards[cardId]) ? cardId : uid("c"));
+    const tile = scrubCard({id, type:"board", boardId:root.id, shortcut:false, title:root.title || s.meta?.title || "Shared board",
+      x:Math.round(centre.x - (look.w || sz.w) / 2), y:Math.round(centre.y - (look.h || sz.h) / 2), w:look.w || sz.w, h:look.h || sz.h,
+      z:maxZ() + 1, createdAt:t, updatedAt:t,
+      ...(typeof look.icon === "string" ? {icon:look.icon} : {}), ...(typeof look.iconTone === "string" ? {iconTone:look.iconTone} : {}), ...(typeof look.accent === "string" ? {accent:look.accent} : {})});
+    if (state.cards[id]) for (const k of ["x", "y"]) tile[k] = state.cards[id][k];
+    state.cards[id] = tile;
+    const home = board(parentId);
+    for (const b of Object.values(state.boards)){ b.cardIds = (b.cardIds || []).filter(x => x !== id || b === home); b.unsortedIds = (b.unsortedIds || []).filter(x => x !== id); }
+    if (!home.cardIds.includes(id)) home.cardIds.push(id);
+    state.settings = Object.assign({}, state.settings, {sharedJoins:{...(state.settings?.sharedJoins || {}), [p.room]:{token:p.token, key:p.key, title:root.title || "", cardId:id, parent:parentId, at:Date.now()}}});
+    SAFE_STORE.set("cb_joinedHere", JSON.stringify([...new Set([...shareJoinedHere(), p.room])]));
+    s.joining = false;
+    markDirty(); renderAll();
+    if (!shareIsHolder){ await saveNow(); shareCloseSession(s); }
+    if (!quiet){ setSelection([id]); toast("Opened “" + (root.title || "the shared board") + "”" + (s.role === "view" ? " (view only)." : ". Changes either of you make show up for both."), 6000); }
+    return root.id;
+  } catch (e){
+    s.joining = false;
+    shareCloseSession(s, true);
+    throw e;
+  }
+}
+function shareJoinedHere(){ try { return JSON.parse(SAFE_STORE.get("cb_joinedHere") || "[]"); } catch (_) { return []; } }
+/* remove a guest's copy: the board, everything in it, its tile, and the remembered link */
+function shareRemoveCopy(s, message){
+  const root = state.boards[s.rootId];
+  if (root){
+    const acc = {boards:new Set(), cards:new Set()};
+    const m = shareMembers(s.rootId);
+    for (const bid of m.boards) acc.boards.add(bid);
+    for (const cid of m.cards) acc.cards.add(cid);
+    for (const c of Object.values(state.cards)) if (c.type === "board" && acc.boards.has(c.boardId)) acc.cards.add(c.id);
+    for (const bid of acc.boards) delete state.boards[bid];
+    for (const cid of acc.cards) delete state.cards[cid];
+    detachEverywhere([...acc.cards]);
+    if (!state.boards[currentBoardId]) currentBoardId = state.rootBoardId;
+  }
+  const joins = {...(state.settings?.sharedJoins || {})}; delete joins[s.room];
+  state.settings = Object.assign({}, state.settings, {sharedJoins:joins});
+  SAFE_STORE.set("cb_joinedHere", JSON.stringify(shareJoinedHere().filter(r => r !== s.room)));
+  shareCloseSession(s, true);
+  markDirty(); renderAll();
+  if (message) toast(message, 8000);
+}
+async function leaveSharedBoard(boardId){
+  const s = shareSessionForBoard(boardId) || [...shareSessions.values()].find(x => x.rootId === boardId);
+  const b = board(boardId);
+  if (!b?.joined) return;
+  const ok = await askConfirm({title:"Leave “" + (b.title || "shared board") + "”?",
+    message:"Your copy is removed from this device and your other devices. The board stays with its owner; your edits are already with them.",
+    okLabel:"Leave", danger:true});
+  if (!ok) return;
+  shareRemoveCopy(s || {room:b.joined.room, rootId:boardId, ws:null}, "Left the shared board.");
+}
+async function stopSharing(boardId){
+  const b = board(boardId); if (!b?.share) return;
+  const ok = await askConfirm({title:"Stop sharing “" + (b.title || "board") + "”?",
+    message:"Everyone else loses it at once, and the copy on the server is deleted. Your board stays here, as it is now.",
+    okLabel:"Stop sharing", danger:true});
+  if (!ok) return false;
+  const sh = b.share, s = shareSessions.get(sh.room);
+  const online = s?.status === "live" && s.ws?.readyState === 1;
+  try { if (online){ s.ws.send(JSON.stringify({t:"end"})); await new Promise(r => setTimeout(r, 300)); } } catch (_) {}
+  if (s) shareCloseSession(s, true);
+  if (online) toast("Sharing stopped.");
+  else {
+    toast("Not connected right now: the server copy will be deleted the next time this board connects.", 7000);
+    b.shareEnd = {room:sh.room, owner:sh.owner, key:sh.key};
+  }
+  delete b.share;
+  markDirty(); renderAll();
+  return true;
+}
+function shareEnded(s){
+  s.status = "ended";
+  const root = state.boards[s.rootId];
+  if (s.owner){
+    if (root?.share?.room === s.room){ delete root.share; markDirty(); }
+    shareCloseSession(s, true); renderAll();
+    return;
+  }
+  shareRemoveCopy(s, "“" + (root?.title || s.meta?.title || "A shared board") + "” is no longer shared with you, so it was removed. Its owner still has it.");
+}
+async function shareReplaceLink(boardId, which){
+  const b = board(boardId), s = b?.share && shareSessions.get(b.share.room);
+  if (!s || s.status !== "live") throw new Error("Connect to the internet first.");
+  s.ws.send(JSON.stringify({t:"rotate", which}));
+}
+
+/* keep every shared board connected: owners' boards (from Drive too) and links remembered in settings */
+let shareReconcileBusy = false;
+async function shareReconcile(){
+  if (!state || workspaceLoadFailure || shareReconcileBusy || !globalThis.crypto?.subtle) return;
+  shareReconcileBusy = true;
+  try {
+    const rooms = new Set();
+    for (const b of Object.values(state.boards)){
+      if (b.share?.room){
+        rooms.add(b.share.room);
+        if (!shareSessions.has(b.share.room)) await shareOpenSession({room:b.share.room, token:b.share.owner, key:b.share.key, rootId:b.id, owner:true});
+      } else if (b.joined?.room){
+        rooms.add(b.joined.room);
+        if (!shareSessions.has(b.joined.room)) await shareOpenSession({room:b.joined.room, token:b.joined.token, key:b.joined.key, rootId:b.id});
+      }
+      /* sharing was stopped while offline: finish it now */
+      if (b.shareEnd && !b.share && shareServerUrl() && navigator.onLine !== false){
+        const end = b.shareEnd; delete b.shareEnd;
+        try {
+          const ws = new WebSocket(shareServerUrl().replace(/^http/, "ws") + "/share/" + end.room + "/ws");
+          ws.onopen = () => { ws.send(JSON.stringify({t:"hello", token:end.owner, since:0, client:SHARE_CLIENT})); ws.send(JSON.stringify({t:"end"})); setTimeout(() => ws.close(), 1500); };
+        } catch (_) { b.shareEnd = end; }
+      }
+    }
+    for (const s of [...shareSessions.values()]) if (!rooms.has(s.room) && !s.joining){
+      /* the board went away here: the owner's other device stopped sharing it, or the guest deleted it */
+      shareCloseSession(s, true);
+    }
+    const joins = state.settings?.sharedJoins || {}, here = new Set(shareJoinedHere());
+    for (const [room, j] of Object.entries(joins)){
+      if (rooms.has(room) || shareSessions.has(room)) continue;
+      if (here.has(room)){
+        /* deleted on this device: forget the link everywhere */
+        const next = {...joins}; delete next[room];
+        state.settings = Object.assign({}, state.settings, {sharedJoins:next});
+        SAFE_STORE.set("cb_joinedHere", JSON.stringify([...here].filter(r => r !== room)));
+        markDirty(); continue;
+      }
+      if (!shareServerUrl() || navigator.onLine === false) continue;
+      /* opened on another of your devices: open it here too */
+      try { await joinSharedBoard({room, token:j.token, key:j.key}, {quiet:true, cardId:j.cardId, parent:j.parent}); }
+      catch (e){ console.warn("Couldn't open a shared board from your other device:", e); }
+    }
+  } finally { shareReconcileBusy = false; shareUpdateBar(); }
+}
+
+/* ---- the sharing window ---- */
+let shareDialogRefresh = null;
+async function openShareDialog(boardId){
+  const b = board(boardId); if (!b) return;
+  const s = (b.share && shareSessions.get(b.share.room)) || (b.joined && shareSessions.get(b.joined.room)) || shareSessionForBoard(boardId);
+  const rootId = s?.rootId || boardId, root = board(rootId);
+  await askOpen({title:"Share live: “" + (root?.title || "board") + "”", wide:true, build(body){
+    const fill = () => {
+      body.innerHTML = "";
+      const msg = (text, cls) => { const d = document.createElement("div"); d.className = cls || "meta"; d.textContent = text; body.appendChild(d); return d; };
+      const row = (label, value, buttons) => {
+        const r = document.createElement("div"); r.className = "share-row";
+        const l = document.createElement("b"); l.textContent = label; r.appendChild(l);
+        if (value !== null){ const inp = document.createElement("input"); inp.readOnly = true; inp.value = value; inp.addEventListener("focus", () => inp.select()); r.appendChild(inp); }
+        for (const [text, fn, cls] of buttons){ const btn = document.createElement("button"); btn.type = "button"; btn.textContent = text; if (cls) btn.className = cls; btn.addEventListener("click", fn); r.appendChild(btn); }
+        body.appendChild(r);
+      };
+      const copy = async text => { try { await navigator.clipboard.writeText(text); toast("Link copied."); } catch (_) { toast("Select the link and copy it."); } };
+      const live = shareSessions.get(root?.share?.room || root?.joined?.room || "");
+      if (root?.share){
+        msg("Anyone with a link can open this board. Changes show up for everyone in about a second. It stays in your Google Drive; the server keeps an encrypted copy it can’t read.");
+        row("Edit link", shareLink(root.share.room, root.share.edit, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.edit, root.share.key)), "primary"], ["New link", async () => { if (await askConfirm({title:"Replace the edit link?", message:"Everyone using the current edit link is disconnected and loses their copy. Send the new link to whoever should keep access.", okLabel:"Replace"})) shareReplaceLink(rootId, "edit").catch(e => toast(e.message)); }]]);
+        row("View link", shareLink(root.share.room, root.share.view, root.share.key), [["Copy", () => copy(shareLink(root.share.room, root.share.view, root.share.key))], ["New link", async () => { if (await askConfirm({title:"Replace the view link?", message:"Everyone using the current view link is disconnected. Send the new link to whoever should keep access.", okLabel:"Replace"})) shareReplaceLink(rootId, "view").catch(e => toast(e.message)); }]]);
+        msg("Status: " + shareStatusText(live) + (live?.peers?.length ? ". Here now: " + live.peers.map(p => p.name + (p.role === "view" ? " (viewing)" : "")).join(", ") : ""));
+        row("", null, [["Stop sharing", async () => { if (await stopSharing(rootId)) askClose(null); }, "askdanger"]]);
+      } else if (root?.joined){
+        msg((live?.role === "view" ? "You can look at this board but not change it. " : "Changes you make show up for everyone in about a second. ") + "It isn’t saved to your Google Drive: it stays with its owner, and this device keeps a copy so it opens offline.");
+        msg("Status: " + shareStatusText(live) + (live?.peers?.length ? ". Here now: " + live.peers.map(p => p.name).join(", ") : ""));
+        row("", null, [["Leave this shared board", async () => { askClose(null); leaveSharedBoard(rootId); }, "askdanger"]]);
+      } else {
+        msg("Share this board, its sub-boards and its pictures with people, live: whatever anyone changes shows up for everyone in about a second. You get an edit link and a view-only link to send.");
+        msg("It stays in your Google Drive. The server keeps an encrypted copy (so it opens when your computer is off) that it can’t read: the key is only in the links.");
+        if (!meName()) msg("Tip: set your name and colour in Settings › Appearance, so people see who is editing.");
+        row("", null, [["Start sharing", async ev => {
+          ev.target.disabled = true; ev.target.textContent = "Starting…";
+          try { await startSharing(rootId); toast("Shared. Copy a link and send it."); fill(); }
+          catch (e){ toast("Couldn’t share: " + e.message, 8000); ev.target.disabled = false; ev.target.textContent = "Start sharing"; }
+        }, "primary"]]);
+      }
+    };
+    shareDialogRefresh = fill;
+    fill();
+    return {};
+  }, buttons:[{label:"Close", value:null, primary:true}]});
+  shareDialogRefresh = null;
+}
+async function openJoinDialog(){
+  const link = await askText({title:"Open a shared board", message:"Paste the link someone sent you.", placeholder:shareAppUrl() + "#join=…", okLabel:"Open"});
+  if (!link) return;
+  try { const id = await joinSharedBoard(link); if (id) openBoard(id); }
+  catch (e){ toast("Couldn’t open it: " + e.message, 8000); }
+}
+/* a link opened in the address bar */
+async function shareTakeLinkFromAddress(){
+  const p = shareParseLink(location.hash);
+  if (!p) return;
+  history.replaceState(null, "", location.pathname + location.search);   /* the key shouldn't sit in the address bar */
+  if (workspaceLoadFailure){ toast("Fix local storage first (Settings › Your data), then open the link again.", 8000); return; }
+  const known = Object.values(state.boards).find(b => b.share?.room === p.room || b.joined?.room === p.room);
+  if (known){ openBoard(known.id); return; }
+  const ok = await askConfirm({title:"Open a shared board?", message:"Someone shared a board with you. It opens here as a new board card, and changes either of you make show up for both.",
+    detail:"It isn’t saved to your Google Drive; it stays with its owner.", okLabel:"Open it"});
+  if (!ok) return;
+  toast("Opening the shared board…", 4000);
+  try { const id = await joinSharedBoard(p); if (id) openBoard(id); }
+  catch (e){ toast("Couldn’t open it: " + e.message, 9000); }
+}
+addEventListener("hashchange", () => { if (state && shareParseLink(location.hash)) shareTakeLinkFromAddress(); });
+/* one tab per device talks to the rooms; the others follow through the usual tab merge */
+let shareIsHolder = false;
+function shareBoot(){
+  const run = () => {
+    shareIsHolder = true;
+    shareReconcile(); shareTakeLinkFromAddress();
+    setInterval(() => { shareReconcile(); for (const s of shareSessions.values()) if (s.status === "live") shareFlush(s); }, 4000);
+  };
+  if (navigator.locks?.request){
+    navigator.locks.request("corkbork-share", () => { run(); return new Promise(() => {}); });
+    /* a link opened in a second tab still opens; that tab hands the room to the first afterwards */
+    setTimeout(() => { if (!shareIsHolder) shareTakeLinkFromAddress(); }, 1500);
+  } else run();
+}
+
 (async function boot(){
   loadRailLayout();   /* the saved toolbar order (needs SAFE_STORE, defined above boot) */
   let firstRun = false;
@@ -25968,10 +27224,16 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
     toast("Workspace integrity check failed. Saving is blocked; open Settings > Backup & data.", 10000), 300);
   updateCloudChip();
   if (SYNC.clientId && location.protocol !== "file:"){ startCloudPolling(); requestCloudSync(); }
+  if (!workspaceLoadFailure) shareBoot();
 })();
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b149", [
+    "Share live: the share button (or right-click a board \u203a Share live\u2026) gives an edit link and a view-only link. The board opens for whoever you send one to, and whatever anyone changes shows up for everyone in about a second: cards slide as they\u2019re dragged, text appears as it\u2019s typed, and a name tag shows who is editing what. It stays in the owner\u2019s Google Drive, never the guest\u2019s.",
+    "Shared boards are encrypted with a key that\u2019s only in the link, so the server can\u2019t read them. They work offline and catch up when you\u2019re back; if two people change the same text, the other version is kept as a conflict copy. The owner can replace a link or stop sharing at any time.",
+    "Your name and colour: set them in first time setup or Settings \u203a Appearance. Shared boards and bug reports use them, so the Bug List\u2019s own name box is gone."
+  ]],
   ["b148", [
     "Share boards: the share button (the up-arrow in the top bar) and a board card\u2019s right-click menu can export one board, with its sub-boards, cards, labels and images, to a .corkboard file. Send it to someone; they press Import a board\u2026 and it arrives as a new board card where they\u2019re looking. Nothing else in their CORKBORK changes.",
     "A board file is all or nothing: if any image can\u2019t be included, nothing is exported, and a damaged file imports nothing. Labels are matched by name; links to boards outside the shared one are left out. Undo removes an import."
