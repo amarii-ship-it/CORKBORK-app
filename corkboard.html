@@ -4382,7 +4382,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b152";
+window.BUILD = "b153";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -18434,10 +18434,12 @@ async function exportBoardFile(boardId){
   return true;
 }
 /* add a board file to the board you're on; returns the new board card's id */
-function importBoardData(data){
+function importBoardData(data, {fresh = false} = {}){
   if (!data || data.format !== BOARD_FILE_FORMAT || !plainObject(data.boards) || !plainObject(data.cards) || !data.boards[data.root]) throw new Error("That isn\u2019t a CORKBORK board file.");
   if (Number(data.version) > 1) throw new Error("That board file is from a newer CORKBORK. Update this one (close all its tabs and reopen) and try again.");
-  const ws = scrubWorkspace({schemaVersion:1, rootBoardId:data.root, boards:JSON.parse(JSON.stringify(data.boards)), cards:JSON.parse(JSON.stringify(data.cards)), labels:plainObject(data.labels) ? JSON.parse(JSON.stringify(data.labels)) : {}, settings:{}});
+  /* fresh: built just now for this import (Milanote), so no defensive copy of what may be gigabytes of pictures */
+  const copy = v => fresh ? v : JSON.parse(JSON.stringify(v));
+  const ws = scrubWorkspace({schemaVersion:1, rootBoardId:data.root, boards:copy(data.boards), cards:copy(data.cards), labels:plainObject(data.labels) ? copy(data.labels) : {}, settings:{}});
   ws.boards[data.root].parentId = null;
   const v = validateWorkspace(ws);
   if (!v.ok) throw new Error("That board file is damaged (" + v.errors[0] + ").");
@@ -18475,19 +18477,326 @@ boardFileInput.addEventListener("change", async () => {
   try { importBoardData(JSON.parse(await f.text())); toast("Imported \u201c" + f.name.replace(/\.corkboard$/i, "") + "\u201d onto this board.", 6000); }
   catch (e){ toast(e instanceof SyntaxError ? "That isn\u2019t a CORKBORK board file." : e.message, 8000); }
 });
+/* ---------------- Milanote import ----------------
+   Milanote's own exports carry no layout (PDF/PNG are pictures, Word and
+   Markdown are text, the ZIP is loose images). Its web app does hold
+   everything, so CORKBORK gives you a short script to run in your
+   logged-in Milanote tab (MILANOTE_EXPORT_SCRIPT): it reads the board you're
+   on and every board inside it, downloads the pictures and files, and saves
+   them as one .milanote.json (with numbered picture parts for big boards).
+   This turns that into a board file and adds it like an imported board: all
+   or nothing, undoable. Positions are Milanote grid units of 10 px. */
+const MN_UNIT = 10;
+const MN_FILL = {RED:"#F6CFCF", ORANGE:"#F8DDC0", YELLOW:"#F7EDBA", GREEN:"#D4EBCB", CYAN:"#C9E9EA", BLUE:"#CEDCF4", DEEP_BLUE:"#C0CDF0",
+  PURPLE:"#E0D3F2", PINK:"#F5D2E3", GREY:"#E3E3E3", BROWN:"#E6D7C7", WHITE:"#FFFFFF"};
+const MN_ACCENT = {RED:"#E05252", ORANGE:"#E0792D", YELLOW:"#E2A336", GREEN:"#56A36F", CYAN:"#2F9A9A", BLUE:"#4770C1", DEEP_BLUE:"#39508C",
+  PURPLE:"#7B4DB5", PINK:"#C33C84", GREY:"#888888", BROWN:"#8A6D3B", BLACK:"#333333"};
+const mnColour = (v, map) => !v ? null : /^#[0-9a-f]{3,8}$/i.test(v) ? v : map[String(v).toUpperCase()] || null;
+/* Milanote's rich text (ProseMirror JSON) as CORKBORK note HTML */
+function mnHtml(doc){
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"})[ch]);
+  const text = n => {
+    let s = esc(n.text).replace(/\n/g, "<br>");
+    for (const m of n.marks || []){
+      const a = m.attrs || {};
+      if (m.type === "bold") s = "<b>" + s + "</b>";
+      else if (m.type === "italic") s = "<i>" + s + "</i>";
+      else if (m.type === "underline") s = "<u>" + s + "</u>";
+      else if (m.type === "strike") s = "<s>" + s + "</s>";
+      else if (m.type === "link" && a.href) s = '<a href="' + esc(a.href) + '">' + s + "</a>";
+      else if (m.type === "textStyle" && a.color) s = '<span style="color:' + esc(a.color) + '">' + s + "</span>";
+      else if (m.type === "highlight") s = '<span style="background-color:' + esc(a.color || "#fff3a8") + '">' + s + "</span>";
+    }
+    return s;
+  };
+  const kids = n => (n.content || []).map(node).join("");
+  const align = n => n.attrs?.textAlign && n.attrs.textAlign !== "left" ? ' style="text-align:' + esc(n.attrs.textAlign) + '"' : "";
+  const node = n => {
+    if (!n || typeof n !== "object") return "";
+    switch (n.type){
+      case "text": return text(n);
+      case "hardBreak": return "<br>";
+      case "paragraph": return "<p" + align(n) + ">" + (kids(n) || "<br>") + "</p>";
+      case "heading": { const l = Math.min(3, Math.max(2, Number(n.attrs?.level) + 1 || 2)); return "<h" + l + align(n) + ">" + kids(n) + "</h" + l + ">"; }
+      case "bulletList": return "<ul>" + kids(n) + "</ul>";
+      case "orderedList": return "<ol" + (n.attrs?.start > 1 ? ' start="' + Number(n.attrs.start) + '"' : "") + ">" + kids(n) + "</ol>";
+      case "listItem": return "<li>" + kids(n) + "</li>";
+      case "taskList": return "<ul>" + kids(n) + "</ul>";
+      case "taskItem": return "<li>" + (n.attrs?.checked ? "☑ " : "☐ ") + kids(n).replace(/^<p[^>]*>|<\/p>$/g, "") + "</li>";
+      case "blockquote": return "<blockquote>" + kids(n) + "</blockquote>";
+      case "codeBlock": return "<pre>" + kids(n) + "</pre>";
+      case "smallText": return "<small>" + kids(n) + "</small>";
+      case "horizontalRule": return "<p>———</p>";
+      default: return kids(n);
+    }
+  };
+  return doc ? node(doc) : "";
+}
+function mnPlain(doc){
+  const out = [];
+  const walk = n => { if (!n) return; if (n.type === "text") out.push(n.text); if (n.type === "hardBreak") out.push("\n"); (n.content || []).forEach(walk); if (/paragraph|heading|listItem|taskItem/.test(n.type)) out.push("\n"); };
+  walk(doc); return out.join("").replace(/\n{3,}/g, "\n\n").trim();
+}
+/* a Milanote export (plus its picture parts) as a CORKBORK board file */
+function milanoteToBoardFile(data, assets = {}){
+  const E = data?.elements;
+  if (!plainObject(E) || !E[data.root] || E[data.root].elementType !== "BOARD") throw new Error("That isn’t a CORKBORK export of a Milanote board.");
+  const report = {boards:0, cards:0, missingPictures:0, lines:0, skipped:{}};
+  const skip = t => { report.skipped[t] = (report.skipped[t] || 0) + 1; };
+  const kidsOf = new Map();
+  for (const el of Object.values(E)){
+    const p = el.location?.parentId; if (!p) continue;
+    if (!kidsOf.has(p)) kidsOf.set(p, []);
+    kidsOf.get(p).push(el);
+  }
+  /* boards that sit inside the exported board (others came along because a shortcut points at them) */
+  const inTree = id => { for (let at = E[id], hops = 0; at && hops < 500; at = E[at.location?.parentId], hops++) if (at.id === data.root || at._id === data.root) return true; return false; };
+  const claimed = new Set();
+  const bySection = (pid, section) => (kidsOf.get(pid) || []).filter(e => e.location?.section === section).sort((a, b) => (a.location?.position?.score || 0) - (b.location?.position?.score || 0));
+  const boards = {}, cards = {}, t = now();
+  const bid = id => "mb" + id, cid = id => "mc" + id;
+  const pos = el => ({x:Math.round((Number(el.location?.position?.x) || 0) * MN_UNIT), y:Math.round((Number(el.location?.position?.y) || 0) * MN_UNIT)});
+  const asset = url => url && (assets[url] || null);
+  const iconFor = (icon, title) => {
+    if (icon && typeof icon === "object"){
+      if (icon.type === "emoji" && icon.emoji) return String(icon.emoji).slice(0, 8);
+      const name = String(icon.name || icon.id || "").replace(/-/g, " ").trim();
+      for (const q of [name, name.split(" ")[0], name.split(" ").pop()]){
+        if (!q) continue;
+        const hit = iconSearch(q)?.[0];
+        if (hit) return "ic:" + hit.id;
+      }
+    }
+    return autoIcon(title || "");
+  };
+  /* one Milanote element as a CORKBORK card (or null to leave it out) */
+  const makeCard = (el, inColumnW) => {
+    const c = el.content || {}, id = cid(el.id), at = pos(el), type = el.elementType;
+    const base = {id, x:at.x, y:at.y, z:0, createdAt:el.meta?.createdTime || t, updatedAt:el.meta?.modifiedTime || t};
+    const width = inColumnW || (Number(c.width) > 0 ? Math.round(c.width * MN_UNIT) : null);
+    if (type === "BOARD"){
+      makeBoard(el);
+      return {...base, type:"board", boardId:bid(el.id), shortcut:false, title:c.title || "Board", w:150, h:150,
+        accent:mnColour(c.color, MN_ACCENT) || undefined, icon:iconFor(c.icon, c.title)};
+    }
+    if (type === "ALIAS"){
+      const target = c.linkTo && E[c.linkTo];
+      /* the board lives elsewhere in Milanote: the first shortcut to it brings the board itself */
+      if (target?.elementType === "BOARD" && !inTree(c.linkTo) && !claimed.has(c.linkTo)){
+        claimed.add(c.linkTo);
+        makeBoard(target);
+        return {...base, type:"board", boardId:bid(c.linkTo), shortcut:false, title:c.title || c.originalTitle || target.content?.title || "Board", w:150, h:150,
+          accent:mnColour(c.color || c.originalColor || target.content?.color, MN_ACCENT) || undefined, icon:iconFor(c.icon || c.originalIcon || target.content?.icon, c.title || c.originalTitle)};
+      }
+      if (target?.elementType === "BOARD") return {...base, type:"board", boardId:bid(c.linkTo), shortcut:true, title:c.title || c.originalTitle || "Board", w:150, h:150,
+        accent:mnColour(c.color || c.originalColor, MN_ACCENT) || undefined, icon:iconFor(c.icon || c.originalIcon, c.title || c.originalTitle)};
+      return {...base, type:"note", w:width || 260, h:80, text:"→ " + (c.title || c.originalTitle || "a board") + " (shortcut to a board outside this export)"};
+    }
+    if (type === "CARD" || type === "DOCUMENT"){
+      const doc = c.textContent;
+      const blocks = doc?.content || [];
+      const headingOnly = type === "CARD" && blocks.length > 0 && blocks.every(b => b.type === "heading" || (b.type === "paragraph" && !b.content));
+      const html = (type === "DOCUMENT" && c.title ? "<p><b>" + mnHtml({type:"text", text:c.title}) + "</b></p>" : "") + mnHtml(doc);
+      if (headingOnly && c.transparent?.enabled) return {...base, type:"heading", w:Math.max(300, width || 360), h:56, html, text:mnPlain(doc)};
+      const card = {...base, type:"note", w:width || 260, h:120, html, text:mnPlain(doc)};
+      const bg = mnColour(c.background?.color, MN_FILL); if (bg) card.bg = bg;
+      return card;
+    }
+    if (type === "IMAGE"){
+      const im = c.image || {}, url = im.original || im.huge || im.large;
+      const dataUrl = asset(url);
+      const caption = c.showCaption && c.caption ? mnPlain(c.caption) : "";
+      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F5BC} " + (c.file?.filename || "Picture") + " (its picture wasn’t in the export)"}; }
+      const w = width || 270, nat = im.width && im.height ? [im.width, im.height] : null;
+      return {...base, type:"image", dataUrl, caption, naturalW:nat?.[0], naturalH:nat?.[1], w, h:nat ? Math.round(w * nat[1] / nat[0]) + (caption ? 28 : 0) : 220,
+        fileName:c.file?.filename || "image", fileType:c.file?.mime || "", fileSize:c.file?.size || 0};
+    }
+    if (type === "FILE"){
+      const f = c.file || {}, dataUrl = asset(f.url);
+      if (!dataUrl){ report.missingPictures++; return {...base, type:"note", w:width || 260, h:80, text:"\u{1F4CE} " + (f.filename || "File") + " (not in the export)"}; }
+      return {...base, type:"file", fileName:f.filename || "file", fileType:f.mime || "", fileSize:f.size || 0, dataUrl, w:width || 280, h:150};
+    }
+    if (type === "LINK"){
+      const l = c.link || {}, url = safeWebUrl(l.url || c.url || c.provider?.url || ""); if (!url) { skip("LINK without an address"); return null; }
+      const thumb = asset(c.image?.regular || c.image?.large);
+      return {...base, type:"link", url, title:l.title || c.title || c.provider?.display || "", note:c.caption ? mnPlain(c.caption) : "",
+        author:c.authors || "", previewProvider:c.provider?.display || "", thumbDataUrl:thumb || null, thumbUrl:thumb ? null : (c.image?.regular || null),
+        w:width || 280, h:(thumb || c.image) ? 250 : 120};
+    }
+    if (type === "TASK_LIST"){
+      let items = [];
+      if (c.textContent){
+        const walk = n => { if (!n) return; if (n.type === "taskItem") items.push({id:uid("t"), text:mnPlain(n), done:!!n.attrs?.checked}); else (n.content || []).forEach(walk); };
+        walk(c.textContent);
+      } else items = bySection(el.id, "INBOX").filter(k => k.elementType === "TASK").map(k => ({id:uid("t"), text:mnPlain(k.content?.textContent), done:!!(k.content?.checked || k.content?.isComplete)}));
+      const card = {...base, type:"todo", title:c.title || "", items, w:width || 260, h:Math.max(120, 60 + items.length * 30)};
+      const col = mnColour(c.color, MN_ACCENT); if (col) card.color = col;
+      return card;
+    }
+    if (type === "COLUMN"){
+      const w = c.width ? Math.round(c.width * MN_UNIT) : 330, kids = [];
+      for (const k of bySection(el.id, "INBOX")){
+        const kc = makeCard(k, w - 20); if (!kc) continue;
+        cards[kc.id] = kc; kids.push(kc.id); report.cards++;
+        if (kc.type === "board" && !kc.shortcut && boards[kc.boardId] && el.location?.parentId) boards[kc.boardId].parentId = bid(el.location.parentId);
+      }
+      const card = {...base, type:"column", title:c.title || "Column", childIds:kids, w, h:140, collapsed:!!c.collapsed || undefined};
+      const acc = mnColour(c.background?.color, MN_ACCENT); if (acc) card.accent = acc;
+      return card;
+    }
+    skip(type); return null;
+  };
+  const makeBoard = el => {
+    const id = bid(el.id); if (boards[id]) return;
+    const c = el.content || {};
+    const b = boards[id] = {id, title:c.title || "Board", parentId:null, cardIds:[], unsortedIds:[], viewport:{panX:0, panY:0, zoom:1}, connectors:[]};
+    report.boards++;
+    let z = 1;
+    const canvas = bySection(el.id, "CANVAS");
+    for (const k of canvas){
+      if (k.elementType === "LINE") continue;
+      const kc = makeCard(k); if (!kc) continue;
+      kc.z = z++; cards[kc.id] = kc; b.cardIds.push(kc.id); report.cards++;
+      if (kc.type === "board" && !kc.shortcut) boards[kc.boardId].parentId = id;
+    }
+    for (const k of bySection(el.id, "INBOX")){
+      const kc = makeCard(k); if (!kc) continue;
+      kc.z = z++; cards[kc.id] = kc; b.unsortedIds.push(kc.id); report.cards++;
+      if (kc.type === "board" && !kc.shortcut) boards[kc.boardId].parentId = id;
+    }
+    /* a line joining two cards becomes an arrow; loose lines and drawings have no CORKBORK equivalent yet */
+    for (const k of canvas.filter(k => k.elementType === "LINE")){
+      const s = k.content?.start || {}, e = k.content?.end || {};
+      const from = s.elementId && cid(s.elementId), to = e.elementId && cid(e.elementId);
+      if (from && to && b.cardIds.includes(from) && b.cardIds.includes(to)){
+        const hs = k.content.startStyle && k.content.startStyle !== "NONE", he = k.content.endStyle && k.content.endStyle !== "NONE";
+        b.connectors.push({id:uid("cn"), from, to, color:null, label:mnPlain(k.content?.lineLabel) || "", heads:hs && he ? "both" : hs ? "start" : he ? "end" : "none"});
+        report.lines++;
+      } else skip("loose line");
+    }
+  };
+  makeBoard(E[data.root]);
+  /* a shortcut to a board that didn't come along becomes a note naming it */
+  for (const c of Object.values(cards)) if (c.type === "board" && !boards[c.boardId]){
+    cards[c.id] = {id:c.id, type:"note", x:c.x, y:c.y, z:c.z, w:260, h:80, createdAt:c.createdAt, updatedAt:c.updatedAt,
+      text:"\u2192 " + (c.title || "a board") + " (shortcut to a board outside this export)"};
+  }
+  const r = E[data.root].content || {};
+  return {format:BOARD_FILE_FORMAT, version:1, build:window.BUILD || "", title:r.title || "Milanote board", root:bid(data.root), boards, cards, labels:{},
+    look:{icon:iconFor(r.icon, r.title), accent:mnColour(r.color, MN_ACCENT) || undefined, w:150, h:150}, dropped:0, missing:[], report};
+}
+/* read the chosen files: the main export and any numbered picture parts. All of them, or nothing. */
+async function importMilanoteFiles(files){
+  let main = null; const parts = [];
+  for (const f of files){
+    let j; try { j = JSON.parse(await f.text()); } catch (_) { throw new Error("“" + f.name + "” isn’t a CORKBORK export file."); }
+    if (j?.format === "corkbork-milanote") main = j;
+    else if (j?.format === "corkbork-milanote-pictures") parts.push(j);
+    else throw new Error("“" + f.name + "” isn’t a Milanote export from CORKBORK’s script.");
+  }
+  if (!main) throw new Error("Choose the main .milanote.json file too (the one without “pictures” in its name).");
+  const need = Number(main.pictureParts) || 0;
+  const have = new Set(parts.filter(p => p.root === main.root && p.exportId === main.exportId).map(p => p.part));
+  const lacking = []; for (let i = 1; i <= need; i++) if (!have.has(i)) lacking.push(i);
+  if (lacking.length) throw new Error("Picture part" + (lacking.length > 1 ? "s " : " ") + lacking.join(", ") + " of " + need + " " + (lacking.length > 1 ? "are" : "is") + " missing. Choose the main file and every part together.");
+  const assets = {...(main.assets || {})};
+  for (const p of parts) Object.assign(assets, p.assets || {});
+  const file = milanoteToBoardFile(main, assets);
+  const id = importBoardData(file, {fresh:true});
+  const rep = file.report, skipped = Object.entries(rep.skipped).map(([k, n]) => n + " " + k.toLowerCase().replace(/_/g, " ") + (n > 1 ? "s" : "")).join(", ");
+  toast("Imported “" + file.title + "” from Milanote: " + rep.boards + " board" + (rep.boards === 1 ? "" : "s") + ", " + rep.cards + " cards" +
+    (rep.lines ? ", " + rep.lines + " arrows" : "") + "." + (rep.missingPictures ? " " + rep.missingPictures + " pictures weren’t in the export (shown as notes)." : "") +
+    (skipped ? " Left out (no CORKBORK equivalent yet): " + skipped + "." : ""), 14000);
+  return {id, report:rep};
+}
+/* What the person pastes into their Milanote tab's console. Kept as plain
+   text here so the Import from Milanote window can copy it. */
+const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
+  /* CORKBORK: export the Milanote board you're looking at, every board inside
+     it, and their pictures and files, for CORKBORK's Import from Milanote.
+     It only reads your own boards and saves files to this computer. */
+  const PART_MB = 250;
+  const root = location.pathname.split("/")[1];
+  const exportId = Date.now().toString(36);
+  const elements = {}, fetched = new Set(), queue = [root], failed = [];
+  const save = (obj, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], {type:"application/json"})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
+  const getBoards = async ids => {
+    const q = new URLSearchParams({excludeSelf:"false", loadAncestors:"false", canvasOrder:"false", ids:ids.join(",")});
+    const r = await fetch("/api/boards?" + q, {credentials:"include"});
+    if (!r.ok) throw new Error("Milanote answered " + r.status);
+    return r.json();
+  };
+  while (queue.length){
+    const batch = queue.splice(0, 10).filter(id => !fetched.has(id));
+    if (!batch.length) continue;
+    batch.forEach(id => fetched.add(id));
+    const j = await getBoards(batch);
+    for (const [id, el] of Object.entries(j.elements || {})){
+      elements[id] = el;
+      if ((el.elementType === "BOARD" || el.elementType === "COLUMN") && !fetched.has(id) && !queue.includes(id)) queue.push(id);
+    }
+    console.log("CORKBORK: read", fetched.size, "boards,", Object.keys(elements).length, "items…");
+  }
+  const urls = new Set();
+  for (const el of Object.values(elements)){
+    const c = el.content || {};
+    for (const u of [c.image?.original || c.image?.huge || c.image?.large, c.file?.url, el.elementType === "LINK" ? (c.image?.regular || c.image?.large) : null]) if (u) urls.add(u);
+  }
+  const title = (elements[root]?.content?.title || "milanote").replace(/[\\/:*?"<>|]+/g, "_");
+  let assets = {}, size = 0, part = 0, n = 0;
+  for (const u of urls){
+    try {
+      const r = await fetch(u, {credentials:"include"}); if (!r.ok) throw new Error(r.status);
+      const b = await r.blob();
+      const d = await new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsDataURL(b); });
+      assets[u] = d; size += d.length;
+    } catch (e){ failed.push(u); }
+    if (++n % 10 === 0) console.log("CORKBORK: pictures and files", n, "of", urls.size);
+    if (size > PART_MB * 1048576){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; size = 0; await new Promise(r => setTimeout(r, 1500)); }
+  }
+  if (part && Object.keys(assets).length){ part++; save({format:"corkbork-milanote-pictures", root, exportId, part, assets}, title + " pictures " + part + ".json"); assets = {}; }
+  save({format:"corkbork-milanote", version:1, root, exportId, exportedAt:new Date().toISOString(), elements, assets, pictureParts:part, failed}, title + ".milanote.json");
+  console.log("CORKBORK: done.", fetched.size, "boards,", Object.keys(elements).length, "items,", urls.size - failed.length, "pictures and files" + (part ? " in " + part + " parts" : "") + ".", failed.length ? failed.length + " couldn't be downloaded." : "");
+})();`;
+async function openMilanoteImport(){
+  const v = await askOpen({title:"Import from Milanote", wide:true, build(body){
+    const p = (html, cls) => { const d = document.createElement("div"); d.className = cls || "meta"; d.innerHTML = html; body.appendChild(d); return d; };
+    p("Milanote’s own exports don’t keep your layout, so CORKBORK uses a short script that reads your board straight from Milanote, with every board inside it, its pictures and files, and where everything sits.");
+    p("<b>1.</b> In Chrome, open the board in Milanote (your Home board brings everything). <b>2.</b> Press F12 and open the <b>Console</b> tab. <b>3.</b> Press Copy script below, paste it there and press Enter (if Chrome refuses, type <i>allow pasting</i> first). <b>4.</b> Wait for “CORKBORK: done”. Big boards save a few numbered “pictures” files as well. <b>5.</b> Press Choose files and pick all of them together.", "");
+    p("The script only reads your own boards and saves files to your computer. It isn’t made by Milanote, so a change on their side could stop it working. Loose lines and drawings don’t come over yet.");
+    const row = document.createElement("div"); row.className = "share-row";
+    const copy = document.createElement("button"); copy.type = "button"; copy.className = "primary"; copy.textContent = "Copy script";
+    copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(MILANOTE_EXPORT_SCRIPT); toast("Script copied. Paste it into the Milanote tab’s console."); } catch (_) { toast("Couldn’t copy. Select the script on the next line and copy it."); } });
+    const ta = document.createElement("textarea"); ta.readOnly = true; ta.value = MILANOTE_EXPORT_SCRIPT; ta.rows = 3; ta.style.cssText = "width:100%; font:11px monospace; margin-top:6px;";
+    ta.addEventListener("focus", () => ta.select());
+    row.appendChild(copy); body.append(row, ta);
+    return {};
+  }, buttons:[{label:"Close", value:null}, {label:"Choose files…", value:"pick", primary:true}]});
+  if (v === "pick") milanoteFileInput.click();
+}
+const milanoteFileInput = Object.assign(document.createElement("input"), {type:"file", accept:".json,application/json", multiple:true, hidden:true});
+document.body.appendChild(milanoteFileInput);
+milanoteFileInput.addEventListener("change", async () => {
+  const files = [...milanoteFileInput.files]; milanoteFileInput.value = ""; if (!files.length) return;
+  toast("Reading the Milanote export…", 6000);
+  try { await importMilanoteFiles(files); }
+  catch (e){ toast("Nothing was imported: " + e.message, 10000); }
+});
+
 /* ---- the board's export button: send this board, its images, or bring a board in ---- */
 $("#mbExport").addEventListener("click", async () => {
   const v = await askOpen({title:"Share boards", build(body){
     const m = document.createElement("div"); m.id = "askMsg";
     m.textContent = "Share this board live: everyone with the link sees changes as they happen. Or export a copy to send (everything on it, sub-boards and pictures included), or import a copy someone sent you. Importing adds it here; nothing else changes.";
     body.appendChild(m); return {};
-  }, buttons:[{label:"Cancel", value:null}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"Open a shared link\u2026", value:"join"}, {label:"Export a copy", value:"export"},
+  }, buttons:[{label:"Cancel", value:null}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"From Milanote\u2026", value:"milanote"}, {label:"Open a shared link\u2026", value:"join"}, {label:"Export a copy", value:"export"},
     {label:shareSessionForBoard(currentBoardId) ? "Sharing\u2026" : "Share live\u2026", value:"live", primary:true}]});
   if (v === "live"){
     if (currentBoardId === state.rootBoardId || currentBoardId === TRASH_ID) toast("Home and the Recycle Bin can\u2019t be shared. Open a board, or right-click a board card and choose Share live.", 7000);
     else openShareDialog(currentBoardId);
   }
   else if (v === "join") openJoinDialog();
+  else if (v === "milanote") openMilanoteImport();
   else if (v === "export") exportBoardFile(currentBoardId);
   else if (v === "zip") exportBoardImages(currentBoardId);
   else if (v === "import") boardFileInput.click();
@@ -27406,6 +27715,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b153", [
+    "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Loose lines and drawings don\u2019t come over yet."
+  ]],
   ["b152", [
     "Shared boards: whatever someone else is editing, moving or just changed is outlined in their colour with their name on top. D&D sheets: Sheet Colors sets the page colour and the accent to any colour; new sheets open in the Beyond view, which is as tall as its content and moves like any card (click once to use its buttons).",
     "Search shows a character sheet's face and name, and boards' drawn icons. A late update to a deleted card can no longer stop saving (\u201cWorkspace needs repair\u201d). The Cards button is hidden for now (Search covers it)."
@@ -27460,9 +27772,6 @@ const PATCH_NOTES = [
   ]],
   ["b138", [
     "Import official content: the buttons match Close, and \u201cPick items first\u201d is now \u201cChoose individual items\u2026\u201d (only needed to leave out single items)."
-  ]],
-  ["b137", [
-    "D&D sheet: each page recommends importing the official books, with a button for that kind (and \u201cnever see this again\u201d). Import official content (RECOMMENDED) at the top of Edit character holds the import and its step-by-step guide. In the import window, tick what you want and press Import; picking single items first is optional. Your ticks are remembered."
   ]],
 ];
 function renderPatchNotes(){
