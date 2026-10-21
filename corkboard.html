@@ -121,7 +121,7 @@ body.lib-open #tbHandle{visibility:hidden;}
 .lib-item:hover .lib-del, .lib-item:focus-within .lib-del{display:flex; align-items:center; justify-content:center;}
 .lib-item.busy{opacity:.5;}
 #cloudWrap{position:relative; flex:none; z-index:3;}
-#cloudMenu{position:absolute; left:0; top:34px; background:var(--surface-hi); border:1px solid var(--border);
+#cloudMenu{position:absolute; right:0; top:34px; background:var(--surface-hi); border:1px solid var(--border);
   border-radius:6px; display:none; flex-direction:column; width:250px; padding:10px; gap:7px;
   box-shadow:0 6px 18px rgba(0,0,0,.4);}
 #cloudMenu.open{display:flex;}
@@ -211,13 +211,13 @@ body.narrow-nav #crumbs button, body.narrow-nav #cpCrumbs button{max-width:160px
 #barMoreMenu.open{display:flex;}
 #barMoreMenu button{text-align:left; padding:8px 10px; border-radius:5px; font-size:13px; color:var(--text);}
 #barMoreMenu button:hover{background:var(--surface);}
-.barsep{width:1px; height:20px; background:var(--border); flex:none; opacity:.7;}
+.barsep{width:2px; height:20px; flex:none;}   /* an even gap between groups, no line */
 /* Scoped to #topbar, not #barCentre: the zoom control was moved out of the
    absolutely-positioned #barCentre into the bar's normal flow (so its panel
    stops opening under the canvas). These two rules kept the old ancestor and
    silently stopped matching, leaving the button dimmed and its icon undersized.
    #topbar keeps the original two-id specificity so it still beats line 47. */
-#topbar #zoomCtl .barbtn{color:var(--text); opacity:1;}
+#topbar #zoomCtl .barbtn{opacity:1;}
 #topbar #zoomCtl svg{width:19px; height:19px;}
 #topbar{position:relative;}
 #crumbs button.crumbdrop, #cpCrumbs button.crumbdrop{
@@ -279,7 +279,12 @@ body.cardpage-open #cpCrumbs{display:flex; align-items:center; gap:2px; overflow
 #btnLabels, #btnTags{padding:6px;}
 .iconbtn.disabled{opacity:.32; cursor:default;}
 .iconbtn.disabled:hover{background:none; color:var(--text-dim);}
-.barGroup{display:flex; align-items:center; gap:2px; margin-left:4px; padding-left:8px; border-left:1px solid var(--border);}
+.barGroup{display:flex; align-items:center; gap:2px;}
+/* top-bar groups: buttons inside a group sit close; groups are split by a
+   small even gap (.barsep), never a line */
+.barSet{display:flex; align-items:center; gap:2px; flex:none;}
+#topbar .barSet .iconbtn, #topbar .barGroup .iconbtn{padding:4px 6px;}
+#topbar .barSet .iconbtn svg{width:22px; height:22px;}
 /* top-right utility icons. Sized to match the rail tools (24px glyph), which
    is the size the user asked every icon to converge on. Keep the two rules
    together so the pair never drifts apart again. */
@@ -405,22 +410,25 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
    themes (Eautiphen) set no --chrome and keep their own look. */
 :root{--rail-w:72px;}
 #rail{background:var(--chrome, var(--surface-hi)); border-right:none; gap:2px; padding-top:4px; padding-bottom:4px;}
-.tool{--hue:var(--text-dim); width:56px; height:40px; border-radius:7px;
-  background:color-mix(in srgb, var(--hue) var(--tint, 0%), transparent);}
-.tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 0%) + 12%), transparent); box-shadow:none;}
-.tool svg, .tool:hover svg{width:22px; height:22px; margin-bottom:2px; filter:none;}
+/* b154 calm pass: each tool keeps its own colour as a soft tint behind it;
+   the icon itself is the theme's text colour (dark on light themes, light
+   on dark ones), bigger, with a small quiet label */
+.tool{--hue:var(--text-dim); width:56px; height:44px; border-radius:7px;
+  font-size:8px; font-weight:600; color:var(--text);
+  background:color-mix(in srgb, var(--hue) var(--tint, 15%), transparent);}
+.tool:hover{background:color-mix(in srgb, var(--hue) calc(var(--tint, 15%) + 13%), transparent); box-shadow:none; color:var(--text);}
+.tool svg, .tool:hover svg{width:26px; height:26px; margin-bottom:2px; filter:none; stroke-width:1.7;}
 #rail .tool[data-type] svg, #morePop .tool[data-type] svg, #railMore svg, #toolArrow svg, #toolUpload svg, #toolLibrary svg{
-  stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
-#rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:color-mix(in srgb, var(--hue) 62%, var(--text));}
+  stroke:var(--text);}
+#rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:var(--text);}
 .tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi));}
 .tool[data-type="note"], .tool[data-type="block"]{--hue:#FFFFFF;}
-#toolWidget{--hue:oklch(72% .13 355);} #toolWidget svg{stroke:color-mix(in srgb, var(--hue) 62%, var(--text));}
+#toolWidget{--hue:oklch(72% .13 355);} #toolWidget svg{stroke:var(--text);}
 :root[data-theme="light"] .tool[data-type="note"], :root[data-theme="light"] .tool[data-type="block"]{background:color-mix(in srgb, #FFFFFF 52%, transparent);}
 :root[data-theme="light"] #rail .tool[data-type="note"] svg, :root[data-theme="light"] #rail .tool[data-type="block"] svg{stroke:var(--text);}
 /* Image and Upload: a pink-cream button, like Note's white one */
 .tool[data-type="image"], #toolUpload{--hue:#F2C6C0;}
 :root[data-theme="light"] .tool[data-type="image"], :root[data-theme="light"] #toolUpload{background:color-mix(in srgb, #FBE4DE 70%, transparent);}
-:root[data-theme="light"] #rail .tool[data-type="image"] svg, :root[data-theme="light"] #rail #toolUpload svg{stroke:#B8645A;}
 /* every tool colour has the same lightness and strength; only the hue
    changes, so the rainbow reads as one set */
 #toolArrow{--hue:oklch(72% .13 305);}
@@ -434,15 +442,24 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 .tool[data-type="sheet"]{--hue:oklch(72% .13 75);} 
 /* Recycle (cyan) and Trash (red) must be unmistakable: solid colour, white icon and label */
 #toolTrash{--hue:#12A9BD;} #toolDelete{--hue:#DD4337;}
-#toolTrash, #toolDelete{background:var(--hue); color:#FFFFFF;}
-#toolTrash:hover, #toolDelete:hover{background:color-mix(in srgb, var(--hue) 85%, #FFFFFF);}
-#toolTrash svg, #toolDelete svg{stroke:#FFFFFF !important; filter:none;}
-.railDivider{width:44px; height:2px; border-radius:2px; margin:2px 0; background:color-mix(in srgb, var(--text) 12%, transparent);}
+/* Recycle and Trash float on the board's bottom-left corner as plain
+   buttons, like Unsorted. Their colour only shows while something is
+   dragged over them, so a drop is never a surprise. */
+#binFloat{position:absolute; left:14px; bottom:14px; z-index:36; display:flex; gap:8px;}
+#binFloat .tool{width:52px; height:52px; border-radius:8px; background:var(--surface); color:var(--text-dim);
+  box-shadow:0 1px 3px rgba(0,0,0,.12); font-size:8.5px;}
+#binFloat .tool:hover{color:var(--text); background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.16);}
+#binFloat .tool svg{width:24px; height:24px; stroke-width:1.8; fill:none; stroke:var(--text) !important;}
+#binFloat .tool.droptarget{outline:2px solid var(--hue); outline-offset:-1px; background:var(--surface);}
+#binFloat .tool.droptarget svg{stroke:var(--hue) !important;}
+body.focus-mode #binFloat{display:none !important;}
+/* space, not lines, between groups */
+.railDivider{width:44px; height:10px; margin:0; background:transparent;}
 .tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
 /* cards lighter than the board, lifted by a shadow instead of an outline */
 .card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
-  border-color:transparent; border-radius:12px;
-  box-shadow:0 1px 2px rgba(0,0,0,.07), 0 6px 18px rgba(0,0,0,var(--lift-shadow, .09));}
+  border-color:transparent; border-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);}
 .card.is-fav{box-shadow:0 0 0 1px color-mix(in srgb, #E8C46A 55%, transparent), 0 6px 18px rgba(0,0,0,var(--lift-shadow, .09));}
 /* free resize shows its outline only while the image is selected */
 .card.type-image.free-resize:not(.selected){outline:none;}
@@ -1404,7 +1421,7 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
      underneath it. The wash is fixed to the viewport rather than the world,
      so it behaves like light in the room instead of a painted backdrop that
      slides around when you pan. Themes without one set --canvas-wash:none. */
-  background-image:radial-gradient(var(--grid) 1px, transparent 1.5px), var(--canvas-wash, none);
+  background-image:radial-gradient(color-mix(in srgb, var(--grid) 16%, transparent) 1px, transparent 1.5px), var(--canvas-wash, none);
   touch-action:none; min-width:0;
 }
 #world{position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform;}
@@ -1757,8 +1774,8 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
 /* unsorted drawer */
 #drawerFab{
   position:absolute; right:14px; top:12px; z-index:36;
-  width:42px; height:42px; border-radius:5px;
-  background:var(--surface-hi); border:1px solid var(--border); color:var(--text-dim);
+  width:52px; height:52px; border-radius:8px;
+  background:var(--surface); border:none; box-shadow:0 1px 3px rgba(0,0,0,.12); color:var(--text);
   display:flex; align-items:center; justify-content:center;
 }
 #drawerFab:hover{color:var(--text); background:var(--surface);}
@@ -1788,6 +1805,7 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
    buttons. Offset by the bar's height there. */
 #cardPage > #drawer{top:var(--topbar-h);}
 #cardPage > #drawerFab{top:58px;}
+#cardPage > #binFloat{left:calc(var(--rail-w) + 14px);}
 #drawerHead{display:flex; align-items:center; gap:8px; padding:10px 12px; flex:none;}
 #drawerHead .dtitle{font-size:14px; font-weight:600; flex:1;}
 #drawerClose{width:26px; height:26px; border-radius:6px; color:var(--text-dim); flex:none;}
@@ -1825,16 +1843,13 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
 body.in-card #zoomCtl{z-index:170;}
 /* Active state has to be obvious at a glance — this is a mode, not an action,
    and it opens no panel, so the button itself has to carry the state. */
-#topbar #btnSnap.on{color:var(--edit); background:color-mix(in srgb, var(--edit) 22%, transparent);}
-#topbar #btnSnap.on svg{stroke:var(--edit);}
+#topbar #btnSnap.on{color:var(--accent);}
+#topbar #btnSnap.on svg{stroke:var(--accent);}
 /* Zoom and Snap are MODES, not actions: they carry state and should not look
    like the plain buttons beside them. */
-#topbar #btnSnap, #topbar #zoomBtn{opacity:1; padding:7px 10px;}
-#topbar #btnSnap svg, #topbar #zoomBtn svg{width:21px; height:21px;}
-#topbar #btnSnap, #topbar #zoomCtl{
-  background:color-mix(in srgb, var(--text) 7%, transparent);
-  border-radius:8px;
-}
+/* plain icons like their neighbours; Snap shows "on" in the accent colour */
+#topbar #btnSnap, #topbar #zoomBtn{opacity:1; padding:7px 6px;}
+#topbar #btnSnap svg, #topbar #zoomBtn svg{width:20px; height:20px;}
 #topbar #zoomBtn{font-weight:600;}
 #snapFlash{
   position:fixed; left:50%; top:60px; transform:translateX(-50%);
@@ -1908,6 +1923,12 @@ body.in-card #zoomCtl{z-index:170;}
 #favPanel.open{display:flex;}
 #favPanel input{margin:10px; width:calc(100% - 20px);}
 #favScroll{flex:1; overflow-y:auto; padding:0 8px 10px;}
+#searchFavs{display:flex; align-items:center; gap:8px; margin:8px 8px 0; padding:7px 10px; border-radius:7px;
+  color:var(--text); font-weight:600; font-size:13px; text-align:left;}
+#searchFavs svg{stroke:#D9A63F; flex:none;}
+#searchFavs span{flex:1;}
+#searchFavs b{color:var(--text-dim); font-weight:400;}
+#searchFavs:hover, #searchFavs.on{background:color-mix(in srgb, var(--text) 8%, transparent);}
 #searchPanel{
   position:fixed; top:44px; right:8px; width:min(360px, calc(100vw - 16px)); max-height:72vh;
   background:var(--surface-hi); border:1px solid var(--border); border-radius:6px;
@@ -3277,6 +3298,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h9 M9.5 7v10 M14 12h5 M16.5 12v5"/><path d="M4 20l2 2 2-2" opacity=".55"/></svg>
   </button>
   <span class="barsep"></span>
+  <div class="barSet">
   <button class="barbtn iconbtn small" id="btnRecenter" title="Center the view on this board's content">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3.2 M12 18.3v3.2 M2.5 12h3.2 M18.3 12h3.2"/></svg>
   </button>
@@ -3299,14 +3321,12 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     <label class="zcheck"><input type="checkbox" id="wheelZoomToggle"> Scroll wheel zooms</label>
   </div>
   </div>
-
-  <button class="barbtn iconbtn" id="btnFavs" title="Favourites — starred boards and cards">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.6l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.8l5.9-.8z"/></svg>
-  </button>
-  <button class="barbtn iconbtn" id="btnSearch" title="Search boards and cards (Ctrl+K)">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>
+  </div>
+  <button class="barbtn iconbtn" id="btnTags" title="Cards — jump to any character, place or item card" style="display:none">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="10.5" r="2"/><path d="M5.5 16c.4-1.6 1.4-2.4 2.5-2.4s2.1.8 2.5 2.4 M14 9.5h4 M14 13h4"/></svg>
   </button>
   <span class="barsep"></span>
+  <!-- the sync chip sits between the view tools and Search -->
   <div id="cloudWrap">
     <button class="barbtn" id="cloudChip" data-state="local" title="Cloud save — click for sync and backups" aria-live="polite" aria-haspopup="true">
       <span class="cc-dot"></span><span class="cc-text">On this device</span>
@@ -3316,21 +3336,29 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button class="wide" id="cmSync">Sync now</button>
       <button class="wide backup-primary" id="cmBackup" title="Verify the current save and keep a restore point in local version history">Back up now (local restore point)</button>
       <button class="wide" id="cmCopy" title="Save a self-contained dated CORKBORK package">Save a copy (.corkbork file)</button>
+      <button class="wide" id="cmFolder">Open this board’s folder</button>
       <button class="wide" id="cmSettings">Sync settings…</button>
     </div>
   </div>
   <span class="barsep"></span>
-  <button class="barbtn iconbtn" id="btnBoardFolder" title="This board's folder on your computer">
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/></svg>
+  <!-- Search with Tags beside it; Favourites opens from inside Search,
+       the board folder from the sync menu, shortcuts from the ? key -->
+  <div class="barSet">
+  <button class="barbtn iconbtn" id="btnSearch" title="Search boards and cards (Ctrl+K)">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>
   </button>
   <button class="barbtn iconbtn" id="btnLabels" title="Tags">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
   </button>
-  <!-- hidden for now: Search covers it -->
-  <button class="barbtn iconbtn" id="btnTags" title="Cards — jump to any character, place or item card" style="display:none">
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="10.5" r="2"/><path d="M5.5 16c.4-1.6 1.4-2.4 2.5-2.4s2.1.8 2.5 2.4 M14 9.5h4 M14 13h4"/></svg>
+  <button class="barbtn iconbtn" id="btnFavs" style="display:none" title="Favourites — starred boards and cards">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.6l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.8l5.9-.8z"/></svg>
   </button>
-  <button class="barbtn iconbtn small" id="btnShortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  <button class="barbtn iconbtn" id="btnBoardFolder" style="display:none" title="This board's folder on your computer">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/></svg>
+  </button>
+  <button class="barbtn iconbtn small" id="btnShortcuts" style="display:none" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="barsep"></span>
   <div id="barMoreWrap" style="display:none;">
     <button class="barbtn iconbtn small" id="barMore" title="More" aria-haspopup="true">•••</button>
     <div id="barMoreMenu" role="menu"></div>
@@ -3423,6 +3451,8 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 </div>
 
 <div id="searchPanel">
+  <!-- hover opens Favourites beside Search; a click keeps it open -->
+  <button id="searchFavs" type="button" aria-haspopup="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.6l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/></svg><span>Favourites</span><b>›</b></button>
   <input type="text" id="searchInput" placeholder="Search boards and cards…" autocomplete="off">
   <div id="searchSummary"></div>
   <div id="searchScroll"></div>
@@ -3557,14 +3587,6 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     </div>
     <div id="railCardEnd" class="railDivider" style="display:none"></div>
     <div class="railSpacer"></div>
-    <button class="tool" id="toolTrash" title="Recycle Bin — drag cards here, or click to open">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l3.6 6.2H8.4z" opacity=".95"/><path d="M6.6 13.6l-2.4 4.1h6.9"/><path d="M17.4 13.6l2.4 4.1h-6.9"/></svg>Recycle</button>
-    <div style="height:10px; flex:none;"></div>
-    <button class="tool" id="toolDelete" title="Trash — drag here to delete permanently">
-      <svg viewBox="0 0 24 24">
-        <g class="lid"><path d="M4 7h16 M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></g>
-        <path d="M6.5 7l1 12a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-12 M10 11v6 M14 11v6"/>
-      </svg>Trash</button>
   </div>
 
 
@@ -3582,6 +3604,16 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   </div>
   <div id="canvas" tabindex="-1">
     <div id="world"></div>
+    <!-- Recycle and Trash float over the board's bottom-left corner -->
+    <div id="binFloat">
+      <button class="tool" id="toolTrash" title="Recycle Bin — drag cards here, or click to open">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l3.6 6.2H8.4z" opacity=".95"/><path d="M6.6 13.6l-2.4 4.1h6.9"/><path d="M17.4 13.6l2.4 4.1h-6.9"/></svg>Recycle</button>
+      <button class="tool" id="toolDelete" title="Trash — drag here to delete permanently">
+        <svg viewBox="0 0 24 24">
+          <g class="lid"><path d="M4 7h16 M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></g>
+          <path d="M6.5 7l1 12a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-12 M10 11v6 M14 11v6"/>
+        </svg>Trash</button>
+    </div>
     <div id="emptyHint">This board is empty.<br>Drag a card from the left, or paste an image.</div>
     <div id="trashBar"><span id="trashCount"></span><button id="btnEmptyTrash">Empty Recycle Bin</button></div>
     <div id="marquee"></div>
@@ -3615,7 +3647,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   </div>
 
   <button id="drawerFab" title="Unsorted — drop things here">
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13l2.2-7A1.4 1.4 0 0 1 7.5 5h9a1.4 1.4 0 0 1 1.3 1l2.2 7 M4 13v5a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18v-5 M4 13h4.5l1.2 2.2h4.6L15.5 13H20"/></svg>
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13l2.2-7A1.4 1.4 0 0 1 7.5 5h9a1.4 1.4 0 0 1 1.3 1l2.2 7 M4 13v5a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18v-5 M4 13h4.5l1.2 2.2h4.6L15.5 13H20"/></svg>
     <span id="fabBadge" class="hidden">0</span>
   </button>
   <div id="drawer" class="collapsed">
@@ -4382,7 +4414,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b153";
+window.BUILD = "b154";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -8286,6 +8318,8 @@ function moveFromTrayToBoard(id, boardId){
 }
 
 $("#toolTrash").addEventListener("click", () => { trashBoard(); openBoard(TRASH_ID); });
+/* the bins float on the board: a press on them is not a press on the board */
+$("#binFloat").addEventListener("pointerdown", e => e.stopPropagation());
 $("#btnEmptyTrash").addEventListener("click", async () => {
   const tb = trashBoard();
   const ids = [...tb.cardIds, ...tb.unsortedIds];
@@ -10426,7 +10460,7 @@ function openCardPage(id, pushHistory){
   }
   /* the Unsorted tray comes too — a card gets the same drawer a board has,
      not a second implementation of one */
-  for (const sel of ["#drawer", "#drawerFab"]){
+  for (const sel of ["#drawer", "#drawerFab", "#binFloat"]){
     const el = $(sel);
     if (el && el.parentNode !== $("#cardPage")) $("#cardPage").appendChild(el);
   }
@@ -10451,7 +10485,7 @@ function closeCardPage(){
     if (el && panelHome[sel] && el.parentNode !== panelHome[sel].parent)
       panelHome[sel].parent.insertBefore(el, panelHome[sel].next);
   }
-  for (const sel of ["#drawer", "#drawerFab"]){
+  for (const sel of ["#drawer", "#drawerFab", "#binFloat"]){
     const el = $(sel);
     if (el && drawerHome[sel] && el.parentNode !== drawerHome[sel].parent)
       drawerHome[sel].parent.insertBefore(el, drawerHome[sel].next);
@@ -11384,7 +11418,7 @@ for (const sel of ["#tagPanel", "#labelPanel", "#searchPanel", "#favPanel"]){
   if (el) panelHome[sel] = { parent: el.parentNode, next: el.nextSibling };
 }
 const drawerHome = {};
-for (const sel of ["#drawer", "#drawerFab"]){
+for (const sel of ["#drawer", "#drawerFab", "#binFloat"]){
   const el = $(sel);
   if (el) drawerHome[sel] = { parent: el.parentNode, next: el.nextSibling };
 }
@@ -15460,14 +15494,42 @@ function renderFavPanel(q){
     out.appendChild(n);
   }
 }
-function openFavs(){
-  $("#favPanel").classList.add("open");
-  renderFavPanel("");
-  $("#favInput").value = ""; $("#favInput").focus();
+/* Favourites open from the top of the Search panel: hovering shows them
+   to the left of Search, a click pins them open until Search closes. */
+let favPinned = false, favHideTimer = null;
+function placeFavs(){
+  const fp = $("#favPanel"), sp = $("#searchPanel");
+  if (!sp.classList.contains("open")){ fp.style.right = ""; fp.style.top = ""; return; }
+  const z = uiz(), r = sp.getBoundingClientRect();
+  fp.style.right = Math.max(8, (innerWidth - r.left) / z + 8) + "px";
+  fp.style.top = (r.top / z) + "px";
 }
-function closeFavs(){ $("#favPanel").classList.remove("open"); }
+function openFavs(focus=true){
+  clearTimeout(favHideTimer);
+  const was = $("#favPanel").classList.contains("open");
+  $("#favPanel").classList.add("open");
+  placeFavs();
+  if (!was){ renderFavPanel(""); $("#favInput").value = ""; }
+  if (focus) $("#favInput").focus();
+}
+function closeFavs(){
+  clearTimeout(favHideTimer); favPinned = false;
+  $("#favPanel").classList.remove("open"); $("#searchFavs").classList.remove("on");
+}
+function favsLater(){
+  clearTimeout(favHideTimer);
+  if (!favPinned) favHideTimer = setTimeout(() => { if (!favPinned) closeFavs(); }, 260);
+}
 $("#btnFavs").addEventListener("click", () => {
   $("#favPanel").classList.contains("open") ? closeFavs() : openFavs();
+});
+$("#searchFavs").addEventListener("pointerenter", e => { if (e.pointerType === "mouse") openFavs(false); });
+$("#searchFavs").addEventListener("pointerleave", favsLater);
+$("#favPanel").addEventListener("pointerenter", () => clearTimeout(favHideTimer));
+$("#favPanel").addEventListener("pointerleave", favsLater);
+$("#searchFavs").addEventListener("click", () => {
+  if (favPinned){ closeFavs(); return; }
+  favPinned = true; $("#searchFavs").classList.add("on"); openFavs(true);
 });
 $("#favInput").addEventListener("input", e => renderFavPanel(e.target.value));
 $("#favInput").addEventListener("keydown", e => {
@@ -15481,7 +15543,7 @@ function openSearch(){
   renderSearch("");
   $("#searchInput").value = ""; $("#searchInput").focus();
 }
-function closeSearch(){ $("#searchPanel").classList.remove("open"); }
+function closeSearch(){ $("#searchPanel").classList.remove("open"); closeFavs(); }
 $("#btnSearch").addEventListener("click", () => {
   $("#searchPanel").classList.contains("open") ? closeSearch() : openSearch();
 });
@@ -15497,7 +15559,7 @@ $("#searchInput").addEventListener("keydown", e => {
 });
 document.addEventListener("pointerdown", e => {
   const p = $("#searchPanel");
-  if (p.classList.contains("open") && !p.contains(e.target) && e.target !== $("#btnSearch") && !$("#btnSearch").contains(e.target))
+  if (p.classList.contains("open") && !p.contains(e.target) && !$("#favPanel").contains(e.target) && e.target !== $("#btnSearch") && !$("#btnSearch").contains(e.target))
     closeSearch();
 }, true);
 
@@ -15566,6 +15628,7 @@ $("#cmSync").addEventListener("click", async () => {
 });
 $("#cmBackup").addEventListener("click", () => { closeCloudMenu(); backupNow(); });
 $("#cmCopy").addEventListener("click", () => { closeCloudMenu(); saveCopy(); });
+$("#cmFolder").addEventListener("click", () => { closeCloudMenu(); openBoardFolderPanel(); });
 $("#cmSettings").addEventListener("click", () => {
   closeCloudMenu(); openSettings(); document.querySelector('.setnav[data-sec="data"]')?.click();
 });
@@ -16698,7 +16761,7 @@ function layeredTokens(tokens, base){
       surface:mixHex(bg, "#FFFFFF", lift), "surface-hi":mixHex(bg, "#FFFFFF", lift - .08),
       grid:mixHex(bg, ink, .1), border:mixHex(bg, ink, .14),
       "text-dim":readableDim(ink, bg, mixHex(bg, "#000000", .06), .42),
-      chrome:mixHex(bg, "#000000", .06), "chrome-line":mixHex(bg, "#000000", .13), tint:"16%", "lift-shadow":".09"});
+      chrome:mixHex(bg, "#000000", .06), "chrome-line":mixHex(bg, "#000000", .13), tint:"14%", "lift-shadow":".09"});
   } else {
     /* lift cards toward white, but stop before light text on them gets hard to read */
     let lift = L < .02 ? .09 : L < .1 ? .12 : .16;
@@ -16707,7 +16770,7 @@ function layeredTokens(tokens, base){
     Object.assign(out, {
       surface:mixHex(bg, "#FFFFFF", lift), "surface-hi":mixHex(bg, "#FFFFFF", lift + .04),
       grid:mixHex(bg, ink, .09), border:mixHex(bg, ink, .16), "text-dim":readableDim(ink, bg, chrome, .38),
-      chrome, "chrome-line":mixHex(chrome, ink, .14), tint:"24%", "lift-shadow":".28"});
+      chrome, "chrome-line":mixHex(chrome, ink, .14), tint:"16%", "lift-shadow":".28"});
   }
   return out;
 }
@@ -27715,6 +27778,10 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b154", [
+    "Calmer look: toolbar buttons keep their colours as a soft tint with plain icons, bigger icons and smaller labels; space instead of lines between groups; flatter cards; fainter board dots. Recycle and Trash float on the board’s bottom-left corner like Unsorted.",
+    "Top bar: zoom and snap, then the sync status, then Search and Tags, then Bugs and Settings. Favourites are at the top of Search (hover to peek, click to keep open). The board folder is in the sync menu; ? still opens the shortcuts."
+  ]],
   ["b153", [
     "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Loose lines and drawings don\u2019t come over yet."
   ]],
@@ -27766,12 +27833,6 @@ const PATCH_NOTES = [
   ]],
   ["b140", [
     "Import official content: reads the newer feats that start with \u201cAbility Score Increase\u201d (Bigby\u2019s, Fizban\u2019s, Planescape) and background pages that group several (Wildemount, Sword Coast). If pages still fail, the whole list shows with a Copy list button."
-  ]],
-  ["b139", [
-    "Import official content: fixed \u201cthe page answered 404\u201d (the wiki lists backgrounds and feats on its home page). Imports now save everything or nothing: if any page can\u2019t be read (after 3 tries), nothing is saved, the pages are named, and Retry failed pages tries just those. The same goes for each Import button."
-  ]],
-  ["b138", [
-    "Import official content: the buttons match Close, and \u201cPick items first\u201d is now \u201cChoose individual items\u2026\u201d (only needed to leave out single items)."
   ]],
 ];
 function renderPatchNotes(){
