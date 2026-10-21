@@ -3410,11 +3410,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   </button>
   <span class="barsep"></span>
   <div class="barSet">
-  <button class="barbtn iconbtn small" id="btnRecenter" title="Center the view on this board's content">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3.2 M12 18.3v3.2 M2.5 12h3.2 M18.3 12h3.2"/></svg>
-  </button>
   <button class="barbtn iconbtn" id="btnSnap" title="Snapping — cards line up with each other and the grid (Ctrl while dragging overrides)">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9h16 M4 15h16 M9 4v16 M15 4v16"/></svg>
+  </button>
+  <button class="barbtn iconbtn small" id="btnRecenter" title="Center the view on this board's content">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3.2 M12 18.3v3.2 M2.5 12h3.2 M18.3 12h3.2"/></svg>
   </button>
   <div id="zoomCtl">
   <button class="barbtn" id="zoomBtn" title="Zoom">
@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b156";
+window.BUILD = "b157";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6359,7 +6359,7 @@ function evalCell(rows, raw){
 }
 function buildTable(c, el){
   const head = document.createElement("div"); head.className = "tb-head";
-  const t = document.createElement("div"); t.className = "card-title"; t.textContent = c.title || "Sheet";
+  const t = document.createElement("div"); t.className = "card-title"; t.textContent = c.title || "Table";
   t.title = "Double-click to rename";
   const mk = (label, title, fn) => {
     const b = document.createElement("button"); b.className = "tb-btn";
@@ -8365,7 +8365,7 @@ function renderDrawer(){
     else if (c.type === "sheet") d.appendChild(document.createTextNode((c.sheet?.name || "New Character") + " (sheet)"));
     else if (c.type === "link") d.appendChild(document.createTextNode(c.title || c.url));
     else if (c.type === "todo") d.appendChild(document.createTextNode(c.title || "List"));
-    else if (c.type === "table") d.appendChild(document.createTextNode(c.title || "Sheet"));
+    else if (c.type === "table") d.appendChild(document.createTextNode(c.title || "Table"));
     else if (c.type === "widget") d.appendChild(document.createTextNode((WIDGET_KINDS[c.widget]?.name || "Widget") + (c.label ? " \u00b7 " + c.label : "")));
     else if (c.type === "board") d.appendChild(document.createTextNode(c.title || "Board"));
     wireDrawerDrag(d, c);
@@ -8756,7 +8756,7 @@ function addCard(type, wx, wy, extra={}, toUnsorted=false){
   if (type === "file"){ c.fileName = c.fileName || "File"; c.fileType = c.fileType || "";
                         c.fileSize = c.fileSize || 0; c.dataUrl = c.dataUrl || null; }
   if (type === "table"){
-    c.title = c.title || "Sheet";
+    c.title = c.title || "Table";
     c.rows = c.rows || [["", "", ""], ["", "", ""], ["", "", ""]];
   }
   if (type === "block"){
@@ -9750,7 +9750,7 @@ function enterEdit(c){
   else if (c.type === "todo")
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "List" }));
   else if (c.type === "table")
-    editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "Sheet" }));
+    editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "Table" }));
   else if (isContainer(c))
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: c.type === "grid" ? v : (v || "Column") }));
   else if (c.type === "image"){
@@ -13047,6 +13047,13 @@ function inkPathD(p){
 function inkPoints(st){ return Array.isArray(st?.p) ? st.p.map(Number).filter(Number.isFinite) : []; }
 function inkStrokeEl(st, i){
   const path = document.createElementNS(SVGNS, "path");
+  if (st.f){
+    /* a filled outline (how Milanote stores newer drawings) */
+    path.setAttribute("d", inkPathD(inkPoints(st)) + "Z");
+    path.setAttribute("fill", inkColourOk(st.c)); path.setAttribute("stroke", "none");
+    if (i != null) path.dataset.i = i;
+    return path;
+  }
   path.setAttribute("d", inkPathD(inkPoints(st)));
   path.setAttribute("stroke", inkColourOk(st.c));
   path.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3)));
@@ -13060,7 +13067,7 @@ function fillInkSvg(svg, ink, hit){
     svg.appendChild(inkStrokeEl(st, i));
     /* a drawing on the bare board is clicked by its lines; thin ones get a
        wider invisible line on top so they can still be picked up */
-    if (hit){ const h = inkStrokeEl(st, i); h.setAttribute("class", "ink-hit"); h.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3) + 12)); svg.appendChild(h); }
+    if (hit){ const h = inkStrokeEl({...st, f:undefined}, i); h.setAttribute("class", "ink-hit"); h.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3) + 12)); svg.appendChild(h); }
   });
 }
 function inkSvg(ink, hit){
@@ -13342,7 +13349,7 @@ function inkEraseAlong(L, ax, ay, bx, by){
       const reach = r + st.hw, b = st.box;
       if (Math.max(ax, bx) < b[0] - reach || Math.min(ax, bx) > b[2] + reach || Math.max(ay, by) < b[1] - reach || Math.min(ay, by) > b[3] + reach){ next.push(st); continue; }
       const p = st.wp;
-      if (L.tool === "erase"){
+      if (L.tool === "erase" || st.src.f){
         let touched = p.length === 2 && inkNear(L, p[0], p[1], ax, ay, bx, by, reach);
         for (let i = 0; !touched && i + 3 < p.length; i += 2){
           /* sample the stroke segment finely enough that the eraser can't slip between samples */
@@ -19698,7 +19705,7 @@ function mnPlain(doc){
 function milanoteToBoardFile(data, assets = {}){
   const E = data?.elements;
   if (!plainObject(E) || !E[data.root] || E[data.root].elementType !== "BOARD") throw new Error("That isn’t a CORKBORK export of a Milanote board.");
-  const report = {boards:0, cards:0, missingPictures:0, lines:0, drawings:0, comments:0, skipped:{}};
+  const report = {boards:0, cards:0, missingPictures:0, lines:0, drawings:0, comments:0, skipped:{}, kept:{}};
   /* comments arrive beside the elements; names come from the export's users list (names only) */
   const users = plainObject(data.users) ? data.users : {};
   const CMT_COLOURS = ["#C97D74", "#3B9ED0", "#56A36F", "#8B5CF6", "#E0792D", "#C33C84", "#2F9A9A"];
@@ -19761,19 +19768,28 @@ function milanoteToBoardFile(data, assets = {}){
       const doc = c.textContent;
       return {...base, type:"doc", title:String(c.title || "").slice(0, 200), html:mnHtml(doc), text:mnPlain(doc), w:150, h:160};
     }
-    if (type === "ANNOTATION"){
-      /* a Milanote drawing: its paths as one drawing card, in Milanote's own units */
+    if (type === "ANNOTATION" || type === "SKETCH"){
+      /* a Milanote drawing: its paths as one drawing card, in Milanote's own units. Older
+         drawings keep stroke points; newer ones only an SVG of filled outlines. */
       const dr = c.drawing || {}, paths = Array.isArray(dr.paths) ? dr.paths : [];
-      const vw = Number(dr.width) > 0 ? Number(dr.width) : 60, vh = Number(dr.height) > 0 ? Number(dr.height) : vw;
-      const s2 = paths.map(pp => ({c:mnColour(pp.color, MN_ACCENT) || "#2A2C2E", w:Math.max(0.5, (Number(pp.size) || 4) * 0.45),
+      const vb = String(dr.svg || "").match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+      let vw = Number(dr.width) > 0 ? Number(dr.width) : vb ? Number(vb[1]) : 60, vh = Number(dr.height) > 0 ? Number(dr.height) : vb ? Number(vb[2]) : vw;
+      let s2 = paths.map(pp => ({c:mnColour(pp.color, MN_ACCENT) || "#2A2C2E", w:Math.max(0.5, (Number(pp.size) || 4) * 0.45),
         p:(Array.isArray(pp.points) ? pp.points : []).flatMap(q => [Number(q?.[0]), Number(q?.[1])]).filter(Number.isFinite).map(v => Math.round(v * 10) / 10)}))
         .filter(st => st.p.length >= 2);
+      if (!s2.length && dr.svg){
+        s2 = [...String(dr.svg).matchAll(/<path\b([^>]*)>/g)].map(m => {
+          const fill = (m[1].match(/fill="([^"]*)"/) || [])[1], d = (m[1].match(/\bd="([^"]*)"/) || [])[1] || "";
+          const nums = (d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) || []).map(Number);
+          return {c:mnColour(fill, MN_ACCENT) || "#2A2C2E", f:1, p:inkSimplify(nums.slice(0, nums.length - nums.length % 2), vw / 600).map(v => Math.round(v * 10) / 10)};
+        }).filter(st => st.p.length >= 6);
+      }
       if (!s2.length){ skip("empty drawing"); return null; }
       const w = Math.round((Number(c.width) > 0 ? c.width : vw / MN_UNIT) * MN_UNIT);
       const h = Math.round(Number(c.height) > 0 ? c.height * MN_UNIT : w * vh / vw);
       report.drawings++;
       const card = {...base, type:"sketch", w, h, ink:{vw, vh, s:s2}};
-      if (c.transparent?.enabled === false) card.bg = "#FFFFFF";
+      if (type === "SKETCH" || c.transparent?.enabled === false) card.bg = mnColour(c.background?.color, MN_FILL) || "#FFFFFF";
       return card;
     }
     if (type === "COMMENT_THREAD"){
@@ -19782,6 +19798,14 @@ function milanoteToBoardFile(data, assets = {}){
       report.comments += msgs.length;
       return {...base, type:"comment", comments:msgs, w:280, h:110};
     }
+    if (type === "TABLE"){
+      const data = Array.isArray(c.tableContent?.data) ? c.tableContent.data : [];
+      const rows = data.map(r => (Array.isArray(r) ? r : []).map(cell => String(cell?.value ?? (cell?.tiptapContent ? mnPlain(cell.tiptapContent) : "") ?? "").slice(0, 2000)));
+      if (!rows.length){ skip("empty table"); return null; }
+      return {...base, type:"table", title:c.title || "", rows, w:width || 420, h:Math.max(80, 34 + rows.length * 28)};
+    }
+    if (type === "COLOR_SWATCH" && /^#[0-9a-f]{6}$/i.test(c.color?.value || ""))
+      return {...base, type:"palette", colors:[c.color.value.toUpperCase()], title:c.showCaption !== false && c.caption ? mnPlain(c.caption).slice(0, 120) : "", w:width || 170, h:150};
     if (type === "COLOR" || type === "COLOR_SWATCH" || type === "SWATCH"){
       const hexes = [...JSON.stringify(c).matchAll(/#[0-9a-f]{6}\b/gi)].map(m => m[0].toUpperCase());
       if (!hexes.length){ skip(type); return null; }
@@ -19844,7 +19868,13 @@ function milanoteToBoardFile(data, assets = {}){
     if (media?.url && asset(media.url)) return {...base, type:"file", fileName:media.filename || media.name || type.toLowerCase(), fileType:media.mime || "", fileSize:media.size || 0, dataUrl:asset(media.url), w:width || 280, h:150};
     const addr = safeWebUrl(c.link?.url || c.url || c.location?.url || c.mapUrl || media?.url || "");
     if (addr) return {...base, type:"link", url:addr, title:c.title || c.link?.title || c.location?.name || type.charAt(0) + type.slice(1).toLowerCase(), w:width || 280, h:120};
-    skip(type); return null;
+    /* never drop a card: what can't be rebuilt yet stays as a note with every
+       name, caption and address the export has, and the toast says so */
+    const said = [c.title, c.link?.title, c.location?.name, c.location?.address, c.address, c.caption && mnPlain(c.caption), c.textContent && mnPlain(c.textContent)]
+      .filter(v => typeof v === "string" && v.trim()).map(v => v.trim().slice(0, 500));
+    const kind = type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ");
+    report.kept[kind] = (report.kept[kind] || 0) + 1;
+    return {...base, type:"note", w:width || 260, h:100, text:"Milanote " + kind.toLowerCase() + " card" + (said.length ? ": " + [...new Set(said)].join(" \u2014 ") : "") + " (CORKBORK can\u2019t show this kind yet)"};
   };
   const makeBoard = el => {
     const id = bid(el.id); if (boards[id]) return;
@@ -19925,11 +19955,11 @@ async function importMilanoteFiles(files){
   for (const p of parts) Object.assign(assets, p.assets || {});
   const file = milanoteToBoardFile(main, assets);
   const id = importBoardData(file, {fresh:true});
-  const rep = file.report, skipped = Object.entries(rep.skipped).map(([k, n]) => n + " " + k.toLowerCase().replace(/_/g, " ") + (n > 1 ? "s" : "")).join(", ");
+  const rep = file.report, kept = Object.entries(rep.kept || {}).map(([k, n]) => n + " " + k.toLowerCase() + (n > 1 ? " cards" : " card")).join(", "), skipped = Object.entries(rep.skipped).map(([k, n]) => n + " " + k.toLowerCase().replace(/_/g, " ") + (n > 1 ? "s" : "")).join(", ");
   toast("Imported “" + file.title + "” from Milanote: " + rep.boards + " board" + (rep.boards === 1 ? "" : "s") + ", " + rep.cards + " cards" +
     (rep.lines ? ", " + rep.lines + " lines" : "") + (rep.drawings ? ", " + rep.drawings + " drawings" : "") + (rep.comments ? ", " + rep.comments + " comments" : "") +
     "." + (rep.missingPictures ? " " + rep.missingPictures + " pictures weren’t in the export (shown as notes)." : "") +
-    (skipped ? " Left out: " + skipped + "." : ""), 14000);
+    (kept ? " Kept as notes (CORKBORK can\u2019t show them yet): " + kept + "." : "") + (skipped ? " Left out: " + skipped + "." : ""), 14000);
   return {id, report:rep};
 }
 /* What the person pastes into their Milanote tab's console. Kept as plain
@@ -19973,7 +20003,7 @@ const MILANOTE_EXPORT_SCRIPT = String.raw`(async () => {
   const urls = new Set();
   for (const el of Object.values(elements)){
     const c = el.content || {};
-    for (const u of [c.image?.original || c.image?.huge || c.image?.large, c.file?.url, el.elementType === "LINK" ? (c.image?.regular || c.image?.large) : null]) if (u) urls.add(u);
+    for (const u of [c.image?.original || c.image?.huge || c.image?.large, c.file?.url, c.media?.url, c.audio?.url, c.video?.url, el.elementType === "LINK" ? (c.image?.regular || c.image?.large) : null]) if (u) urls.add(u);
   }
   const title = (elements[root]?.content?.title || "milanote").replace(/[\\/:*?"<>|]+/g, "_");
   let assets = {}, size = 0, part = 0, n = 0;
@@ -28960,6 +28990,10 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b157", [
+    "Top bar: Snap, then Centre view, then Zoom. Tables are titled Table.",
+    "Import from Milanote: newer drawings and sketch pages, tables, and colour swatches (with their names) now come in. A card CORKBORK can\u2019t show yet (like a map) comes in as a note with its name and address instead of being left out."
+  ]],
   ["b156", [
     "Line (toolbar, under Draw): drag on the board to draw a line; drop an end on a card and it stays attached when the card moves. Select a line to drag its ends or bend it from the middle, and to set its colour, arrows, label, dashes and weight in the toolbar. The Draw button now works (only P did before).",
     "Under More: Document (a card with a title and word count that opens full page), Colours (a palette; + adds a colour next to the others) and Comment. Comment on any card from right-click › More…; a numbered pin opens the thread, with replies and Resolve.",
@@ -28974,7 +29008,7 @@ const PATCH_NOTES = [
     "Top bar: zoom and snap, then the sync status, then Search and Tags, then Bugs and Settings. Favourites are at the top of Search (hover to peek, click to keep open). The board folder is in the sync menu; ? still opens the shortcuts."
   ]],
   ["b153", [
-    "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Loose lines and drawings don\u2019t come over yet."
+    "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Lines, drawings and comments come over too. It lands as one new board on the board you have open; nothing already there changes."
   ]],
   ["b152", [
     "Shared boards: whatever someone else is editing, moving or just changed is outlined in their colour with their name on top. D&D sheets: Sheet Colors sets the page colour and the accent to any colour; new sheets open in the Beyond view, which is as tall as its content and moves like any card (click once to use its buttons).",
@@ -29009,9 +29043,6 @@ const PATCH_NOTES = [
   ]],
   ["b144", [
     "D&D sheet: changing your race, background, class or feats now updates every proficiency, replacing ticks you set by hand. On Abilities \u203a Saving Throws, Skills & Proficiencies, ticks set by hand show in blue (with Undo), and each skill says where it comes from."
-  ]],
-  ["b143", [
-    "D&D sheet: a class's spell list now hides spells that don't say which classes cast them (imported before b142); Every class's spells still shows them. Import official content now fetches those spells again instead of skipping them, so they get their class lists."
   ]],
 ];
 function renderPatchNotes(){
