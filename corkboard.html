@@ -851,7 +851,7 @@ body.in-sheet #welcomeBar{display:none;}
 .bz-sep{width:1px; height:26px; background:#C9B08A; margin:0 8px;}
 .bz-btn{font:700 11px Verdana,sans-serif; padding:6px 11px; border:1px solid #C9B08A; border-radius:5px; background:#EAD9BC; color:#5A4A2E; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; cursor:pointer;}
 .bz-btn:hover{background:#DCC69E;}
-.bz-btn.p{background:var(--acc); color:#F4ECDD; border-color:var(--acc);}
+.bz-btn.p{background:var(--acc); color:var(--acc-ink, #F4ECDD); border-color:var(--acc);}
 .bz-btn.o{background:transparent; border-color:#8A7550;}
 .bz-btn.x{background:none; border:none; font-size:16px; padding:4px 6px;}
 .bz-btn.heal{background:#e3efe0; color:#3F7A4A; border-color:#9cc49a; justify-content:center; padding:2px 6px; font-size:9.5px;}
@@ -898,17 +898,17 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-ska{font-size:9px; color:#8A7550; width:24px;}
 .bz-skn{flex:1;}
 .bz-roll{font:700 11.5px Verdana; border:1px solid #C9B08A; border-radius:4px; background:#F4ECDD; color:#2C2415; padding:1px 6px; min-width:28px; cursor:pointer;}
-.bz-roll:hover{background:var(--acc); color:#F4ECDD; border-color:var(--acc);}
+.bz-roll:hover{background:var(--acc); color:var(--acc-ink, #F4ECDD); border-color:var(--acc);}
 .bz-legend{font:10px Verdana; color:#8A7550; margin-top:5px; display:flex; gap:9px; flex-wrap:wrap; align-items:center;}
 .bz-legend span{display:flex; gap:4px; align-items:center;}
 .bz-tabsbox{min-height:420px; overflow:hidden;}
 .bz-tabs{display:flex; gap:2px; border-bottom:2px solid var(--acc); padding:6px 4px 0; flex-wrap:wrap;}
 .bz-tab{font:700 11px Verdana; padding:7px 10px; color:#8A7550; border-radius:5px 5px 0 0; background:none; border:none; cursor:pointer;}
-.bz-tab.on{background:var(--acc); color:#F4ECDD;}
+.bz-tab.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 .bz-panel{padding:8px 10px;}
 .bz-filters{display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap;}
 .bz-fl{font:700 9.5px Verdana; padding:3px 8px; border-radius:10px; background:#EAD9BC; color:#5A4A2E; border:none; cursor:pointer;}
-.bz-fl.on{background:var(--acc); color:#F4ECDD;}
+.bz-fl.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 .bz-t{width:100%; border-collapse:collapse; font:11.5px Verdana;}
 .bz-t th{font-size:8px; letter-spacing:.06em; text-transform:uppercase; color:#8A7550; text-align:left; padding:3px 5px; border-bottom:1px solid #D8C7A5;}
 .bz-t td{padding:4px 5px; border-bottom:1px solid #EADFC9; vertical-align:middle;}
@@ -920,7 +920,7 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-chips{display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-top:9px;}
 .bz-chips .bz-lab{margin-right:4px;}
 .bz-chip{font:11px Verdana; border:1px solid #C9B08A; border-radius:10px; padding:2px 8px; background:#FBF6EC; color:#2C2415; cursor:pointer;}
-.bz-chip:hover{background:var(--acc); color:#F4ECDD;}
+.bz-chip:hover{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 #bzPop{position:fixed; z-index:178; width:300px; background:#FBF6EC; color:#2C2415; border:1px solid #C9B08A; border-radius:7px; box-shadow:0 10px 26px rgba(0,0,0,.35); padding:9px 11px; font:12px/1.45 Georgia;}
 #bzPop b{display:block; font-size:14px; margin-bottom:3px;}
 .bz-res{margin-top:10px; font:11.5px Verdana;}
@@ -937,10 +937,10 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-hr{border:none; border-top:1px solid #D8C7A5; margin:8px 0;}
 .bz-spst{display:flex; gap:24px; justify-content:center; text-align:center; margin-bottom:6px;}
 .bz-spst b{font:700 17px Georgia; display:block;}
-.bz-lvlh{display:flex; align-items:center; gap:8px; color:var(--acc); font:700 11px Verdana; letter-spacing:.05em; text-transform:uppercase; margin:9px 0 2px; border-bottom:1.5px solid var(--acc); padding-bottom:2px;}
+.bz-lvlh{display:flex; align-items:center; gap:8px; color:var(--acc-text, var(--acc)); font:700 11px Verdana; letter-spacing:.05em; text-transform:uppercase; margin:9px 0 2px; border-bottom:1.5px solid var(--acc); padding-bottom:2px;}
 .bz-slots{margin-left:auto; display:flex; gap:3px; align-items:center; font-size:9px;}
 .bz-cast{width:44px;}
-.bz-castb{font:700 8.5px Verdana; background:var(--acc); color:#F4ECDD; border:none; border-radius:3px; padding:3px 6px; cursor:pointer; letter-spacing:.04em; text-transform:uppercase;}
+.bz-castb{font:700 8.5px Verdana; background:var(--acc); color:var(--acc-ink, #F4ECDD); border:none; border-radius:3px; padding:3px 6px; cursor:pointer; letter-spacing:.04em; text-transform:uppercase;}
 .bz-atw{font:700 7.5px Verdana; color:#8A7550; letter-spacing:.04em;}
 .bz-spt td:nth-child(3), .bz-spt td:nth-child(4){white-space:nowrap;}
 @media (max-width:900px){
@@ -1110,7 +1110,7 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 /* the sheet: scores on top, inventory */
 .bz-abbig{font:700 24px Georgia; margin-top:2px;}
 .bz-roll.off{cursor:default;} .bz-roll.off:hover{background:#F4ECDD; color:#2C2415; border-color:#C9B08A;}
-.bz-castb.on{background:var(--acc); color:#F4ECDD;}
+.bz-castb.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 .bz-inv td{vertical-align:middle;}
 .bz-gpt{align-self:flex-end;}
 .bz-carry{margin:6px 0;} .bz-carry.over{color:#9a3a2c;}
@@ -1134,6 +1134,7 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 .se-zoom{width:220px; margin-top:6px;}
 .se-swatches{display:flex; flex-wrap:wrap; gap:6px;}
 .se-sw{width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #C9B08A; cursor:pointer;}
+.bz-btn .se-sw{width:14px; height:14px; display:inline-block; vertical-align:-2px; margin-right:6px; border-width:1px;}
 .se-sw.on{box-shadow:0 0 0 2.5px #2C2415;}
 .se-meth{display:flex; gap:5px; flex-wrap:wrap;}
 .se-dice{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
@@ -1192,7 +1193,7 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 .se-lvrow > .bz-btn{margin-top:16px;}
 .se-abrow{flex-wrap:wrap; gap:8px;}
 .se-abrow input{width:52px; margin-left:3px; background:#fff; border:1px solid #C9B08A; border-radius:4px; padding:3px; text-align:center;}
-.se-linkbtn{background:none; border:none; color:var(--acc); text-decoration:underline; cursor:pointer; font:inherit; padding:0;}
+.se-linkbtn{background:none; border:none; color:var(--acc-text, var(--acc)); text-decoration:underline; cursor:pointer; font:inherit; padding:0;}
 .se-asgc input.se-asgi{font:13px Georgia; padding:2px 0; background:#FBF6EC;}
 .se-skrow.cls{background:#F7F0E1;}
 .se-hand, .se-hand b{color:#2F7FD0 !important;} .se-hand .bz-dot{border-color:#2F7FD0;} .se-hand .bz-dot.on, .se-hand .bz-dot.exp{background:#2F7FD0;}
@@ -4371,7 +4372,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b149";
+window.BUILD = "b150";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -8340,12 +8341,23 @@ function sanitizeHtmlInner(html){
       const imgSrc = el.tagName === "IMG" ? el.getAttribute("src") : null;
       const imgOk = imgSrc && /^data:image\//i.test(imgSrc);
       const st = el.getAttribute("style");
-      let col = "", bg = "", fs = "";
-      if (st){ col = el.style.color; bg = el.style.backgroundColor; fs = el.style.fontSize; }
+      let col = "", bg = "", fs = "", fw = "", fst = "", td = "";
+      if (st){
+        col = el.style.color; bg = el.style.backgroundColor; fs = el.style.fontSize;
+        /* the editor writes bold/italic/underline as styled spans (styleWithCSS),
+           so those three survive too, from a fixed list of values (U-008) */
+        fw = el.style.fontWeight; fst = el.style.fontStyle; td = el.style.textDecorationLine || el.style.textDecoration;
+      }
       for (const a of [...el.attributes]) el.removeAttribute(a.name);
       if (col) el.style.color = col;
       if (bg) el.style.backgroundColor = bg;
       if (fs) el.style.fontSize = fs;
+      if (/^(bold|bolder|[6-9]00)$/.test(fw)) el.style.fontWeight = "bold";
+      else if (/^(normal|[1-4]00)$/.test(fw)) el.style.fontWeight = "normal";
+      if (fst === "italic" || fst === "oblique") el.style.fontStyle = "italic";
+      else if (fst === "normal") el.style.fontStyle = "normal";
+      const decos = String(td || "").split(/\s+/).filter(v => v === "underline" || v === "line-through" || v === "none");
+      if (decos.length) el.style.textDecorationLine = decos.join(" ");
       if (el.tagName === "IMG"){
         if (!imgOk){ el.remove(); continue; }
         el.setAttribute("src", imgSrc);
@@ -14213,13 +14225,15 @@ async function addFileCard(file, wx, wy, toUnsorted){
       return c;
     }
   }
-  const archive = await archiveHandle();
+  const archiveDir = await archiveHandle();
+  const archive = archiveDir && await archivePermission(archiveDir, true) ? archiveDir : null;
+  if (archiveDir && !archive) archiveAccessHint();
   if (archive){
     const c = addCard("file", wx, wy, {
       fileName:file.name, fileType:file.type || "", fileSize:file.size, dataUrl:null
     }, !!toUnsorted);
     try {
-      await archiveStoreCardSource(c, file, archive, true);
+      await archiveStoreCardSource(c, file, archive, false);
       markDirty(); renderAll();
       if (toUnsorted) toast(file.name + " added to Unsorted and stored in the master archive.");
       return c;
@@ -14422,7 +14436,10 @@ async function addImageCard(blob, wx, wy, toUnsorted){
   try {
     const zipped = await offerLargeImportZip([blob],blob.name || "image",false,[]);
     if (zipped) return addFileCard(zipped,wx,wy,toUnsorted);
-    const archive = await archiveHandle();
+    /* without folder access right now, the picture is kept in the browser and
+       copied to the master archive at its next update (U-009, U-010) */
+    const archiveDir = await archiveHandle();
+    const archive = archiveDir && await archivePermission(archiveDir, true) ? archiveDir : null;
     const { dataUrl, naturalW, naturalH } = archive
       ? await processArchiveImagePreview(blob) : await processImageBlob(blob);
     if (!await storagePreflight(Math.ceil(dataUrl.length * .75), blob.name || "image")) return null;
@@ -14430,10 +14447,10 @@ async function addImageCard(blob, wx, wy, toUnsorted){
     const c = addCard("image", wx, wy, { dataUrl, caption:"", naturalW, naturalH,
       fileName:blob.name || "Image",fileType:blob.type || "",fileSize:blob.size || 0 }, toUnsorted);
     if (archive){
-      try { await archiveStoreCardSource(c, blob, archive, true); }
+      try { await archiveStoreCardSource(c, blob, archive, false); }
       catch (err){ detachEverywhere([c.id]); delete state.cards[c.id]; markDirty(); renderAll();
         toast("Could not store that image in the master archive: " + (err?.message || "unknown error"), 9000); return null; }
-    }
+    } else if (archiveDir) archiveAccessHint();
     patchCard(c.id, { w: sz.w, h: sz.h });
     markDirty(); renderAll(); return c;
   } catch(e){ toast("Couldn't read that image (" + (blob.type || "unknown type") + ")."); }
@@ -16107,8 +16124,18 @@ async function archivePermission(handle, ask){
   if (!handle) return false;
   const opts = { mode:"readwrite" };
   if (!handle.queryPermission) return true;
-  if (await handle.queryPermission(opts) === "granted") return true;
-  return !!ask && await handle.requestPermission(opts) === "granted";
+  try { if (await handle.queryPermission(opts) === "granted") return true; } catch (_) { return false; }
+  if (!ask) return false;
+  /* Chrome only lets a click ask for folder access; after a file picker or
+     any wait the click is used up and asking throws (U-010) */
+  if (navigator.userActivation && !navigator.userActivation.isActive) return false;
+  try { return await handle.requestPermission(opts) === "granted"; } catch (_) { return false; }
+}
+/* once per session: the folder needs a click to be allowed again */
+let archiveHintShown = false;
+function archiveAccessHint(){
+  if (archiveHintShown) return; archiveHintShown = true;
+  toast("Added. The master archive folder needs your OK again (browsers ask after a restart): Settings \u203a Your data \u203a Update archive folder copies it there.", 9000);
 }
 async function archiveHandle(){ try { return await idbGet(ARCHIVE_DIR_KEY); } catch (_) { return null; } }
 async function resumeMasterArchiveMigration(){
@@ -19320,6 +19347,18 @@ function sheetPatch(cardId, patch, {undo = true} = {}){
 }
 /* a synced or pasted sheet could carry anything here; only a plain colour is used */
 function sheetAccent(sh){ return /^#[0-9a-f]{6}$/i.test(sh?.accent || "") ? sh.accent : "#5A4A2E"; }
+/* Any colour can be the sheet's: light ones (pastels, the lighter jewels) get
+   dark writing on them, and a darker shade wherever the colour itself is text
+   on the parchment. */
+function sheetAccentVars(el, sh){
+  const hex = sheetAccent(sh), n = parseInt(hex.slice(1), 16);
+  const rgb = [n >> 16, (n >> 8) & 255, n & 255];
+  const lum = rgb.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0);
+  const light = lum > .32;
+  el.style.setProperty("--acc", hex);
+  el.style.setProperty("--acc-ink", light ? "#2C2415" : "#F4ECDD");
+  el.style.setProperty("--acc-text", light ? "#" + rgb.map(v => Math.round(v * .45).toString(16).padStart(2, "0")).join("") : hex);
+}
 function sheetHp(sh){
   const mx = sheetMaxHp(sh);
   return {max:mx, cur:sh.curHp === "" || sh.curHp == null ? mx : Number(sh.curHp) || 0, temp:Number(sh.tempHp) || 0};
@@ -19431,7 +19470,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   const pb = sheetProf(sh), st = spellStats(sh), sp = sheetSpells(sh), prefs = sheetPrefs(sh);
   bzDice = prefs.dice;
   const root = bzEl("div", "bz" + (face ? " bz-face" : "") + (prefs.abDisplay === "scores" ? " bz-scoretop" : ""));
-  root.style.setProperty("--acc", sheetAccent(sh));
+  sheetAccentVars(root, sh);
 
   /* ---- header ---- */
   const head = bzEl("div", "bz-head");
@@ -21545,12 +21584,27 @@ function parseRaceText(text){
   for (const ch of chunks){
     /* segments: a short title line followed by traits starts a new one */
     const segs = [{head:"", traits:[]}];
+    const isHead = l => !isTrait(l) && l.length <= 40 && !/[.:!?]$/.test(l) && isName(l);
+    const isAsiName = n => /^ability score increases?$/i.test(n);
+    /* a heading with a paragraph before its traits ("Envoy" / "Envoys are designed…", U-011):
+       remembered, and it names the next segment when a second Ability Score Increase starts one */
+    let pend = null;
     ch.lines.forEach((l, i) => {
       if (!l) return;
       const next = ch.lines.slice(i + 1).find(Boolean) || "";
-      if (!isTrait(l) && l.length <= 40 && !/[.:!?]$/.test(l) && isName(l) && isTrait(next)){ segs.push({head:l, traits:[]}); return; }
-      const m = traitRe.exec(l), seg = segs[segs.length - 1];
-      if (m && isName(m[1])) seg.traits.push({n:m[1].trim(), d:m[2].trim()});
+      if (isHead(l) && isTrait(next)){ segs.push({head:l, traits:[]}); pend = null; return; }
+      let seg = segs[segs.length - 1];
+      const last = seg.traits[seg.traits.length - 1];
+      if (isHead(l)) pend = {head:l, t:last || null, len:last ? last.d.length : 0};
+      const m = traitRe.exec(l);
+      if (m && isName(m[1])){
+        if (isAsiName(m[1].trim()) && seg.traits.some(t => isAsiName(t.n))){
+          if (pend?.t) pend.t.d = pend.t.d.slice(0, pend.len);
+          seg = {head:pend?.head || base + " variant " + segs.length, traits:[]}; segs.push(seg);
+        }
+        pend = null;
+        seg.traits.push({n:m[1].trim(), d:m[2].trim()});
+      }
       else if (seg.traits.length && seg.traits[seg.traits.length - 1].d.length < 4000 && !/^(source|back to|see also)/i.test(l)) seg.traits[seg.traits.length - 1].d += "\n" + l;
     });
     const hasAsi = s => s.traits.some(t => /^ability score increases?$/i.test(t.n));
@@ -22793,7 +22847,7 @@ function renderSheetEditor(){
   scroll.classList.toggle("bz-host", seMode === "view");
   if (seMode === "view"){ buildBeyondSheet(card(seCardId), scroll); scroll.scrollTop = keep; return; }
   const wrap = bzEl("div", "se-ed");
-  wrap.style.setProperty("--acc", sheetAccent(sh));
+  sheetAccentVars(wrap, sh);
   /* the step bar, with import and done on the right */
   const head = bzEl("div", "se-edhead"), steps = bzEl("nav", "se-steps"), needs = seStepNeeds(sh);
   for (const [id, label] of SE_STEPS){
@@ -22854,15 +22908,33 @@ function seHome(page, sh){
     side.append(rm, bzEl("div", "se-hint", "Drag the picture and use the slider to choose the square that becomes the headshot. The whole image shows on the board's sheet."));
   }
   row.appendChild(side); im.body.appendChild(row); page.appendChild(im.el);
-  const col = seCard("colour", {title:"Sheet colour", open:false});
-  const sw = bzEl("div", "se-swatches");
-  for (const hex of ["#5A4A2E", ...SHEET_ACCENTS]){
-    const b = bzEl("button", "se-sw" + ((sh.accent || "#5A4A2E") === hex ? " on" : "")); b.style.background = hex;
-    b.title = hex === "#5A4A2E" ? "Parchment brown (default)" : hex;
-    b.addEventListener("click", () => { seSet({accent:hex === "#5A4A2E" ? "" : hex}); renderSheetEditor(); });
-    sw.appendChild(b);
-  }
-  col.body.appendChild(sw); page.appendChild(col.el);
+  const col = seCard("colour", {title:"Sheet colour", sub:"Headings, tabs and buttons on the sheet", open:false});
+  const cur = (sh.accent || "#5A4A2E").toUpperCase();
+  const setAcc = hex => { seSet({accent:hex === "#5A4A2E" ? "" : hex}); renderSheetEditor(); };
+  const swRow = (label, list) => {
+    col.body.appendChild(bzEl("div", "se-hint", label));
+    const sw = bzEl("div", "se-swatches");
+    for (const hex of list){
+      const b = bzEl("button", "se-sw" + (cur === hex.toUpperCase() ? " on" : "")); b.style.background = hex;
+      b.title = hex === "#5A4A2E" ? "Parchment brown (default)" : hex;
+      b.addEventListener("click", () => setAcc(hex));
+      sw.appendChild(b);
+    }
+    col.body.appendChild(sw);
+  };
+  /* the same colours as CORKBORK's colour picker: the light jewels first */
+  swRow("Light", ["#5A4A2E", ...SHEET_ACCENTS.slice(8)]);
+  swRow("Deep", SHEET_ACCENTS.slice(0, 8));
+  const more = bzEl("button", "bz-btn", "More colours\u2026");
+  const shown = new Set(["#5A4A2E", ...SHEET_ACCENTS].map(x => x.toUpperCase()));
+  if (!shown.has(cur)){ const mine = bzEl("span", "se-sw on"); mine.style.background = cur; mine.title = cur + " (your colour)"; more.prepend(mine); }
+  more.addEventListener("click", () => openColorPicker({current:sh.accent || "#5A4A2E", onPick:v => {
+    if (!/^#[0-9a-f]{6}$/i.test(v || "")){ toast("Pick a plain colour for the sheet (not a gradient)."); return; }
+    setAcc(v);
+  }}));
+  const moreRow = bzEl("div", "se-swatches"); moreRow.appendChild(more);
+  col.body.append(moreRow, bzEl("div", "se-hint", "More colours has every palette, your own palettes, any colour by code and an eyedropper. Light colours get dark writing so they stay readable."));
+  page.appendChild(col.el);
 
   const box = bzEl("div", "se-prefs");
   box.appendChild(bzEl("h3", "se-h", "Character Preferences"));
@@ -27229,6 +27301,11 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b150", [
+    "Fixes from testing: bold, italic and underline in notes stay after you finish typing. The Image and Upload tools work again when the master archive folder needs your OK after a restart (no more \u201cUser activation is required\u201d error); what you add is kept and copied to the folder at its next update.",
+    "D&D sheet colour (Edit character \u203a Home): light and deep rows of CORKBORK\u2019s jewel colours, and More colours\u2026 opens the full picker (every palette, your own palettes, any colour by code). Light colours get dark writing so the sheet stays readable.",
+    "Import: a race whose subraces have a paragraph before their traits (Warforged, Unearthed Arcana: Envoy, Juggernaut, Skirmisher) now offers them as choices instead of giving you all of them."
+  ]],
   ["b149", [
     "Share live: the share button (or right-click a board \u203a Share live\u2026) gives an edit link and a view-only link. The board opens for whoever you send one to, and whatever anyone changes shows up for everyone in about a second: cards slide as they\u2019re dragged, text appears as it\u2019s typed, and a name tag shows who is editing what. It stays in the owner\u2019s Google Drive, never the guest\u2019s.",
     "Shared boards are encrypted with a key that\u2019s only in the link, so the server can\u2019t read them. They work offline and catch up when you\u2019re back; if two people change the same text, the other version is kept as a conflict copy. The owner can replace a link or stop sharing at any time.",
@@ -27283,11 +27360,6 @@ const PATCH_NOTES = [
   ]],
   ["b134", [
     "D&D sheet: the Jack of All Trades tick box is gone. It now comes only from a class that has the feature (Bard from 2nd level, or an imported class or subclass that lists it), and Class & level says so when it applies."
-  ]],
-  ["b133", [
-    "D&D sheet, checked against the 5e rules: Short rest now lets you spend hit dice (roll + CON), and Long rest gives back half of them. At 0 hit points the sheet tracks death saves (roll, 1s and 20s, damage at 0, instant death from massive damage, healing clears them).",
-    "Fixes: proficiency stops at +6; Paladins and Rangers cast from 2nd level; multiclassing checks the scores of your current classes too; Hill Dwarf and Draconic sorcerers get their extra hit point per level; a monk's unarmed strike uses martial arts; Eldritch Blast shows beams instead of bigger dice; casters with two abilities show each DC.",
-    "New hints: unarmoured AC (Unarmored Defense, Draconic Resilience) when no AC is typed, monk and barbarian speed bonuses, Rogue and Bard expertise to pick, a skill given twice, and the level your XP reaches."
   ]],
 ];
 function renderPatchNotes(){
