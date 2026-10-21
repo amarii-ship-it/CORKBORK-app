@@ -3560,7 +3560,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <button id="mbTimer" title="Writing sprint timer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V9 M9 2h6 M18 6l1.5-1.5"/></svg>
       </button>
-      <button id="mbExport" title="Export all images on this board (.zip)">
+      <button id="mbExport" title="Share: export this board, its images, or import a board">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4 M8 8l4-4 4 4 M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
       </button>
     </div>
@@ -4342,7 +4342,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b147";
+window.BUILD = "b148";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -11817,6 +11817,7 @@ function openCtx(x, y, c){
     add("Open", () => openBoard(c.boardId));
     add("Create shortcut", () => createShortcut(c));
     add("Export images (.zip)", () => exportBoardImages(c.boardId));
+    add("Export board (to send)\u2026", () => exportBoardFile(c.boardId));
     add("Edit… (title, icon, color)", () => openBoardDialog(c));
     if (board(c.boardId)) add(boardPrivacyInherited(c.boardId) ? "\u{1F512} Private (inside a private board)"
       : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
@@ -18244,8 +18245,117 @@ async function exportBoardImages(boardId){
     return true;
   } catch (err){ toast("Could not make the zip: " + err.message, 8000); return false; }
 }
-/* ---- export the current board's images as a zip ---- */
-$("#mbExport").addEventListener("click", () => exportBoardImages(currentBoardId));
+/* ---- send a board to someone: one .corkboard file, and bring one in ----
+   The file holds the board, everything on it and its sub-boards, with every
+   picture and attachment inside (originals kept in Drive or the archive
+   folder are fetched and put in). Importing adds it as a new board on the
+   board you're looking at, with new ids, tags matched by name, and cleaned
+   like anything else from outside; nothing else in your workspace changes. */
+const BOARD_FILE_FORMAT = "corkbork-board";
+const blobToDataUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+async function boardFileData(boardId){
+  const root = board(boardId); if (!root) throw new Error("That board no longer exists.");
+  const boards = {}, cards = {}, labels = {};
+  const copy = v => JSON.parse(JSON.stringify(v));
+  const walkCard = cid => {
+    const c = card(cid); if (!c || cards[cid]) return;
+    cards[cid] = copy(c);
+    for (const k of [...(c.childIds || []), ...(c.attachedIds || [])]) walkCard(k);
+    if (c.type === "board" && !c.shortcut) walkBoard(c.boardId);
+    for (const l of c.labelIds || []) if (state.labels?.[l]) labels[l] = {...state.labels[l]};
+  };
+  const walkBoard = bid => {
+    const b = board(bid); if (!b || boards[bid]) return;
+    boards[bid] = copy({...b, parentId:bid === boardId ? null : b.parentId});
+    for (const cid of [...(b.cardIds || []), ...(b.unsortedIds || [])]) walkCard(cid);
+  };
+  walkBoard(boardId);
+  /* shortcuts to boards that aren't in the file can't come along */
+  let dropped = 0;
+  for (const [id, c] of Object.entries(cards)) if (c.type === "board" && !boards[c.boardId]){ delete cards[id]; dropped++; }
+  const keep = list => (list || []).filter(id => cards[id]);
+  for (const b of Object.values(boards)){ b.cardIds = keep(b.cardIds); b.unsortedIds = keep(b.unsortedIds); if (Array.isArray(b.connectors)) b.connectors = b.connectors.filter(k => cards[k.from] && cards[k.to]); }
+  for (const c of Object.values(cards)){
+    for (const k of ["childIds", "attachedIds"]) if (c[k]) c[k] = keep(c[k]);
+    if (Array.isArray(c.relations)) c.relations = c.relations.filter(r => cards[r.id]);
+  }
+  /* every original goes in the file itself */
+  const missing = [];
+  for (const c of Object.values(cards)){
+    if (!c.archiveRef && !c.driveRef) continue;
+    try { c.dataUrl = await blobToDataUrl(await cardSourceBlob(card(c.id))); delete c.archiveRef; delete c.driveRef; }
+    catch (_){ missing.push(c.fileName || c.caption || c.title || "a file"); }
+  }
+  const look = Object.values(state.cards).find(c => c.type === "board" && !c.shortcut && c.boardId === boardId);
+  return {format:BOARD_FILE_FORMAT, version:1, build:window.BUILD || "", exportedAt:new Date().toISOString(), title:root.title || "Board",
+    root:boardId, boards, cards, labels, look:look ? {icon:look.icon, iconTone:look.iconTone, accent:look.accent, w:look.w, h:look.h} : null, dropped, missing};
+}
+async function exportBoardFile(boardId){
+  toast("Packing the board\u2026", 4000);
+  let data;
+  try { data = await boardFileData(boardId); } catch (e){ toast(e.message, 7000); return false; }
+  /* all or nothing: a file missing a picture would arrive broken */
+  if (data.missing.length){ toast("Not exported: " + data.missing.length + " file" + (data.missing.length > 1 ? "s" : "") + " couldn\u2019t be read (" + data.missing.slice(0, 3).join(", ") + (data.missing.length > 3 ? "\u2026" : "") + "). Open them once while online, then try again.", 10000); return false; }
+  const v = validateWorkspace({schemaVersion:1, rootBoardId:data.root, boards:data.boards, cards:data.cards, labels:data.labels, settings:{}});
+  if (!v.ok){ toast("Not exported: the board has a problem (" + v.errors[0] + ").", 9000); return false; }
+  const {missing, dropped, ...file} = data;
+  downloadBlob(new Blob([JSON.stringify(file)], {type:"application/json"}), String(data.title).replace(/[\\/:*?"<>|]+/g, "_").trim() + ".corkboard");
+  toast("Exported \u201c" + data.title + "\u201d: " + Object.keys(data.cards).length + " cards" + (Object.keys(data.boards).length > 1 ? " on " + Object.keys(data.boards).length + " boards" : "") + "." + (dropped ? " " + dropped + " shortcut" + (dropped > 1 ? "s" : "") + " to boards outside it left out." : "") + " Send the file; they use Import a board.", 9000);
+  return true;
+}
+/* add a board file to the board you're on; returns the new board card's id */
+function importBoardData(data){
+  if (!data || data.format !== BOARD_FILE_FORMAT || !plainObject(data.boards) || !plainObject(data.cards) || !data.boards[data.root]) throw new Error("That isn\u2019t a CORKBORK board file.");
+  if (Number(data.version) > 1) throw new Error("That board file is from a newer CORKBORK. Update this one (close all its tabs and reopen) and try again.");
+  const ws = scrubWorkspace({schemaVersion:1, rootBoardId:data.root, boards:JSON.parse(JSON.stringify(data.boards)), cards:JSON.parse(JSON.stringify(data.cards)), labels:plainObject(data.labels) ? JSON.parse(JSON.stringify(data.labels)) : {}, settings:{}});
+  ws.boards[data.root].parentId = null;
+  const v = validateWorkspace(ws);
+  if (!v.ok) throw new Error("That board file is damaged (" + v.errors[0] + ").");
+  pushUndo();
+  const bMap = {}, cMap = {}, lMap = {};
+  for (const id of Object.keys(ws.boards)) bMap[id] = uid("b");
+  for (const id of Object.keys(ws.cards)) cMap[id] = uid("c");
+  for (const [id, l] of Object.entries(ws.labels)){ const name = String(l?.name || "").trim().slice(0, 80); if (!name) continue; const hit = findTagByName(name); if (hit) lMap[id] = hit.id; else { const nid = uid("l"); state.labels[nid] = {id:nid, name, color:safeCssColor(l.color) || ACCENTS[0]}; lMap[id] = nid; } }
+  const t = now(), mapC = list => (list || []).map(id => cMap[id]).filter(Boolean);
+  for (const [id, b] of Object.entries(ws.boards)){
+    state.boards[bMap[id]] = {...b, id:bMap[id], parentId:id === data.root ? currentBoardId : bMap[b.parentId] || currentBoardId,
+      cardIds:mapC(b.cardIds), unsortedIds:mapC(b.unsortedIds), ...(Array.isArray(b.connectors) ? {connectors:b.connectors.map(k => ({...k, id:uid("cn"), from:cMap[k.from], to:cMap[k.to]}))} : {})};
+  }
+  for (const [id, c] of Object.entries(ws.cards)){
+    const n = {...c, id:cMap[id], createdAt:t, updatedAt:t};
+    if (c.type === "board") n.boardId = bMap[c.boardId];
+    for (const k of ["childIds", "attachedIds"]) if (c[k]) n[k] = mapC(c[k]);
+    if (c.labelIds) n.labelIds = c.labelIds.map(l => lMap[l]).filter(Boolean);
+    if (Array.isArray(c.relations)) n.relations = c.relations.map(r => ({...r, id:cMap[r.id]})).filter(r => r.id);
+    state.cards[cMap[id]] = n;
+  }
+  const at = viewCenterWorld(), sz = defaultSize("board"), look = plainObject(data.look) ? data.look : {};
+  const id = uid("c"), title = String(data.title || ws.boards[data.root].title || "Board").slice(0, 200);
+  state.boards[bMap[data.root]].title = title;
+  state.cards[id] = scrubCard({id, type:"board", boardId:bMap[data.root], shortcut:false, title, x:Math.round(at.x - sz.w / 2), y:Math.round(at.y - sz.h / 2), w:sz.w, h:sz.h, z:maxZ() + 1, createdAt:t, updatedAt:t,
+    ...(typeof look.icon === "string" ? {icon:look.icon.slice(0, 200)} : {}), ...(typeof look.iconTone === "string" ? {iconTone:look.iconTone.slice(0, 20)} : {}), ...(typeof look.accent === "string" ? {accent:look.accent} : {})});
+  cur().cardIds.push(id);
+  markDirty(); renderAll(); setSelection([id]);
+  return id;
+}
+const boardFileInput = Object.assign(document.createElement("input"), {type:"file", accept:".corkboard,application/json", hidden:true});
+document.body.appendChild(boardFileInput);
+boardFileInput.addEventListener("change", async () => {
+  const f = boardFileInput.files[0]; boardFileInput.value = ""; if (!f) return;
+  try { importBoardData(JSON.parse(await f.text())); toast("Imported \u201c" + f.name.replace(/\.corkboard$/i, "") + "\u201d onto this board.", 6000); }
+  catch (e){ toast(e instanceof SyntaxError ? "That isn\u2019t a CORKBORK board file." : e.message, 8000); }
+});
+/* ---- the board's export button: send this board, its images, or bring a board in ---- */
+$("#mbExport").addEventListener("click", async () => {
+  const v = await askOpen({title:"Share boards", build(body){
+    const m = document.createElement("div"); m.id = "askMsg";
+    m.textContent = "Export this board to send to someone (everything on it, sub-boards and pictures included), or import a board someone sent you. Importing adds it here; nothing else changes.";
+    body.appendChild(m); return {};
+  }, buttons:[{label:"Cancel", value:null}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"Export this board", value:"export", primary:true}]});
+  if (v === "export") exportBoardFile(currentBoardId);
+  else if (v === "zip") exportBoardImages(currentBoardId);
+  else if (v === "import") boardFileInput.click();
+});
 
 /* ---- bug list: intentionally plain, just a quick jot-and-report tool ---- */
 /* =====================================================================
@@ -25862,6 +25972,10 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b148", [
+    "Share boards: the share button (the up-arrow in the top bar) and a board card\u2019s right-click menu can export one board, with its sub-boards, cards, labels and images, to a .corkboard file. Send it to someone; they press Import a board\u2026 and it arrives as a new board card where they\u2019re looking. Nothing else in their CORKBORK changes.",
+    "A board file is all or nothing: if any image can\u2019t be included, nothing is exported, and a damaged file imports nothing. Labels are matched by name; links to boards outside the shared one are left out. Undo removes an import."
+  ]],
   ["b147", [
     "Import: the Mages of Strixhaven (Unearthed Arcana) now read. Their shared pages list features as paragraphs under \u201c1st-Level \u2026 Features\u201d with no headings, and a class\u2019s own link can lead to a page with no features, so the shared page is read instead."
   ]],
