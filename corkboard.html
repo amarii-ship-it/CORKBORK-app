@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b162";
+window.BUILD = "b163";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17275,6 +17275,37 @@ async function copyMasterArchiveToFolder(){
     return true;
   } catch (err){ if (err?.name!=="AbortError") toast("Archive copy failed: "+(err?.message||"unknown error"),9000); return false; }
 }
+/* The archive's catalogue names each picture by token, like local storage
+   does, and each picture is one file in Assets. Writing pictures inside the
+   catalogue made it one string bigger than the browser allows once a
+   workspace held a few hundred MB of pictures (U-021). */
+const archiveAssetName = id => String(id).replace(/[^a-z0-9_-]/gi, "_") + ".txt";
+async function archiveWriteAssets(root, packed){
+  const dir = await root.getDirectoryHandle("Assets", {create:true});
+  let written = 0, kept = 0;
+  for (const id of collectAssetTokens(packed).keys()){
+    const name = archiveAssetName(id);
+    const dataUrl = await idbGetRaw(ASSET_KEY_PREFIX + id);
+    if (typeof dataUrl !== "string") throw new Error("a picture is missing from this browser's storage (" + id.slice(0, 12) + ")");
+    /* named by content, so a file of the right size is already this picture */
+    try { if ((await (await dir.getFileHandle(name)).getFile()).size === dataUrl.length){ kept++; continue; } } catch (_) {}
+    await archiveWrite(dir, name, new Blob([dataUrl], {type:"text/plain"})); written++;
+    if (written % 50 === 0) toast("Archive: " + written + " pictures written\u2026", 2500);
+  }
+  return {written, kept};
+}
+/* a catalogue written with tokens gets its pictures back from Assets */
+async function archiveHydrate(root, data){
+  if (!data?._assetStorageVersion) return data;
+  const dir = await root.getDirectoryHandle("Assets"), memo = tabAssetMemo();
+  for (const id of collectAssetTokens(data).keys()){
+    const token = ASSET_TOKEN_PREFIX + id; if (memo.has(token)) continue;
+    let text; try { text = await (await (await dir.getFileHandle(archiveAssetName(id))).getFile()).text(); }
+    catch (_) { throw new Error("The archive is missing a picture (Assets/" + archiveAssetName(id) + ")."); }
+    memo.set(token, text);
+  }
+  return mapStoredAssets(data, "unpack", memo);
+}
 async function sha256Text(text){
   if (!crypto?.subtle) throw new Error("This browser cannot calculate archive checksums.");
   const bytes = new TextEncoder().encode(String(text));
@@ -17399,6 +17430,7 @@ async function archiveManifest(workspaceText, stats){
     counts:{boards:Object.keys(archived.boards || {}).length, cards:archivedCards.length,
       readableNotesAndLinks:stats.notes, exportedFiles:stats.files, attachments:attachments.length},
     archiveBackedFiles:attachments.filter(c => !!c.archiveRef).length,
+    assetFiles:collectAssetTokens(archived).size,
     attachmentBytes:attachments.reduce((n,c) => n + (Number(c.fileSize) ||
       (c.dataUrl ? Math.floor(c.dataUrl.length * .75) : 0)), 0),
     workspaceBytes:new TextEncoder().encode(workspaceText).length,
@@ -17442,6 +17474,12 @@ async function verifyArchiveFolder(handle, askPermission=true, announce=true){
     }
     if (Number(manifest.archiveBackedFiles || 0) !== archiveBackedFiles)
       throw new Error("Stored Files count does not match the manifest.");
+    if (archived._assetStorageVersion){
+      const assets = await root.getDirectoryHandle("Assets").catch(() => null), ids = [...collectAssetTokens(archived).keys()];
+      if (ids.length && !assets) throw new Error("The Assets folder is missing.");
+      for (const id of ids) try { await assets.getFileHandle(archiveAssetName(id)); } catch (_) { throw new Error("Assets/" + archiveAssetName(id) + " is missing."); }
+      if (manifest.assetFiles != null && Number(manifest.assetFiles) !== ids.length) throw new Error("Assets count does not match the manifest.");
+    }
     const result = {verified:true, time:Date.now(), revision:manifest.saveRevision,
       counts:integrity.counts, workspaceBytes:manifest.workspaceBytes, archiveBackedFiles};
     await idbSet(ARCHIVE_RESULT_KEY, result);
@@ -17492,11 +17530,13 @@ async function updateArchiveFolder(handle, askPermission=true){
     await migrateEmbeddedSourcesToArchive(handle, stats);
     if(stats.migrated){undoStack=[];redoStack=[];}
     const saved = await saveNow(); if (!saved) return false;
-    const workspaceText = JSON.stringify(state);
+    const packed = await packWorkspaceForStorage(cloneWorkspaceForSave(state));
+    stats.assets = await archiveWriteAssets(root, packed);
+    const workspaceText = JSON.stringify(packed);
     await archiveWrite(root, "CORKBORK-workspace.json", workspaceText);
     await archiveWrite(root, "README.txt",
       "CORKBORK ordinary-file archive\r\n\r\n" +
-      "CORKBORK-workspace.json is the catalogue: board layout, notes and links. Original attachments live once in Stored Files. Keep the whole CORKBORK Archive folder together.\r\n" +
+      "CORKBORK-workspace.json is the catalogue: board layout, notes and links. Pictures as CORKBORK shows them live once each in Assets, and original attachments once in Stored Files. Keep the whole CORKBORK Archive folder together.\r\n" +
       "ARCHIVE-INDEX.txt lists the board structure. Each board keeps child boards in its own Boards folder, separate from Notes, Links, Images and Files.\r\n" +
       "ARCHIVE-MANIFEST.json records the exact saved revision, counts and workspace checksum.\r\n" +
       "ARCHIVE-REPORT.txt confirms whether every item was written. CORKBORK never deletes files from this folder.\r\n");
@@ -17557,7 +17597,9 @@ $("#archiveChoose").addEventListener("click", async () => {
         message:"This folder already contains a CORKBORK archive.",
         detail:"Open its boards and files as the one active master workspace. Nothing is duplicated.",okLabel:"Open archive"});
       if(!open||!await confirmWorkspaceReplacement(existing,h.name||"selected archive"))return;
-      await idbSet(ARCHIVE_DIR_KEY,h); await activateImportedWorkspace(existing,h.name||"selected archive"); return;
+      toast("Reading the archive\u2019s pictures\u2026", 6000);
+      const full=await archiveHydrate(await archiveRootDir(h,false),existing);
+      await idbSet(ARCHIVE_DIR_KEY,h); await activateImportedWorkspace(full,h.name||"selected archive"); return;
     }
     const old = await archiveHandle();
     if (old) await copyArchiveReferences(old, h);
@@ -29121,6 +29163,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b163", [
+    "Update archive folder works with big workspaces (it stopped with \u201cInvalid string length\u201d): pictures are written once each into the archive\u2019s Assets folder and the catalogue just names them. Later updates only write new pictures."
+  ]],
   ["b162", [
     "Fixed: files dragged from your computer (pictures, a .zip, anything) did nothing in Chrome; only pictures dragged from the web worked. A big file now shows \u201cAdding \u2026\u201d straight away, and a drop that can\u2019t be added says why."
   ]],
@@ -29168,11 +29213,6 @@ const PATCH_NOTES = [
     "Fixes from testing: bold, italic and underline in notes stay after you finish typing. The Image and Upload tools work again when the master archive folder needs your OK after a restart (no more \u201cUser activation is required\u201d error); what you add is kept and copied to the folder at its next update.",
     "D&D sheet colour (Edit character \u203a Home): light and deep rows of CORKBORK\u2019s jewel colours, and More colours\u2026 opens the full picker (every palette, your own palettes, any colour by code). Light colours get dark writing so the sheet stays readable.",
     "Import: a race whose subraces have a paragraph before their traits (Warforged, Unearthed Arcana: Envoy, Juggernaut, Skirmisher) now offers them as choices instead of giving you all of them."
-  ]],
-  ["b149", [
-    "Share live: the share button (or right-click a board \u203a Share live\u2026) gives an edit link and a view-only link. The board opens for whoever you send one to, and whatever anyone changes shows up for everyone in about a second: cards slide as they\u2019re dragged, text appears as it\u2019s typed, and a name tag shows who is editing what. It stays in the owner\u2019s Google Drive, never the guest\u2019s.",
-    "Shared boards are encrypted with a key that\u2019s only in the link, so the server can\u2019t read them. They work offline and catch up when you\u2019re back; if two people change the same text, the other version is kept as a conflict copy. The owner can replace a link or stop sharing at any time.",
-    "Your name and colour: set them in first time setup or Settings \u203a Appearance. Shared boards and bug reports use them, so the Bug List\u2019s own name box is gone."
   ]],
 ];
 function renderPatchNotes(){
