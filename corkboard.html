@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b161";
+window.BUILD = "b162";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -15843,8 +15843,25 @@ function dragImageUrl(dt){
   if (m && /^https?:/i.test(m[1])) return m[1];
   return null;
 }
+/* A drop that fails part-way used to fail silently (U-020): say what's
+   happening for big files, and say so if it goes wrong. */
 async function handleExternalDrop(e, toUnsorted){
   e.preventDefault();
+  const dropped = [...(e.dataTransfer?.files || [])], bytes = dropped.reduce((n, f) => n + (f.size || 0), 0);
+  console.info("CORKBORK drop:", dropped.map(f => f.name + " (" + humanSize(f.size) + ", " + (f.type || "no type") + ")").join(", ") || "no files", [...(e.dataTransfer?.types || [])]);
+  if (bytes > 20 * 1048576) toast("Adding " + (dropped.length === 1 ? "\u201c" + dropped[0].name + "\u201d" : dropped.length + " files") + " (" + humanSize(bytes) + ")\u2026", 8000);
+  /* Chrome empties a real drop's files and text the moment the handler first
+     waits for anything, so a file dragged from the desktop arrived as nothing
+     (U-020). Copy it all now; folder entries are read before the first wait. */
+  const dt = e.dataTransfer, data = {};
+  for (const k of ["text/uri-list", "text/plain", "text/html", "text/x-corkbork-lib"]) try { data[k] = dt?.getData(k) || ""; } catch (_) { data[k] = ""; }
+  const snap = {files:dropped, items:dt?.items || [], types:[...(dt?.types || [])], getData:k => data[k] ?? ""};
+  const ev = {dataTransfer:snap, clientX:e.clientX, clientY:e.clientY, target:e.target, shiftKey:e.shiftKey, altKey:e.altKey, ctrlKey:e.ctrlKey, metaKey:e.metaKey,
+    preventDefault:() => e.preventDefault(), stopPropagation:() => e.stopPropagation()};
+  try { await handleExternalDropInner(ev, toUnsorted); }
+  catch (err){ console.error("CORKBORK drop failed:", err); toast("Couldn\u2019t add what you dropped: " + (err?.message || err || "unknown error"), 12000); }
+}
+async function handleExternalDropInner(e, toUnsorted){
   /* calendar files (.ics, Google's .ical.zip) go into the calendar */
   const calFiles = [...(e.dataTransfer?.files || [])];
   if (calFiles.length && calFiles.every(calIsFile)){
@@ -17011,7 +17028,7 @@ libPanel.addEventListener("drop", async e => {
   libPanel.classList.remove("dropping");
   if (!e.dataTransfer?.files?.length) return;
   e.preventDefault(); e.stopPropagation();
-  await addToLibrary(e.dataTransfer.files);
+  await addToLibrary([...e.dataTransfer.files]);   /* copied now: Chrome empties a drop once the handler waits (U-020) */
 });
 
 /* "From Google Drive": Google's own chooser. Whatever is picked there becomes
@@ -29104,6 +29121,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b162", [
+    "Fixed: files dragged from your computer (pictures, a .zip, anything) did nothing in Chrome; only pictures dragged from the web worked. A big file now shows \u201cAdding \u2026\u201d straight away, and a drop that can\u2019t be added says why."
+  ]],
   ["b161", [
     "Faster with big workspaces (tested with 7,800 cards and 1,800 pictures): a board of 3,000 pictures opens in a third of a second instead of 2\u20133, saving after an edit takes a third of the time, Settings no longer reads every picture back (7 seconds before), and undo redraws only what changed."
   ]],
@@ -29153,10 +29173,6 @@ const PATCH_NOTES = [
     "Share live: the share button (or right-click a board \u203a Share live\u2026) gives an edit link and a view-only link. The board opens for whoever you send one to, and whatever anyone changes shows up for everyone in about a second: cards slide as they\u2019re dragged, text appears as it\u2019s typed, and a name tag shows who is editing what. It stays in the owner\u2019s Google Drive, never the guest\u2019s.",
     "Shared boards are encrypted with a key that\u2019s only in the link, so the server can\u2019t read them. They work offline and catch up when you\u2019re back; if two people change the same text, the other version is kept as a conflict copy. The owner can replace a link or stop sharing at any time.",
     "Your name and colour: set them in first time setup or Settings \u203a Appearance. Shared boards and bug reports use them, so the Bug List\u2019s own name box is gone."
-  ]],
-  ["b148", [
-    "Share boards: the share button (the up-arrow in the top bar) and a board card\u2019s right-click menu can export one board, with its sub-boards, cards, labels and images, to a .corkboard file. Send it to someone; they press Import a board\u2026 and it arrives as a new board card where they\u2019re looking. Nothing else in their CORKBORK changes.",
-    "A board file is all or nothing: if any image can\u2019t be included, nothing is exported, and a damaged file imports nothing. Labels are matched by name; links to boards outside the shared one are left out. Undo removes an import."
   ]],
 ];
 function renderPatchNotes(){
