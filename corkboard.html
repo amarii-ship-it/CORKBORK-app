@@ -508,8 +508,6 @@ body.focus-mode #binFloat{display:none !important;}
 .card.type-image.free-resize:not(.selected){outline:none;}
 /* windows: no hairline, a soft shadow */
 .panel{border:none; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.25);}
-.themegroup{grid-column:1 / -1; margin:10px 0 2px; font-size:12px; color:var(--text-dim);}
-.themegroup b{color:var(--text); font-size:13px; margin-right:6px;}
 #brandmark{width:26px; height:26px;}
 #updateBar{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:400; display:flex; align-items:center; gap:10px;
   padding:9px 10px 9px 16px; border-radius:14px; background:var(--surface-hi); color:var(--text); font-size:13.5px;
@@ -1707,24 +1705,64 @@ body.focus-mode #focusExit{display:flex;}
 #focusExit{position:fixed; top:12px; right:14px; z-index:200; display:none; align-items:center; gap:8px; background:var(--surface-hi); border:1px solid var(--border); border-radius:5px; padding:7px 12px; font-size:13px; color:var(--text-dim);}
 #focusExit button{color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 9px; font-size:12px;}
 #focusExit button:hover{background:var(--surface);}
+/* Settings: the same soft floating panel as Search and To-dos. Pale tinted
+   nav with icon chips, cards of rows, pills and switches instead of
+   dropdowns and checkboxes. */
 .panel.settings-panel{width:min(1240px,96vw);
   height:min(720px,calc(80vh * var(--ui-zoom-inverse, 1))); max-height:none;
-  flex-direction:row; gap:0; padding:0; overflow:hidden;}
-.settings-nav{width:220px; flex:none; background:var(--canvas); border-right:1px solid var(--border);
-  padding:24px 16px 16px; display:flex; flex-direction:column; gap:4px;}
-.setnav{text-align:left; padding:10px 13px; border-radius:6px; font-size:13px; color:var(--text-dim);}
-.setnav:hover{background:var(--surface); color:var(--text);}
-.setnav.sel{background:var(--surface); color:var(--text); font-weight:600;}
-.settings-nav #settingsClose{margin-top:auto; width:100%; padding:8px 10px;
-  border:1px solid var(--border); border-radius:6px; color:var(--text-dim);}
-.settings-nav #settingsClose:hover{background:var(--surface); color:var(--text);}
-.settings-body{flex:1; min-width:0; padding:22px 30px; overflow-y:auto;
+  flex-direction:row; gap:0; padding:0; overflow:hidden; border:none; border-radius:16px; background:var(--surface);
+  box-shadow:0 2px 6px rgba(0,0,0,.08), 0 24px 60px rgba(0,0,0,.22);}
+.settings-nav{width:220px; flex:none; background:color-mix(in srgb, var(--text) 4%, var(--surface)); border-right:none;
+  padding:20px 12px 14px; display:flex; flex-direction:column; gap:2px;}
+.settings-nav h2{font-family:var(--font-serif); font-size:19px; margin:0 10px 14px;}
+.set-find{margin:0 2px 12px; padding:7px 11px; border-radius:9px; border:none; outline:none; font:inherit; font-size:12.5px; color:var(--text);
+  background:var(--surface); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);}
+.set-find:focus{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, transparent);}
+.set-nohit{margin:4px 10px;}
+.setnav{display:flex; align-items:center; gap:10px; text-align:left; padding:7px 10px; border-radius:9px; font-size:13px; color:var(--text);}
+.setnav i{width:26px; height:26px; border-radius:7px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--c, var(--accent)) 24%, transparent); color:color-mix(in srgb, var(--c, var(--accent)) 70%, var(--text));}
+.setnav i svg{width:15px; height:15px;}
+.setnav:hover{background:color-mix(in srgb, var(--text) 5%, transparent);}
+.setnav.sel{background:var(--surface); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.settings-nav #settingsClose{margin-top:auto; width:100%; padding:8px 10px; border:none; border-radius:9px; color:var(--text-dim); font-weight:600;}
+.settings-nav #settingsClose:hover{background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text);}
+.settings-body{flex:1; min-width:0; padding:22px 30px 30px; overflow-y:auto; position:relative;
   display:flex; flex-direction:column; align-items:stretch;}
-/* Settings have grown into a real workspace: navigation stays fixed at left
-   while the active section receives the large, scrollable right-hand area. */
+.set-x{position:absolute; right:14px; top:12px; width:32px; height:32px; border-radius:50%; color:var(--text-dim); font-size:15px; z-index:2;}
+.set-x:hover{background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
 .settings-body > *{width:100%; max-width:none;}
+.settings-body > .set-x{width:32px;}
 .setsec{display:flex; flex-direction:column; gap:12px; align-items:stretch;}
+.settings-body .set-title{font-family:var(--font-serif); font-size:22px; margin:0 0 4px;}
+.set-label{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim); font-weight:800; margin:8px 2px -4px;}
+.set-card{background:color-mix(in srgb, var(--text) 4%, transparent); border-radius:12px; padding:4px 16px;}
+.set-card > .me-picker{padding:10px 0 4px; margin:0;}
+.set-note{padding:2px 0 10px;}
+.set-row{display:flex; align-items:center; gap:14px; padding:11px 0; border-bottom:1px solid color-mix(in srgb, var(--text) 8%, transparent); flex-direction:row !important; cursor:default;}
+.set-row:last-child{border-bottom:none;}
+.set-t{flex:1; min-width:0;} .set-t b{display:block; font-size:13px; font-weight:600; color:var(--text);} .set-t span{font-size:11.5px; color:var(--text-dim);}
+.set-seg{flex:none; flex-wrap:wrap;}
+.set-seg button{flex:none;}
+.set-hit{box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent) !important; border-radius:8px;}
+/* switches and soft selects everywhere in Settings */
+.settings-body input[type=checkbox]{appearance:none; -webkit-appearance:none; width:36px !important; height:21px !important; border-radius:11px; flex:none; margin:0;
+  background:color-mix(in srgb, var(--text) 18%, transparent); position:relative; cursor:pointer; transition:background .15s;}
+.settings-body input[type=checkbox]::after{content:""; position:absolute; left:3px; top:3px; width:15px; height:15px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s;}
+.settings-body input[type=checkbox]:checked{background:var(--accent);}
+.settings-body input[type=checkbox]:checked::after{transform:translateX(15px);}
+.settings-body input[type=checkbox]:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset:2px;}
+.settings-body select{appearance:none; -webkit-appearance:none; border:none; border-radius:9px; padding:7px 30px 7px 11px; font:inherit; font-size:12.5px; color:var(--text);
+  background:color-mix(in srgb, var(--text) 6%, var(--surface)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center / 12px;}
+.settings-body select:focus{outline:none; box-shadow:0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent);}
+.settings-body .setsec > label:not(.set-row){padding:4px 2px; line-height:1.45;}
 .sethead{font-size:14px; margin:10px 0 -4px; font-weight:700;}
+.settings-body .btnrow button, .settings-body button.wide:not(.primary-wide):not(.backup-primary){border:none; border-radius:9px; background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text); font-weight:700;}
+.settings-body .btnrow button:hover, .settings-body button.wide:not(.primary-wide):not(.backup-primary):hover{background:color-mix(in srgb, var(--text) 11%, transparent);}
+.settings-body a{color:var(--accent);}
+.settings-body details > summary{color:var(--text-dim); font-weight:600;}
+.settings-body details > summary:hover{color:var(--text);}
 .tool-list{display:flex; flex-direction:column; gap:2px;}
 .tool-row{display:grid; grid-template-columns:96px 34px 1fr; gap:10px; align-items:baseline; padding:7px 4px; border-bottom:1px solid var(--border); font-size:13px;}
 .tool-row kbd, .setsec .meta kbd{font:600 11px/1.2 var(--font-ui); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-align:center;}
@@ -2814,31 +2852,32 @@ body.focus-mode #textBarWrap{display:none;}
 #textBar.armed .tbhint{display:none;}
 
 /* --- theme picker (Settings > Appearance) --- */
-.themeblock{display:flex; flex-direction:column; gap:6px;}
-.themelabel{font-size:12px; color:var(--text-dim);}
-.themegallery{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}
-.themecard{
-  border:1px solid var(--border); border-radius:5px; padding:4px; text-align:left;
-  display:flex; flex-direction:column; gap:4px; background:var(--canvas);
-}
-.themecard:hover{border-color:var(--text-dim);}
-.themecard.sel{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
-.themestrip{display:flex; height:20px; border-radius:3px; overflow:hidden;}
-.themestrip span{flex:1;}
-.themename{font-size:11px; color:var(--text-dim);}
-.themecard.sel .themename{color:var(--text);}
-.themedetails{margin-top:4px;}
-.themedetails summary{font-size:12px; color:var(--text-dim); cursor:pointer;}
-.themedetails summary:hover{color:var(--text);}
-.themeeditor{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
-.themerow{display:flex; flex-direction:row; align-items:center; gap:8px; font-size:12.5px; color:var(--text);}
-.themerow input[type=color]{width:30px; height:22px; padding:0; border:1px solid var(--border); border-radius:3px; background:none;}
-.themerow .overridden{color:var(--accent);}
-.themereset{
-  font-size:12px; color:var(--text-dim); border:1px solid var(--border);
-  border-radius:5px; padding:4px 9px; align-self:flex-start;
-}
-.themereset:hover{background:var(--surface); color:var(--text);}
+.themegallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:12px 8px; padding:12px 0;}
+.themecard{border:none; background:none; padding:2px; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; border-radius:10px;}
+.themechip{width:62px; height:42px; border-radius:10px; overflow:hidden; display:grid; grid-template-columns:1.4fr 1fr; grid-template-rows:1fr 1fr;
+  box-shadow:0 1px 3px rgba(0,0,0,.18);}
+.themechip .tc-bg{grid-row:span 2;}
+.themecard:hover .themechip{transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.2);}
+.themecard.sel .themechip{outline:2px solid var(--accent); outline-offset:2px;}
+.themename{font-size:10.5px; color:var(--text-dim); text-align:center; line-height:1.25; max-width:80px; overflow-wrap:anywhere; border-radius:4px; outline:none;}
+.themecard.sel .themename{color:var(--text); font-weight:700;}
+.themeedited{position:absolute; top:0; right:6px; width:8px; height:8px; border-radius:50%; background:var(--edit); box-shadow:0 0 0 2px var(--surface);}
+.themegroup{grid-column:1 / -1; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim); font-weight:800; margin:4px 2px -4px;}
+.themeeditor{display:flex; flex-direction:column; gap:10px; padding:12px 0;}
+.te-head{display:flex; align-items:baseline; gap:8px;} .te-head b{font-size:13.5px;}
+.te-sw{display:flex; flex-wrap:wrap; gap:8px;}
+.te-chip{display:flex !important; flex-direction:row !important; align-items:center; gap:9px; padding:6px 12px 6px 6px !important; border-radius:22px; background:var(--surface); cursor:pointer; position:relative;
+  box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.te-chip:hover{box-shadow:0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);}
+.te-chip input{position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;}
+.te-dot{width:26px; height:26px; border-radius:50%; flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);}
+.te-l{display:flex; flex-direction:column; font-size:12.5px; font-weight:600; color:var(--text); line-height:1.2;}
+.te-l small{font-size:10.5px; color:var(--text-dim); font-weight:500; font-variant-numeric:tabular-nums;}
+.te-chip.edited .te-l::after{content:"changed"; font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--edit);}
+.te-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.te-btn{padding:7px 12px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--text); background:var(--surface); box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.te-btn:hover{box-shadow:0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);}
+.te-btn:disabled{opacity:.45; box-shadow:none; cursor:default;}
 
 /* light theme */
 /* Colours for light themes now come from THEMES in the script, applied as
@@ -3769,12 +3808,12 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
 }
 .cpk-sw:hover{transform:scale(1.14);}
 .cpk-sw.sel{box-shadow:0 0 0 2px var(--edit);}
-.themecard.is-saved{position:relative;}
 .themedel{
-  position:absolute; top:3px; right:4px; font-size:10px; line-height:1;
-  color:var(--text-dim); cursor:pointer; padding:2px 3px; border-radius:3px;
-  background:color-mix(in srgb, var(--surface) 80%, transparent);
+  position:absolute; top:-4px; right:0; font-size:9px; line-height:1; width:17px; height:17px; border-radius:50%;
+  display:none; align-items:center; justify-content:center; color:var(--text-dim); cursor:pointer;
+  background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.2);
 }
+.themecard:hover .themedel{display:flex;}
 .themedel:hover{color:#E0716A;}
 /* ---- Edit board ---- */
 .bd-panel{width:min(520px, 100%) !important; gap:14px !important;}
@@ -4883,68 +4922,66 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
 <div class="overlay" id="settingsOverlay">
   <div class="panel settings-panel">
     <div class="settings-nav">
-      <h2 style="margin-bottom:6px;">Settings</h2>
-      <button class="setnav sel" data-sec="appearance">Appearance</button>
-      <button class="setnav" data-sec="canvas">Canvas &amp; media</button>
-      <button class="setnav" data-sec="data">Your data</button>
-      <button class="setnav" data-sec="tools">Tools</button>
-      <button class="setnav" data-sec="help">Help</button>
-      <button class="setnav" data-sec="patches">Patch notes</button>
+      <h2>Settings</h2>
+      <input id="setFind" class="set-find" type="search" placeholder="Find a setting" aria-label="Find a setting" spellcheck="false" autocomplete="off">
+      <button class="setnav sel" data-sec="appearance" style="--c:#E0867C"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18z M12 3a9 9 0 0 1 0 18"/></svg></i>Appearance</button>
+      <button class="setnav" data-sec="canvas" style="--c:#6E86D6"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg></i>Board &amp; canvas</button>
+      <button class="setnav" data-sec="data" style="--c:#4FA872"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/></svg></i>Sync &amp; backups</button>
+      <button class="setnav" data-sec="tools" style="--c:#D9A441"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg></i>Tools</button>
+      <button class="setnav" data-sec="help" style="--c:#9A6CD0"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4.5 M12 18h.01"/></svg></i>Help</button>
+      <button class="setnav" data-sec="patches" style="--c:#3FA3B3"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></i>What's new</button>
+      <div class="set-nohit meta" id="setNoHit" hidden>No setting matches.</div>
       <button id="settingsClose">Close</button>
     </div>
     <div class="settings-body">
-      <div class="meta" id="statsLine" style="margin-bottom:12px;"></div>
+      <button class="set-x" id="settingsX" title="Close (Esc)">✕</button>
 
       <div class="setsec" data-sec="appearance">
-        <div class="themeblock">
-          <span class="themelabel">Your name and colour</span>
-          <div class="meta">Shown to people you share boards with. It follows you to your other devices.</div>
+        <h2 class="set-title">Appearance</h2>
+        <div class="set-label">You</div>
+        <div class="set-card">
           <div class="me-picker" id="settingsMe"></div>
+          <div class="meta set-note">Shown to people you share boards with. It follows you to your other devices.</div>
         </div>
-        <label>Interface size
-          <select id="uiScaleSel">
-            <option value="small">Small (85%)</option>
-            <option value="medium">Medium (100%)</option>
-            <option value="large">Large (115%)</option>
-            <option value="xl">Extra large (130%)</option>
-            <option value="xxl">Huge (150%)</option>
-            <option value="xxxl">Maximum (175%)</option>
-          </select>
-        </label>
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="uiAutoFitToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Shrink the interface automatically based on monitor size
-        </label>
-        <div class="meta" id="uiFitStatus"></div>
-        <div class="themeblock">
-          <span class="themelabel">Color theme</span>
-          <div id="themeGallery" class="themegallery"></div>
-          <details class="themedetails">
-            <summary>Adjust these colors</summary>
-            <div id="themeEditor" class="themeeditor"></div>
-            <button id="themeReset" class="themereset">Reset to the theme's own colors</button>
-            <div class="meta" style="margin-top:6px;">
-              Each theme remembers its own edits when you switch. Reset affects
-              only the selected theme.
-            </div>
-          </details>
+        <div class="set-label">Size</div>
+        <div class="set-card">
+          <div class="set-row"><div class="set-t"><b>Interface size</b><span>How big buttons and text are</span></div>
+            <div class="mp-seg set-seg" data-for="uiScaleSel"></div>
+            <select id="uiScaleSel" hidden>
+              <option value="small" data-short="Small">Small (85%)</option>
+              <option value="medium" data-short="Medium">Medium (100%)</option>
+              <option value="large" data-short="Large">Large (115%)</option>
+              <option value="xl" data-short="XL">Extra large (130%)</option>
+              <option value="xxl" data-short="Huge">Huge (150%)</option>
+              <option value="xxxl" data-short="Max">Maximum (175%)</option>
+            </select></div>
+          <label class="set-row"><div class="set-t"><b>Fit to this screen</b><span id="uiFitStatus"></span></div>
+            <input type="checkbox" id="uiAutoFitToggle"></label>
         </div>
-        <label>Wordmark
-          <select id="wordmarkSel">
-            <option value="CORKBORK">CORKBORK</option>
-            <option value="CORKBOARD">CORKBOARD</option>
-            <option value="MILANOT">MILANOT</option>
-          </select>
-        </label>
+        <div class="set-label">Colour theme</div>
+        <div class="set-card"><div id="themeGallery" class="themegallery"></div></div>
+        <div class="set-label">Your colours</div>
+        <div class="set-card"><div id="themeEditor" class="themeeditor"></div></div>
+        <div class="set-label">Name in the top bar</div>
+        <div class="set-card">
+          <div class="set-row"><div class="set-t"><b>Wordmark</b><span>The name beside the dog</span></div>
+            <div class="mp-seg set-seg" data-for="wordmarkSel"></div>
+            <select id="wordmarkSel" hidden>
+              <option value="CORKBORK">CORKBORK</option>
+              <option value="CORKBOARD">CORKBOARD</option>
+              <option value="MILANOT">MILANOT</option>
+            </select></div>
+        </div>
       </div>
 
       <div class="setsec" data-sec="patches" style="display:none;">
-        <div class="meta">What changed, newest first. Kept terse on purpose —
-          this file carries its own history, so verbosity costs file size.</div>
+        <h2 class="set-title">What's new</h2>
+        <div class="meta">What changed, newest first.</div>
         <div id="patchNotes" class="patchlist"></div>
       </div>
 
       <div class="setsec" data-sec="tools" style="display:none;">
+        <h2 class="set-title">Tools</h2>
         <div><button id="setEditRail" class="primary" style="padding:7px 14px; border-radius:8px;">Edit toolbar…</button>
           <span class="meta" style="margin-left:8px;">Reorder tools, move them into More, add dividers. Saved on this device.</span></div>
         <div class="meta">Every tool on the left rail. Click or drag one onto the canvas, or press its key.</div>
@@ -4971,6 +5008,7 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
       </div>
 
       <div class="setsec" data-sec="help" style="display:none;">
+        <h2 class="set-title">Help</h2>
         <div class="tutorial-actions">
           <button class="tutorial-card" id="tutorialTour"><b>Take the tour</b><span>A quick walk through the main tools, pointing at each one.</span></button>
           <button class="tutorial-card" id="tutorialArchive"><b>First time setup</b><span>Sync with Google Drive, a folder on this computer, installing the app.</span></button>
@@ -4980,37 +5018,34 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
       </div>
 
       <div class="setsec" data-sec="canvas" style="display:none;">
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="snapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Snapping: cards line up with other cards (guides show while dragging) and settle on the cork grid. Same as the # button; hold Ctrl to override for one drag
-        </label>
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="blockSnapToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Stick cards to blocks: a card dropped right against a block's edge snaps on (drop it a little further away to keep a gap)
-        </label>
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="deleteToRecycleToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Delete key sends cards to the Recycle Bin instead of deleting them permanently
-        </label>
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="boundedPanToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Keep the board within reach — stop panning a screen or so past the outermost card, so you cannot drift into empty space. The edge moves outward as you add things.
-        </label>
-        <label>Imported image size
-          <select id="imgQuality">
-            <option value="0">Original — retain the imported file (default)</option>
-            <option value="1600">Standard — downscale to 1600 px</option>
-            <option value="2560">Large — downscale to 2560 px</option>
-          </select>
-        </label>
-        <label style="flex-direction:row; align-items:center; gap:8px; font-size:13px; color:var(--text);">
-          <input type="checkbox" id="lpToggle" style="accent-color:var(--accent); width:15px; height:15px;">
-          Show link previews — video thumbnails and site icons (uses the internet)
-        </label>
+        <h2 class="set-title">Board &amp; canvas</h2>
+        <div class="set-label">Moving cards</div>
+        <div class="set-card">
+          <label class="set-row"><div class="set-t"><b>Snapping</b><span>Cards line up with each other and the grid while you drag. Same as the # button; hold Ctrl to skip it once.</span></div><input type="checkbox" id="snapToggle"></label>
+          <label class="set-row"><div class="set-t"><b>Stick cards to blocks</b><span>A card dropped right against a block's edge sticks on. Drop it a little further away to keep a gap.</span></div><input type="checkbox" id="blockSnapToggle"></label>
+          <label class="set-row"><div class="set-t"><b>Keep the board within reach</b><span>Stop panning a screen or so past the outermost card, so you can't drift into empty space.</span></div><input type="checkbox" id="boundedPanToggle"></label>
+        </div>
+        <div class="set-label">Deleting</div>
+        <div class="set-card">
+          <label class="set-row"><div class="set-t"><b>Delete sends to the Recycle Bin</b><span>Instead of deleting at once. Undo works either way.</span></div><input type="checkbox" id="deleteToRecycleToggle"></label>
+        </div>
+        <div class="set-label">Pictures and links</div>
+        <div class="set-card">
+          <div class="set-row"><div class="set-t"><b>Imported picture size</b><span>Original keeps the file you add</span></div>
+            <div class="mp-seg set-seg" data-for="imgQuality"></div>
+            <select id="imgQuality" hidden>
+              <option value="0" data-short="Original">Original — retain the imported file (default)</option>
+              <option value="1600" data-short="1600 px">Standard — downscale to 1600 px</option>
+              <option value="2560" data-short="2560 px">Large — downscale to 2560 px</option>
+            </select></div>
+          <label class="set-row"><div class="set-t"><b>Link previews</b><span>Video thumbnails and site icons. Uses the internet.</span></div><input type="checkbox" id="lpToggle"></label>
+        </div>
       </div>
 
 
       <div class="setsec" data-sec="data" style="display:none;">
+        <h2 class="set-title">Sync &amp; backups</h2>
+        <div class="meta" id="statsLine"></div>
         <h3 class="sethead">Cloud sync</h3>
         <div class="meta" id="syncStatus"></div>
         <div class="meta" id="syncFileNote"></div>
@@ -5155,7 +5190,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b172";
+window.BUILD = "b173";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19623,7 +19658,7 @@ const THEMES = {
     border:"#D8D5CE", text:"#2A2C2E", "text-dim":"#6E7378", accent:"#3F76A6", edit:"#B08A17" }},
 
   /* warm, desaturated, editorial — from the "Society in General" reference */
-  society: { name:"Society", base:"dark", tokens:{
+  society: { name:"Jericho", base:"dark", tokens:{
     canvas:"#1E1517", grid:"#2E2023", surface:"#2A1D22", "surface-hi":"#33242A",
     border:"#4A3138", text:"#FFDCA8", "text-dim":"#B58C77", accent:"#CC3E33", edit:"#F1A352" }},
 
@@ -19682,19 +19717,13 @@ const THEMES = {
     canvas:"#2B3390", grid:"#4C5AC8", surface:"#333DA0", "surface-hi":"#3C48B4",
     border:"#5C6BDC", text:"#EAF7D8", "text-dim":"#9FDCD6", accent:"#35D6BE", edit:"#F0BA5C" }},
 
-  /* ---- PUMPKIN ----
-     The pumpkin-spice reference straight across: burnt orange and brick,
-     with the sage green as accent so it is not all one temperature. */
-  pumpkin: { name:"Pumpkin", base:"dark", tokens:{
-    canvas:"#8E4038", grid:"#A9524A", surface:"#9C4A3E", "surface-hi":"#AA5545",
-    border:"#C26B52", text:"#FCEFE4", "text-dim":"#F4D2BE", accent:"#96A46B", edit:"#EEBD68" }},
 
   /* ---- saturated midtones: value in the middle, chroma left ON.
      The previous Clay / Stone / Slate read as midtone only because the
      colour had been drained out of them. These sit at the same brightness
      with the chroma kept, and each takes a complementary accent so the
      interface is not one flat wash of a single hue.
-     Mauve and Moss below are the deliberate exception: those hues ARE
+     Mauve below is the deliberate exception: those hues ARE
      muted colours, and the set wants that range present. They are quiet on
      purpose, not drained by accident. ---- */
   vermillion: { name:"Vermillion", base:"dark", tokens:{
@@ -19702,7 +19731,7 @@ const THEMES = {
     border:"#C86450", text:"#FDEDE5", "text-dim":"#F3CBBB", accent:"#3FA89A", edit:"#E8B44E" }},
 
   carmine: { name:"Carmine", base:"dark", tokens:{
-    canvas:"#8E2340", grid:"#A93553", surface:"#9C2B48", "surface-hi":"#A93552",
+    canvas:"#803146", grid:"#A93553", surface:"#9C2B48", "surface-hi":"#A93552",
     border:"#C24D6A", text:"#FCE9EE", "text-dim":"#EDA8BC", accent:"#5FBFA8", edit:"#E9BE5C" }},
 
   mauve: { name:"Mauve", base:"dark", tokens:{
@@ -19717,13 +19746,7 @@ const THEMES = {
     canvas:"#1F6B58", grid:"#2F8369", surface:"#25785F", "surface-hi":"#2B866C",
     border:"#3BA183", text:"#E8F8F0", "text-dim":"#D3EEE2", accent:"#E0864F", edit:"#E6C765" }},
 
-  moss: { name:"Moss", base:"dark", tokens:{
-    canvas:"#4E6A3C", grid:"#5F7E4A", surface:"#587646", "surface-hi":"#628350",
-    border:"#769B60", text:"#F2F7EA", "text-dim":"#E6EFDA", accent:"#D2694E", edit:"#E8CE6C" }},
 
-  plum: { name:"Dusty plum", base:"dark", tokens:{
-    canvas:"#5A3E78", grid:"#6E4E90", surface:"#654686", "surface-hi":"#704F94",
-    border:"#8763AE", text:"#F3ECFB", "text-dim":"#C6AEDE", accent:"#7FC9A6", edit:"#E8BE68" }},
 
   sand: { name:"Sand", base:"light", tokens:{
     canvas:"#C9BCA8", grid:"#B8AA95", surface:"#DDD3C4", "surface-hi":"#E6DED2",
@@ -19742,6 +19765,11 @@ const THEMES = {
     border:"#A99696", text:"#2A2222", "text-dim":"#665757", accent:"#8A5560", edit:"#95741A" }}
 };
 
+/* gallery order: light themes together (Sea glass beside them), then the
+   darks, then the saturated midtones. Eautiphen sits with the darks. */
+const THEME_ORDER = ["blush", "light", "sea", "sand", "fog", "sage", "ash",
+  "blushdark", "dark", "society", "burgundy", "forest", "teal", "cobalt", "indigo", "eautiphen",
+  "vermillion", "carmine", "mauve", "ink", "malachite"];
 /* ---- saved themes -------------------------------------------------------
    The editor could always tint the CURRENT theme, but the result had nowhere
    to live: switching theme and back lost it. A saved theme is that same token
@@ -19777,37 +19805,36 @@ function themeDef(id){
   if (saved) return { name: saved.name, base: saved.base || "dark", tokens: saved.tokens, saved: true };
   return THEMES[id] || THEMES[DEFAULT_THEME] || THEMES.dark;
 }
-async function saveCurrentTheme(){
-  const base = themeDef(state.settings?.theme);
-  const suggested = base.saved ? base.name : base.name + " (mine)";
-  const name = await askText({ title:"Save this theme", value: suggested,
-    placeholder:"Name it", okLabel:"Save" });
-  if (name === null || !name.trim()) return;
-  const id = base.saved && base.name === name.trim()
-    ? state.settings.theme            /* re-saving the same one overwrites it */
-    : uid("theme");
-  const tokens = Object.assign({}, base.tokens, themeEditsFor(state.settings?.theme));
-  const allEdits = Object.assign({}, state.settings?.themeEdits || {}); delete allEdits[id];
+function saveCurrentTheme(){
+  const cur = state.settings?.theme || DEFAULT_THEME, base = themeDef(cur);
+  const names = new Set(Object.values(savedThemes()).map(t => t.name));
+  const stem = base.name.replace(/ \(default\)$/, "").replace(/ \(mine\)( \d+)?$/, "") + " (mine)";
+  let name = stem; for (let i = 2; names.has(name); i++) name = stem + " " + i;
+  const id = uid("theme");
+  const tokens = Object.assign({}, base.tokens, themeEditsFor(cur));
+  const edits = Object.assign({}, state.settings?.themeEdits || {});
+  /* the edits now live in the new theme; the one you started from goes back to how it was */
+  if (!base.saved) delete edits[cur];
   state.settings = Object.assign({}, state.settings, {
-    savedThemes: Object.assign({}, savedThemes(), {
-      [id]: { name: name.trim(), base: base.base, tokens }
-    }),
-    theme: id,
-    themeEdits: allEdits,
-    customTheme: {}                    /* legacy field stays empty */
+    savedThemes: Object.assign({}, savedThemes(), { [id]: { name, base: base.base, tokens, wash: base.wash || undefined } }),
+    theme: id, themeEdits: edits, customTheme: {}
   });
   markDirty(); applyTheme(); buildThemeGallery(); buildThemeEditor();
-  toast("Saved \u201C" + name.trim() + "\u201D.");
+  const nm = document.querySelector('.themecard[data-theme="' + id + '"] .themename');
+  if (nm) renameSavedThemeInline(id, nm);
+  return id;
 }
-async function deleteSavedTheme(id){
+function deleteSavedTheme(id){
   const t = savedThemes()[id]; if (!t) return;
-  if (!await askConfirm({ title:"Delete this theme?",
-    message:"\u201C" + t.name + "\u201D will be removed.", okLabel:"Delete", danger:true })) return;
+  const before = {savedThemes:savedThemes(), themeEdits:state.settings?.themeEdits || {}, theme:state.settings?.theme};
   const next = Object.assign({}, savedThemes()); delete next[id];
   const edits = Object.assign({}, state.settings?.themeEdits || {}); delete edits[id];
   state.settings = Object.assign({}, state.settings, { savedThemes: next, themeEdits:edits });
   if (state.settings.theme === id) state.settings.theme = DEFAULT_THEME;
   markDirty(); applyTheme(); buildThemeGallery(); buildThemeEditor();
+  toast("Deleted \u201C" + t.name + "\u201D.", 5000, {label:"Undo", fn:() => {
+    state.settings = Object.assign({}, state.settings, before); markDirty(); applyTheme(); buildThemeGallery(); buildThemeEditor();
+  }});
 }
 
 /* the resolved token map actually in force: theme + the user's overrides */
@@ -19929,126 +19956,120 @@ function buildThemeGallery(){
   const wrap = $("#themeGallery"); if (!wrap) return;
   wrap.innerHTML = "";
   const current = state.settings?.theme || DEFAULT_THEME;
-  const all = Object.entries(THEMES).concat(
-    Object.entries(savedThemes()).map(([id, t]) =>
-      [id, { name: t.name, base: t.base, tokens: t.tokens, saved: true }]));
-  /* themes the layered system can't express go last, under their own heading */
-  const legacy = all.filter(([, d]) => isLegacyTheme(d));
-  const ordered = all.filter(([, d]) => !isLegacyTheme(d));
-  if (legacy.length) ordered.push(["__legacy", null], ...legacy);
+  const built = THEME_ORDER.filter(id => THEMES[id]).map(id => [id, THEMES[id]])
+    .concat(Object.entries(THEMES).filter(([id]) => !THEME_ORDER.includes(id)));
+  const mine = Object.entries(savedThemes()).map(([id, t]) => [id, { name: t.name, base: t.base, tokens: t.tokens, saved: true }]);
+  const ordered = mine.length ? built.concat([["__mine", null]], mine) : built;
   for (const [id, def] of ordered){
     if (!def){
-      const h = document.createElement("div"); h.className = "themegroup";
-      h.innerHTML = "<b>Legacy</b> <span>Older themes that keep their own colours instead of following the new look.</span>";
+      const h = document.createElement("div"); h.className = "themegroup"; h.textContent = "Your themes";
       wrap.appendChild(h); continue;
     }
     const b = document.createElement("button");
-    b.className = "themecard" + (id === current ? " sel" : "");
+    b.className = "themecard" + (id === current ? " sel" : ""); b.dataset.theme = id;
     b.title = def.name;
-    const strip = document.createElement("div"); strip.className = "themestrip";
     const raw = Object.assign({}, def.tokens, themeEditsFor(id));
-    const previewTokens = isLegacyTheme(def) ? raw : layeredTokens(raw, def.base);
-    for (const k of ["canvas","surface-hi","accent","text","edit"]){
-      const sw = document.createElement("span");
-      sw.style.background = previewTokens[k];
-      strip.appendChild(sw);
-    }
-    if (def.wash){
-      /* show the gradient over the swatch row so a washed theme previews as
-         what it actually looks like, not as five flat chips */
-      const g = document.createElement("span"); g.className = "themewash";
-      g.style.backgroundColor = def.tokens.canvas;
-      g.style.backgroundImage = def.wash;
-      strip.appendChild(g);
-    }
-    const nm = document.createElement("div"); nm.className = "themename"; nm.textContent = def.name;
-    b.append(strip, nm);
+    const tk = isLegacyTheme(def) ? raw : layeredTokens(raw, def.base);
+    const chip = document.createElement("div"); chip.className = "themechip";
+    const bg = document.createElement("span"); bg.className = "tc-bg"; bg.style.background = tk.canvas;
+    if (def.wash){ bg.style.backgroundImage = def.wash; bg.style.backgroundSize = "cover"; }
+    const ac = document.createElement("span"); ac.style.background = tk.accent;
+    const tx = document.createElement("span"); tx.style.background = tk.text;
+    chip.append(bg, ac, tx);
+    const nm = document.createElement("div"); nm.className = "themename"; nm.textContent = def.name.replace(/ \(default\)$/, "");
+    b.append(chip, nm);
+    if (Object.keys(themeEditsFor(id)).length){ const dot = document.createElement("span"); dot.className = "themeedited"; dot.title = "You changed this theme's colours"; b.appendChild(dot); }
     b.addEventListener("click", () => {
+      if (nm.isContentEditable) return;
       state.settings = Object.assign({}, state.settings, { theme: id });
       markDirty(); applyUiPrefs(); buildThemeGallery(); buildThemeEditor();
     });
     if (def.saved){
-      /* only themes you made can be deleted; the built-ins are the floor */
       b.classList.add("is-saved");
+      nm.title = "Double-click to rename";
+      nm.addEventListener("dblclick", e => { e.stopPropagation(); renameSavedThemeInline(id, nm); });
       const del = document.createElement("span"); del.className = "themedel";
-      del.textContent = "\u2715"; del.title = "Delete this saved theme";
+      del.textContent = "\u2715"; del.title = "Delete this theme";
       del.addEventListener("click", e => { e.stopPropagation(); deleteSavedTheme(id); });
       b.appendChild(del);
     }
     wrap.appendChild(b);
   }
 }
-
+function renameSavedThemeInline(id, nm){
+  const t = savedThemes()[id]; if (!t) return;
+  nm.textContent = t.name;
+  nm.setAttribute("contenteditable", "plaintext-only"); if (nm.contentEditable !== "plaintext-only") nm.setAttribute("contenteditable", "true");
+  nm.classList.add("renaming"); nm.focus();
+  const rg = document.createRange(); rg.selectNodeContents(nm); getSelection().removeAllRanges(); getSelection().addRange(rg);
+  let cancel = false;
+  nm.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter"){ e.preventDefault(); nm.blur(); } if (e.key === "Escape"){ e.preventDefault(); cancel = true; nm.blur(); } });
+  nm.addEventListener("click", e => e.stopPropagation());
+  nm.addEventListener("blur", () => {
+    const v = nm.textContent.replace(/\s+/g, " ").trim().slice(0, 40);
+    if (!cancel && v && v !== t.name){
+      state.settings = Object.assign({}, state.settings, { savedThemes:Object.assign({}, savedThemes(), {[id]:{...t, name:v}}) });
+      markDirty();
+    }
+    buildThemeGallery(); buildThemeEditor();
+  }, {once:true});
+}
+const THEME_KEY_LABELS = {canvas:"Board", text:"Text", accent:"Accent", edit:"Editing highlight"};
 function buildThemeEditor(){
   const wrap = $("#themeEditor"); if (!wrap) return;
   wrap.innerHTML = "";
-  /* A wash theme is a composed gradient, not a set of flat tokens. Offering
-     per-swatch editing implied a control that could not actually reach the
-     gradient, so those themes say so instead. */
-  const def = themeDef(state.settings?.theme || DEFAULT_THEME);
+  const id = state.settings?.theme || DEFAULT_THEME;
+  const def = themeDef(id);
+  const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  const head = mk("div", "te-head");
+  head.append(mk("b", "", def.name.replace(/ \(default\)$/, "")), mk("span", "meta", def.saved ? "one of your themes" : "changes stay with this theme"));
+  wrap.appendChild(head);
   if (def && def.wash){
-    const note = document.createElement("div");
-    note.className = "meta";
-    note.textContent = def.name + " is a composed gradient theme, so its "
-      + "colours are not editable one at a time. Switch to a flat theme to "
-      + "customise swatches.";
-    wrap.appendChild(note);
+    wrap.appendChild(mk("div", "meta", def.name + " is a gradient, so its colours can't be changed one at a time. Pick a flat theme to change colours."));
     return;
   }
-  const bar = document.createElement("div"); bar.className = "cpk-row";
-  const save = document.createElement("button");
-  save.className = "cpk-btn"; save.textContent = "Save as theme\u2026";
-  save.title = "Keep these colours as a theme of your own";
-  save.addEventListener("click", saveCurrentTheme);
-  const reset = document.createElement("button");
-  reset.className = "cpk-btn"; reset.textContent = "Clear tweaks";
-  reset.addEventListener("click", () => {
-    setThemeEditsFor(state.settings?.theme || DEFAULT_THEME, {});
-    markDirty(); applyTheme(); buildThemeEditor();
-  });
-  bar.append(save, reset); wrap.appendChild(bar);
-  const tokens = activeThemeTokens();
-  const custom = themeEditsFor();
+  const tokens = activeThemeTokens(), custom = themeEditsFor();
   const layered = !isLegacyTheme(def);
-  if (layered){
-    const m = document.createElement("div"); m.className = "meta";
-    m.textContent = "Pick the board, text and accent colours; bars, cards, lines and dim text are mixed from them.";
-    wrap.appendChild(m);
-  }
+  const row = mk("div", "te-sw");
   for (const { key, label } of THEME_TOKENS.filter(t => !layered || LAYER_KEYS.includes(t.key))){
-    const row = document.createElement("label"); row.className = "themerow";
-    const inp = document.createElement("input");
-    inp.type = "color"; inp.value = tokens[key] || "#000000";
-    /* right-click a swatch for the full palette picker; left-click is still
-       the quick OS colour wheel */
+    const chip = mk("label", "te-chip" + (custom[key] ? " edited" : ""));
+    const inp = mk("input"); inp.type = "color"; inp.value = tokens[key] || "#000000"; inp.dataset.key = key;
+    const dot = mk("span", "te-dot"); dot.style.background = inp.value;
+    const txt = mk("span", "te-l"); txt.append(THEME_KEY_LABELS[key] || label, mk("small", "", inp.value.toUpperCase()));
+    inp.addEventListener("input", () => {
+      setThemeEditsFor(id, Object.assign({}, themeEditsFor(id), { [key]: inp.value }));
+      dot.style.background = inp.value; txt.querySelector("small").textContent = inp.value.toUpperCase();
+      chip.classList.add("edited"); applyTheme(); markDirty();
+    });
+    inp.addEventListener("change", () => { buildThemeGallery(); buildThemeEditor(); });
     inp.addEventListener("contextmenu", e => {
       e.preventDefault();
       openColorPicker({ current: tokens[key], onPick: v => {
-        setThemeEditsFor(state.settings?.theme || DEFAULT_THEME,
-          Object.assign({}, themeEditsFor(), { [key]: v }));
-        applyTheme(); markDirty(); buildThemeEditor();
+        setThemeEditsFor(id, Object.assign({}, themeEditsFor(id), { [key]: v }));
+        applyTheme(); markDirty(); buildThemeGallery(); buildThemeEditor();
       }});
     });
-    inp.addEventListener("input", () => {
-      setThemeEditsFor(state.settings?.theme || DEFAULT_THEME,
-        Object.assign({}, themeEditsFor(), { [key]: inp.value }));
-      applyTheme();          /* live, no re-render needed: everything reads the vars */
-      markDirty();
-    });
-    const t = document.createElement("span"); t.textContent = label;
-    if (custom[key]) t.classList.add("overridden");
-    row.append(inp, t);
-    wrap.appendChild(row);
+    chip.append(inp, dot, txt); row.appendChild(chip);
   }
+  wrap.appendChild(row);
+  if (layered) wrap.appendChild(mk("div", "meta set-note", "Bars, cards, lines and dim text are mixed from these. Right-click a colour for the full palette."));
+  const acts = mk("div", "te-actions");
+  const save = mk("button", "te-btn", "\uFF0B Save as a new theme"); save.id = "themeSaveNew";
+  save.title = "Keep these colours as a theme of your own, to come back to";
+  save.addEventListener("click", saveCurrentTheme);
+  const reset = mk("button", "te-btn", "\u21BA Reset to original"); reset.id = "themeReset";
+  reset.disabled = !Object.keys(custom).length;
+  reset.title = def.saved ? "Back to the colours this theme was saved with" : "Back to the colours " + def.name + " comes with";
+  reset.addEventListener("click", () => resetThemeColours(id));
+  acts.append(save, reset);
+  wrap.appendChild(acts);
 }
-
-$("#themeReset").addEventListener("click", async () => {
-  if (!await askConfirm({ title:"Reset theme colours?",
-    message:"Your colour edits are dropped and the theme goes back to how it ships.",
-    okLabel:"Reset" })) return;
-  setThemeEditsFor(state.settings?.theme || DEFAULT_THEME, {});
-  markDirty(); applyTheme(); buildThemeEditor();
-});
+/* back to how the theme ships; Undo on the message instead of a question */
+function resetThemeColours(id = state.settings?.theme || DEFAULT_THEME){
+  const was = themeEditsFor(id); if (!Object.keys(was).length) return;
+  setThemeEditsFor(id, {}); markDirty(); applyTheme(); buildThemeGallery(); buildThemeEditor();
+  toast("Colours reset.", 5000, {label:"Undo", fn:() => { setThemeEditsFor(id, was); markDirty(); applyTheme(); buildThemeGallery(); buildThemeEditor(); }});
+}
 
 $("#uiScaleSel").addEventListener("change", e => {
   state.settings = Object.assign({}, state.settings, { uiScale: e.target.value });
@@ -20193,15 +20214,18 @@ function doneWatch(before, after, patch){
     }
     const field = after.type === "doc" ? "html" : (after.type === "note" || after.type === "heading") ? "text" : null;
     if (field && field in patch && patch[field] !== before[field]){
+      /* every word you add counts and stays counted: clearing a note after
+         handing the work in doesn't take the writing back out of the log */
       const id = "word:" + doneDay() + ":" + after.id, prev = state.doneLog?.[id];
       const nowWords = donePlainWords(after[field]);
-      const base = prev ? prev.base : donePlainWords(before[field]);
-      const n = Math.max(0, nowWords - base);
-      if (n !== (prev?.n || 0)){
-        const rec = {...(prev || {id, day:doneDay(), kind:"word", ref:after.id, at:now()}), base, n, name:doneCardName(after) || (after.type === "doc" ? "Document" : "Note")};
+      const last = prev ? (prev.last ?? prev.base + prev.n) : donePlainWords(before[field]);
+      const add = Math.max(0, nowWords - last);
+      if (add || (prev && prev.last !== nowWords)){
+        const rec = {...(prev || {id, day:doneDay(), kind:"word", ref:after.id, at:now(), n:0}), last:nowWords, n:(prev?.n || 0) + add, name:doneCardName(after) || (after.type === "doc" ? "Document" : "Note")};
+        delete rec.base;
         if (!prev && donePrivateEntry(rec, state, workspacePrivacy())) rec.priv = true;
-        doneSet(id, rec);
-        if (n > (prev?.n || 0)) donePraiseCheck();
+        if (rec.n || prev) doneSet(id, rec);
+        if (add) donePraiseCheck();
       }
       const t = doneTicksIn(after[field]) - doneTicksIn(before[field]);
       if (t) doneEntryAdd("tick", t, after.id, {name:doneCardName(after) || "Checklist"});
@@ -23794,8 +23818,44 @@ function fillSettings(){
   const nb = Object.keys(state.boards).length, nc = Object.keys(state.cards).length;
   $("#statsLine").textContent =
     `Workspace: ${nb} board${nb!==1?"s":""}, ${nc} card${nc!==1?"s":""} — about ${mb < 1 ? Math.round(bytes/1024) + " KB" : mb.toFixed(1) + " MB"}.`;
+  paintSetSegs();
 }
 $("#settingsClose").addEventListener("click", () => closeOverlay($("#settingsOverlay")));
+$("#settingsX").addEventListener("click", () => closeOverlay($("#settingsOverlay")));
+/* Settings' choices are pills, not dropdowns. Each pill row drives the hidden
+   <select> it stands for, so everything that reads or sets the select still works. */
+function paintSetSegs(){
+  for (const seg of document.querySelectorAll(".set-seg[data-for]")){
+    const sel = seg.nextElementSibling; if (sel?.tagName !== "SELECT") continue;   /* the select it stands for sits right after it */
+    if (!seg.childElementCount) for (const o of sel.options){
+      const b = document.createElement("button"); b.type = "button"; b.dataset.v = o.value; b.textContent = o.dataset.short || o.textContent; b.title = o.textContent;
+      b.addEventListener("click", () => { sel.value = o.value; sel.dispatchEvent(new Event("change")); paintSetSegs(); });
+      seg.appendChild(b);
+    }
+    for (const b of seg.children) b.classList.toggle("on", b.dataset.v === sel.value);
+  }
+}
+/* Find a setting: shows the first section with a match and marks what matched */
+function setFindRun(q){
+  q = String(q || "").trim().toLowerCase();
+  document.querySelectorAll(".set-hit").forEach(e => e.classList.remove("set-hit"));
+  $("#setNoHit").hidden = true;
+  if (!q) return;
+  const pick = sec => sec.querySelectorAll(".set-row, .set-card > .me-picker, .themecard, .tool-row, .tutorial-card, label, .sethead, .btnrow button, .set-title");
+  let first = null;
+  for (const sec of document.querySelectorAll(".setsec")){
+    let hit = false;
+    for (const el of pick(sec)) if (el.textContent.toLowerCase().includes(q) && !el.querySelector(".set-hit")){ el.classList.add("set-hit"); hit = true; }
+    const nav = document.querySelector('.setnav[data-sec="' + sec.dataset.sec + '"]');
+    if (!hit && nav?.textContent.toLowerCase().includes(q)) hit = true;
+    if (hit && !first) first = sec.dataset.sec;
+  }
+  if (first) document.querySelector('.setnav[data-sec="' + first + '"]')?.click();
+  else $("#setNoHit").hidden = false;
+  document.querySelector(".setsec .set-hit")?.scrollIntoView?.({block:"nearest"});
+}
+$("#setFind").addEventListener("input", e => setFindRun(e.target.value));
+$("#setFind").addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Escape" && e.target.value){ e.preventDefault(); e.target.value = ""; setFindRun(""); } });
 document.querySelectorAll(".overlay").forEach(ov =>
   ov.addEventListener("pointerdown", e => { if (e.target === ov) closeOverlay(ov); }));
 
@@ -32062,6 +32122,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b173", [
+    "Settings is redesigned: a soft panel with icon sections and Find a setting, pills and switches instead of dropdowns and tick boxes, and smaller theme tiles so they all show at once.",
+    "Your colours sits under the themes: change the board, text, accent and editing colours, Save as a new theme to keep them (named right there, and yours to come back to), or Reset to original. Pumpkin, Moss and Dusty plum are gone, Society is now Jericho, Eautiphen is back with the others, Sea glass sits with the light themes and Carmine is calmer.",
+    "Done log: words you write stay counted even if you clear the note after handing the work in.",
+  ]],
   ["b172", [
     "Done (the rosette beside Settings): everything you do, kept by itself \u2014 things ticked, words written, pictures, boards, characters, focus time and hours in CORKBORK. A calendar fills in the days you did anything, habits tick per day, and deleting a card never deletes the record.",
     "Sticker book: earn a pack of 3 for every 10 things ticked, 500 words, hour of focus or finished list (one to start). Open it, flip the cards, collect 75 placeholder stickers in common, rare and shiny. A big day gets a rare \u201cGood job!\u201d.",
@@ -32106,15 +32171,6 @@ const PATCH_NOTES = [
   ]],
   ["b162", [
     "Fixed: files dragged from your computer (pictures, a .zip, anything) did nothing in Chrome; only pictures dragged from the web worked. A big file now shows \u201cAdding \u2026\u201d straight away, and a drop that can\u2019t be added says why."
-  ]],
-  ["b161", [
-    "Faster with big workspaces (tested with 7,800 cards and 1,800 pictures): a board of 3,000 pictures opens in a third of a second instead of 2\u20133, saving after an edit takes a third of the time, Settings no longer reads every picture back (7 seconds before), and undo redraws only what changed."
-  ]],
-  ["b160", [
-    "Very big workspaces (like a whole Milanote import): Settings opens without the \u201cInvalid string length\u201d error, and Save a copy, board export and restore point downloads are written in pieces."
-  ]],
-  ["b159", [
-    "Milanote export script: very big exports no longer stop with \u201cInvalid string length\u201d. Pictures are saved in smaller parts, and a single file over 250 MB stays in Milanote and comes in as a note saying so."
   ]],
 ];
 function renderPatchNotes(){
