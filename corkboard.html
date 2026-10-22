@@ -1746,11 +1746,11 @@ body.focus-mode #focusExit{display:flex;}
 .set-seg button{flex:none;}
 .set-hit{box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent) !important; border-radius:8px;}
 /* switches and soft selects everywhere in Settings */
-.settings-body input[type=checkbox]{appearance:none; -webkit-appearance:none; width:36px !important; height:21px !important; border-radius:11px; flex:none; margin:0;
+.settings-body input[type=checkbox]{appearance:none; -webkit-appearance:none; width:36px !important; height:21px !important; border-radius:11px; flex:none; margin:0; border:none !important; vertical-align:middle;
   background:color-mix(in srgb, var(--text) 18%, transparent); position:relative; cursor:pointer; transition:background .15s;}
 .settings-body input[type=checkbox]::after{content:""; position:absolute; left:3px; top:3px; width:15px; height:15px; border-radius:50%; background:#fff;
   box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s;}
-.settings-body input[type=checkbox]:checked{background:var(--accent);}
+.settings-body input[type=checkbox]:checked{background:var(--accent) !important;}
 .settings-body input[type=checkbox]:checked::after{transform:translateX(15px);}
 .settings-body input[type=checkbox]:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset:2px;}
 .settings-body select{appearance:none; -webkit-appearance:none; border:none; border-radius:9px; padding:7px 30px 7px 11px; font:inherit; font-size:12.5px; color:var(--text);
@@ -3917,6 +3917,85 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
   font-family:var(--font-ui); font-size:13.5px; line-height:1.55;
 }
 
+
+/* =====================================================================
+   COHESION LAYER (b174) — one visual language for every control.
+   Soft tinted surfaces, rounded corners, no native-looking boxes. It sits
+   last so it wins; anything with a deliberate look of its own (the D&D
+   sheet's paper, Settings' switches) is scoped below or above it.
+   ===================================================================== */
+/* text fields */
+input:not([type]), input[type=text], input[type=search], input[type=url], input[type=email], input[type=number],
+input[type=date], input[type=time], input[type=datetime-local], input[type=password], textarea{
+  border:1px solid transparent; border-radius:8px; background:color-mix(in srgb, var(--text) 6%, var(--surface));}
+input:not([type]):focus, input[type=text]:focus, input[type=search]:focus, input[type=url]:focus, input[type=email]:focus, input[type=number]:focus,
+input[type=date]:focus, input[type=time]:focus, input[type=password]:focus, textarea:focus{
+  outline:none; border-color:color-mix(in srgb, var(--accent) 65%, transparent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);}
+/* dropdowns: a soft pill with a small chevron */
+select:not(.cp-pill){appearance:none; -webkit-appearance:none; border:1px solid transparent; border-radius:8px; padding:6px 28px 6px 10px; color:var(--text); cursor:pointer;
+  background:color-mix(in srgb, var(--text) 6%, var(--surface)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center / 11px;}
+select:not(.cp-pill):hover{background-color:color-mix(in srgb, var(--text) 10%, var(--surface));}
+select:not(.cp-pill):focus{outline:none; border-color:color-mix(in srgb, var(--accent) 65%, transparent);}
+/* tick boxes: rounded, filled with the accent and a white tick */
+input[type=checkbox]{appearance:none; -webkit-appearance:none; width:16px; height:16px; margin:0; flex:none; cursor:pointer; position:relative; vertical-align:-3px;
+  border-radius:5px; border:1.6px solid color-mix(in srgb, var(--text) 38%, transparent); background:transparent; transition:background .12s, border-color .12s;}
+input[type=checkbox]:hover{border-color:var(--accent);}
+input[type=checkbox]:checked{background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 11px no-repeat; border-color:var(--accent);}
+input[type=checkbox]:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset:2px;}
+input[type=radio]{accent-color:var(--accent);}
+.todo-item input[type=checkbox]{width:15px; height:15px; margin-top:3px;}
+/* dialog buttons: soft, borderless; the main action in the accent */
+.panel .row button, .panel button.wide, #askRow button, .btnrow button{
+  border:none; border-radius:9px; padding:7px 14px; font-weight:700; color:var(--text); background:color-mix(in srgb, var(--text) 7%, transparent);}
+.panel .row button:hover, .panel button.wide:hover, #askRow button:hover, .btnrow button:hover{background:color-mix(in srgb, var(--text) 12%, transparent);}
+.panel .row button.primary, #askRow button.primary, .panel button.primary-wide{background:var(--accent) !important; color:#fff !important;}
+.panel .row button.primary:hover, #askRow button.primary:hover{filter:brightness(1.06);}
+#askRow button.askdanger.primary{background:#C9584E !important;}
+/* first-run bar and the tour: the theme's accent, not a stock blue */
+#welcomeBar{border:none; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,.08), 0 12px 32px rgba(0,0,0,.18);}
+#welcomeBar button{border:none; border-radius:9px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+#welcomeBar .wb-blue{background:var(--accent); color:#fff;}
+#tourSpot{box-shadow:0 0 0 9999px rgba(0,0,0,.5), 0 0 0 3px var(--accent);}
+#tourTip{border-radius:14px;}
+#tourTip button{border:none; border-radius:9px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+#tourTip button.primary{background:var(--accent); color:#fff;}
+/* the share menu: rows, not a wall of buttons */
+.sh-menu{display:flex; flex-direction:column; gap:2px; margin-top:4px;}
+.sh-group{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim); font-weight:800; margin:10px 4px 4px;}
+.sh-row{display:flex; align-items:center; gap:12px; padding:8px 10px; border-radius:10px; text-align:left; color:var(--text); width:100%;}
+.sh-row:hover{background:color-mix(in srgb, var(--text) 6%, transparent);}
+.sh-row i{width:32px; height:32px; border-radius:9px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--accent) 16%, transparent); color:color-mix(in srgb, var(--accent) 80%, var(--text));}
+.sh-row i svg{width:17px; height:17px;}
+.sh-row b{display:block; font-size:13.5px;} .sh-row span{font-size:11.5px; color:var(--text-dim);}
+.sh-row.main{background:color-mix(in srgb, var(--accent) 12%, transparent);}
+.sh-row.main:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);}
+/* edit board: 16 colours, the rest behind More colours */
+.bd-more-sw[hidden]{display:none !important;}
+/* the D&D sheet keeps its paper and fonts; its fields lose the hard boxes */
+#sheetEditor input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), #sheetEditor textarea, #sheetEditor select{
+  border:1px solid transparent !important; border-radius:7px !important; background-color:color-mix(in srgb, var(--ppb, #C9B08A) 16%, var(--pp0, #FBF6EC)) !important; box-shadow:none;}
+#sheetEditor input:not([type=checkbox]):not([type=radio]):focus, #sheetEditor textarea:focus, #sheetEditor select:focus{
+  outline:none; border-color:var(--ppb, #C9B08A) !important; background-color:var(--pp0, #FBF6EC) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--ppb, #C9B08A) 30%, transparent) !important;}
+#sheetEditor input[type=checkbox]{border-color:var(--ppb, #C9B08A);}
+#sheetEditor input[type=checkbox]:checked{background-color:var(--pink2, #8A6D3B); border-color:var(--pink2, #8A6D3B);}
+#sheetEditor select{padding-right:26px !important;}
+.se-arrow{background:var(--pink2, #8A6D3B); border-radius:10px;}
+.se-arrow:hover{background:var(--pink, #2C2415);}
+/* small helper buttons (More colours, Automatic, colour picker actions) */
+.cpk-btn{border:none !important; border-radius:8px !important; background:color-mix(in srgb, var(--text) 7%, transparent) !important; color:var(--text) !important; font-weight:600; padding:6px 10px !important;}
+.cpk-btn:hover{background:color-mix(in srgb, var(--text) 12%, transparent) !important;}
+#bdIconAuto{border:none; border-radius:8px; background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+#bdIconAuto.sel, #bdIconAuto.on{background:color-mix(in srgb, var(--accent) 22%, transparent);}
+/* the sheet's "a choice to make" marks: the sheet's own ink, not a stock blue */
+.se-need{background:#C2833A;}
+/* card pages: the blocks are soft panels like everything else. (They were
+   square so two snapped blocks read as one surface; blocks keep a gap now,
+   so the rounding no longer opens holes.) */
+.cpblock{border:none; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.08), 0 6px 18px rgba(0,0,0,.08);}
+.cpblock > .cpb-body{background:color-mix(in srgb, var(--surface) 70%, transparent);}
+.cpb-bar{border-bottom:1px solid color-mix(in srgb, var(--text) 7%, transparent); background:var(--surface); padding:8px 12px;}
+.cpblock.dragging{box-shadow:0 12px 30px rgba(0,0,0,.28);}
 </style>
 </head>
 <body>
@@ -5190,7 +5269,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b173";
+window.BUILD = "b174";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -10903,20 +10982,25 @@ function openBoardDialog(c){
   /* every Jewel colour and every gradient, always on show; More colours has the rest */
   const shownColours = [...PALETTES.find(p => p.name === "Jewel").colors.map(css => ({css, title:css})), ...GRADIENTS, {css:SHINY_CSS, name:"Shiny"}];
   if (bdAccent && !shownColours.some(g => g.css === bdAccent)) shownColours.unshift({css:bdAccent, name:"Current colour"});
-  for (const pick of shownColours){
+  /* sixteen to choose from; More colours shows the gradients and the rest,
+     then Any colour opens the full picker */
+  const QUICK = 16;
+  shownColours.forEach((pick, i) => {
     const col = pick.css;
     const b = document.createElement("button");
-    b.className = "swatch" + (isGradient(col) ? " gradient" : ""); b.dataset.col = col;
+    b.className = "swatch" + (isGradient(col) ? " gradient" : "") + (i >= QUICK ? " bd-more-sw" : ""); b.dataset.col = col;
+    if (i >= QUICK) b.hidden = true;
     b.style.background = col; b.title = pick.name || pick.title || col;
     b.addEventListener("click", () => { bdAccent = col; paint(); });
     sw.appendChild(b);
-  }
+  });
   const more = document.createElement("button");
   more.className = "cpk-btn bd-more"; more.type = "button"; more.textContent = "More colours\u2026";
-  more.addEventListener("click", () => openColorPicker({
-    current: bdAccent, allowGradient: true,
-    onPick: v => { bdAccent = v; paint(); }
-  }));
+  more.addEventListener("click", () => {
+    const hid = [...sw.querySelectorAll(".bd-more-sw[hidden]")];
+    if (hid.length){ hid.forEach(x => x.hidden = false); more.textContent = "Any colour\u2026"; return; }
+    openColorPicker({ current: bdAccent, allowGradient: true, onPick: v => { bdAccent = v; paint(); } });
+  });
   sw.append(more);
   $("#bdIconTone").querySelectorAll(".bd-tone").forEach(x => x.classList.toggle("sel", x.dataset.tone === bdTone));
   $("#bdTitle").oninput = () => bdRefreshIconUI();
@@ -23001,12 +23085,31 @@ milanoteFileInput.addEventListener("change", async () => {
 
 /* ---- the board's export button: send this board, its images, or bring a board in ---- */
 $("#mbExport").addEventListener("click", async () => {
-  const v = await askOpen({title:"Share boards", build(body){
-    const m = document.createElement("div"); m.id = "askMsg";
-    m.textContent = "Share this board live: everyone with the link sees changes as they happen. Or export a copy to send (everything on it, sub-boards and pictures included), or import a copy someone sent you. Importing adds it here; nothing else changes.";
-    body.appendChild(m); return {};
-  }, buttons:[{label:"Cancel", value:null}, {label:"Picture (.png)", value:"png"}, {label:"PDF", value:"pdf"}, {label:"Images (.zip)", value:"zip"}, {label:"Import a board\u2026", value:"import"}, {label:"From Milanote\u2026", value:"milanote"}, {label:"Open a shared link\u2026", value:"join"}, {label:"Export a copy", value:"export"},
-    {label:shareSessionForBoard(currentBoardId) ? "Sharing\u2026" : "Share live\u2026", value:"live", primary:true}]});
+  /* one tidy menu of rows instead of eight buttons squeezed into a dialog */
+  const ic = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>';
+  const live = shareSessionForBoard(currentBoardId);
+  const v = await askOpen({title:"Share and export", build(body){
+    const menu = document.createElement("div"); menu.className = "sh-menu";
+    const row = (val, icon, t, sub, main) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "sh-row" + (main ? " main" : ""); b.dataset.v = val;
+      b.innerHTML = "<i>" + ic(icon) + "</i><div><b></b><span></span></div>";
+      b.querySelector("b").textContent = t; b.querySelector("span").textContent = sub;
+      b.addEventListener("click", () => askClose(val));
+      menu.appendChild(b);
+    };
+    const group = t => { const g = document.createElement("div"); g.className = "sh-group"; g.textContent = t; menu.appendChild(g); };
+    row("live", "M8.5 12.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1 M15.5 11.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1", live ? "Sharing\u2026" : "Share live\u2026", "Everyone with the link sees changes as they happen", true);
+    group("Save a copy");
+    row("png", "M4 5h16v14H4z M4 16l5-5 4 4 2-2 5 5 M15 9h.01", "Picture (.png)", "The board as one image");
+    row("pdf", "M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h4", "PDF", "To print or send");
+    row("zip", "M5 4h14v16H5z M11 4v2 M13 6v2 M11 8v2 M13 10v2 M10 14h4v3h-4z", "Images (.zip)", "Every picture on the board");
+    row("export", "M12 3v12 M7 10l5 5 5-5 M5 21h14", "Export a copy", "Everything on it, sub-boards and pictures included");
+    group("Bring in");
+    row("import", "M12 21V9 M7 14l5-5 5 5 M5 3h14", "Import a board\u2026", "A copy someone sent you; nothing else changes");
+    row("join", "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7 M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7", "Open a shared link\u2026", "Join a board someone is sharing live");
+    row("milanote", "M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z", "From Milanote\u2026", "Bring boards over from a Milanote export");
+    body.appendChild(menu); return {};
+  }, buttons:[{label:"Close", value:null}]});
   if (v === "live"){
     if (currentBoardId === state.rootBoardId || currentBoardId === TRASH_ID) toast("Home and the Recycle Bin can\u2019t be shared. Open a board, or right-click a board card and choose Share live.", 7000);
     else openShareDialog(currentBoardId);
@@ -32122,6 +32225,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b174", [
+    "One look everywhere: tick boxes, dropdowns and text boxes are soft and rounded in the theme's colours instead of the browser's; dialog buttons are soft pills with the main one in your accent; the first-run bar and tour use your accent instead of blue.",
+    "Share is one tidy menu: Share live at the top, then Save a copy (picture, PDF, images, a copy) and Bring in (import, open a shared link, Milanote). Edit board shows 16 colours, with More colours for the rest.",
+    "The D&D sheet keeps its paper look but its fields lose the hard boxes, and its arrows and \u201cchoice to make\u201d marks use the sheet's own colours. Card pages have soft rounded blocks.",
+  ]],
   ["b173", [
     "Settings is redesigned: a soft panel with icon sections and Find a setting, pills and switches instead of dropdowns and tick boxes, and smaller theme tiles so they all show at once.",
     "Your colours sits under the themes: change the board, text, accent and editing colours, Save as a new theme to keep them (named right there, and yours to come back to), or Reset to original. Pumpkin, Moss and Dusty plum are gone, Society is now Jericho, Eautiphen is back with the others, Sea glass sits with the light themes and Carmine is calmer.",
@@ -32162,15 +32270,6 @@ const PATCH_NOTES = [
   ["b165", [
     "Search lists everything by kind with nothing typed: Boards, Lists, D&D sheets, Cards, Links, Files, Documents and the rest (a kind you have none of doesn't show), each showing its first few with Show all. Click a heading to fold it away (Notes, Images and Comments start folded). A\u2013Z or Recent, top right, orders them all. Tags, under Favourites, groups everything by tag. With Search open, drag a card or picture onto a board in the list to put it in that board.",
     "Unsorted is a full-height panel on the right edge with pictures full width, instead of a small window that squeezed them into strips."
-  ]],
-  ["b164", [
-    "Import from Milanote in several parts: a board an earlier import already brought (one you have shortcuts to) is linked, not copied again. If a later import is that board\u2019s real place in Milanote, it moves there and the earlier one becomes a shortcut. Boards imported before b164 don\u2019t carry this, so earlier copies stay as they are."
-  ]],
-  ["b163", [
-    "Update archive folder works with big workspaces (it stopped with \u201cInvalid string length\u201d): pictures are written once each into the archive\u2019s Assets folder and the catalogue just names them. Later updates only write new pictures."
-  ]],
-  ["b162", [
-    "Fixed: files dragged from your computer (pictures, a .zip, anything) did nothing in Chrome; only pictures dragged from the web worked. A big file now shows \u201cAdding \u2026\u201d straight away, and a drop that can\u2019t be added says why."
   ]],
 ];
 function renderPatchNotes(){
