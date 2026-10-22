@@ -117,6 +117,8 @@ input,textarea{font:inherit; color:var(--text); background:var(--canvas);
   gap:9px; padding:12px; box-shadow:6px 0 18px rgba(0,0,0,.25);}
 #libraryPanel.open{display:flex;}
 body.lib-open #tbHandle{visibility:hidden;}
+/* Recycle and Trash sit on the board's corner, which the open Library covers: step them aside */
+body.lib-open #binFloat{left:calc(300px + 14px);}
 #libraryPanel.dropping{outline:2px dashed var(--accent); outline-offset:-6px;}
 .lib-head{display:flex; align-items:center; justify-content:space-between; font-size:15px;}
 .lib-head button{width:28px; height:28px; border-radius:5px;}
@@ -138,13 +140,19 @@ body.lib-open #tbHandle{visibility:hidden;}
 .lib-item:hover .lib-del, .lib-item:focus-within .lib-del{display:flex; align-items:center; justify-content:center;}
 .lib-item.busy{opacity:.5;}
 #cloudWrap{position:relative; flex:none; z-index:3;}
-#cloudMenu{position:absolute; right:0; top:34px; background:var(--surface-hi); border:1px solid var(--border);
-  border-radius:6px; display:none; flex-direction:column; width:250px; padding:10px; gap:7px;
-  box-shadow:0 6px 18px rgba(0,0,0,.4);}
+#cloudMenu{position:absolute; right:0; top:34px; background:var(--surface); border:none;
+  border-radius:14px; display:none; flex-direction:column; width:270px; padding:8px; gap:2px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08), 0 14px 34px rgba(0,0,0,.18);}
 #cloudMenu.open{display:flex;}
-#cloudMenu button{padding:7px 10px; border-radius:5px; text-align:left; font-size:12.5px; background:var(--surface); color:var(--text);}
-#cloudMenu button:hover{background:var(--canvas);}
-#cloudMenu .meta{font-size:12px; line-height:1.4; color:var(--text-dim);}
+#cloudMenu button{padding:8px 10px; border-radius:9px; text-align:left; font-size:12.5px; background:none; color:var(--text); border:none !important;
+  display:flex; align-items:center; gap:10px;}
+#cloudMenu button:hover{background:color-mix(in srgb, var(--text) 6%, transparent);}
+#cloudMenu button svg{width:16px; height:16px; flex:none;}
+#cloudMenu .meta{font-size:12px; line-height:1.45; color:var(--text-dim); padding:6px 8px 8px; display:flex; gap:9px; align-items:flex-start;}
+/* the same green / blue / amber / red dot as the chip */
+#cloudMenu .meta::before{content:""; width:9px; height:9px; border-radius:50%; flex:none; margin-top:4px; background:var(--cm-dot, #8A8F98);}
+#cloudMenu #cmBackup{background:var(--accent); color:#fff; justify-content:center; font-weight:700; margin:2px 0 4px;}
+#cloudMenu #cmBackup:hover{background:color-mix(in srgb, var(--accent) 88%, #000);}
 #cloudChip{gap:7px; font-size:12px; font-weight:600; color:var(--text); max-width:190px;}
 #cloudChip .cc-text{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 #cloudChip .cc-dot{width:9px; height:9px; border-radius:50%; flex:none; background:#8A8F98;}
@@ -158,8 +166,8 @@ body.lib-open #tbHandle{visibility:hidden;}
 #topbar .backup-primary:hover{
   background:rgba(11,38,116,.9); color:#fff;
 }
-.panel .backup-primary{background:#286F68; color:#F4FFFD; border-color:#32847B !important;}
-.panel .backup-primary:hover{background:#32847B; color:#fff;}
+.panel .backup-primary{background:var(--accent); color:#fff; border-color:var(--accent) !important;}
+.panel .backup-primary:hover{background:color-mix(in srgb, var(--accent) 88%, #000); color:#fff;}
 .storage-health{display:grid; gap:7px; padding:10px; margin:8px 0 12px;
   background:var(--surface); border:1px solid var(--border); border-radius:7px;}
 .storage-health .healthrow{display:grid; grid-template-columns:112px 1fr; gap:9px;
@@ -477,7 +485,8 @@ body.in-card #toolDraw{display:none;}
 #binFloat .tool.droptarget svg{stroke:var(--hue) !important;}
 body.focus-mode #binFloat{display:none !important;}
 /* space, not lines, between groups */
-.railDivider{width:44px; height:6px; margin:0; background:transparent;}
+/* a gap between groups, no line; the line shows only while you rearrange the toolbar */
+.railDivider{width:44px; height:14px; margin:0; background:transparent;}
 .tool.armed{background:var(--accent);} #rail .tool.armed svg{stroke:#14181c; fill:none;}
 /* cards lighter than the board, lifted by a shadow instead of an outline */
 .card.type-note, .card.type-todo, .card.type-link, .card.type-table, .card.type-file, .card.type-card{
@@ -498,6 +507,19 @@ body.focus-mode #binFloat{display:none !important;}
 #updateLater{padding:6px 8px; color:var(--text-dim);}
 #rcLabels{display:none !important;}
 /* calendar widget */
+#calBig{position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center; background:color-mix(in srgb, var(--canvas) 55%, transparent); backdrop-filter:blur(2px);}
+#calBig.open{display:flex;}
+#calBig .cb-panel{--whue:var(--accent); width:min(1100px, calc(100vw - 48px)); height:min(780px, calc(100vh - 48px)); background:var(--surface); border-radius:16px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08), 0 24px 60px rgba(0,0,0,.2); display:flex; flex-direction:column; overflow:hidden;}
+#calBig .cb-top{display:flex; align-items:center; padding:12px 14px 4px 18px;}
+#calBig .cb-name{flex:1; font-family:var(--font-serif); font-weight:700; font-size:17px;}
+#calBig .cb-x{width:30px; height:30px; border-radius:50%; color:var(--text-dim);} #calBig .cb-x:hover{background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+#calBig .cb-body{flex:1; min-height:0; padding:4px 16px 16px;}
+#calBig .cal-title{font-size:16px;} #calBig .cal-dnum{font-size:12px;} #calBig .cal-ev{font-size:12px; line-height:15px;}
+/* the see-through calendar: no card, the days sit on the board */
+.card.type-widget.wd-clear:not(.selected){background:transparent; border-color:transparent; box-shadow:none;}
+.card.type-widget.wd-clear .wd-strip{background:transparent;}
+.card.type-widget.wd-clear .cal-cell, .card.type-widget.wd-clear .cal-wcol{background:color-mix(in srgb, var(--text) 5%, transparent);}
 .wd-body.wd-cal{align-items:stretch; justify-content:flex-start; gap:6px; padding:4px 10px 10px; text-align:left; min-height:0; overflow:hidden;}
 .cal-bar{display:flex; align-items:center; gap:4px; flex:none;}
 .cal-title{flex:1; min-width:0; font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;}
@@ -715,8 +737,49 @@ body.focus-mode #binFloat{display:none !important;}
   background:color-mix(in srgb, var(--whue) 18%, var(--surface)); color:color-mix(in srgb, var(--whue) 70%, var(--text));}
 .wd-ic{width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; background:var(--wic, var(--whue)); flex:none;}
 .wd-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.wd-edit{display:none; padding:2px 9px; border-radius:7px; font-size:11px; font-weight:800; background:color-mix(in srgb, var(--whue) 25%, transparent); color:var(--text);}
-.card.type-widget:hover .wd-edit, .card.type-widget.selected .wd-edit{display:block;}
+.wd-tapdate{cursor:pointer; border-radius:6px; padding:1px 6px;}
+.wd-tapdate:hover{background:color-mix(in srgb, var(--whue) 12%, transparent);}
+/* the small card that changes one thing, beside it */
+.minipop{position:fixed; z-index:420; width:240px; background:var(--surface); color:var(--text); border-radius:12px; padding:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08), 0 14px 34px rgba(0,0,0,.18); display:flex; flex-direction:column; gap:6px; font-size:13px;}
+.mp-seg{display:flex; gap:2px; padding:3px; border-radius:9px; background:color-mix(in srgb, var(--text) 7%, transparent);}
+.mp-seg button{flex:1; padding:5px 8px; border-radius:7px; font-size:12px; font-weight:600; color:var(--text-dim);}
+.mp-seg button.on{background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.12);}
+.mp-find{border:none; outline:none; background:color-mix(in srgb, var(--text) 5%, transparent); border-radius:8px; padding:7px 10px; font:inherit; font-size:12.5px; color:var(--text);}
+.mp-list{max-height:260px; overflow-y:auto; display:flex; flex-direction:column;}
+.mp-row{display:flex; flex-direction:column; align-items:flex-start; text-align:left; padding:6px 9px; border-radius:8px; color:var(--text);}
+.mp-row:hover{background:color-mix(in srgb, var(--text) 6%, transparent);}
+.mp-row.on{background:color-mix(in srgb, var(--accent) 18%, transparent); font-weight:700;}
+.mp-dim{font-size:11px; color:var(--text-dim); font-weight:400;}
+.mp-big{border:none; outline:none; background:transparent; font:inherit; font-size:26px; font-weight:800; text-align:center; color:var(--text); padding:2px 0 4px;
+  border-bottom:1.5px solid color-mix(in srgb, var(--accent) 70%, transparent); font-variant-numeric:tabular-nums;}
+.mp-hint{text-align:center;} .mp-hint.mp-warn{color:var(--accent);}
+.mp-chips{display:flex; flex-wrap:wrap; gap:4px; justify-content:center;}
+.mp-chip{padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text);}
+.mp-chip:hover{background:color-mix(in srgb, var(--text) 11%, transparent);}
+.mp-chip.on{background:color-mix(in srgb, var(--accent) 22%, transparent);}
+.qe-title{border:none; outline:none; background:transparent; font-family:var(--font-serif); font-size:17px; font-weight:700; color:var(--text); padding:3px 2px 7px;
+  border-bottom:1.5px solid color-mix(in srgb, var(--accent) 75%, transparent);}
+.qe-title::placeholder{color:var(--text-dim); font-weight:400;}
+.qe-chips{justify-content:flex-start;}
+.qe-dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:-1px;}
+.qe-sub{padding:4px; border-radius:10px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.qe-times{display:flex; gap:6px;} .qe-tcol{flex:1; min-width:0;} .qe-tcol .mp-list{max-height:170px;} .qe-tcol .mp-dim{padding:2px 9px;}
+.qe-more{align-self:flex-start; font-size:11.5px; color:var(--text-dim); padding:3px 4px;}
+.qe-more:hover{color:var(--text);}
+.qe-extra{display:flex; flex-direction:column; gap:6px;} .qe-extra[hidden]{display:none;}
+.qe-notes{resize:vertical; font:inherit; font-size:12.5px;}
+.qe-foot{display:flex; justify-content:flex-end;}
+.qe-save{font-size:11.5px; font-weight:700; color:var(--accent); padding:3px 6px; border-radius:6px;}
+.qe-save:hover{background:color-mix(in srgb, var(--accent) 12%, transparent);}
+.mm-head{display:flex; align-items:center; gap:4px;} .mm-head b{flex:1; text-align:center; font-family:var(--font-serif); font-size:14px;}
+.mm-head button{width:26px; height:26px; border-radius:7px; color:var(--text-dim); font-size:15px;} .mm-head button:hover{background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+.mm-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center;}
+.mm-dow{font-size:10px; color:var(--text-dim); font-weight:700; padding:3px 0;}
+.mm-day{height:28px; border-radius:7px; font-size:12px; color:var(--text);}
+.mm-day:hover{background:color-mix(in srgb, var(--text) 7%, transparent);}
+.mm-day.today{font-weight:800; color:var(--accent);}
+.mm-day.on{background:var(--accent); color:#fff; font-weight:700;}
 .wd-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px 12px 12px; gap:2px; color:var(--text);}
 .wd-big{font-size:36px; font-weight:900; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums;}
 .wd-accent{color:var(--whue); font-size:48px;}
@@ -743,6 +806,9 @@ body.rail-edit #railTools > .tool, body.rail-edit #morePop .tool{animation:railW
 body.rail-edit #railTools > .tool:nth-child(even), body.rail-edit #morePop .tool:nth-child(even){animation-delay:-.16s;}
 @keyframes railWiggle{from{transform:rotate(-2.2deg);} to{transform:rotate(2.2deg);}}
 body.rail-edit .rail-dragging{animation:none !important; transform:scale(1.08); box-shadow:0 6px 16px rgba(0,0,0,.25);}
+.tool{position:relative;}
+.rail-count{position:absolute; top:1px; right:2px; min-width:16px; padding:0 4px; height:14px; border-radius:7px; font-size:9px; font-weight:800; line-height:14px;
+  text-align:center; background:var(--surface); color:var(--text-dim); box-shadow:0 1px 2px rgba(0,0,0,.12); pointer-events:none;}
 body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointer; background:color-mix(in srgb, var(--accent) 45%, transparent);}
 #railEditBar{position:fixed; left:calc(var(--rail-w) + 10px); bottom:16px; z-index:300; display:flex; flex-direction:column; gap:6px; max-width:300px;
   padding:12px 14px; border-radius:14px; background:var(--surface-hi); color:var(--text); font-size:12.5px; box-shadow:0 10px 32px rgba(0,0,0,.28);}
@@ -1623,6 +1689,11 @@ body.focus-mode #focusExit{display:flex;}
 input.inline-title{
   position:absolute; left:6px; right:6px; top:6px; z-index:5; background:var(--surface-hi);
 }
+/* a title being renamed: the words themselves, a faint line under them */
+.renaming{outline:none !important; cursor:text; caret-color:var(--text); user-select:text; -webkit-user-select:text;
+  text-overflow:clip !important; overflow:visible !important; white-space:pre-wrap !important;
+  box-shadow:0 1.5px 0 color-mix(in srgb, var(--accent) 75%, transparent); border-radius:1px; min-width:2ch;}
+.renaming:empty::before{content:attr(data-ph); color:var(--text-dim); font-weight:inherit; pointer-events:none;}
 
 /* free-resize is a mode, so it gets the same yellow cue a note in edit mode
    gets — you should be able to see why the aspect ratio stopped holding */
@@ -2118,6 +2189,9 @@ body.in-card #zoomCtl{z-index:170;}
 /* ---- text tools in the left toolbar (U-024) ---- */
 body.text-editing .railtemp, body.text-editing #railTools, body.text-editing #railCardPage, body.text-editing #railCardEnd{display:none !important;}
 body.text-editing #railText{display:flex !important; flex-direction:column; align-items:center; gap:2px;}
+body.image-tools:not(.text-editing) .railtemp, body.image-tools:not(.text-editing) #railTools, body.image-tools:not(.text-editing) #railCardPage, body.image-tools:not(.text-editing) #railCardEnd{display:none !important;}
+body.image-tools:not(.text-editing) #railImage{display:flex !important; flex-direction:column; align-items:center; gap:2px;}
+.card.type-image .caption.renaming{display:block;}
 .tool.txt{--hue:var(--text-dim); --tint:0%;}
 .tool.txt .txg{font-size:19px; line-height:22px; height:26px; margin-bottom:2px; color:var(--text);}
 .tool.txt.on{--tint:26%; --hue:var(--accent);}
@@ -2645,20 +2719,25 @@ body.focus-mode #textBarWrap{display:none;}
 
 /* context menu */
 #ctx{
-  position:fixed; z-index:100; background:var(--surface-hi); border:1px solid var(--border);
-  border-radius:6px; display:none; flex-direction:column; min-width:170px; overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.4);
+  position:fixed; z-index:100; background:var(--surface-hi); border:none; padding:5px;
+  border-radius:12px; display:none; flex-direction:column; min-width:180px; overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.1), 0 14px 34px rgba(0,0,0,.22);
 }
 #ctx.open{display:flex;}
-#ctx button{padding:7px 12px; text-align:left; font-size:13px;}
+#ctx button{padding:7px 10px; text-align:left; font-size:13px; display:flex; align-items:center; gap:10px; border-radius:8px;}
+#ctx .ctx-ic{width:15px; height:15px; flex:none; display:flex; color:var(--text);}
+#ctx .ctx-ic svg{width:15px; height:15px;}
+#ctx .ctx-t{flex:1;}
+#ctx button.danger, #ctx button.danger .ctx-ic{color:#D9534A;}
+:root[data-theme="dark"] #ctx button.danger, :root[data-theme="dark"] #ctx button.danger .ctx-ic{color:#F08A80;}
 #ctx button:hover{background:var(--surface);}
 #ctx button.danger:hover{color:#e0938d;}
-#ctx .ctxsub{display:flex; align-items:center; justify-content:space-between; gap:14px;}
+#ctx .ctxsub{display:flex; align-items:center; justify-content:space-between; gap:10px;}
 #ctx .ctxsub.on{background:var(--surface);}
 #ctx .ctxcaret{color:var(--text-dim); font-size:15px; line-height:1;}
 /* side menus: fixed, so the main menu's rounded clipping doesn't cut them off */
-#ctx .ctxpop{position:fixed; display:none; flex-direction:column; min-width:150px; background:var(--surface-hi);
-  border:1px solid var(--border); border-radius:6px; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.4);}
+#ctx .ctxpop{position:fixed; display:none; flex-direction:column; min-width:160px; background:var(--surface-hi); padding:5px;
+  border:none; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.1), 0 14px 34px rgba(0,0,0,.22);}
 #ctx .ctxpop.open{display:flex;}
 
 /* dialogs */
@@ -2744,13 +2823,18 @@ body.focus-mode #textBarWrap{display:none;}
 .askpick-t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .askpick-k{font-size:11px; color:var(--text-dim); flex:none;}
 .askpick-none{padding:10px; font-size:12.5px; color:var(--text-dim); text-align:center;}
-.bugdock{position:fixed; top:104px; right:16px; width:min(360px,92vw); max-height:70vh;
-  display:none; flex-direction:column; gap:6px; background:var(--surface-hi); color:var(--text);
-  border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,.28);
-  z-index:165; font-family:var(--font-mono,monospace); font-size:13px; padding:8px;}
+/* Bugs & suggestions: a developer tool, and it may look like one, but only
+   where it's a log (the dev tag, timestamps, status chips are in the code
+   font). The rest is the app's own panel and theme colours. */
+.bugdock{position:fixed; top:104px; right:16px; width:min(380px,92vw); max-height:70vh;
+  display:none; flex-direction:column; gap:10px; background:var(--surface); color:var(--text);
+  border:none; border-radius:14px; box-shadow:0 2px 6px rgba(0,0,0,.08), 0 14px 36px rgba(0,0,0,.18);
+  z-index:165; font-size:13px; padding:14px;}
 .bugdock.open{display:flex;}
-.bugdock .bd-head{display:flex; align-items:center; justify-content:space-between; cursor:move;
-  font-weight:bold; font-size:14px; padding:2px 2px 6px; border-bottom:1px solid var(--border); user-select:none;}
+.bugdock .bd-head{display:flex; align-items:center; gap:8px; cursor:move; user-select:none;}
+.bugdock .bd-head .bd-name{flex:1; font-family:var(--font-serif); font-weight:700; font-size:15px;}
+.bugdock .bd-dev{font-family:var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size:10px; padding:2px 7px; border-radius:6px;
+  background:color-mix(in srgb, var(--text) 82%, var(--surface)); color:color-mix(in srgb, var(--edit) 70%, #fff);}
 .bugdock .bd-x{background:none; border:none; cursor:pointer; font-size:14px; color:var(--text-dim); padding:0 4px; line-height:1;}
 .bugdock .bd-x:hover{color:var(--text);}
 /* flex:none + a floor, or the list below squeezes the input flat a little
@@ -2761,17 +2845,33 @@ body.focus-mode #textBarWrap{display:none;}
 .patchrow b{font-size:12px; letter-spacing:.03em; color:var(--text);}
 .patchrow ul{margin:3px 0 0; padding-left:16px;}
 .patchrow li{font-size:12px; line-height:1.5; color:var(--text-dim);}
-.bugdock textarea{flex:none; min-height:76px; font-family:inherit; font-size:13px; padding:6px; resize:vertical;
-  background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px;}
-.bugdock .bd-row{display:flex; gap:6px;}
-.bugdock .bd-row button{flex:1;}
-.bugdock .bd-send{background:#2F6FE4 !important; border-color:#2F6FE4 !important; color:#fff !important; font-weight:600;}
-.bugdock .bd-add{background:var(--surface); border:1px solid var(--border); padding:6px; cursor:pointer; border-radius:4px; color:var(--text);}
-.bugdock .bd-add:hover{background:var(--accent);}
-.bugdock .bd-list{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; padding-top:6px; border-top:1px solid var(--border);}
-.bugdock .bd-foot{display:flex; gap:6px;}
-.bugdock .bd-btn{flex:1; background:var(--surface); border:1px solid var(--border); padding:6px; cursor:pointer; border-radius:4px; color:var(--text);}
-.bugdock .bd-btn:hover{background:var(--accent);}
+.bugdock textarea{flex:none; min-height:76px; font-family:inherit; font-size:13px; padding:10px 12px; resize:vertical;
+  background:color-mix(in srgb, var(--text) 4%, transparent); color:var(--text); border:none; border-radius:10px; outline:none;}
+.bugdock textarea:focus{box-shadow:0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent);}
+.bugdock .bd-row{display:flex; gap:8px;}
+.bugdock .bd-add{padding:8px 14px; border-radius:9px; font-weight:700; font-size:12.5px; cursor:pointer; border:none;
+  background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+.bugdock .bd-add:hover{background:color-mix(in srgb, var(--text) 12%, transparent);}
+.bugdock .bd-send{background:var(--accent); color:#fff;}
+.bugdock .bd-send:hover{background:color-mix(in srgb, var(--accent) 88%, #000);}
+.bugdock .bd-list{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:2px; padding-top:8px; border-top:1px solid color-mix(in srgb, var(--text) 9%, transparent);}
+.bd-item{display:flex; gap:10px; align-items:flex-start; padding:7px 6px; border-radius:8px;}
+.bd-item:hover{background:color-mix(in srgb, var(--text) 4%, transparent);}
+.bd-mono{font-family:var(--font-mono, ui-monospace, Menlo, Consolas, monospace);}
+.bd-when{font-size:10.5px; color:var(--text-dim); flex:none; width:78px; padding-top:2px;}
+.bd-text{flex:1; min-width:0; white-space:pre-wrap; word-break:break-word; line-height:1.45;}
+.bd-chip{font-size:9.5px; padding:2px 6px; border-radius:5px; flex:none; margin-top:1px;}
+.bd-chip.sent{background:color-mix(in srgb, #3E9E5E 18%, transparent); color:#3E8E5A;}
+.bd-chip.priv{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text-dim);}
+.bd-chip.later{background:color-mix(in srgb, var(--edit) 22%, transparent); color:color-mix(in srgb, var(--edit) 70%, var(--text));}
+.bd-acts{display:flex; gap:2px; opacity:0; flex:none;}
+.bd-item:hover .bd-acts{opacity:1;}
+.bd-acts button{width:24px; height:22px; border-radius:6px; color:var(--text-dim); font-size:12px; border:none; background:none; cursor:pointer;}
+.bd-acts button:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text);}
+.bd-empty{color:var(--text-dim); font-size:12.5px; padding:6px;}
+.bugdock .bd-foot{display:flex;}
+.bugdock .bd-btn{background:none; border:none; padding:2px 4px; cursor:pointer; color:var(--accent); font-weight:700; font-size:12px;}
+.bugdock .bd-btn:hover{text-decoration:underline;}
 .panel .row button, .panel button.wide{
   padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px;
 }
@@ -3141,9 +3241,11 @@ select.cp-pill{appearance:none; padding-right:22px;
 /* toast */
 #toast{
   position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-  background:var(--surface-hi); border:1px solid var(--border); border-radius:6px;
-  padding:8px 14px; font-size:13px; z-index:400; display:none; max-width:80%;
+  background:var(--surface); border:none; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.08), 0 10px 28px rgba(0,0,0,.16);
+  padding:9px 14px; font-size:13px; z-index:400; display:none; max-width:80%;
 }
+.toast-act{margin-left:10px; font-weight:700; color:var(--accent); padding:2px 6px; border-radius:6px; font-size:13px;}
+.toast-act:hover{background:color-mix(in srgb, var(--accent) 12%, transparent);}
 
 /* empty state */
 #emptyHint{
@@ -3415,15 +3517,20 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 #noteFullEd{width:min(816px,100%); font-size:15.5px; line-height:1.75; outline:none;
   color:var(--text); min-height:80vh; padding:72px 84px; background:var(--surface-hi);
   border:1px solid var(--border); box-shadow:0 9px 30px rgba(0,0,0,.25);}
+/* open as a document: just the mark, no bubble, while you're on the note */
 .note-expand{
-  position:absolute; top:5px; right:5px; z-index:4; width:23px; height:23px;
-  border-radius:5px; cursor:pointer; opacity:0; transition:opacity .12s;
-  background:var(--surface-hi); border:1px solid var(--border); color:var(--text-dim);
+  position:absolute; top:4px; right:4px; z-index:4; width:22px; height:22px;
+  border-radius:6px; cursor:pointer; opacity:0; transition:opacity .12s;
+  background:transparent; border:none; color:var(--text-dim);
   display:flex; align-items:center; justify-content:center; padding:0;
 }
-.note-expand svg{width:13px; height:13px;}
-.card.type-note:hover .note-expand{opacity:1;}
-.note-expand:hover{color:var(--text); border-color:var(--accent);}
+.note-expand svg{width:14px; height:14px;}
+.link-info{position:absolute; top:6px; right:6px; z-index:4; width:24px; height:24px; border-radius:7px; padding:0; border:none; opacity:0; transition:opacity .12s;
+  display:flex; align-items:center; justify-content:center; color:var(--text); background:color-mix(in srgb, var(--surface) 85%, transparent);}
+.link-info svg{width:15px; height:15px;}
+.card.type-link:hover .link-info{opacity:.85;} .link-info:hover{opacity:1 !important;}
+.card.type-note:hover .note-expand{opacity:.75;}
+.note-expand:hover{opacity:1 !important; color:var(--text);}
 .card.type-note.editing-note .note-expand{opacity:0; pointer-events:none;}
 /* colour picker */
 #colorPicker{
@@ -3651,11 +3758,11 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
     </button>
     <div id="cloudMenu" role="menu">
       <div class="meta" id="cloudMenuStatus"></div>
-      <button class="wide" id="cmSync">Sync now</button>
-      <button class="wide backup-primary" id="cmBackup" title="Verify the current save and keep a restore point in local version history">Back up now (local restore point)</button>
-      <button class="wide" id="cmCopy" title="Save a self-contained dated CORKBORK package">Save a copy (.corkbork file)</button>
-      <button class="wide" id="cmFolder">Open this board’s folder</button>
-      <button class="wide" id="cmSettings">Sync settings…</button>
+      <button class="wide backup-primary" id="cmBackup" title="Verify the current save and keep a restore point in local version history">Back up now</button>
+      <button class="wide" id="cmSync"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/></svg><span>Sync now</span></button>
+      <button class="wide" id="cmCopy" title="Save a self-contained dated CORKBORK package"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save a copy (.corkbork file)</button>
+      <button class="wide" id="cmFolder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10H3z"/></svg>Open this board’s folder</button>
+      <button class="wide" id="cmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Sync settings…</button>
     </div>
   </div>
   <span class="barsep"></span>
@@ -3876,16 +3983,12 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
     <button class="tool" id="toolWidget" title="Widgets — clock, timer, countdown, mood, calendar">
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widget</button>
-    <button class="tool" data-type="heading" title="Heading [H]">
-      <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
     <button class="tool" id="toolArrow" title="Arrow — click one card, then another, to connect them">
       <svg viewBox="0 0 24 24"><path d="M5 19L19 5 M12 5h7v7"/></svg>Arrow</button>
     <button class="tool" id="toolDraw" title="Draw (P) — circle and mark up pictures, or draw anywhere">
       <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.6L15.8 4.8a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z M13.5 7l3.5 3.5"/></svg>Draw</button>
     <button class="tool" id="toolLine" title="Line — drag on the board to draw a line; drop an end on a card to attach it">
       <svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/></svg>Line</button>
-    <button class="tool" data-type="link" title="Link [L]">
-      <svg viewBox="0 0 24 24"><path d="M9 15l6-6 M8 12l-2.5 2.5a3.5 3.5 0 0 0 5 5L13 17 M16 12l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7"/></svg>Link</button>
     <div class="railDivider"></div>
     <!-- organizing tools, grouped -->
     <button class="tool" data-type="column" title="Column [C] — drag cards in to group them">
@@ -3921,6 +4024,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          the note colour/labels popups (#colorPop, #labelPop) below. -->
     <div id="morePop" class="railpop" style="width:190px;">
       <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;">
+      <button class="tool" data-type="heading" title="Heading [H]">
+        <svg viewBox="0 0 24 24"><path d="M5 5h6 M8 5v14 M13 12h6 M16 12v7"/></svg>Heading</button>
+      <button class="tool" data-type="link" title="Link [L]">
+        <svg viewBox="0 0 24 24"><path d="M9 15l6-6 M8 12l-2.5 2.5a3.5 3.5 0 0 0 5 5L13 17 M16 12l2.5-2.5a3.5 3.5 0 0 0-5-5L11 7"/></svg>Link</button>
       <button class="tool" data-type="table" title="Table [E] — an editable grid with formulas">
         <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M4 15h16 M9.5 5v14 M15 5v14"/></svg>Table</button>
       <button class="tool" data-type="doc" title="Document — long writing, kept as a small card; double-click to open">
@@ -3960,6 +4067,17 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          a card they do not yet work, and pretending otherwise wasted more of
          the owner's time than saying so. -->
     <div id="railNotice" style="display:none">
+    </div>
+    <!-- a selected picture: its own tools, like Milanote's -->
+    <div id="railImage" class="railset" style="display:none">
+      <button class="tool txt" id="imDone" title="Back to all tools (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>Back</button>
+      <button class="tool txt" id="imTags" title="Tags"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l9 9-8 8z M7.5 7.5h.01"/></svg>Tags</button>
+      <button class="tool txt" id="imComment" title="Comment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z M12 8.5v4 M10 10.5h4"/></svg>Comment</button>
+      <button class="tool txt" id="imDraw" title="Draw on it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.2-4.6L15.8 4.8a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z M13.5 7l3.5 3.5"/></svg>Draw on</button>
+      <button class="tool txt" id="imCrop" title="Crop or rotate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v13a2 2 0 0 0 2 2h13 M3 6h13a2 2 0 0 1 2 2v13"/></svg>Edit</button>
+      <button class="tool txt" id="imCaption" title="Caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16h16 M7 20h10 M6 4h12v8H6z"/></svg>Caption</button>
+      <button class="tool txt" id="imMeta" title="Name, description, source and other details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z M8 9h8 M8 13h5"/></svg>Details</button>
+      <button class="tool txt" id="imMore" title="More"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h.01 M12 12h.01 M19 12h.01"/></svg>More</button>
     </div>
     <!-- while you edit text, the toolbar swaps to text tools (like Milanote's) -->
     <div id="railText" class="railset" style="display:none">
@@ -4441,10 +4559,10 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- settings -->
 <div class="bugdock" id="bugOverlay">
   <div class="bd-head" id="bugDragBar">
-    <span>🐛 Bugs &amp; suggestions</span>
+    <span>🐛</span><span class="bd-name">Bugs &amp; suggestions</span><span class="bd-dev bd-mono">dev log</span>
     <button id="bugClose" class="bd-x" title="Close">✕</button>
   </div>
-  <textarea id="bugInput" placeholder="Describe a bug or a suggestion" rows="4"></textarea>
+  <textarea id="bugInput" placeholder="Describe a bug or a suggestion…" rows="4"></textarea>
   <div class="bd-row">
     <button id="bugSend" class="bd-add bd-send">Send to developer</button>
     <button id="bugAdd" class="bd-add" title="Keep it in your own list only">Keep private</button>
@@ -4810,7 +4928,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b169";
+window.BUILD = "b170";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5879,8 +5997,14 @@ window.addEventListener("beforeunload", e => {
 
 /* ---------------- toast ---------------- */
 let toastTimer;
-function toast(msg, ms=3200){
+/* action: {label, fn} adds one button to the message (e.g. Undo) */
+function toast(msg, ms=3200, action=null){
   const t = $("#toast"); t.textContent = msg; t.style.display = "block";
+  if (action){
+    const b = document.createElement("button"); b.type = "button"; b.className = "toast-act"; b.textContent = action.label;
+    b.addEventListener("click", () => { t.style.display = "none"; action.fn(); });
+    t.append(" ", b);
+  }
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", ms);
 }
 
@@ -6441,8 +6565,8 @@ function buildCardEl(c){
     /* An obvious way into the full-screen editor, on hover so it does not
        clutter a wall of notes. */
     const exp = document.createElement("button");
-    exp.className = "note-expand"; exp.title = "Open full screen";
-    exp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5 M15 4h5v5 M15 20h5v-5 M9 20H4v-5"/></svg>';
+    exp.className = "note-expand"; exp.title = "Open as a document";
+    exp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg>';
     exp.addEventListener("pointerdown", e => e.stopPropagation());
     exp.addEventListener("click", e => { e.stopPropagation(); openNoteFull(c.id); });
     el.appendChild(exp);
@@ -6481,6 +6605,11 @@ function buildCardEl(c){
     let h = ""; try { h = new URL(c.url).hostname; } catch(e){ h = c.url; }
     const yt = ytVideoId(c.url);
     const vim = vimeoId(c.url);
+    const info = document.createElement("button"); info.className = "link-info"; info.title = "Details: address, creator, note, picture";
+    info.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg>';
+    info.addEventListener("pointerdown", e => e.stopPropagation());
+    info.addEventListener("click", e => { e.stopPropagation(); openLinkDialog(card(c.id)); });
+    el.appendChild(info);
     const host = document.createElement("div"); host.className="host";
     if (previews && !c.thumbDataUrl){
       const fav = document.createElement("img"); fav.className = "fav"; fav.alt = "";
@@ -8836,7 +8965,7 @@ function drawerPreview(c, d){
   }
   /* anything else: what it is and its name */
   const name = c.type === "card" ? (c.name || "Unnamed card") : c.type === "doc" ? (c.title || "Untitled document") : c.type === "table" ? (c.title || "Table")
-    : c.type === "widget" ? (WIDGET_KINDS[c.widget]?.name || "Widget") + (c.label ? " \u00b7 " + c.label : "") : (c.title || c.name || line(c.text) || c.type);
+    : c.type === "widget" ? (c.label || WIDGET_KINDS[c.widget]?.name || "Widget") : (c.title || c.name || line(c.text) || c.type);
   d.append(el("span", "dp-sub", ({card:"Card", doc:"Document", table:"Table", widget:"Widget", sketch:"Drawing", palette:"Colours", comment:"Comment"})[c.type] || c.type), el("b", "dp-title", name));
 }
 /* "2 boards, 3 cards" for the things in a column */
@@ -9372,7 +9501,7 @@ function moveToTrash(ids){
     tb.cardIds.push(id); i++;
   }
   selection.clear(); markDirty(); renderAll();
-  toast(ids.length === 1 ? "Moved to Recycle Bin." : ids.length + " cards moved to Recycle Bin.");
+  toast(ids.length === 1 ? "Moved to Recycle Bin." : ids.length + " cards moved to Recycle Bin.", 5000, {label:"Undo", fn:() => undo()});
 }
 async function hardDelete(ids, silent){
   /* favourites are pulled out first — they go to Home's Unsorted instead */
@@ -9403,8 +9532,35 @@ async function hardDelete(ids, silent){
   detachEverywhere([...acc.cards]);
   selection.clear(); markDirty(); renderAll();
 }
-function deleteCards(ids, silent){
-  if (currentBoardId === TRASH_ID || !state.settings?.deleteToRecycle){ hardDelete(ids, silent); return; }
+/* As few "are you sure?" prompts as possible: only for what holds real work
+   (a note or document with writing, a board with things in it, a D&D sheet).
+   Everything else goes at once, with Undo on the message. */
+function deleteNeedsAsk(ids){
+  const what = [];
+  for (const id of ids){
+    const c = card(id); if (!c) continue;
+    if ((c.type === "note" || c.type === "doc") && (c.text || "").trim()) what.push(c.type === "doc" ? "a document" : "a note with writing");
+    else if (c.type === "sheet") what.push("a D&D sheet");
+    else if (c.type === "board" && !c.shortcut){ const b = board(c.boardId); if (b && (b.cardIds.length || b.unsortedIds.length)) what.push("a board with things in it"); }
+  }
+  return what;
+}
+async function deleteCards(ids, silent){
+  ids = ids.filter(id => card(id));
+  if (!ids.length) return;
+  const permanent = currentBoardId === TRASH_ID || !state.settings?.deleteToRecycle;
+  if (!silent){
+    const what = deleteNeedsAsk(ids);
+    if (what.length){
+      const one = ids.length === 1;
+      const ok = await askConfirm({ title: one ? "Delete this?" : "Delete " + ids.length + " things?",
+        message: one ? "It's " + what[0] + "." : "They include " + [...new Set(what)].join(", ") + ".",
+        detail: permanent ? "Ctrl+Z brings it back." : "It goes to the Recycle Bin.",
+        okLabel:"Delete", danger:true });
+      if (!ok) return;
+    }
+  }
+  if (permanent){ await hardDelete(ids, true); if (!silent) toast(ids.length === 1 ? "Deleted." : ids.length + " deleted.", 5000, {label:"Undo", fn:() => undo()}); return; }
   moveToTrash(ids);
 }
 
@@ -9622,7 +9778,7 @@ function closeNoteFull(){
   noteFullTbHome = null;
   markDirty(); renderBoard();
 }
-function editNote(c, el){
+function editNote(c, el, at){
   editing = true;
   const old = el.querySelector(c.type === "heading" ? ".h-text" : ".note-text"); if (old) old.remove();
   const ed = document.createElement("div");
@@ -9643,8 +9799,19 @@ function editNote(c, el){
   updateRail();
   try { document.execCommand("styleWithCSS", false, true); } catch(e){}
   ed.focus();
-  const sel = getSelection(), rg = document.createRange();
-  rg.selectNodeContents(ed); rg.collapse(false); sel.removeAllRanges(); sel.addRange(rg);
+  /* the cursor goes where you double-clicked (the box has the same text in
+     the same place), or to the end when there is no point to go by */
+  const sel = getSelection();
+  let rg = null;
+  if (at){
+    try {
+      if (document.caretRangeFromPoint) rg = document.caretRangeFromPoint(at.x, at.y);
+      else if (document.caretPositionFromPoint){ const cp = document.caretPositionFromPoint(at.x, at.y); if (cp){ rg = document.createRange(); rg.setStart(cp.offsetNode, cp.offset); rg.collapse(true); } }
+    } catch (_) { rg = null; }
+    if (rg && !ed.contains(rg.startContainer)) rg = null;
+  }
+  if (!rg){ rg = document.createRange(); rg.selectNodeContents(ed); rg.collapse(false); }
+  sel.removeAllRanges(); sel.addRange(rg);
   let cancelled = false, committed = false;
   const commit = (deferRender=false) => {
     /* Idempotent on purpose. THE STUCK-NOTE BUG lived here: this used to run
@@ -9697,7 +9864,50 @@ function editNote(c, el){
   });
   ed.addEventListener("pointerdown", e => e.stopPropagation());
 }
-function editTitleInline(c, el, field, cb){
+/* Renaming happens in the title itself: the words turn editable where they
+   are, in their own font, with no box laid over the card. A card with no
+   title element of its own falls back to the small box below. */
+const RENAME_TARGETS = ".btitle, .bk-t, .wd-title, .chead, .card-title, .ltitle";
+function editTitleInline(c, el, field, cb, placeholder, targetSel = RENAME_TARGETS){
+  const target = el?.querySelector(targetSel);
+  if (!target) return editTitleInlineBox(c, el, field, cb);
+  editing = true;
+  const was = c[field] || "";
+  target.textContent = was;
+  if (placeholder) target.dataset.ph = placeholder;
+  target.classList.add("renaming");
+  target.setAttribute("contenteditable", "plaintext-only");
+  if (target.contentEditable !== "plaintext-only") target.setAttribute("contenteditable", "true");
+  target.spellcheck = false;
+  target.focus();
+  const rg = document.createRange(); rg.selectNodeContents(target);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+  let cancelled = false, done = false;
+  const finish = () => {
+    if (done) return; done = true;
+    editing = false;
+    const v = cancelled ? was : target.textContent.replace(/\s+/g, " ").trim();
+    target.removeAttribute("contenteditable"); target.classList.remove("renaming");
+    if (document.activeElement === target) target.blur();
+    if (v !== was){ pushUndo(); cb(v); markDirty(); }
+    invalidateCardEls(c.id);
+    renderAll();
+  };
+  target.addEventListener("blur", finish, {once:true});
+  target.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Enter"){ e.preventDefault(); finish(); }
+    if (e.key === "Escape"){ e.preventDefault(); cancelled = true; finish(); }
+  });
+  /* pasted text arrives plain and on one line */
+  target.addEventListener("paste", e => {
+    e.preventDefault();
+    const t = (e.clipboardData?.getData("text/plain") || "").replace(/\s+/g, " ");
+    document.execCommand("insertText", false, t);
+  });
+  for (const ev of ["pointerdown", "mousedown", "click", "dblclick"]) target.addEventListener(ev, e => e.stopPropagation());
+}
+function editTitleInlineBox(c, el, field, cb){
   editing = true;
   const inp = document.createElement("input");
   inp.className = "inline-title"; inp.value = c[field] || "";
@@ -9808,7 +10018,31 @@ const ICON_MONO = [
   ["check","Symbols","check done tick yes","M4.5 12.5 9.5 17.5 19.5 6.5"],
   ["cross","Symbols","cross no wrong cancel","M6 6l12 12 M18 6L6 18"],
   ["plus","Symbols","plus add new","M12 5v14 M5 12h14"],
-  ["spark","Symbols","sparkle magic shine special","M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"]
+  ["spark","Symbols","sparkle magic shine special","M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"],
+  /* the app's own line icons (menus, toolbars), usable on boards too */
+  ["pencil","Tools","pencil edit write","M4 20h4L19 9l-4-4L4 16z"],
+  ["tag","Tools","tag label","M3 12V4h8l9 9-8 8z M7.5 7.5h.01"],
+  ["lock","Tools","lock private secret","M5 11h14v9H5z M8 11V8a4 4 0 0 1 8 0v3"],
+  ["unlock","Tools","unlock open public","M5 11h14v9H5z M8 11V8a4 4 0 0 1 7.5-2"],
+  ["send","Tools","send arrow forward next","M4 12h14 M13 6l6 6-6 6"],
+  ["trash","Tools","trash bin delete","M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13"],
+  ["download","Tools","download save","M12 4v11 M7 10l5 5 5-5 M5 20h14"],
+  ["gear","Tools","gear settings cog","M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2"],
+  ["info","Tools","info about details","M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 11v5 M12 8h.01"],
+  ["comment","Tools","comment speech chat","M4 5h16v11H9l-5 4z"],
+  ["expand","Tools","expand open full","M14 4h6v6 M20 4l-7 7 M10 20H4v-6 M4 20l7-7"],
+  ["external","Tools","external open new","M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6"],
+  ["refresh","Tools","refresh repeat sync","M20 11a8 8 0 0 0-14.5-4.5L4 8 M4 4v4h4 M4 13a8 8 0 0 0 14.5 4.5L20 16 M20 20v-4h-4"],
+  ["drop","Tools","drop colour paint ink","M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"],
+  ["crop","Tools","crop edit picture","M6 3v13a2 2 0 0 0 2 2h13 M3 6h13a2 2 0 0 1 2 2v13"],
+  ["caption","Tools","caption subtitle","M4 16h16 M7 20h10 M6 4h12v8H6z"],
+  ["details","Tools","details card document","M4 5h16v14H4z M8 9h8 M8 13h5"],
+  ["shortcut","Tools","shortcut chain copy","M10 14a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.7-5.7L11.6 7.4 M14 10a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.7 5.7l1.7-1.7"],
+  ["back","Tools","back return left","M19 12H5 M11 6l-6 6 6 6"],
+  ["page","Tools","page file document pdf","M6 3h9l4 4v14H6z M14 3v5h5"],
+  ["columns","Tools","columns layout split","M4 5h7v14H4z M13 5h7v14h-7z"],
+  ["quote","Tools","quote speech citation","M7 7h4v4c0 3-1.5 5-4 6 M15 7h4v4c0 3-1.5 5-4 6"],
+  ["checklist","Tools","checklist todo tasks","M4 5h5v5H4z M5.2 7.6l1.3 1.2 2-2.4 M12 7.5h8 M4 14h5v5H4z M12 16.5h8"]
 ];
 const ICON_MULTI = [
   ["m-fire","Multicolour","fire flame hot","<path fill=\"#E8703A\" d=\"M12 3c3.6 4.2 5.8 7 5.8 10.2A5.8 5.8 0 0 1 6.2 13.4c0-1.8.8-3.2 2-4.7.5 1.1 1.1 1.8 2 2.1.2-2.7.7-5.3 1.8-7.8z\"/><path fill=\"#F5C542\" d=\"M12 21a3.3 3.3 0 0 1-3.3-3.3c0-1.9 1.7-3 3.3-5.7 1.6 2.7 3.3 3.8 3.3 5.7A3.3 3.3 0 0 1 12 21z\"/>"],
@@ -10181,10 +10415,10 @@ let linkEditingId = null, linkThumbDataUrl = null, linkFetchedMeta = null;
 function openLinkDialog(c){
   linkEditingId = c ? c.id : null;
   $("#linkUrl").value = c ? c.url : "";
-  $("#linkTitle").value = c ? c.title : "";
+  $("#linkTitle").value = c ? (c.title || "") : "";
   $("#linkAuthor").value = c ? (c.author || "") : "";
   $("#linkAuthorUrl").value = c ? (c.authorUrl || "") : "";
-  $("#linkNote").value = c ? c.note : "";
+  $("#linkNote").value = c ? (c.note || "") : "";
   $("#linkThumbUrl").value = c ? (c.thumbUrl || "") : "";
   linkThumbDataUrl = c ? (c.thumbDataUrl || null) : null;
   linkFetchedMeta = null;
@@ -10244,19 +10478,23 @@ $("#linkOk").addEventListener("click", () => {
   if (state.settings?.linkPreviews !== false && !saved.previewTried) fetchLinkMetadata(saved);
 });
 
-function enterEdit(c){
+function enterEdit(c, at){
   const el = worldEl.querySelector(`.card[data-id="${c.id}"]`);
   if (!el) return;
   if (c.locked){ toast("This board is private on another device. Open it there."); return; }
   if (c.pinned){ toast("Locked in place. Right-click (or long-press) it and choose Unlock to change it."); return; }
   if (c.type !== "board" && shareReadOnly()){ toast("This shared board is view-only."); return; }
-  if (c.type === "note" || c.type === "heading") editNote(c, el);
+  if (c.type === "note" || c.type === "heading") editNote(c, el, at);
   else if (c.type === "board") openBoard(c.boardId);
   else if (c.type === "sketch") setDrawMode(true);
   else if (c.type === "line") editLineLabel(c.id);
   else if (c.type === "comment") openComments(c.id, true);
   else if (c.type === "doc") openNoteFull(c.id);
-  else if (c.type === "link") openLinkDialog(c);
+  else if (c.type === "link"){
+    /* the title is renamed where it is; the rest is behind the card's \u24d8 */
+    if (el.querySelector(".ltitle")) editTitleInline(c, el, "title", v => patchCard(c.id, {title:v}), linkHost(c));
+    else openLinkDialog(c);
+  }
   else if (c.type === "todo"){
     const L = c.linkTo ? card(c.linkTo) : c;
     if (L) editTitleInline(L, el, "title", v => patchCard(L.id, { title: v || "List" }));
@@ -10978,9 +11216,6 @@ async function renameCustomBlock(key){
 }
 async function deleteCustomBlock(key){
   const b = cpCustom().find(x => x.key === key); if (!b) return;
-  if (!await askConfirm({ title:"Delete this block?",
-    message:"“" + (b.label || "Untitled") + "” and anything written in it are removed from this card.",
-    okLabel:"Delete", danger:true })) return;
   pushUndo();
   const c = cpData();
   cpSet({ customBlocks: (c.customBlocks || []).filter(x => x.key !== key) });
@@ -11339,9 +11574,6 @@ function renderRelsInto(host, cid, refresh){
     const x = document.createElement("button"); x.className = "cp-connx"; x.textContent = "✕";
     x.title = "Remove this connection from both cards";
     x.addEventListener("click", async () => {
-      if (!await askConfirm({ title:"Remove this connection?",
-        message:"It is removed from both cards.",
-        okLabel:"Remove", danger:true })) return;
       pushUndo();
       set({ relations: card(cid).relations.filter((_,j)=>j!==i) });
       const o = card(r.id);
@@ -12223,6 +12455,9 @@ function updateRail(){
     if (mode === "card")
       $("#rcColor").style.display = (sel.length && sel.every(id => card(id)?.type === "note")) ? "flex" : "none";
   }
+  /* one picture selected: the rail shows picture tools instead (Back returns) */
+  const one = selection.size === 1 && !onCard ? card([...selection][0]) : null;
+  document.body.classList.toggle("image-tools", !!(one && one.type === "image" && !document.body.classList.contains("drawing")));
   if (mode === railMode) return;
   railMode = mode;
   placeBlockTool(onCard);
@@ -12297,6 +12532,19 @@ $("#cpTabStrip").addEventListener("click", () => {
 });
 $("#cpCustom").addEventListener("click", () => $("#cpPicker").click());
 $("#cpPicker").addEventListener("input", e => applyNoteColor(e.target.value));
+/* picture tools */
+{
+  const pic = () => { const c = selection.size === 1 ? card([...selection][0]) : null; return c?.type === "image" ? c : null; };
+  const picEl = c => worldEl.querySelector('.card[data-id="' + c.id + '"]');
+  $("#imDone").addEventListener("click", () => setSelection([]));
+  $("#imTags").addEventListener("click", () => { const c = pic(); if (!c) return; const r = $("#imTags").getBoundingClientRect(); openCtx(r.right + 4, r.top, c); [...document.querySelectorAll("#ctx button")].find(b => /tags/.test(b.textContent))?.click(); });
+  $("#imComment").addEventListener("click", () => { const c = pic(); if (c) openComments(c.id, true); });
+  $("#imDraw").addEventListener("click", () => { const c = pic(); if (c) setDrawMode(true); });
+  $("#imCrop").addEventListener("click", () => { const c = pic(); if (!c) return; openLightbox(c.id); setTimeout(() => $("#lbEditBtn")?.click(), 0); });
+  $("#imCaption").addEventListener("click", () => { const c = pic(); if (!c) return; editTitleInline(c, picEl(c), "caption", v => patchCard(c.id, {caption:v}), "Write a caption\u2026", ".caption"); });
+  $("#imMeta").addEventListener("click", () => { const c = pic(); if (c) editImageMetadata(c); });
+  $("#imMore").addEventListener("click", () => { const c = pic(); if (!c) return; const r = $("#imMore").getBoundingClientRect(); openCtx(r.right + 4, r.top, c); });
+}
 $("#rcLabels").addEventListener("click", () => {
   const p = $("#labelPop");
   const r = $("#rcLabels").getBoundingClientRect();
@@ -12693,10 +12941,54 @@ function createTodoShortcut(c){
   markDirty(); renderAll(); setSelection([id]);
   return state.cards[id];
 }
+/* Right-click rows get a line icon in the text colour (white on dark themes)
+   instead of the emoji some of them used to start with. Matched by wording,
+   so a new row picks up a fitting icon without being listed here. */
+const CTX_ICONS = [
+  [/^Delete|^Remove/, "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"],
+  [/^Unfavourite/, "m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z", true],
+  [/Favourite/, "m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"],
+  [/^Unlock|Make public/, "M5 11h14v9H5zM8 11V8a4 4 0 0 1 7.5-2"],
+  [/Lock in place|Private|Make private/, "M5 11h14v9H5zM8 11V8a4 4 0 0 1 8 0v3"],
+  [/Share/, "M9 5.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM3 20c0-3.2 2.7-5 6-5s6 1.8 6 5M16 6.2a2.7 2.7 0 1 1 .1 5.4M17 15.2c2.5.4 4 2.1 4 4.8"],
+  [/tags/, "M3 12V4h8l9 9-8 8zM7.5 7.5h.01"],
+  [/^Edit metadata/, "M4 5h16v14H4zM8 9h8M8 13h5"],
+  [/^Edit|^Rename/, "M4 20h4L19 9l-4-4L4 16z"],
+  [/^Open link|new tab/, "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"],
+  [/^Open big|^View full|Open$/, "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"],
+  [/^Open/, "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"],
+  [/shortcut/, "M10 14a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.7-5.7L11.6 7.4M14 10a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.7 5.7l1.7-1.7"],
+  [/^Send to/, "M4 12h14M13 6l6 6-6 6"],
+  [/^Go to/, "M4 12h14M13 6l6 6-6 6"],
+  [/^More/, "M5 10.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM12 10.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM19 10.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z", true],
+  [/^Export|^Download/, "M12 4v11M7 10l5 5 5-5M5 20h14"],
+  [/Refresh/, "M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"],
+  [/colour|color/i, "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"],
+  [/calendar|Date|Time zone|Length/, "M4 6h16v14H4zM4 10h16M8.5 4v4M15.5 4v4"],
+  [/see-through|as a card/, "M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"],
+  [/Layout|block kind/, "M4 5h7v14H4zM13 5h7v14h-7z"],
+  [/PDF|card page|D&D/, "M6 3h9l4 4v14H6zM14 3v5h5"],
+  [/OCR|Fit to text/, "M5 7V5h14v2M12 5v14M9 19h6"],
+  [/address/, "M10 14a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.7-5.7L11.6 7.4M14 10a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.7 5.7l1.7-1.7"],
+  [/size/, "M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"],
+  [/^Front|^Back|^Unsorted/, "M4 12h14M13 6l6 6-6 6"]
+];
+function linkHost(c){ try { return new URL(c.url).hostname.replace(/^www\./, ""); } catch (_) { return c.url || "Link"; } }
+function ctxLabel(b, label){
+  /* switches (Preview, Caption…) show a tick when on, nothing when off */
+  const tick = /^\u2713\s/.test(label), off = /^\u2003/.test(label);
+  /* drop a leading emoji or star the label used to carry */
+  const text = String(label).replace(/^[^\p{L}\p{N}(]+/u, "");
+  const hit = tick ? [null, "M5 12.5l4.5 4.5L19 7.5"] : off ? null : CTX_ICONS.find(([re]) => re.test(text));
+  const ic = document.createElement("span"); ic.className = "ctx-ic";
+  if (hit) ic.innerHTML = '<svg viewBox="0 0 24 24" fill="' + (hit[2] ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="' + hit[1] + '"/></svg>';
+  const t = document.createElement("span"); t.className = "ctx-t"; t.textContent = text;
+  b.append(ic, t);
+}
 function openCtx(x, y, c){
   ctx.innerHTML = "";
   const item = (into, label, fn, cls) => {
-    const b = document.createElement("button"); b.textContent = label; if (cls) b.className = cls;
+    const b = document.createElement("button"); ctxLabel(b, label); if (cls) b.className = cls;
     b.addEventListener("click", () => { closeCtx(); fn(); });
     /* hovering a plain row closes any open side menu */
     if (into === ctx) b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") closeCtxSubs(); });
@@ -12710,7 +13002,7 @@ function openCtx(x, y, c){
     build((l, fn, cls) => item(pop, l, fn, cls));
     if (!pop.children.length) return;
     const b = document.createElement("button"); b.className = "ctxsub";
-    b.textContent = label; const caret = document.createElement("span"); caret.className = "ctxcaret"; caret.textContent = "\u203A"; b.appendChild(caret);
+    ctxLabel(b, label); const caret = document.createElement("span"); caret.className = "ctxcaret"; caret.textContent = "\u203A"; b.appendChild(caret);
     const show = () => {
       closeCtxSubs();
       pop.classList.add("open"); b.classList.add("on");
@@ -12745,6 +13037,14 @@ function openCtx(x, y, c){
     const el = worldEl.querySelector(`.card[data-id="${c.id}"]`);
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: c.type === "grid" ? v : (v || "Column") }));
   });
+  else if (c.type === "widget"){
+    const what = {calendar:"Open big", clock:"Time zone\u2026", timer:"Length\u2026", countdown:"Date\u2026"}[c.widget];
+    if (what) add(what, () => editWidget(c));
+    add("Rename", () => renameWidget(c));
+    if (c.widget === "calendar") add(c.calStyle === "clear" ? "Show as a card" : "Show see-through", () => {
+      pushUndo(); patchCard(c.id, {calStyle:c.calStyle === "clear" ? "" : "clear"}); markDirty(); invalidateCardEls(c.id); renderBoard();
+    });
+  }
   else add("Edit", () => enterEdit(c));
   /* additive, not part of the chain above: a column keeps Rename as well */
   if (c.type === "column")
@@ -12803,6 +13103,7 @@ function openCtx(x, y, c){
     const flip = (key, label) => add(
       (c[key] !== false ? "\u2713 " : "\u2003") + label,
       () => { patchCard(c.id, { [key]: c[key] === false }); markDirty(); renderBoard(); });
+    add("Details\u2026 (address, creator, note, picture)", () => openLinkDialog(c));
     flip("showPreview", "Preview");
     flip("showInfo", "Link info");
     flip("showCaption", "Caption");
@@ -13281,7 +13582,9 @@ function applyRailLayout(layout){
     if (after) after.after(el); else (inMore ? railMoreBox() : railMain()).appendChild(el);
   }
 }
-const RAIL_LAYOUT_VERSION = 2;   /* layouts saved from b122 on are never "upgraded" again */
+/* v3 (b170): Heading and Link moved into More, by request; a saved toolbar
+   is upgraded once, and anything arranged after that stays as it is */
+const RAIL_LAYOUT_VERSION = 3;
 function saveRailLayout(){ SAFE_STORE.set(RAIL_LAYOUT_KEY, JSON.stringify({...readRailLayout(), v:RAIL_LAYOUT_VERSION})); }
 /* b113 reordered the top of the toolbar; a saved toolbar that still has the
    old run of tools unchanged takes the new order, anything rearranged by hand stays */
@@ -13289,6 +13592,16 @@ const RAIL_OLD_RUN = ["note", "toolArrow", "board", "todo", "block", "heading", 
 const RAIL_B113_RUN = ["note", "block", "board", "todo", "heading", "toolArrow", "link"];
 const RAIL_NEW_RUN = ["note", "block", "board", "todo", "toolWidget", "heading", "toolArrow", "link"];   /* b114: Widget under List */
 function railUpgrade(saved){
+  saved = railUpgradeB113(saved);
+  if (!saved || !Array.isArray(saved.main) || (saved.v || 0) >= 3) return saved;
+  const move = ["heading", "link"].filter(k => saved.main.includes(k));
+  const main = saved.main.filter(k => !move.includes(k));
+  /* no two dividers left side by side */
+  const tidy = main.filter((k, i) => !(k === "|" && (i === 0 || main[i - 1] === "|")));
+  return Object.assign({}, saved, {main:tidy, more:[...move, ...(saved.more || []).filter(k => !move.includes(k))]});
+}
+function railUpgradeB113(saved){
+  if ((saved?.v || 0) >= 2) return saved;
   const m = saved?.main; if (!Array.isArray(m)) return saved;
   const i = m.indexOf("note");
   const run = [RAIL_OLD_RUN, RAIL_B113_RUN].find(r => i >= 0 && r.every((k, n) => m[i + n] === k));
@@ -13308,12 +13621,13 @@ function loadRailLayout(){
 function startRailEdit(){
   if (document.body.classList.contains("rail-edit")) return;
   document.body.classList.add("rail-edit");
+  showRailCounts(true);
   const p = $("#morePop"), r = $("#railMore").getBoundingClientRect();
   p.style.top = Math.min(r.top / uiz(), innerHeight / uiz() - 220) + "px"; p.classList.add("open");
   let bar = $("#railEditBar");
   if (!bar){
     bar = document.createElement("div"); bar.id = "railEditBar";
-    bar.innerHTML = '<b>Edit toolbar</b><span>Drag tools to move them, or into More. Tap a divider to remove it.</span>' +
+    bar.innerHTML = '<b>Edit toolbar</b><span>Drag tools to move them, or into More. Tap a divider to remove it. The numbers are how many of each you have.</span>' +
       '<div><button id="railAddDiv">+ Divider</button><button id="railReset">Reset</button><button id="railDone" class="primary">Done</button></div>';
     document.body.appendChild(bar);
     bar.querySelector("#railAddDiv").addEventListener("click", () => {
@@ -13323,7 +13637,33 @@ function startRailEdit(){
     bar.querySelector("#railDone").addEventListener("click", endRailEdit);
   }
 }
+/* while rearranging, each tool shows how many of its cards the workspace
+   holds: your own record of what you use most */
+function railUsageCounts(){
+  const n = {};
+  const inBin = new Set([...(state.boards[TRASH_ID]?.cardIds || [])]);
+  for (const c of Object.values(state.cards)){
+    if (!c || inBin.has(c.id) || c.linkTo || c.shortcut) continue;
+    const k = c.type === "widget" ? "toolWidget" : c.type === "sketch" ? "toolDraw" : c.type === "line" ? "toolLine" : c.type === "file" ? "toolUpload" : c.type;
+    n[k] = (n[k] || 0) + 1;
+  }
+  n.toolArrow = Object.values(state.boards).reduce((t, b) => t + (b.connectors || []).length, 0);
+  n.toolLibrary = Object.keys(state.library || {}).length;
+  return n;
+}
+function showRailCounts(on){
+  for (const x of document.querySelectorAll(".rail-count")) x.remove();
+  if (!on) return;
+  const n = railUsageCounts();
+  for (const el of document.querySelectorAll("#railTools .tool, #morePop .tool")){
+    const k = railKey(el); if (!(k in n) && k !== "railMore") continue;
+    if (k === "railMore") continue;
+    const b = document.createElement("span"); b.className = "rail-count"; b.textContent = (n[k] || 0) > 999 ? "999+" : String(n[k] || 0);
+    el.appendChild(b);
+  }
+}
 function endRailEdit(){
+  showRailCounts(false);
   document.body.classList.remove("rail-edit");
   $("#railEditBar")?.remove(); $("#morePop").classList.remove("open");
   saveRailLayout(); queueFitTopbar?.();
@@ -15070,8 +15410,9 @@ worldEl.addEventListener("pointerdown", e => {
   const el = e.target.closest(".card");
   if (!el) return;
   const c = card(el.dataset.id);
-  if (!c || c.type !== "board") return;
-  lastBoardHit = { id: c.id, onTile: !!e.target.closest(".btile"), t: Date.now() };
+  if (!c) return;
+  /* every card, not just boards: any card redrawn by its first click needs this */
+  lastBoardHit = { id: c.id, onTile: c.type === "board" && !!e.target.closest(".btile"), t: Date.now() };
 }, true);
 
 /* Icon or name? Three sources, best first:
@@ -15095,7 +15436,14 @@ function boardHitWasTile(id, e, el){
 }
 
 /* double-click → edit / open */
-worldEl.addEventListener("dblclick", e => {
+/* When the first click redraws the card, the browser can send the double-
+   click to the page itself (the two clicks no longer share a node inside the
+   board). Those reach the same handler through lastBoardHit. */
+document.addEventListener("dblclick", e => {
+  if (e.target === document.documentElement || e.target === document.body) boardDblClick(e);
+});
+worldEl.addEventListener("dblclick", boardDblClick);
+function boardDblClick(e){
   if (isEditing()) return;
   let el = e.target.closest(".card");
   /* If the re-render between clicks pushed the event up past the card, the
@@ -15130,8 +15478,19 @@ worldEl.addEventListener("dblclick", e => {
   }
   /* an image opens big, with crop, download and the board's other images */
   if (c.type === "image"){ e.stopPropagation(); openLightbox(c.id); return; }
+  /* a widget's name renames it; the rest of it opens what it does (calendar
+     big view, clock zone, timer length, countdown date). Hit-tested by
+     position for the same reason as boards above. */
+  if ((c.type === "note" || c.type === "heading") && !c.locked && !c.pinned){ enterEdit(c, {x:e.clientX, y:e.clientY}); return; }
+  if (c.type === "widget"){
+    e.stopPropagation();
+    const strip = el.querySelector(".wd-strip")?.getBoundingClientRect();
+    if (strip && e.clientY >= strip.top && e.clientY <= strip.bottom && e.clientX >= strip.left && e.clientX <= strip.right) renameWidget(c, el);
+    else if (!c.locked && !c.pinned) editWidget(c);
+    return;
+  }
   enterEdit(c);
-});
+}
 
 /* Rename in place, keeping the board's own title authoritative and the card's
    copy in step with it — see the data model note in the build brief. */
@@ -17790,7 +18149,9 @@ $("#cloudChip").addEventListener("click", e => {
     updateCloudChip();
     $("#cloudMenuStatus").textContent = $("#cloudChip").dataset.tip || "";
     const connected = !!SYNC.clientId && syncAvailable();
-    $("#cmSync").textContent = connected ? "Sync now" : syncAvailable() ? "Connect Google Drive…" : "Cloud sync needs the app's web address";
+    $("#cmSync").querySelector("span").textContent = connected ? "Sync now" : syncAvailable() ? "Connect Google Drive…" : "Cloud sync needs the app's web address";
+    const dot = {ok:"#3FB37F", syncing:"#4C8DF6", pending:"#4C8DF6", reconnect:"#E2A33B", error:"#D2554A"}[$("#cloudChip").dataset.state] || "#8A8F98";
+    $("#cloudMenu").style.setProperty("--cm-dot", dot);
     $("#cmSync").disabled = !syncAvailable();
   }
   m.classList.toggle("open", opening);
@@ -19325,10 +19686,11 @@ function countdownDays(c){
 }
 function widgetLiveText(c, part){
   if (c.widget === "clock"){
-    const zone = c.zone || undefined, nowD = new Date();
-    if (part === "time") return nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
-    if (part === "date") return nowD.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
-    if (part === "zone" && zone) return zone.split("/").pop().replace(/_/g, " ") + " " + nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", timeZone:zone});
+    /* the big clock follows its own zone when one is set (U-038) */
+    const zone = c.zone || undefined, nowD = new Date(), main = validZone(c.mainZone) || undefined;
+    if (part === "time") return nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", timeZone:main});
+    if (part === "date") return nowD.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric", timeZone:main}) + (main ? " \u00b7 " + zoneCity(main) : "");
+    if (part === "zone" && validZone(zone)) return zoneCity(zone) + " " + nowD.toLocaleTimeString([], {hour:"numeric", minute:"2-digit", timeZone:zone});
     return "";
   }
   if (c.widget === "timer") return fmtTimer(timerLeft(c));
@@ -19339,12 +19701,10 @@ function buildWidget(c, el){
   el.style.setProperty("--wic", k.hue);
   const strip = document.createElement("div"); strip.className = "wd-strip";
   const ic = document.createElement("span"); ic.className = "wd-ic"; ic.textContent = k.icon;
-  const tl = document.createElement("span"); tl.className = "wd-title"; tl.textContent = k.name + (c.label ? " · " + c.label : "");
-  const ed = document.createElement("button"); ed.className = "wd-edit"; ed.textContent = "Edit"; ed.title = "Change this widget";
-  ed.addEventListener("pointerdown", e => e.stopPropagation());
-  ed.addEventListener("click", e => { e.stopPropagation(); editWidget(card(c.id)); });
+  /* the name you give it IS its name (U-037); double-click it to rename in place */
+  const tl = document.createElement("span"); tl.className = "wd-title"; tl.textContent = c.label || k.name; tl.title = "Double-click to rename";
+  tl.addEventListener("dblclick", e => { e.stopPropagation(); renameWidget(card(c.id), el); });
   strip.append(ic, tl);
-  if (c.widget !== "mood" && c.widget !== "calendar") strip.appendChild(ed);
   const body = document.createElement("div"); body.className = "wd-body";
   const live = (cls, part) => { const d = document.createElement("div"); d.className = cls + " wd-live"; d.dataset.part = part || ""; d.textContent = widgetLiveText(c, part); return d; };
   if (c.widget === "clock"){
@@ -19352,13 +19712,14 @@ function buildWidget(c, el){
     el.classList.add("wd-clean");
     body.append(live("wd-big", "time"), live("wd-sub", "date"));
     if (c.zone) body.append(live("wd-tiny", "zone"));
+    body.title = "Double-click to choose its time zone";
   } else if (c.widget === "timer"){
     const big = live("wd-big", "timer"); if (c.done) big.classList.add("wd-done");
     /* tap the time to change the length (not while it's running) */
     if (!c.endAt){
       big.classList.add("wd-tap"); big.title = "Tap to change the length";
       big.addEventListener("pointerdown", e => e.stopPropagation());
-      big.addEventListener("click", e => { e.stopPropagation(); editWidget(card(c.id), "length"); });
+      big.addEventListener("click", e => { e.stopPropagation(); widgetLengthPop(card(c.id), big); });
     }
     const bar = document.createElement("div"); bar.className = "wd-bar"; const fill = document.createElement("div"); fill.className = "wd-fill wd-live"; fill.dataset.part = "bar";
     fill.style.width = (100 * (1 - timerLeft(c) / (c.duration || 1500))) + "%"; bar.appendChild(fill);
@@ -19371,16 +19732,20 @@ function buildWidget(c, el){
   } else if (c.widget === "mood"){
     buildMoodWidget(c, body); el.append(strip, body); return;
   } else if (c.widget === "calendar"){
+    el.classList.toggle("wd-clear", c.calStyle === "clear");
     buildCalendarWidget(c, body); el.append(strip, body); return;
   } else if (c.widget === "countdown"){
     el.classList.add("wd-clean");
     const n = countdownDays(c);
     const big = document.createElement("div"); big.className = "wd-big wd-accent";
     const sub = document.createElement("div"); sub.className = "wd-sub";
-    if (n == null){ big.textContent = "—"; sub.textContent = "Pick a date"; }
+    if (n == null){ big.textContent = "—"; sub.textContent = ""; }
     else if (n === 0){ big.textContent = "Today"; sub.textContent = c.label || ""; }
     else { big.textContent = String(Math.abs(n)); sub.textContent = (Math.abs(n) === 1 ? "day " : "days ") + (n > 0 ? "until" : "ago"); }
-    const what = document.createElement("div"); what.className = "wd-tiny";
+    const what = document.createElement("div"); what.className = "wd-tiny wd-tapdate"; what.title = "Click to change the date";
+    what.addEventListener("pointerdown", e => e.stopPropagation());
+    what.addEventListener("click", e => { e.stopPropagation(); widgetDatePop(card(c.id), what); });
+    if (!c.target) what.textContent = "Pick a date";
     if (c.target){ const [y, mo, d] = c.target.split("-").map(Number); what.textContent = new Date(y, mo - 1, d).toLocaleDateString([], {month:"short", day:"numeric", year:"numeric"}); }
     body.append(big, sub, what);
   }
@@ -19452,40 +19817,146 @@ function parseTimerLength(v){
   else return null;
   return sec >= 1 && sec <= 36000 ? sec : null;
 }
-async function editWidget(c, focusField){
+/* ---- changing a widget, where it is -----------------------------------
+   No form: the name is renamed in place, and each widget's one setting opens
+   a small card beside the thing it changes (the clock's zone by the clock,
+   the timer's length by its time, the countdown's date by its date). */
+function renameWidget(c, el){
   if (!c || c.type !== "widget") return;
+  el = el || worldEl.querySelector('.card[data-id="' + c.id + '"]');
   const k = WIDGET_KINDS[c.widget] || WIDGET_KINDS.clock;
-  const res = await askOpen({
-    title: k.name,
-    build(body){
-      const grid = document.createElement("div"); grid.className = "metagrid"; const inputs = {};
-      const field = (key, label, input) => { const l = document.createElement("label"); l.textContent = label; input.dataset.key = key; inputs[key] = input; grid.append(l, input); };
-      const text = (v, ph) => { const i = document.createElement("input"); i.type = "text"; i.value = v || ""; if (ph) i.placeholder = ph; return i; };
-      field("label", "Label", text(c.label, c.widget === "countdown" ? "e.g. Midterm" : c.widget === "timer" ? "e.g. Study" : "e.g. Home"));
-      if (c.widget === "timer"){ const i = text(fmtTimer(c.duration || 1500), "25 or 25:00 or 1:30:00"); field("length", "Length", i); }
-      if (c.widget === "countdown"){ const i = document.createElement("input"); i.type = "date"; i.value = c.target || ""; field("target", "Date", i); }
-      if (c.widget === "calendar"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Every Calendar widget shows the same calendar. Tap the coloured chips to choose what this one shows; \u2699 opens colours, Google import and export."; body.appendChild(m); }
-      if (c.widget === "mood"){ const m = document.createElement("div"); m.className = "meta"; m.textContent = "Moods are shared by every Mood widget. Tap a day in the week, or Look back, to change past days."; body.appendChild(m); }
-      if (c.widget === "clock"){
-        const sel = document.createElement("select");
-        for (const z of WIDGET_ZONES){ const o = document.createElement("option"); o.value = z; o.textContent = z ? z.replace(/_/g, " ") : "None"; if ((c.zone || "") === z) o.selected = true; sel.appendChild(o); }
-        field("zone", "Second time zone", sel);
+  editTitleInline(c, el, "label", v => patchCard(c.id, {label:v === k.name ? "" : v}), k.name);
+}
+function editWidget(c, focusField){
+  if (!c || c.type !== "widget") return;
+  const el = worldEl.querySelector('.card[data-id="' + c.id + '"]');
+  if (c.widget === "calendar") return openCalBig(c.id);
+  if (c.widget === "clock") return widgetZonePop(c, el?.querySelector(".wd-big") || el);
+  if (c.widget === "timer") return widgetLengthPop(c, el?.querySelector(".wd-big") || el);
+  if (c.widget === "countdown") return widgetDatePop(c, el?.querySelector(".wd-tapdate") || el);
+  renameWidget(c, el);
+}
+function validZone(z){
+  if (!z) return "";
+  try { new Intl.DateTimeFormat([], {timeZone:z}); return z; } catch (_) { return ""; }
+}
+function zoneCity(z){ return String(z || "").split("/").pop().replace(/_/g, " "); }
+function allTimeZones(){
+  try { const l = Intl.supportedValuesOf("timeZone"); if (l?.length) return l; } catch (_) {}
+  return WIDGET_ZONES.filter(Boolean);
+}
+function widgetZonePop(c, anchor){
+  let which = "main";
+  openMiniPop(anchor, (box, close) => {
+    const tabs = document.createElement("div"); tabs.className = "mp-seg";
+    const list = document.createElement("div"); list.className = "mp-list";
+    const find = document.createElement("input"); find.className = "mp-find"; find.placeholder = "Find a city or zone"; find.spellcheck = false;
+    const draw = () => {
+      const cur = card(c.id); if (!cur) return close();
+      const now = which === "main" ? (cur.mainZone || "") : (cur.zone || "");
+      list.innerHTML = "";
+      const q = find.value.trim().toLowerCase().replace(/\s+/g, "_");
+      const zones = ["", ...allTimeZones()].filter(z => !q || z.toLowerCase().includes(q));
+      for (const z of zones.slice(0, 120)){
+        const r = document.createElement("button"); r.type = "button"; r.className = "mp-row" + (z === now ? " on" : "");
+        const name = document.createElement("span"); name.textContent = z ? zoneCity(z) : (which === "main" ? "This device's time" : "None");
+        const sub = document.createElement("span"); sub.className = "mp-dim";
+        if (z){ sub.textContent = z.split("/")[0].replace(/_/g, " ") + " \u00b7 " + new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit", timeZone:z}); }
+        r.append(name, sub);
+        r.addEventListener("click", () => { pushUndo(); patchCard(c.id, which === "main" ? {mainZone:z} : {zone:z}); markDirty(); invalidateCardEls(c.id); renderBoard(); draw(); });
+        list.appendChild(r);
       }
-      body.appendChild(grid);
-      return { focus:() => { const f = (focusField && inputs[focusField]) || inputs.label; f.focus(); f.select?.(); }, read:() => Object.fromEntries(Object.entries(inputs).map(([key, i]) => [key, i.value.trim()])) };
-    },
-    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
-  });
-  if (!res || typeof res !== "object") return;
-  const patch = {label:res.label || ""};
-  if (c.widget === "timer"){
-    const sec = parseTimerLength(res.length);
-    if (sec == null) toast("Timer length not changed: type minutes (25), minutes:seconds (2:30) or hours:minutes:seconds (1:30:00), up to 10 hours.", 7000);
-    else if (sec !== c.duration) Object.assign(patch, {duration:sec, remaining:sec, endAt:null, done:false});
+    };
+    for (const [key, label] of [["main", "Clock"], ["second", "Second time"]]){
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.className = key === which ? "on" : "";
+      b.addEventListener("click", () => { which = key; for (const x of tabs.children) x.classList.toggle("on", x === b); draw(); });
+      tabs.appendChild(b);
+    }
+    find.addEventListener("input", draw);
+    box.append(tabs, find, list); draw();
+    return find;
+  }, {width:250});
+}
+function widgetLengthPop(c, anchor){
+  openMiniPop(anchor, (box, close) => {
+    const inp = document.createElement("input"); inp.className = "mp-big"; inp.value = fmtTimer(c.duration || 1500); inp.spellcheck = false;
+    const hint = document.createElement("div"); hint.className = "mp-dim mp-hint"; hint.textContent = "25 = minutes, 2:30, or 1:30:00";
+    const chips = document.createElement("div"); chips.className = "mp-chips";
+    const set = sec => {
+      if (sec == null){ hint.textContent = "Type minutes (25), 2:30 or 1:30:00, up to 10 hours."; hint.classList.add("mp-warn"); return; }
+      pushUndo(); patchCard(c.id, {duration:sec, remaining:sec, endAt:null, done:false}); markDirty(); renderBoard(); close();
+    };
+    for (const m of [5, 10, 15, 25, 45, 60]){
+      const b = document.createElement("button"); b.type = "button"; b.className = "mp-chip" + ((c.duration || 1500) === m * 60 ? " on" : ""); b.textContent = m + " min";
+      b.addEventListener("click", () => set(m * 60)); chips.appendChild(b);
+    }
+    inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); set(parseTimerLength(inp.value)); } });
+    box.append(inp, hint, chips);
+    return inp;
+  }, {width:220});
+}
+function widgetDatePop(c, anchor){
+  openMiniPop(anchor, (box, close) => {
+    miniMonthPicker(box, c.target || "", key => { pushUndo(); patchCard(c.id, {target:key}); markDirty(); renderBoard(); close(); });
+  }, {width:236});
+}
+/* a small month to pick a day from, in the app's own look (not the browser's date box) */
+function miniMonthPicker(box, value, onPick){
+  const today = calKeyOf(new Date());
+  let [y, m] = (value || today).split("-").map(Number); m -= 1;
+  const head = document.createElement("div"); head.className = "mm-head";
+  const prev = document.createElement("button"); prev.type = "button"; prev.textContent = "\u2039";
+  const next = document.createElement("button"); next.type = "button"; next.textContent = "\u203a";
+  const title = document.createElement("b");
+  head.append(prev, title, next);
+  const grid = document.createElement("div"); grid.className = "mm-grid";
+  const draw = () => {
+    title.textContent = new Date(y, m, 1).toLocaleDateString([], {month:"long", year:"numeric"});
+    grid.innerHTML = "";
+    for (const d of ["M","T","W","T","F","S","S"]){ const h = document.createElement("span"); h.className = "mm-dow"; h.textContent = d; grid.appendChild(h); }
+    const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+    for (let i = 0; i < first; i++) grid.appendChild(document.createElement("span"));
+    for (let d = 1; d <= days; d++){
+      const key = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      const b = document.createElement("button"); b.type = "button"; b.textContent = d;
+      b.className = "mm-day" + (key === value ? " on" : "") + (key === today ? " today" : "");
+      b.addEventListener("click", () => onPick(key));
+      grid.appendChild(b);
+    }
+  };
+  prev.addEventListener("click", () => { m--; if (m < 0){ m = 11; y--; } draw(); });
+  next.addEventListener("click", () => { m++; if (m > 11){ m = 0; y++; } draw(); });
+  box.append(head, grid); draw();
+}
+/* One small card beside the thing it changes. Clicking away or Esc closes it;
+   only one is open at a time. build(box, close) may return what to focus. */
+let miniPopClose = null;
+function openMiniPop(anchor, build, opts = {}){
+  miniPopClose?.();
+  const pop = document.createElement("div"); pop.className = "minipop";
+  if (opts.width) pop.style.width = opts.width + "px";
+  document.body.appendChild(pop);
+  const onDown = e => { if (!pop.contains(e.target)) close(); };
+  const onKey = e => { if (e.key === "Escape"){ e.stopPropagation(); close(); } };
+  function close(){
+    if (miniPopClose !== close) return;
+    miniPopClose = null; pop.remove();
+    document.removeEventListener("pointerdown", onDown, true); document.removeEventListener("keydown", onKey, true);
+    opts.onClose?.();
   }
-  if (c.widget === "countdown") patch.target = res.target || "";
-  if (c.widget === "clock") patch.zone = res.zone || "";
-  pushUndo(); patchCard(c.id, patch); markDirty(); renderBoard();
+  miniPopClose = close;
+  pop.addEventListener("pointerdown", e => e.stopPropagation());
+  pop.addEventListener("keydown", e => { if (e.key !== "Escape") e.stopPropagation(); });
+  const focus = build(pop, close);
+  /* beside the anchor, kept on screen */
+  const z = uiz(), r = (anchor?.getBoundingClientRect?.() || {left:innerWidth / 2, right:innerWidth / 2, top:innerHeight / 3, bottom:innerHeight / 3});
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = r.left / z, top = r.bottom / z + 6;
+  if (top + ph > innerHeight / z - 8) top = Math.max(8, r.top / z - ph - 6);
+  left = Math.max(8, Math.min(left, innerWidth / z - pw - 8));
+  pop.style.left = left + "px"; pop.style.top = Math.max(8, Math.min(top, innerHeight / z - ph - 8)) + "px";
+  setTimeout(() => { document.addEventListener("pointerdown", onDown, true); document.addEventListener("keydown", onKey, true); focus?.focus?.(); focus?.select?.(); }, 0);
+  return close;
 }
 function addWidget(kind, at){
   const k = WIDGET_KINDS[kind]; if (!k) return null;
@@ -20165,6 +20636,33 @@ function calStep(view, at, dir){
   if (view === "week") return calAddDays(at, 7 * dir);
   return new Date(at.getFullYear(), at.getMonth() + dir * (view === "3month" ? 3 : 1), 1);
 }
+/* ---- the calendar, big ---------------------------------------------------
+   Double-clicking a calendar widget opens the same calendar over the board,
+   with room for events. Its controls change the widget itself, so the two
+   never disagree. */
+let calBigId = null;
+function openCalBig(id){
+  const c = card(id); if (!c || c.widget !== "calendar") return;
+  let ov = $("#calBig");
+  if (!ov){
+    ov = document.createElement("div"); ov.id = "calBig";
+    ov.innerHTML = '<div class="cb-panel"><div class="cb-top"><span class="cb-name"></span><button type="button" class="cb-x" title="Back to the board (Esc)">\u2715</button></div><div class="cb-body wd-body"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("pointerdown", e => { if (e.target === ov) closeCalBig(); });
+    ov.querySelector(".cb-x").addEventListener("click", closeCalBig);
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && calBigId && !document.querySelector(".minipop, .overlay.open")){ e.stopPropagation(); closeCalBig(); } }, true);
+  }
+  calBigId = id; ov.classList.add("open"); renderCalBig();
+}
+function closeCalBig(){ calBigId = null; $("#calBig")?.classList.remove("open"); }
+function renderCalBig(){
+  const ov = $("#calBig"); if (!ov || !calBigId) return;
+  const c = card(calBigId); if (!c){ closeCalBig(); return; }
+  ov.querySelector(".cb-name").textContent = c.label || WIDGET_KINDS.calendar.name;
+  const old = ov.querySelector(".cb-body"), body = document.createElement("div"); body.className = "cb-body wd-body";
+  buildCalendarWidget(c, body); old.replaceWith(body);
+}
+{ const drawBoard = renderBoard; renderBoard = function(){ const r = drawBoard.apply(this, arguments); if (calBigId) try { renderCalBig(); } catch (e){ console.warn("Calendar:", e); } return r; }; }
 function calGo(id, at){ calNav.set(id, calDay0(at)); invalidateCardEls(id); renderBoard(); }
 function calChip(o, compact){
   const b = document.createElement("button");
@@ -20250,7 +20748,7 @@ function buildCalendarWidget(c, body){
     }
     if (!list.length) grid.appendChild(mk("div", "cal-empty", "Nothing on this day."));
     const add = mk("button", "cal-add", "\uFF0B Add event"); stop(add);
-    add.addEventListener("click", e => { e.stopPropagation(); calEditEvent(null, at); });
+    add.addEventListener("click", e => { e.stopPropagation(); calEditEvent(null, at, add); });
     grid.appendChild(add);
   } else if (view === "week"){
     for (let i = 0; i < 7; i++){
@@ -20332,7 +20830,7 @@ function openCalDay(c, d, anchor){
   if (!list.length){ const e = document.createElement("div"); e.className = "cal-empty"; e.textContent = "Nothing on this day."; pop.appendChild(e); }
   const row = document.createElement("div"); row.className = "cal-prow";
   const add = document.createElement("button"); add.className = "cal-pbtn main"; add.textContent = "\uFF0B Add event";
-  add.addEventListener("click", () => { close(); calEditEvent(null, d); });
+  add.addEventListener("click", () => { close(); calEditEvent(null, d, anchor); });
   const dayv = document.createElement("button"); dayv.className = "cal-pbtn"; dayv.textContent = "Open day";
   dayv.addEventListener("click", () => { close(); calNav.set(c.id, calDay0(d)); patchCard(c.id, {view:"day"}); markDirty(); renderBoard(); });
   row.append(add, dayv); pop.appendChild(row);
@@ -20361,7 +20859,7 @@ function openCalEvent(o, anchor){
     const note = line("Imported copy, view only. Edit it in Google Calendar (or wherever it came from), then import it again to refresh.");
     note.classList.add("cal-ro");
   } else {
-    btn("Edit", () => calEditEvent(o.ev), true);
+    btn("Edit", () => calEditEvent(o.ev, null, anchor), true);
     btn("Delete", () => calDeleteEvent(o.ev.id));
   }
   if (row.children.length) pop.appendChild(row);
@@ -20402,50 +20900,119 @@ function calDeleteEvent(id){
   const evs = Object.assign({}, state.calEvents || {}); delete evs[id];
   state.calEvents = evs; markDirty(); refreshCalendarWidgets();
 }
-async function calEditEvent(ev, day){
-  const own = calOwnCats();
-  const p = ev ? calParts(ev.start) : null;
-  const d0 = p ? new Date(p[0], p[1] - 1, p[2], p[3] || 9, p[4] || 0) : new Date(calDay0(day || new Date()).setHours(9));
-  const end0 = ev && !ev.allDay ? new Date(+d0 + (ev.dur || 3600000)) : new Date(+d0 + 3600000);
-  const hm = d => calPad(d.getHours()) + ":" + calPad(d.getMinutes());
-  const res = await askOpen({
-    title:ev ? "Edit event" : "New event",
-    build(body){
-      const grid = document.createElement("div"); grid.className = "metagrid"; const inputs = {};
-      const field = (key, label, input) => { const l = document.createElement("label"); l.textContent = label; inputs[key] = input; grid.append(l, input); return l; };
-      const inp = (type, v) => { const i = document.createElement("input"); i.type = type; i.value = v || ""; return i; };
-      field("title", "Title", inp("text", ev?.title)).nextSibling.placeholder = "e.g. Bio 101 lecture";
-      field("date", "Date", inp("date", calKeyOf(d0)));
-      const all = inp("checkbox"); all.checked = !!ev?.allDay; field("allDay", "All day", all);
-      const sl = field("from", "Starts", inp("time", hm(d0))), el = field("to", "Ends", inp("time", hm(end0)));
-      const sync = () => { for (const x of [sl, inputs.from, el, inputs.to]) x.style.display = all.checked ? "none" : ""; };
-      all.addEventListener("change", sync); sync();
-      const rep = document.createElement("select");
-      for (const [v, name] of CAL_REPEATS){ const o = document.createElement("option"); o.value = v; o.textContent = name; rep.appendChild(o); }
-      if (ev?.rrule && !CAL_REPEATS.some(r => r[0] === ev.rrule)){ const o = document.createElement("option"); o.value = ev.rrule; o.textContent = calRepeatName(ev.rrule); rep.appendChild(o); }
-      rep.value = ev?.rrule || ""; field("rrule", "Repeats", rep);
-      const cat = document.createElement("select");
-      for (const k of own){ const o = document.createElement("option"); o.value = k.id; o.textContent = k.name; cat.appendChild(o); }
-      if (!own.length){ const o = document.createElement("option"); o.value = ""; o.textContent = "Personal"; cat.appendChild(o); }
-      const nw = document.createElement("option"); nw.value = "+"; nw.textContent = "New calendar\u2026"; cat.appendChild(nw);
-      cat.value = ev?.cat || own[0]?.id || "";
-      field("cat", "Calendar", cat);
-      const nl = field("catName", "Name", inp("text")); inputs.catName.placeholder = "e.g. Art History";
-      const syncCat = () => { nl.style.display = inputs.catName.style.display = cat.value === "+" ? "" : "none"; };
-      cat.addEventListener("change", syncCat); syncCat();
-      field("loc", "Where", inp("text", ev?.loc));
-      field("notes", "Notes", inp("text", ev?.notes));
-      body.appendChild(grid);
-      return {focus:() => inputs.title.focus(), read:() => ({title:inputs.title.value.trim(), date:inputs.date.value, allDay:all.checked,
-        from:inputs.from.value, to:inputs.to.value, rrule:rep.value, cat:cat.value, catName:inputs.catName.value.trim(), loc:inputs.loc.value.trim(), notes:inputs.notes.value.trim()})};
-    },
-    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:api => api.read()}]
+/* A new or changed event is a small card beside the day: type the title,
+   Enter saves. Date, time and calendar are chips that open short lists;
+   repeat, place and notes stay folded away until asked for. Esc cancels;
+   clicking away keeps it if it has a title. */
+function calEditEvent(ev, day, anchor){
+  return new Promise(resolve => {
+    const own = calOwnCats();
+    const p = ev ? calParts(ev.start) : null;
+    const d0 = p ? new Date(p[0], p[1] - 1, p[2], p[3] || 9, p[4] || 0) : new Date(calDay0(day || new Date()).setHours(9));
+    const end0 = ev && !ev.allDay ? new Date(+d0 + (ev.dur || 3600000)) : new Date(+d0 + 3600000);
+    const hm = d => calPad(d.getHours()) + ":" + calPad(d.getMinutes());
+    const v = {title:ev?.title || "", date:calKeyOf(d0), allDay:!!ev?.allDay, from:hm(d0), to:hm(end0), rrule:ev?.rrule || "",
+      cat:ev?.cat || own[0]?.id || "", catName:"", loc:ev?.loc || "", notes:ev?.notes || ""};
+    let decided = null;
+    /* Esc means cancel, not keep */
+    const onEsc = e => { if (e.key === "Escape") decided = "cancel"; };
+    document.addEventListener("keydown", onEsc, true);
+    const mk = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; };
+    const timeName = t => { const [h, m] = t.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); };
+    openMiniPop(anchor, (box, close) => {
+      box.classList.add("qe-pop");
+      const title = mk("input", "qe-title"); title.value = v.title; title.placeholder = "Add a title"; title.spellcheck = false;
+      title.addEventListener("input", () => { v.title = title.value; });
+      const chips = mk("div", "mp-chips qe-chips"), cats = mk("div", "mp-chips qe-chips"), sub = mk("div", "qe-sub");
+      const more = mk("button", "qe-more", "\uFF0B Repeat, place, notes"); more.type = "button";
+      const extra = mk("div", "qe-extra"); extra.hidden = !(v.rrule || v.loc || v.notes);
+      more.hidden = !extra.hidden;
+      const foot = mk("div", "qe-foot");
+      const save = mk("button", "qe-save", "Enter to save"); save.type = "button";
+      foot.append(save);
+      const chip = (label, on, fn) => { const b = mk("button", "mp-chip" + (on ? " on" : ""), label); b.type = "button"; b.addEventListener("click", fn); return b; };
+      const showSub = build => { sub.innerHTML = ""; if (build) build(sub); sub.hidden = !build; };
+      const draw = () => {
+        chips.innerHTML = "";
+        const dd = new Date(...v.date.split("-").map((x, i) => i === 1 ? x - 1 : +x));
+        chips.append(
+          chip(dd.toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}), false, () => showSub(sb => miniMonthPicker(sb, v.date, key => { v.date = key; showSub(null); draw(); }))),
+          ...(v.allDay ? [] : [chip(timeName(v.from) + " \u2013 " + timeName(v.to), false, () => showSub(timeLists))]),
+          chip("All day", v.allDay, () => { v.allDay = !v.allDay; showSub(null); draw(); }));
+        cats.innerHTML = "";
+        const list = own.length ? own : [{id:"", name:"Personal", color:"var(--accent)"}];
+        for (const k of list){
+          const b = chip("", v.cat === k.id, () => { v.cat = k.id; v.catName = ""; draw(); });
+          const dot = mk("i", "qe-dot"); dot.style.background = k.color; b.append(dot, k.name); cats.appendChild(b);
+        }
+        const nb = chip(v.cat === "+" ? (v.catName || "New calendar") : "\uFF0B New", v.cat === "+", () => {
+          v.cat = "+"; draw();
+          showSub(sb => { const i = mk("input", "mp-find"); i.placeholder = "Name the new calendar"; i.value = v.catName;
+            i.addEventListener("input", () => { v.catName = i.value; nb.textContent = i.value || "New calendar"; });
+            i.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); e.stopPropagation(); showSub(null); title.focus(); } });
+            sb.appendChild(i); setTimeout(() => i.focus(), 0); });
+        });
+        cats.appendChild(nb);
+      };
+      /* start and end, every 15 minutes, side by side */
+      const timeLists = sb => {
+        const wrap = mk("div", "qe-times");
+        for (const which of ["from", "to"]){
+          const col = mk("div", "qe-tcol"); col.appendChild(mk("div", "mp-dim", which === "from" ? "Starts" : "Ends"));
+          const scroller = mk("div", "mp-list"); let onEl = null;
+          for (let mins = 0; mins < 1440; mins += 15){
+            const t = calPad(Math.floor(mins / 60)) + ":" + calPad(mins % 60);
+            const b = mk("button", "mp-row" + (t === v[which] ? " on" : ""), timeName(t)); b.type = "button";
+            if (t === v[which]) onEl = b;
+            b.addEventListener("click", () => {
+              if (which === "from"){
+                /* moving the start keeps the length */
+                const len = (toMin(v.to) - toMin(v.from) + 1440) % 1440 || 60;
+                v.from = t; const e = (mins + len) % 1440; v.to = calPad(Math.floor(e / 60)) + ":" + calPad(e % 60);
+              } else v.to = t;
+              showSub(timeLists); draw();
+            });
+            scroller.appendChild(b);
+          }
+          col.appendChild(scroller); wrap.appendChild(col);
+          setTimeout(() => onEl?.scrollIntoView({block:"center"}), 0);
+        }
+        sb.appendChild(wrap);
+      };
+      const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      /* the folded extras */
+      const rep = mk("div", "mp-chips qe-chips");
+      const drawRep = () => {
+        rep.innerHTML = "";
+        const opts = [...CAL_REPEATS]; if (v.rrule && !opts.some(r => r[0] === v.rrule)) opts.push([v.rrule, calRepeatName(v.rrule)]);
+        for (const [r, name] of opts) rep.appendChild(chip(r ? name : "Doesn't repeat", v.rrule === r, () => { v.rrule = r; drawRep(); }));
+      };
+      drawRep();
+      const loc = mk("input", "mp-find"); loc.placeholder = "Where"; loc.value = v.loc; loc.addEventListener("input", () => { v.loc = loc.value; });
+      const notes = mk("textarea", "mp-find qe-notes"); notes.placeholder = "Notes"; notes.value = v.notes; notes.rows = 2; notes.addEventListener("input", () => { v.notes = notes.value; });
+      extra.append(rep, loc, notes);
+      more.addEventListener("click", () => { extra.hidden = false; more.hidden = true; loc.focus(); });
+      const commit = () => { decided = "save"; close(); };
+      save.addEventListener("click", commit);
+      /* Enter saves from anywhere in the card except the notes box (and the new-calendar name, which handles its own) */
+      box.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && e.target.tagName !== "TEXTAREA" && !e.defaultPrevented){ e.preventDefault(); commit(); } });
+      sub.hidden = true;
+      box.append(title, chips, sub, cats, more, extra, foot);
+      draw();
+      return title;
+    }, {width:320, onClose:() => {
+      document.removeEventListener("keydown", onEsc, true);
+      /* Esc cancels; clicking away keeps an event that has a title */
+      const keep = decided === "save" || (decided !== "cancel" && v.title.trim());
+      resolve(keep ? calSaveEvent(ev, v) : null);
+    }});
   });
-  if (!res || typeof res !== "object") return null;
+}
+function calSaveEvent(ev, res){
   if (!calParts(res.date)){ toast("That event needs a date."); return null; }
   let catId = res.cat;
-  if (catId === "+" || !catId || !state.calCats?.[catId]) catId = calNewCat(catId === "+" ? (res.catName || "New calendar") : "Personal").id;
-  const rec = Object.assign({}, ev || {id:uid("e")}, {cat:catId, title:res.title || "(no title)", allDay:res.allDay, loc:res.loc, notes:res.notes, rrule:res.rrule || "", tz:"", updatedAt:Date.now()});
+  if (catId === "+" || !catId || !state.calCats?.[catId]) catId = calNewCat(catId === "+" ? (res.catName.trim() || "New calendar") : "Personal").id;
+  const rec = Object.assign({}, ev || {id:uid("e")}, {cat:catId, title:res.title.trim() || "(no title)", allDay:res.allDay, loc:res.loc.trim(), notes:res.notes.trim(), rrule:res.rrule || "", tz:"", updatedAt:Date.now()});
   if (!rec.rrule) delete rec.rrule;
   delete rec.ro; delete rec.days; delete rec.dur;
   if (res.allDay){ rec.start = res.date; rec.days = ev?.allDay ? (ev.days || 1) : 1; }
@@ -21285,52 +21852,32 @@ window.CORKBORK_DEFER_BUG = function(text){
 
 function renderBugs(){
   const box = $("#bugList"); box.innerHTML = "";
-  if (!state.bugs.length){
-    box.innerHTML = '<div style="color:#666;">(no bugs logged)</div>';
-    return;
-  }
+  if (!state.bugs.length){ box.innerHTML = '<div class="bd-empty">Nothing logged yet.</div>'; return; }
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text != null) x.textContent = text; return x; };
   [...state.bugs].reverse().forEach(bug => {
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex; gap:6px; align-items:flex-start; border-bottom:1px dashed #999; padding-bottom:6px;";
-    const txt = document.createElement("div");
-    txt.style.cssText = "flex:1; white-space:pre-wrap; word-break:break-word;";
-    txt.textContent = "[" + new Date(bug.ts).toLocaleString() + "]" +
-      (bug.deferred ? " [DEFERRED]" : "") + "\n" + bug.text;
-    if (bug.deferred) txt.style.color = "#7A4A00";
-    /* Deferred work splits into two tracks that get scheduled separately:
-       things that change what the app can DO, and things that change how it
-       looks. The tag is in the text so a copied entry keeps it. */
-    if (/\[AESTHETIC\]/.test(bug.text)) txt.style.color = "#6B5A8A";
-    /* themed, not hardcoded #eee on #000 — that drew a white slab around the
-       glyph on every theme except the light one */
-    const mini = (label, title) => {
-      const b = document.createElement("button");
-      b.textContent = label; b.title = title;
-      b.style.cssText = "background:var(--surface); color:var(--text-dim);" +
-        "border:1px solid var(--border); border-radius:4px; padding:2px 7px;" +
-        "cursor:pointer; flex:none; line-height:1.2;";
-      b.addEventListener("mouseenter", () => { b.style.color = "var(--text)"; });
-      b.addEventListener("mouseleave", () => { b.style.color = "var(--text-dim)"; });
-      return b;
-    };
-    const cp = mini("⧉", "Copy this entry");
-    cp.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(bug.text); toast("Copied."); }
-      catch (err){ toast("Could not reach the clipboard."); }
+    const row = mk("div", "bd-item");
+    const d = new Date(bug.ts);
+    const when = mk("span", "bd-when bd-mono", (d.getMonth() + 1) + "/" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"));
+    when.title = d.toLocaleString();
+    const txt = mk("div", "bd-text", bug.text);
+    /* deferred work, and its look-only half, keep their tag in the text so a copy carries it */
+    const chip = bug.sent ? mk("span", "bd-chip bd-mono sent", "sent") : bug.deferred ? mk("span", "bd-chip bd-mono later", "later") : mk("span", "bd-chip bd-mono priv", "private");
+    const acts = mk("span", "bd-acts");
+    const mini = (label, title, fn) => { const b = mk("button", "", label); b.type = "button"; b.title = title; b.addEventListener("click", fn); acts.appendChild(b); return b; };
+    if (!bug.sent){
+      const so = mini("\u2197", "Send this to the developer", async () => {
+        so.disabled = true;
+        try { await sendBugReport(bug); toast("Sent. Thank you!"); } catch (e){ toast("Couldn't send: " + e.message, 7000); }
+        renderBugs();
+      });
+    }
+    mini("\u29c9", "Copy this entry", async () => { try { await navigator.clipboard.writeText(bug.text); toast("Copied."); } catch (err){ toast("Could not reach the clipboard."); } });
+    mini("\u2715", "Delete this entry", () => {
+      const before = state.bugs;
+      state.bugs = state.bugs.filter(b => b.id !== bug.id); markDirty(); renderBugs();
+      toast("Entry deleted.", 5000, {label:"Undo", fn:() => { state.bugs = before; markDirty(); renderBugs(); }});
     });
-    const sendOne = bug.sent ? null : mini("Send", "Send this to the developer");
-    if (sendOne) sendOne.addEventListener("click", async () => {
-      sendOne.disabled = true;
-      try { await sendBugReport(bug); toast("Sent. Thank you!"); } catch (e){ toast("Couldn't send: " + e.message, 7000); }
-      renderBugs();
-    });
-    if (bug.sent) txt.textContent += "\n\u2713 sent";
-    const del = mini("✕", "Delete this entry");
-    del.addEventListener("click", () => {
-      state.bugs = state.bugs.filter(b => b.id !== bug.id);
-      markDirty(); renderBugs();
-    });
-    row.append(txt, ...(sendOne ? [sendOne] : []), cp, del); box.appendChild(row);
+    row.append(when, txt, chip, acts); box.appendChild(row);
   });
 }
 /* ---------------- modal dialogs (settings, bug list, and friends) ----------------
@@ -24095,7 +24642,7 @@ function seClassBlock(sh, rows, i, g){
   lvSel.appendChild(s);
   const x = bzEl("button", "se-clsx", "✕"); x.title = "Remove " + (r.name || "this class");
   x.addEventListener("click", async () => {
-    if (!(await askConfirm({title:"Remove " + (r.name || "this class") + "?", message:"Its levels, features and choices come off the sheet. Undo brings them back.", okLabel:"Remove", danger:true}))) return;
+    /* Ctrl+Z brings a removed class back, so no question first */
     pushUndo(); applyClasses(rows.filter((_, j) => j !== i)); renderSheetEditor();
   });
   head.append(who, bzEl("span", "se-gap"), lvSel, x);
@@ -30333,6 +30880,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b170", [
+    "Renaming happens in place: double-click a name (board, list, column, widget, link) and the words turn editable right there, no box or popup. A widget's name replaces \u201cCalendar\u201d, \u201cClock\u201d and so on. The clock can show any time zone (double-click it), and the timer\u2019s length and countdown\u2019s date open small pickers beside them.",
+    "Calendar: double-click for a big view; right-click \u203a Show see-through to let it sit on the board. New events are a small card by the day: type a title, Enter saves. Notes: the \u2922 corner opens one as a document, and double-click puts the cursor where you clicked.",
+    "Deleting asks only for notes with writing, boards with things in them and D&D sheets; everything else goes at once with Undo. Right-click menus use line icons. Selecting a picture switches the toolbar to picture tools. Heading and Link moved into More; rearranging the toolbar shows how many of each you have. Links take the page\u2019s own title. Restyled Bugs & suggestions and the sync menu."
+  ]],
   ["b169", [
     "To-dos window: each list shows just the name of its board on the right (click it to go there) instead of how many items are done, and the window resizes from its bottom-right corner (double-click the corner for the usual size). Scroll bars stay hidden until you point at what scrolls, then show as a thin, light bar."
   ]],
@@ -30383,10 +30935,6 @@ const PATCH_NOTES = [
     "Line (toolbar, under Draw): drag on the board to draw a line; drop an end on a card and it stays attached when the card moves. Select a line to drag its ends or bend it from the middle, and to set its colour, arrows, label, dashes and weight in the toolbar. The Draw button now works (only P did before).",
     "Under More: Document (a card with a title and word count that opens full page), Colours (a palette; + adds a colour next to the others) and Comment. Comment on any card from right-click › More…; a numbered pin opens the thread, with replies and Resolve.",
     "Import from Milanote now brings lines, drawings, documents, colours and comments (with who wrote them; make a new export with the updated script)."
-  ]],
-  ["b155", [
-    "Draw (P, or Draw in the toolbar): pen, highlighter, an eraser for whole lines and a pixel eraser that rubs out just what you touch, with colours, three sizes, undo and Done (Esc). Circle or draw over a picture and the drawing stays on it when the picture moves or grows; drawing on the bare board makes one drawing per session. Sketch (under More) is a blank page to draw on. Two fingers still pan and zoom; after you use a pen, fingers only pan.",
-    "D&D sheets: an open sheet now ends below its boxes instead of running to the bottom of the screen, and the Simple and Full views use the sheet's page and accent colours like Beyond. The Sheet tool is now called Table."
   ]],
 ];
 function renderPatchNotes(){
