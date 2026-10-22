@@ -19,6 +19,23 @@
 <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAMMOAADDDgAAAAAAAAAAAAClvR7/pb0e/6S8Hv+owB7/cYQY/0xdGv9FWiT/QFou/z5dOv9BbVf/RYaB/z6Oov8ugaz/IHq7/xFyzP8EbN3/pb0e/6W9Hv+lvB3/or4m/1xyJP8NEwr/AAAA/099V/81XU7/AAAA/xQuNP8pcZT/H3a3/xJ10f8Fceb/BHLn/6W9Hv+lvR3/nrkl/5G0N/+BqUb/Fx8P/wAAAP8mQDL/IDoz/wABAf8AAAD/Ag0W/wYiPP8CP4L/Al2+/wp12/+lvR3/n7ol/46wNf+MuU//OVAp/wAAAP8CAgH/AAAA/wAAAP8AAAD/AAEB/wABAf8AAAD/AAYO/wU/dP8OdMr/nrom/4+xNf+ItE3/TGo3/wAAAP8BAgH/AAAA/wECAv8BAgL/AAAA/wABAv8AAAD/ARIi/wlnv/8Ri/L/F5Lv/5CyNv+ErUj/caBW/xEaEP8AAAD/AQIB/wABAf8AAAH/AAAA/wAAAP8AAgP/AAAA/whXov8Rkf//Fo3n/xyZ7f+BqUb/eq1e/z9hP/8AAAD/AQIB/wABAf8AAAD/AAAA/wAAAP8AAQL/AAAA/wIXKv8Qg+T/Fo/q/xyZ7f8ipPD/c6JW/2umcP8kPS//AAAA/wECAv8AAAD/AAAA/wAAAP8AAAH/AAID/wAAAf8MYaj/F5b2/xyY6/8ipPD/KK7z/2WcZ/9bnH//Nmhl/wEEBf8AAAD/AAAB/wAAAP8AAAD/AAIE/wAAAP8JQ3P/GJv//xyX6f8ipPD/KK7z/y649f9Ylnr/So2H/0CUqf8UNkb/AAAA/wECAv8AAAD/AAEB/wAAAP8EIjv/E3zK/x2d8/8io+7/KK3z/y649f80wvj/So+K/zyHl/8vibj/ETxa/wAAAP8CAwT/AwQG/wAAAP8HNFn/E3/S/xuU5f8ipPH/KK3y/y649f80wvj/Osz6/zyIm/8ugKj/IYHK/wk1XP8AAAD/AAID/wAAAf8AAAD/AgsS/wQVIP8gmN7/KbD3/y639P80wvj/Osz6/0DW/f8ugaz/IHm5/xF52v8EPHf/AAAA/ycqLP9WWFn/AAAA/wAAAP8OQV7/Krb//y628v80wvf/Osz6/0DW/f9F3///IHq8/xJzzP8EbN7/BXPn/wAiRf8eGBP/PDk3/wAAAP8SUnf/J6vv/y659/80wff/Osz6/0DW/f9F3///RuD//xFzzf8EbN3/A3Dj/wt+6v8Qhej/BShE/wEOG/8ZeK//K7z//y649f80wff/Osz6/0DW/f9F3///RuD//0bg//8EbN3/A3Dk/wt85v8Qhef/FpDs/xyW6P8lqPb/KbT7/y618f80wff/Osz6/0DW/P9F3///RuD//0bg//9G4P//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
 
 <style>
+/* Scroll bars stay out of sight until you point at what scrolls, then show as
+   a thin, light bar that thickens a little under the pointer. Mouse devices
+   only: phones and tablets already float their own. Chrome and Safari take
+   the ::-webkit-scrollbar rules; Firefox the standard ones. (An element that
+   sets scrollbar-width or scrollbar-color itself drops out of this in Chrome.) */
+@media (hover:hover) and (pointer:fine){
+  ::-webkit-scrollbar{width:10px; height:10px; background:transparent;}
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner{background:transparent;}
+  ::-webkit-scrollbar-button{display:none; width:0; height:0;}
+  ::-webkit-scrollbar-thumb{background-color:transparent; border:3px solid transparent; border-radius:10px; background-clip:padding-box; min-height:28px;}
+  :hover::-webkit-scrollbar-thumb{background-color:color-mix(in srgb, var(--text) 24%, transparent);}
+  ::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active{background-color:color-mix(in srgb, var(--text) 42%, transparent); border-width:2px;}
+  @supports not selector(::-webkit-scrollbar){
+    *{scrollbar-width:thin; scrollbar-color:transparent transparent;}
+    *:hover{scrollbar-color:color-mix(in srgb, var(--text) 30%, transparent) transparent;}
+  }
+}
 :root{
   --rail-w:56px; --topbar-h:46px;
   /* Shared geometry tokens are a seam for a post-1.0 touch layout without
@@ -2126,6 +2143,14 @@ body.text-editing #railText{display:flex !important; flex-direction:column; alig
 #twHideDone:hover{color:var(--text);}
 #twHideDone.on{color:var(--canvas); background:var(--accent); border-color:var(--accent);}
 #todoWin.hide-done .todo-item.done{display:none;}
+/* resize from the bottom-right corner: the same corner mark a card shows, kept inside the window */
+#twResize{position:absolute; right:0; bottom:0; width:20px; height:20px; cursor:nwse-resize; z-index:3; touch-action:none; opacity:0; transition:opacity .15s ease;}
+#todoWin:hover #twResize, #todoWin.resizing #twResize{opacity:1;}
+#twResize::after{content:""; position:absolute; right:5px; bottom:5px; width:7px; height:7px;
+  border-right:2px solid var(--text-dim); border-bottom:2px solid var(--text-dim); border-radius:0 0 2px 0; opacity:.5;}
+#twResize:hover::after, #todoWin.resizing #twResize::after{opacity:.95; border-color:var(--text);}
+#todoWin.resizing{user-select:none;}
+@media (hover:none){ #twResize{opacity:.7;} }
 @media (max-width:520px){
   #twHead{gap:6px; padding:9px 8px 9px 10px;}
   #twHead .tw-grip, .tw-newword{display:none;}
@@ -2141,11 +2166,12 @@ body.text-editing #railText{display:flex !important; flex-direction:column; alig
 #twSelN{flex:1; color:var(--text);}
 #twSelBar button{font-size:12px; font-weight:600; padding:3px 9px; border-radius:6px; background:color-mix(in srgb, var(--text) 9%, transparent); color:var(--text);}
 .tw-list.tw-sel{outline:2px solid var(--accent); outline-offset:-1px;}
-.tw-x, .tw-eye{flex:none; width:20px; height:20px; border-radius:5px; color:var(--text-dim); font-size:12px; opacity:0; display:flex; align-items:center; justify-content:center;}
-.tw-list:hover .tw-x, .tw-list:hover .tw-eye, .tw-list:focus-within .tw-x, .tw-list:focus-within .tw-eye{opacity:.8;}
+/* out of the row until you're on the list, so the board name sits at the right edge */
+.tw-x, .tw-eye{flex:none; width:20px; height:20px; border-radius:5px; color:var(--text-dim); font-size:12px; opacity:0; display:none; align-items:center; justify-content:center;}
+.tw-list:hover .tw-x, .tw-list:hover .tw-eye, .tw-list:focus-within .tw-x, .tw-list:focus-within .tw-eye{opacity:.8; display:flex;}
 .tw-x:hover, .tw-eye:hover{opacity:1; background:var(--surface); color:var(--text);}
 .tw-eye svg{width:14px; height:14px;}
-@media (hover:none){ .tw-x, .tw-eye{opacity:.6;} }
+@media (hover:none){ .tw-x, .tw-eye{opacity:.6; display:flex;} }
 #twHiddenBtn{flex:none; text-align:left; padding:8px 12px; font-size:12px; color:var(--text-dim); border-top:1px solid var(--border);}
 #twHiddenBtn:hover{color:var(--text); background:color-mix(in srgb, var(--text) 5%, transparent);}
 #twHiddenBtn.none{display:none;}
@@ -2175,11 +2201,9 @@ body.text-editing #railText{display:flex !important; flex-direction:column; alig
 .tw-chev:hover{background:var(--surface); color:var(--text);}
 .tw-ftitle{font-size:14px; font-weight:700; color:var(--text);}
 .tw-dot{width:9px; height:9px; border-radius:50%; flex:none;}
-.tw-where{flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); font-size:11px; padding:1px 2px; border-radius:4px;}
-.tw-where b{font-weight:600;}
-.tw-where:hover{color:var(--text); text-decoration:underline;}
+.tw-board{flex:none; margin-left:auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); font-size:11px; font-weight:600; padding:1px 4px; border-radius:4px; text-align:right;}
+button.tw-board:hover{color:var(--text); background:var(--surface);}
 .tw-list.folded .tw-ftitle{flex:1; min-width:0;}
-.tw-prog{flex:none;}
 .tw-card{position:relative; padding:2px 0 0 18px;}
 .tw-card .list-head{min-height:24px;}
 .tw-card .card-title{font-weight:700; font-size:15px;}
@@ -2437,7 +2461,7 @@ body.text-editing #railText{display:flex !important; flex-direction:column; alig
 #cpDock{
   position:fixed; z-index:170; display:none;
   flex-direction:column; align-items:stretch; gap:1px;
-  padding:5px; width:186px; max-height:70vh; overflow-y:auto; scrollbar-width:thin;
+  padding:5px; width:186px; max-height:70vh; overflow-y:auto;
   background:var(--surface-hi); border:1px solid var(--border); border-radius:5px;
   box-shadow:0 10px 28px rgba(0,0,0,.38);
 }
@@ -2564,7 +2588,7 @@ body.focus-mode #textBarWrap{display:none;}
 }
 #textBarWrap.open #textBar{
   max-width:calc(100vw - 90px); opacity:1; padding:3px 9px 3px 4px;
-  overflow-x:auto; scrollbar-width:thin;
+  overflow-x:auto;
 }
 @media (prefers-reduced-motion: reduce){
   #tbHandle svg{transition:none;} #textBar{transition:none;}
@@ -3476,7 +3500,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 .bd-hint{font-size:12px; color:var(--text-dim);}
 
 .bd-cats[hidden]{display:none;}
-.bd-cats{display:flex; gap:4px; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin;}
+.bd-cats{display:flex; gap:4px; overflow-x:auto; padding-bottom:2px;}
 .bd-cat{flex:none; font-size:12px; padding:4px 10px; border-radius:99px; cursor:pointer; background:var(--surface); border:0; color:var(--text-dim); white-space:nowrap;}
 .bd-cat:hover{color:var(--text);}
 .bd-cat.sel{background:var(--accent); color:#fff;}
@@ -3817,6 +3841,7 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div id="twSelBar"><span id="twSelN"></span><button type="button" id="twSelHide">Hide</button><button type="button" id="twSelClear">Clear</button></div>
   <div id="twBody"></div>
   <button type="button" id="twHiddenBtn">‹ Hidden lists <span id="twHiddenN"></span></button>
+  <span id="twResize" title="Drag to resize · double-click for the usual size"></span>
 </div>
 <!-- the lists hidden from To-dos, beside the window -->
 <div id="twHiddenPop" role="dialog" aria-label="Hidden lists">
@@ -4785,7 +4810,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b168";
+window.BUILD = "b169";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -17454,10 +17479,11 @@ function todoWinLists(hidden = false){
   return Object.values(state.cards).filter(c => c?.type === "todo" && !c.linkTo && !!c.todoHidden === hidden).filter(c => { const b = findCardBoard(c.id); return b && !inBin(b); })
     .sort((a, b) => searchCollator.compare(a.title || "List", b.title || "List") || (a.createdAt || 0) - (b.createdAt || 0));
 }
-function todoWhere(c){
+function todoBoardName(c){ return board(findCardBoard(c.id))?.title || "Untitled"; }
+function todoWhereText(c){
   const bid = findCardBoard(c.id), b = board(bid); if (!b) return "";
   const holder = !b.cardIds.includes(c.id) && !b.unsortedIds.includes(c.id) ? findCardContainer(c.id) : null;
-  return (b.unsortedIds.includes(c.id) ? "in <b>Unsorted</b> on " : holder ? "in <b>" + escapeHtml(archiveCardTitle(holder)) + "</b> on " : "on ") + "<b>" + escapeHtml(b.title || "Untitled") + "</b>";
+  return (b.unsortedIds.includes(c.id) ? "in Unsorted on " : holder ? "in " + archiveCardTitle(holder) + " on " : "on ") + (b.title || "Untitled");
 }
 function renderTodoWin(force){
   const w = $("#todoWin"); if (!w || !w.classList.contains("open") || !state) return;
@@ -17477,7 +17503,7 @@ function renderTodoWin(force){
   $("#twSelBar").classList.toggle("on", twSel.size > 0); $("#twSelN").textContent = twSel.size + " selected";
   if ($("#twHiddenPop").classList.contains("open")) renderTodoHidden();
   for (const c of lists){
-    const items = c.items || [], done = items.filter(x => x.done).length, isFolded = folded.has(c.id);
+    const isFolded = folded.has(c.id);
     const block = document.createElement("div"); block.className = "tw-list" + (isFolded ? " folded" : "") + (twSel.has(c.id) ? " tw-sel" : ""); block.dataset.id = c.id;
     const topRow = document.createElement("div"); topRow.className = "tw-top";
     const grip = document.createElement("span"); grip.className = "tw-drag"; grip.textContent = "\u22ee\u22ee"; grip.title = "Drag to move this list up or down";
@@ -17492,20 +17518,17 @@ function renderTodoWin(force){
       const t = document.createElement("span"); t.className = "tw-ftitle"; t.textContent = c.title || "List";
       topRow.append(dot, t);
     }
-    /* folded, the title gets the whole row; open, the list says where it lives */
-    if (!isFolded){
-      const where = document.createElement("button"); where.type = "button"; where.className = "tw-where"; where.title = "Go to this list";
-      where.innerHTML = todoWhere(c) + (links[c.id] ? " \u00b7 " + links[c.id] + " shortcut" + (links[c.id] > 1 ? "s" : "") : "");
-      where.addEventListener("click", () => goToCard(c.id));
-      topRow.appendChild(where);
-    }
-    const prog = document.createElement("span"); prog.className = "tw-prog"; prog.textContent = items.length ? done + " of " + items.length : "";
+    /* the board it's on, by name only, on the right (U-036); the full place is in its tip */
+    const where = document.createElement("button"); where.type = "button"; where.className = "tw-board";
+    where.textContent = todoBoardName(c);
+    where.title = "Go to this list: " + todoWhereText(c) + (links[c.id] ? " \u00b7 " + links[c.id] + " shortcut" + (links[c.id] > 1 ? "s" : "") : "");
+    where.addEventListener("click", e => { e.stopPropagation(); goToCard(c.id); });
     const eye = document.createElement("button"); eye.type = "button"; eye.className = "tw-eye"; eye.title = "Hide from To-dos (it stays on its board)";
     eye.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20L20 4"/></svg>';
     eye.addEventListener("click", e => { e.stopPropagation(); setTodoHidden([c.id], true); });
     const x = document.createElement("button"); x.type = "button"; x.className = "tw-x"; x.title = "Delete this list (Ctrl+Z brings it back)"; x.textContent = "\u2715";
     x.addEventListener("click", e => { e.stopPropagation(); deleteCards([c.id]); renderAll(); });
-    topRow.append(prog, eye, x);
+    topRow.append(where, eye, x);
     /* Ctrl-click (Cmd on a Mac) picks lists to hide several at once */
     topRow.addEventListener("click", e => {
       if (!(e.ctrlKey || e.metaKey) || e.target.closest(".tw-x, .tw-eye, .tw-chev, .tw-drag")) return;
@@ -17560,7 +17583,7 @@ function renderTodoHidden(){
     const r = document.createElement("button"); r.type = "button"; r.className = "twh-row" + (twhSel.has(c.id) ? " sel" : "");
     const dot = document.createElement("span"); dot.className = "tw-dot"; dot.style.background = c.color || "var(--text-dim)";
     const t = document.createElement("span"); t.textContent = c.title || "List"; t.style.flex = "1";
-    const n = document.createElement("span"); n.className = "tw-prog"; n.textContent = (c.items || []).length ? (c.items.filter(i => i.done).length + " of " + c.items.length) : "";
+    const n = document.createElement("span"); n.className = "tw-board"; n.textContent = todoBoardName(c);
     r.append(dot, t, n);
     r.addEventListener("click", e => {
       if (e.ctrlKey || e.metaKey || e.shiftKey) twhSel.has(c.id) ? twhSel.delete(c.id) : twhSel.add(c.id);
@@ -17588,12 +17611,16 @@ $("#twhShow").addEventListener("click", () => { setTodoHidden([...twhSel], false
 $("#twHiddenPop").addEventListener("pointerdown", e => e.stopPropagation());
 $("#twSelHide").addEventListener("click", () => setTodoHidden([...twSel], true));
 $("#twSelClear").addEventListener("click", () => { twSel.clear(); renderTodoWin(true); });
+const TW_MIN_W = 280, TW_MIN_H = 180;
 function placeTodoWin(){
-  const w = $("#todoWin"), p = todoWinPrefs(); if (p.x == null) return;
-  const z = uiz(), W = w.offsetWidth || 340, H = w.offsetHeight || 200;
-  w.style.right = "auto";
-  w.style.left = Math.min(Math.max(0, p.x), innerWidth / z - Math.min(W, 120)) + "px";
-  w.style.top = Math.min(Math.max(0, p.y), innerHeight / z - 40) + "px";
+  const w = $("#todoWin"), p = todoWinPrefs(), z = uiz(), vw = innerWidth / z, vh = innerHeight / z;
+  const left = p.x == null ? null : Math.min(Math.max(0, p.x), vw - 120), top = p.x == null ? null : Math.min(Math.max(0, p.y), vh - 40);
+  /* a size you dragged it to, kept on the screen */
+  if (p.w) w.style.width = Math.round(Math.max(TW_MIN_W, Math.min(p.w, vw - (left ?? 16) - 8))) + "px"; else w.style.width = "";
+  if (p.h){ w.style.height = Math.round(Math.max(TW_MIN_H, Math.min(p.h, vh - (top ?? 56) - 8))) + "px"; w.style.maxHeight = "none"; }
+  else { w.style.height = ""; w.style.maxHeight = ""; }
+  if (left == null) return;
+  w.style.right = "auto"; w.style.left = left + "px"; w.style.top = top + "px";
 }
 function syncTodoHideDone(){
   const on = !!todoWinPrefs().hideDone;
@@ -17639,6 +17666,27 @@ $("#twNew").addEventListener("click", () => {
   const end = () => { moving = false; head.classList.remove("moving"); };
   head.addEventListener("pointerup", end); head.addEventListener("pointercancel", end);
   addEventListener("resize", () => { if (w.classList.contains("open")) placeTodoWin(); });
+  /* the corner: drag to size it (remembered), double-click for the usual size */
+  const grip = $("#twResize"); let rs = null;
+  grip.addEventListener("pointerdown", e => {
+    if (e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    const z = uiz(), r = w.getBoundingClientRect(), p = todoWinPrefs();
+    /* pin the top-left corner where it is, so only the bottom-right moves */
+    if (p.x == null){ p.x = r.left / z; p.y = r.top / z; saveTodoWinPrefs(p); }
+    rs = {sx:e.clientX, sy:e.clientY, w:r.width / z, h:r.height / z};
+    w.classList.add("resizing"); grip.setPointerCapture(e.pointerId);
+  });
+  grip.addEventListener("pointermove", e => {
+    if (!rs) return;
+    const z = uiz(), p = todoWinPrefs();
+    p.w = Math.round(Math.max(TW_MIN_W, rs.w + (e.clientX - rs.sx) / z));
+    p.h = Math.round(Math.max(TW_MIN_H, rs.h + (e.clientY - rs.sy) / z));
+    saveTodoWinPrefs(p); placeTodoWin();
+  });
+  const stop = () => { if (!rs) return; rs = null; w.classList.remove("resizing"); };
+  grip.addEventListener("pointerup", stop); grip.addEventListener("pointercancel", stop);
+  grip.addEventListener("dblclick", e => { e.stopPropagation(); const p = todoWinPrefs(); delete p.w; delete p.h; saveTodoWinPrefs(p); placeTodoWin(); });
 })();
 /* whatever redraws the board refreshes the window too (it skips when nothing in it changed) */
 { const drawBoard = renderBoard; renderBoard = function(){ const r = drawBoard.apply(this, arguments); try { renderTodoWin(); } catch (e){ console.warn("To-dos window:", e); } return r; }; }
@@ -30285,6 +30333,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b169", [
+    "To-dos window: each list shows just the name of its board on the right (click it to go there) instead of how many items are done, and the window resizes from its bottom-right corner (double-click the corner for the usual size). Scroll bars stay hidden until you point at what scrolls, then show as a thin, light bar."
+  ]],
   ["b168", [
     "Sync after a big import is much faster: pictures go to Drive four at a time instead of one by one, the sync button shows how far along it is (Syncing 40%), and a sync that\u2019s interrupted carries on where it stopped. Your other devices get the imported boards when it reaches 100%."
   ]],
@@ -30336,10 +30387,6 @@ const PATCH_NOTES = [
   ["b155", [
     "Draw (P, or Draw in the toolbar): pen, highlighter, an eraser for whole lines and a pixel eraser that rubs out just what you touch, with colours, three sizes, undo and Done (Esc). Circle or draw over a picture and the drawing stays on it when the picture moves or grows; drawing on the bare board makes one drawing per session. Sketch (under More) is a blank page to draw on. Two fingers still pan and zoom; after you use a pen, fingers only pan.",
     "D&D sheets: an open sheet now ends below its boxes instead of running to the bottom of the screen, and the Simple and Full views use the sheet's page and accent colours like Beyond. The Sheet tool is now called Table."
-  ]],
-  ["b154", [
-    "Calmer look: toolbar buttons keep their colours as a soft tint with plain icons, bigger icons and smaller labels; space instead of lines between groups; flatter cards; fainter board dots. Recycle and Trash float on the board’s bottom-left corner like Unsorted.",
-    "Top bar: zoom and snap, then the sync status, then Search and Tags, then Bugs and Settings. Favourites are at the top of Search (hover to peek, click to keep open). The board folder is in the sync menu; ? still opens the shortcuts."
   ]],
 ];
 function renderPatchNotes(){
