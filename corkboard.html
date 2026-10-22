@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b163";
+window.BUILD = "b164";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -19854,7 +19854,7 @@ function mnPlain(doc){
   walk(doc); return out.join("").replace(/\n{3,}/g, "\n\n").trim();
 }
 /* a Milanote export (plus its picture parts) as a CORKBORK board file */
-function milanoteToBoardFile(data, assets = {}){
+function milanoteToBoardFile(data, assets = {}, known = {}){
   const E = data?.elements;
   if (!plainObject(E) || !E[data.root] || E[data.root].elementType !== "BOARD") throw new Error("That isn’t a CORKBORK export of a Milanote board.");
   const report = {boards:0, cards:0, missingPictures:0, lines:0, drawings:0, comments:0, skipped:{}, kept:{}};
@@ -19901,6 +19901,18 @@ function milanoteToBoardFile(data, assets = {}){
     const c = el.content || {}, id = cid(el.id), at = pos(el), type = el.elementType;
     const base = {id, x:at.x, y:at.y, z:0, createdAt:el.meta?.createdTime || t, updatedAt:el.meta?.modifiedTime || t};
     const width = inColumnW || (Number(c.width) > 0 ? Math.round(c.width * MN_UNIT) : null);
+    /* A board an earlier import already brought (separate exports that share
+       boards, or a shortcut that brought it) is linked, not copied: a
+       stand-in board here is swapped for the real one after import. */
+    const linkKnown = (mnId, shortcut, extra) => {
+      const sid = "mx" + mnId;
+      if (!boards[sid]) boards[sid] = {id:sid, title:"(link)", parentId:null, cardIds:[], unsortedIds:[], linkExisting:known[mnId]};
+      return {...base, type:"board", boardId:sid, shortcut, w:150, h:150, ...extra};
+    };
+    if (type === "BOARD" && known[el.id] && el.id !== data.root)
+      return linkKnown(el.id, false, {title:c.title || "Board", accent:mnColour(c.color, MN_ACCENT) || undefined, icon:iconFor(c.icon, c.title)});
+    if (type === "ALIAS" && c.linkTo && known[c.linkTo] && !inTree(c.linkTo))
+      return linkKnown(c.linkTo, true, {title:c.title || c.originalTitle || "Board", accent:mnColour(c.color || c.originalColor, MN_ACCENT) || undefined, icon:iconFor(c.icon || c.originalIcon, c.title || c.originalTitle)});
     if (type === "BOARD"){
       makeBoard(el);
       return {...base, type:"board", boardId:bid(el.id), shortcut:false, title:c.title || "Board", w:150, h:150,
@@ -20035,7 +20047,7 @@ function milanoteToBoardFile(data, assets = {}){
   const makeBoard = el => {
     const id = bid(el.id); if (boards[id]) return;
     const c = el.content || {};
-    const b = boards[id] = {id, title:c.title || "Board", parentId:null, cardIds:[], unsortedIds:[], viewport:{panX:0, panY:0, zoom:1}, connectors:[]};
+    const b = boards[id] = {id, title:c.title || "Board", parentId:null, cardIds:[], unsortedIds:[], viewport:{panX:0, panY:0, zoom:1}, connectors:[], mnId:String(el.id)};
     report.boards++;
     let z = 1;
     const canvas = bySection(el.id, "CANVAS");
@@ -20086,12 +20098,50 @@ function milanoteToBoardFile(data, assets = {}){
   }
   /* a shortcut to a board that didn't come along becomes a note naming it */
   for (const c of Object.values(cards)) if (c.type === "board" && !boards[c.boardId]){
+    /* unless an earlier import brought it: then it links to that one */
+    const mn = c.boardId.slice(2);
+    if (c.boardId.startsWith("mb") && known[mn]){
+      const sid = "mx" + mn;
+      if (!boards[sid]) boards[sid] = {id:sid, title:"(link)", parentId:null, cardIds:[], unsortedIds:[], linkExisting:known[mn]};
+      cards[c.id] = {...c, boardId:sid, shortcut:true}; continue;
+    }
     cards[c.id] = {id:c.id, type:"note", x:c.x, y:c.y, z:c.z, w:260, h:80, createdAt:c.createdAt, updatedAt:c.updatedAt,
       text:"\u2192 " + (c.title || "a board") + " (shortcut to a board outside this export)"};
   }
   const r = E[data.root].content || {};
   return {format:BOARD_FILE_FORMAT, version:1, build:window.BUILD || "", title:r.title || "Milanote board", root:bid(data.root), boards, cards, labels:{},
     look:{icon:iconFor(r.icon, r.title), accent:mnColour(r.color, MN_ACCENT) || undefined, w:150, h:150}, dropped:0, missing:[], report};
+}
+/* After a Milanote import: each stand-in for a board an earlier import
+   brought points at that board instead. A stand-in for the board's real
+   Milanote place moves the board here, and its earlier tile becomes a
+   shortcut, so separate exports end up as if imported together. */
+function linkKnownBoards(){
+  let linked = 0;
+  const inside = (bid, target) => { for (let b = state.boards[bid], n = 0; b && n < 500; b = state.boards[b.parentId], n++) if (b.id === target) return true; return false; };
+  for (const stub of Object.values(state.boards).filter(b => b.linkExisting !== undefined)){
+    const target = state.boards[stub.linkExisting];
+    for (const c of Object.values(state.cards).filter(c => c.type === "board" && c.boardId === stub.id)){
+      if (!target){
+        state.cards[c.id] = scrubCard({id:c.id, type:"note", x:c.x, y:c.y, z:c.z, w:260, h:80, createdAt:c.createdAt, updatedAt:c.updatedAt,
+          text:"\u2192 " + (c.title || "a board") + " (a board an earlier import brought, no longer here)"});
+        continue;
+      }
+      let tile = state.cards[c.id] = {...c, boardId:target.id};
+      if (!tile.shortcut){
+        const here = findCardBoard(tile.id);
+        if (here && here !== stub.id && !inside(here, target.id)){
+          for (const o of Object.values(state.cards))
+            if (o.type === "board" && o.boardId === target.id && o.id !== tile.id && !o.shortcut) state.cards[o.id] = {...o, shortcut:true};
+          target.parentId = here;
+        } else state.cards[tile.id] = {...tile, shortcut:true};
+      }
+      linked++;
+    }
+    delete state.boards[stub.id];
+  }
+  if (linked){ markDirty(); renderAll(); }
+  return linked;
 }
 /* read the chosen files: the main export and any numbered picture parts. All of them, or nothing. */
 async function importMilanoteFiles(files){
@@ -20110,12 +20160,17 @@ async function importMilanoteFiles(files){
   if (lacking.length) throw new Error("Picture part" + (lacking.length > 1 ? "s " : " ") + lacking.join(", ") + " of " + need + " " + (lacking.length > 1 ? "are" : "is") + " missing. Choose the main file and every part together.");
   const assets = {...(main.assets || {})};
   for (const p of parts) Object.assign(assets, p.assets || {});
-  const file = milanoteToBoardFile(main, assets);
+  /* boards earlier imports brought, by their Milanote id (not ones in the trash) */
+  const known = {}, trashed = bid => { for (let b = state.boards[bid], n = 0; b && n < 500; b = state.boards[b.parentId], n++) if (b.id === TRASH_ID) return true; return false; };
+  for (const b of Object.values(state.boards)) if (b.mnId && !known[b.mnId] && !trashed(b.id)) known[b.mnId] = b.id;
+  const file = milanoteToBoardFile(main, assets, known);
   const id = importBoardData(file, {fresh:true});
+  file.report.linked = linkKnownBoards();
   const rep = file.report, kept = Object.entries(rep.kept || {}).map(([k, n]) => n + " " + k.toLowerCase() + (n > 1 ? " cards" : " card")).join(", "), skipped = Object.entries(rep.skipped).map(([k, n]) => n + " " + k.toLowerCase().replace(/_/g, " ") + (n > 1 ? "s" : "")).join(", ");
   toast("Imported “" + file.title + "” from Milanote: " + rep.boards + " board" + (rep.boards === 1 ? "" : "s") + ", " + rep.cards + " cards" +
     (rep.lines ? ", " + rep.lines + " lines" : "") + (rep.drawings ? ", " + rep.drawings + " drawings" : "") + (rep.comments ? ", " + rep.comments + " comments" : "") +
     "." + (rep.missingPictures ? " " + rep.missingPictures + " pictures weren’t in the export (shown as notes)." : "") +
+    (rep.linked ? " " + rep.linked + " link" + (rep.linked === 1 ? "" : "s") + " to boards an earlier import brought (not copied again)." : "") +
     (kept ? " Kept as notes (CORKBORK can\u2019t show them yet): " + kept + "." : "") + (skipped ? " Left out: " + skipped + "." : ""), 14000);
   return {id, report:rep};
 }
@@ -29163,6 +29218,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b164", [
+    "Import from Milanote in several parts: a board an earlier import already brought (one you have shortcuts to) is linked, not copied again. If a later import is that board\u2019s real place in Milanote, it moves there and the earlier one becomes a shortcut. Boards imported before b164 don\u2019t carry this, so earlier copies stay as they are."
+  ]],
   ["b163", [
     "Update archive folder works with big workspaces (it stopped with \u201cInvalid string length\u201d): pictures are written once each into the archive\u2019s Assets folder and the catalogue just names them. Later updates only write new pictures."
   ]],
@@ -29208,11 +29266,6 @@ const PATCH_NOTES = [
   ["b151", [
     "Shorter right-click menus: Open, Create shortcut, Edit; then Share, Favourite, Make private, Add tags, Lock in place; then Export\u2026, Send to\u2026 and More\u2026 (Duplicate, Copy); Delete last. Share opens straight on the links, with Stop sharing beside Close.",
     "Pinch-zoom on a laptop trackpad follows your fingers (it moved only about 7% before); a ctrl+mouse-wheel notch is a bigger step too."
-  ]],
-  ["b150", [
-    "Fixes from testing: bold, italic and underline in notes stay after you finish typing. The Image and Upload tools work again when the master archive folder needs your OK after a restart (no more \u201cUser activation is required\u201d error); what you add is kept and copied to the folder at its next update.",
-    "D&D sheet colour (Edit character \u203a Home): light and deep rows of CORKBORK\u2019s jewel colours, and More colours\u2026 opens the full picker (every palette, your own palettes, any colour by code). Light colours get dark writing so the sheet stays readable.",
-    "Import: a race whose subraces have a paragraph before their traits (Warforged, Unearthed Arcana: Envoy, Juggernaut, Skirmisher) now offers them as choices instead of giving you all of them."
   ]],
 ];
 function renderPatchNotes(){
