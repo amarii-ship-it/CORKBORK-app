@@ -575,9 +575,34 @@ body.focus-mode #binFloat{display:none !important;}
 /* lists: colour dot, calendar switch, due dates */
 .list-color{width:14px; height:14px; border-radius:50%; flex:none; padding:0; box-shadow:inset 0 0 0 2px var(--text-dim); opacity:0; transition:opacity .12s;}
 .list-color.set{background:var(--lcol); box-shadow:none; opacity:1;}
-.card.type-todo:hover .list-color, .card.type-todo.selected .list-color{opacity:1;}
+
 .list-cal{font-size:13px; padding:0 2px; flex:none; filter:grayscale(1); opacity:.45;}
 .list-cal.on{filter:none; opacity:1;}
+/* a list's own controls (colour, calendar, type) only show while you're on
+   that list: hovering, selected or editing it. Otherwise just the list (U-032) */
+.list-head .list-color, .list-head .list-color.set, .list-head .list-cal, .list-head .list-cal.on, .list-head .list-mode{opacity:0; pointer-events:none; transition:opacity .12s;}
+.card.type-todo:hover .list-head > *, .card.type-todo.selected .list-head > *, .card.type-todo:focus-within .list-head > *,
+.tw-list:hover .list-head > *, .tw-list:focus-within .list-head > *{opacity:1; pointer-events:auto;}
+.card.type-todo:hover .list-cal:not(.on), .tw-list:hover .list-cal:not(.on){opacity:.45;}
+/* in the To-dos window they're smaller */
+.tw-card .list-color{width:10px; height:10px;}
+.tw-card .list-mode{width:17px; height:16px; font-size:9px;}
+.tw-card .list-cal{font-size:11px;}
+/* adding an item: a plain row like the others, no box and no example text */
+.todo-item.todo-adding .todo-fakebox{width:14px; height:14px; margin-top:3px; flex:none; border:1.5px solid var(--text-dim); border-radius:3px; opacity:.7;}
+.todo-item.todo-adding input.todo-add-input{flex:1; min-width:0; border:none; background:transparent; outline:none; box-shadow:none; padding:0; margin:0; font:inherit; color:var(--text); border-radius:0;}
+/* each item's drag handle shows on hover */
+.todo-drag{flex:none; width:14px; color:var(--text-dim); cursor:grab; opacity:0; font-size:13px; line-height:20px; text-align:center; touch-action:none; user-select:none;}
+.todo-item:hover .todo-drag{opacity:.75;}
+.todo-item.todo-moving{opacity:.6; background:color-mix(in srgb, var(--accent) 12%, transparent); border-radius:4px;}
+.todo-item{position:relative;}
+.todo-tools{position:absolute; right:-6px; top:0; bottom:0; display:flex; gap:1px; align-items:flex-start; padding:2px 2px 0 16px;
+  background:linear-gradient(to right, transparent, var(--surface) 14px); opacity:0; pointer-events:none; transition:opacity .1s;}
+.tw-card .todo-tools{background:linear-gradient(to right, transparent, color-mix(in srgb, var(--text) 4%, var(--surface-hi)) 14px);}
+.todo-item:hover .todo-tools, .todo-item:focus-within .todo-tools{opacity:1; pointer-events:auto;}
+.todo-tools .rm, .todo-tools .due-btn{visibility:visible;}
+.todo-tools .todo-drag{opacity:.75;}
+@media (hover:none){ .todo-item{padding-right:58px;} .todo-tools{opacity:1; pointer-events:auto; background:none;} }
 .todo-item label{flex:1; min-width:0;}
 .todo-due{flex:none; margin-top:1px; padding:0 7px; border-radius:99px; font-size:11px; font-weight:800; line-height:18px; color:var(--text);
   background:color-mix(in srgb, var(--lcol, var(--edit)) 20%, transparent);}
@@ -825,12 +850,12 @@ body.rail-edit #railTools > .railDivider{height:6px; margin:2px 0; cursor:pointe
 .sf-fullbody{flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:2px 9px 6px; min-height:0; overflow:hidden;}
 .sf-col{display:flex; flex-direction:column; gap:5px; min-height:0; overflow:hidden;}
 .sf-col .sf-panel.grow{flex:1 1 auto; min-height:0;}
-.sf-mode-full .sf-panel-t{max-height:none;}
+.sf-mode-full .sf-panel-t{max-height:180px; overflow-y:auto; overscroll-behavior:contain;}
 
 .sf-panel{background:var(--pp0, #FBF6EC); border:1px solid var(--ppb, #C9B08A); border-radius:4px; padding:4px 6px; overflow:hidden;}
 .sf-panel-h{font-size:8px; letter-spacing:.07em; text-transform:uppercase; color:var(--pink2, #8A7550); font-weight:700; margin-bottom:2px;
   border-bottom:1px solid var(--pp3, #E3D4B6); padding-bottom:2px;}
-.sf-panel-t{font-size:9.5px; line-height:1.35; white-space:pre-wrap; color:var(--pink, #3A2E1B); max-height:44px; overflow:hidden;}
+.sf-panel-t{font-size:9.5px; line-height:1.35; white-space:pre-wrap; color:var(--pink, #3A2E1B); max-height:44px; overflow-y:auto; overscroll-behavior:contain;}
 .sf-hint{font-size:9px; color:var(--pink2, #A08A5E); text-align:center; padding:3px 0 5px; border-top:1px solid var(--pp3, #DDCBA8);}
 
 /* sheet fullscreen editor (reuses lightbox backdrop) */
@@ -932,7 +957,11 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-roll:hover{background:var(--acc); color:var(--acc-ink, #F4ECDD); border-color:var(--acc);}
 .bz-legend{font:10px Verdana; color:var(--pink2, #8A7550); margin-top:5px; display:flex; gap:9px; flex-wrap:wrap; align-items:center;}
 .bz-legend span{display:flex; gap:4px; align-items:center;}
-.bz-tabsbox{min-height:420px; overflow:hidden;}
+/* the tabs keep one height and scroll inside, so a long inventory or spell
+   list doesn't stretch the whole sheet (U-025) */
+.bz-tabsbox{height:520px; overflow:hidden; display:flex; flex-direction:column;}
+.bz-tabsbox > .bz-tabs{flex:none;}
+.bz-tabsbox > .bz-panel{flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;}
 .bz-tabs{display:flex; gap:2px; border-bottom:2px solid var(--acc); padding:6px 4px 0; flex-wrap:wrap;}
 .bz-tab{font:700 11px Verdana; padding:7px 10px; color:var(--pink2, #8A7550); border-radius:5px 5px 0 0; background:none; border:none; cursor:pointer;}
 .bz-tab.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
@@ -1412,7 +1441,8 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 .note-text h3, .note-edit h3{font-family:var(--font-serif); font-size:16px; font-weight:700; margin:2px 0; white-space:normal;}
 .note-text p, .note-edit p, .note-text div, .note-edit div{margin:0; white-space:pre-wrap;}
 .note-text ul, .note-edit ul, .note-text ol, .note-edit ol{margin:2px 0; padding-left:22px; white-space:normal;}
-.note-text blockquote, .note-edit blockquote{border-left:3px solid var(--accent); margin:4px 0; padding:2px 10px; color:var(--text-dim); white-space:normal;}
+/* a quote as Milanote shows it: a thin line down the left, italic (U-024) */
+.note-text blockquote, .note-edit blockquote{border-left:2px solid color-mix(in srgb, var(--text) 65%, transparent); margin:6px 0; padding:1px 0 1px 14px; font-style:italic; color:color-mix(in srgb, var(--text) 85%, transparent); white-space:normal;}
 .note-text pre, .note-edit pre{font-family:ui-monospace,Consolas,monospace; font-size:12.5px; background:var(--canvas); border-radius:5px; padding:6px 8px; margin:4px 0; white-space:pre-wrap;}
 .note-text a{color:var(--accent);}
 .note-edit{outline:none; cursor:text; min-height:40px;}
@@ -1709,7 +1739,7 @@ body.focus-mode #drawBar{display:none;}
 .todo-item{display:flex; align-items:flex-start; gap:7px; padding:3px 0; font-size:14px; line-height:1.35;}
 .todo-item input[type=checkbox]{margin-top:3px; accent-color:var(--accent); width:14px; height:14px; flex:none;}
 .todo-item.done label{color:var(--text-dim); text-decoration:line-through;}
-.todo-item label{cursor:pointer;}
+.todo-item label{cursor:pointer; user-select:text; -webkit-user-select:text;}   /* item text can be selected and copied (U-030) */
 .todo-item input[type=text]{flex:1; min-width:0; font-size:14px; padding:1px 5px;}
 .todo-item .rm{color:var(--text-dim); padding:0 4px; flex:none; visibility:hidden;}
 .todo-item:hover .rm{visibility:visible;}
@@ -1939,6 +1969,36 @@ select{font:inherit; color:var(--text); background:var(--canvas); border:1px sol
   overflow:hidden; max-height:96px; flex:none;
 }
 .ditem.d-img{padding:0; max-height:none; background:var(--surface);}
+#pickPop{position:fixed; z-index:180; display:none; flex-direction:column; min-width:190px; padding:5px; border-radius:9px;
+  background:var(--surface-hi); border:1px solid var(--border); box-shadow:0 10px 28px rgba(0,0,0,.3);}
+#pickPop.open{display:flex;}
+#pickPop button{text-align:left; padding:7px 10px; border-radius:6px; font-size:13.5px; color:var(--text);}
+#pickPop button:hover{background:var(--surface);}
+.pick-tip{font-size:11px; color:var(--text-dim); padding:2px 10px 4px;}
+/* Unsorted items drawn like their cards (U-033) */
+.ditem.dk-board, .ditem.dk-sheet, .ditem.dk-file{display:flex; align-items:center; gap:12px; padding:10px 12px; max-height:none;}
+.dp-tile{width:46px; height:46px; border-radius:11px; flex:none; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:#fff; overflow:hidden;}
+.dp-tile svg{width:26px; height:26px;}
+.dp-face{background:var(--surface-hi); color:var(--text);} .dp-face img{width:100%; height:100%; object-fit:cover;}
+.dp-main{display:flex; flex-direction:column; min-width:0;} .dp-main b{font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.dp-sub{font-size:11px; color:var(--text-dim);}
+.dp-center{text-align:center;}
+.dp-title{display:block; font-size:13.5px; margin-bottom:4px;}
+.ditem.dk-todo{max-height:none; padding:10px 12px;}
+.dp-task{display:flex; gap:8px; align-items:flex-start; font-size:13px; padding:2px 0; line-height:1.35;}
+.dp-task.done span:last-child{text-decoration:line-through; color:var(--text-dim);}
+.dp-box{width:13px; height:13px; margin-top:2px; border:1.5px solid var(--text-dim); border-radius:3px; flex:none;}
+.dp-box.on{background:var(--accent); border-color:var(--accent);}
+.ditem.dk-column, .ditem.dk-grid{max-height:none; padding:10px; display:flex; flex-direction:column; gap:6px;}
+.dp-colt{text-align:center; font-family:var(--font-serif); font-size:14px;}
+.ditem.dp-inner{cursor:inherit; max-height:120px; background:color-mix(in srgb, var(--text) 4%, var(--surface));}
+.ditem.dk-note{max-height:none; padding:12px 14px;}
+.dp-note{font-size:13.5px; line-height:1.45; white-space:pre-wrap; overflow:hidden; max-height:9.5em;}
+.dp-heading{font-family:var(--font-serif); font-size:16px; font-weight:700;}
+.ditem.dk-link{max-height:none;}
+.dp-thumb{width:100%; max-height:150px; object-fit:cover; border-radius:5px; margin-bottom:6px; display:block;}
+.dp-fileic{font-size:24px; width:46px; text-align:center;}
+img.pic-waiting{background:color-mix(in srgb, var(--text) 8%, transparent); min-height:60px;}
 .ditem.d-img img{width:100%; height:auto; max-height:70vh; object-fit:contain; display:block; border-radius:5px; pointer-events:none;}
 .ditem .dkind{font-size:11px; color:var(--text-dim); margin-bottom:2px;}
 #drawer.droptarget{outline:2px solid var(--accent); outline-offset:-2px;}
@@ -2027,7 +2087,7 @@ body.in-card #zoomCtl{z-index:170;}
 #lbClose:hover{background:rgba(255,255,255,.14);}
 
 /* search */
-#todoWin{position:fixed; top:56px; right:24px; width:min(340px, calc(100vw - 16px)); max-height:min(74vh, 680px); z-index:120;
+#todoWin{position:fixed; top:56px; right:24px; width:min(420px, calc(100vw - 16px)); max-height:min(84vh, 880px); z-index:120;
   background:var(--surface-hi); border:1px solid var(--border); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.32);
   display:none; flex-direction:column; overflow:hidden; font-size:14px;}
 #todoWin.open{display:flex;}
@@ -2038,11 +2098,30 @@ body.in-card #zoomCtl{z-index:170;}
 #twHead button{white-space:nowrap; flex:none;}
 #twCount{font-size:11px; font-weight:700; color:var(--canvas); background:var(--accent); border-radius:5px; padding:1px 6px;}
 #twCount:empty{display:none;}
+/* ---- text tools in the left toolbar (U-024) ---- */
+body.text-editing .railtemp, body.text-editing #railTools, body.text-editing #railCardPage, body.text-editing #railCardEnd{display:none !important;}
+body.text-editing #railText{display:flex !important; flex-direction:column; align-items:center; gap:2px;}
+.tool.txt{--hue:var(--text-dim); --tint:0%;}
+.tool.txt .txg{font-size:19px; line-height:22px; height:26px; margin-bottom:2px; color:var(--text);}
+.tool.txt.on{--tint:26%; --hue:var(--accent);}
+.tool.txt svg{stroke:var(--text);}
+#txDone{margin-bottom:4px;}
+#txStylePop{position:fixed; z-index:170; display:none; flex-direction:column; min-width:170px; padding:5px; border-radius:9px;
+  background:var(--surface-hi); border:1px solid var(--border); box-shadow:0 10px 28px rgba(0,0,0,.3);}
+#txStylePop.open{display:flex;}
+#txStylePop button{text-align:left; padding:7px 10px; border-radius:6px; font-size:14px; color:var(--text);}
+#txStylePop button:hover{background:var(--surface);}
+#txStylePop button.on{background:color-mix(in srgb, var(--accent) 18%, transparent);}
+#txStylePop .tx-h{font-size:18px; font-weight:700;} #txStylePop .tx-sh{font-size:15.5px; font-weight:700;}
+#txStylePop .tx-q{font-style:italic; border-left:2px solid color-mix(in srgb, var(--text) 65%, transparent); border-radius:0 6px 6px 0; margin-left:4px;}
+#txStylePop .tx-code{font-family:ui-monospace,Consolas,monospace; font-size:13px;}
 /* on a phone there is no room beside Search: Favourites and Tags open over it */
 .side-back{display:none; align-self:flex-start; margin:10px 10px 0; padding:4px 8px; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-dim);}
 .side-back:hover{color:var(--text); background:var(--surface);}
 #favPanel.over .side-back, #tagSide.over .side-back{display:block;}
 #favPanel.over input, #tagSide.over input{margin-top:6px;}
+.mn-steps{margin:8px 0 8px 20px; padding:0; display:flex; flex-direction:column; gap:5px;}
+.mn-steps li{padding-left:2px;}
 #twHideDone{font-size:11.5px; font-weight:600; padding:4px 8px; border-radius:7px; color:var(--text-dim); border:1px solid var(--border);}
 #twHideDone:hover{color:var(--text);}
 #twHideDone.on{color:var(--canvas); background:var(--accent); border-color:var(--accent);}
@@ -2056,7 +2135,34 @@ body.in-card #zoomCtl{z-index:170;}
 #twNew:hover{background:color-mix(in srgb, var(--text) 14%, transparent);}
 #twClose{width:26px; height:26px; border-radius:6px; color:var(--text-dim);}
 #twClose:hover{background:var(--surface); color:var(--text);}
-#twBody{overflow-y:auto; padding:2px 10px 10px;}
+#twBody{overflow-y:auto; padding:2px 10px 10px; flex:1 1 auto; min-height:0;}
+#twSelBar{display:none; align-items:center; gap:8px; padding:6px 12px; font-size:12px; border-bottom:1px solid var(--border); background:color-mix(in srgb, var(--accent) 10%, transparent);}
+#twSelBar.on{display:flex;}
+#twSelN{flex:1; color:var(--text);}
+#twSelBar button{font-size:12px; font-weight:600; padding:3px 9px; border-radius:6px; background:color-mix(in srgb, var(--text) 9%, transparent); color:var(--text);}
+.tw-list.tw-sel{outline:2px solid var(--accent); outline-offset:-1px;}
+.tw-x, .tw-eye{flex:none; width:20px; height:20px; border-radius:5px; color:var(--text-dim); font-size:12px; opacity:0; display:flex; align-items:center; justify-content:center;}
+.tw-list:hover .tw-x, .tw-list:hover .tw-eye, .tw-list:focus-within .tw-x, .tw-list:focus-within .tw-eye{opacity:.8;}
+.tw-x:hover, .tw-eye:hover{opacity:1; background:var(--surface); color:var(--text);}
+.tw-eye svg{width:14px; height:14px;}
+@media (hover:none){ .tw-x, .tw-eye{opacity:.6;} }
+#twHiddenBtn{flex:none; text-align:left; padding:8px 12px; font-size:12px; color:var(--text-dim); border-top:1px solid var(--border);}
+#twHiddenBtn:hover{color:var(--text); background:color-mix(in srgb, var(--text) 5%, transparent);}
+#twHiddenBtn.none{display:none;}
+#twHiddenPop{position:fixed; z-index:121; width:min(280px, calc(100vw - 16px)); max-height:min(70vh, 560px); display:none; flex-direction:column;
+  background:var(--surface-hi); border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.32);}
+#twHiddenPop.open{display:flex;}
+.twh-head{display:flex; align-items:center; padding:10px 10px 4px 12px;} .twh-head b{flex:1; font-size:14px;}
+#twhClose{width:24px; height:24px; border-radius:6px; color:var(--text-dim);}
+.twh-tip{font-size:11px; color:var(--text-dim); padding:0 12px 6px;}
+#twhList{overflow-y:auto; padding:0 6px 6px; display:flex; flex-direction:column; gap:2px;}
+.twh-row{display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:6px 8px; border-radius:6px; font-size:13px; color:var(--text);}
+.twh-row:hover{background:var(--surface);}
+.twh-row.sel{background:color-mix(in srgb, var(--accent) 20%, transparent);}
+.twh-row .tw-dot{width:8px; height:8px;}
+.twh-acts{padding:8px 10px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;}
+.twh-acts button{font-size:12px; padding:5px 10px; border-radius:7px;}
+.tw-list.folded .tw-ftitle{white-space:normal; overflow:visible;}
 .tw-list{border-radius:9px; padding:6px 8px 4px; margin-top:8px; background:color-mix(in srgb, var(--text) 4%, transparent);}
 .tw-top{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim);}
 .tw-drag{color:var(--text-dim); letter-spacing:-2px; font-size:12px; cursor:grab; padding:2px 3px 2px 0; opacity:.55; flex:none; touch-action:none; user-select:none;}
@@ -2072,8 +2178,7 @@ body.in-card #zoomCtl{z-index:170;}
 .tw-where{flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); font-size:11px; padding:1px 2px; border-radius:4px;}
 .tw-where b{font-weight:600;}
 .tw-where:hover{color:var(--text); text-decoration:underline;}
-.tw-list.folded .tw-where{flex:0 1 auto;}
-.tw-list.folded .tw-ftitle{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.tw-list.folded .tw-ftitle{flex:1; min-width:0;}
 .tw-prog{flex:none;}
 .tw-card{position:relative; padding:2px 0 0 18px;}
 .tw-card .list-head{min-height:24px;}
@@ -3571,6 +3676,18 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
      acts on whichever editable surface most recently had the caret, which
      is tracked by richTarget() below — that is what lets one toolbar serve
      notes, headings and any rich field added later. -->
+<div id="pickPop" role="menu" aria-label="Add a picture">
+  <button type="button" id="pickFile">Choose a file…</button>
+  <button type="button" id="pickPaste">Paste from clipboard</button>
+  <div class="pick-tip">or press Ctrl+V</div>
+</div>
+<div id="txStylePop" role="menu" aria-label="Text style">
+  <button type="button" data-block="P">Normal text</button>
+  <button type="button" data-block="H2" class="tx-h">Heading</button>
+  <button type="button" data-block="H3" class="tx-sh">Subheading</button>
+  <button type="button" data-block="BLOCKQUOTE" class="tx-q">Quote</button>
+  <button type="button" data-block="PRE" class="tx-code">Code</button>
+</div>
 <div id="textBarWrap">
 <button id="tbHandle" title="Text formatting">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
@@ -3697,7 +3814,16 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <div id="twHead"><span class="tw-grip" aria-hidden="true">⋮⋮</span><span class="tw-title">To-dos</span><span id="twCount"></span>
     <button id="twHideDone" type="button" aria-pressed="false" title="Hide ticked items here (they stay on the board)">Hide done</button>
     <button id="twNew" type="button" title="New list">＋<span class="tw-newword"> New list</span></button><button id="twClose" type="button" title="Close">✕</button></div>
+  <div id="twSelBar"><span id="twSelN"></span><button type="button" id="twSelHide">Hide</button><button type="button" id="twSelClear">Clear</button></div>
   <div id="twBody"></div>
+  <button type="button" id="twHiddenBtn">‹ Hidden lists <span id="twHiddenN"></span></button>
+</div>
+<!-- the lists hidden from To-dos, beside the window -->
+<div id="twHiddenPop" role="dialog" aria-label="Hidden lists">
+  <div class="twh-head"><b>Hidden lists</b><button type="button" id="twhClose" title="Close">✕</button></div>
+  <div class="twh-tip">Ctrl-click to pick several.</div>
+  <div id="twhList"></div>
+  <div class="twh-acts"><button type="button" id="twhShow" class="primary" disabled>Show in To-dos</button></div>
 </div>
 <div id="tagSide">
   <button type="button" class="side-back" data-back="tag">‹ Search</button>
@@ -3809,6 +3935,22 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
          a card they do not yet work, and pretending otherwise wasted more of
          the owner's time than saying so. -->
     <div id="railNotice" style="display:none">
+    </div>
+    <!-- while you edit text, the toolbar swaps to text tools (like Milanote's) -->
+    <div id="railText" class="railset" style="display:none">
+      <button class="tool txt" id="txDone" title="Done editing (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>Done</button>
+      <button class="tool txt" id="txStyle" title="Text style: normal, heading, quote…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4.5h11V6 M10.5 4.5V19 M8 19h5"/><circle cx="18" cy="17" r="2.6" fill="currentColor" stroke="none" opacity=".55"/></svg>Text style</button>
+      <button class="tool txt" data-cmd="bold" title="Bold (Ctrl+B)"><b class="txg">B</b>Bold</button>
+      <button class="tool txt" data-cmd="italic" title="Italic (Ctrl+I)"><i class="txg" style="font-family:var(--font-serif)">I</i>Italic</button>
+      <button class="tool txt" data-cmd="strikeThrough" title="Strikethrough"><span class="txg" style="text-decoration:line-through">S</span>Strike</button>
+      <button class="tool txt" data-cmd="underline" title="Underline (Ctrl+U)"><span class="txg" style="text-decoration:underline">U</span>Underline</button>
+      <button class="tool txt" data-cmd="insertUnorderedList" title="Bulleted list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7h11 M9 12h11 M9 17h11"/><circle cx="4.5" cy="7" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="17" r="1" fill="currentColor"/></svg>Bullets</button>
+      <button class="tool txt" data-cmd="insertOrderedList" title="Numbered list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7h10 M10 12h10 M10 17h10 M4 5.5l1.2-.8V9 M3.7 14.6c.4-.6 1.8-.7 1.9.2.1.8-1.9 1.6-1.9 2.6h2"/></svg>Numbers</button>
+      <button class="tool txt" id="txAlign" title="Align: left, centre, right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16 M4 10h10 M4 14h16 M4 18h10"/></svg>Align</button>
+      <button class="tool txt" id="txCode" title="Code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l-5 5 5 5 M15 7l5 5-5 5"/></svg>Code</button>
+      <button class="tool txt" id="txLink" title="Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Link</button>
+      <button class="tool txt" id="txColor" title="Text colour"><span class="txg" style="border-bottom:3px solid var(--accent); line-height:1">A</span>Colour</button>
+      <button class="tool txt" id="txHighlight" title="Highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16 M7 16l8-8 3 3-8 8z M13 7l2-2"/></svg>Highlight</button>
     </div>
     <div id="railCardPage" class="railset" style="display:none">
       <div class="railDivider"></div>
@@ -4643,7 +4785,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b166";
+window.BUILD = "b167";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4972,6 +5114,17 @@ async function idbGetRaw(k){
     rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
   });
 }
+/* many records in one transaction, all requested at once: reading a few
+   thousand pictures one by one at startup spent seconds waiting (U-034) */
+async function idbGetMany(keys){
+  const db = await idb(), out = new Map();
+  if (!keys.length) return out;
+  return new Promise((res, rej) => {
+    const tx = db.transaction("kv"), store = tx.objectStore("kv");
+    for (const k of keys){ const rq = store.get(k); rq.onsuccess = () => out.set(k, rq.result); }
+    tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+  });
+}
 async function idbHas(k){
   const db = await idb();
   return new Promise((res, rej) => {
@@ -4993,6 +5146,7 @@ function assetDataPattern(){
   return /data:[a-z0-9.+-]+\/[a-z0-9.+-]+(?:;[a-z0-9.+-]+=[^;,\s]+)*;base64,[a-z0-9+/=\r\n]+/gi;
 }
 function assetTokenPattern(){ return /corkbork-asset:\/\/[a-z0-9:_-]+/gi; }
+const ASSET_TOKEN_ONLY = /^corkbork-asset:\/\/[a-z0-9:_-]+$/i;
 function approxDataBytes(s){
   const comma = String(s || "").indexOf(",");
   return comma < 0 ? 0 : Math.max(0, Math.floor((s.length - comma - 1) * .75));
@@ -5046,6 +5200,16 @@ async function packStringAssets(value){
   return out + value.slice(at);
 }
 async function mapStoredAssets(value, mode, memo=new Map()){
+  /* unpacking: fetch every picture it needs in one go first, then swap them in without waiting */
+  if (mode === "unpack" && value && typeof value === "object" && !memo.__batched){
+    const need = [...collectAssetTokens(value).keys()].filter(id => !memo.has(ASSET_TOKEN_PREFIX + id));
+    for (let i = 0; i < need.length; i += 400){
+      const got = await idbGetMany(need.slice(i, i + 400).map(id => ASSET_KEY_PREFIX + id));
+      for (const [k, v] of got) if (typeof v === "string"){ const t = ASSET_TOKEN_PREFIX + k.slice(ASSET_KEY_PREFIX.length); memo.set(t, v); assetTokenCache.set(v, t); }
+    }
+    memo.__batched = true;
+    return unpackFromMemo(value, memo);
+  }
   if (typeof value === "string"){
     if (mode === "pack") return packStringAssets(value);
     if (!value.includes(ASSET_TOKEN_PREFIX)) return value;
@@ -5083,6 +5247,26 @@ async function mapStoredAssets(value, mode, memo=new Map()){
    place is a pointer check when nothing changed. Rebuilt each pass, so
    strings of deleted cards aren't kept alive. */
 let packPathMemo = new Map();
+/* the unpacking walk itself, once every picture is in hand: no awaits per field */
+function unpackFromMemo(value, memo, partial = false){
+  if (typeof value === "string"){
+    if (!value.includes(ASSET_TOKEN_PREFIX)) return value;
+    let out = "", at = 0;
+    for (const match of value.matchAll(assetTokenPattern())){
+      const dataUrl = memo.get(match[0]);
+      if (typeof dataUrl !== "string"){ if (partial) continue; throw new Error("a shared attachment is missing from local storage"); }
+      out += value.slice(at, match.index) + dataUrl; at = match.index + match[0].length;
+    }
+    return out + value.slice(at);
+  }
+  if (Array.isArray(value)) return value.map(v => unpackFromMemo(v, memo, partial));
+  if (value && Object.getPrototypeOf(value) === Object.prototype){
+    const result = {};
+    for (const [key, item] of Object.entries(value)){ if (key === "_assetStorageVersion") continue; result[key] = unpackFromMemo(item, memo, partial); }
+    return result;
+  }
+  return value;
+}
 async function packWorkspaceForStorage(source){
   /* store any new pictures first, then swap them for tokens in one plain pass */
   const fresh = new Map(), memo = packPathMemo, next = new Map();
@@ -6050,6 +6234,7 @@ const lazyImgs = typeof IntersectionObserver === "function" ? new IntersectionOb
   for (const e of entries) if (e.isIntersecting){ const im = e.target; lazyImgs.unobserve(im); if (im.dataset.lazySrc){ im.src = im.dataset.lazySrc; delete im.dataset.lazySrc; } }
 }, {rootMargin:"100% 100%"}) : null;
 function lazySrc(img, src){
+  if (typeof src === "string" && src.startsWith(ASSET_TOKEN_PREFIX)){ img.classList.add("pic-waiting"); return; }   /* still loading in (U-034) */
   if (!lazyImgs || !src || String(src).length < 20000){ img.src = src; return; }
   img.dataset.lazySrc = src; lazyImgs.observe(img);
 }
@@ -6180,6 +6365,9 @@ function fitAutoHeights(){
     }
     /* a Beyond sheet is as tall as its content, so it has no empty band at the bottom */
     if (c.type === "sheet" && sheetView(c) === "beyond" && c.autoH !== false){ notes.push({id, c, el}); continue; }
+    /* a list always fits its items: it grows past a size you gave it, and
+       otherwise fits exactly, so nothing is cut off or unreachable (U-029) */
+    if (c.type === "todo"){ notes.push({id, c, el, growOnly:c.autoH === false}); continue; }
     if (!AUTO_H_TYPES[c.type] || c.autoH === false) continue;
     if (activeEditor && activeEditor.cardId === id) continue;
     notes.push({id, c, el});
@@ -6193,7 +6381,7 @@ function fitAutoHeights(){
   for (const x of laid) x.el.style.height = x.prev;
   for (const x of cols) if (x.h - x.c.h > AUTO_H_SLOP) state.cards[x.id] = { ...x.c, h: x.h };
   for (const x of laid){
-    if (!x.need || Math.abs(x.need - x.c.h) < AUTO_H_SLOP) continue;
+    if (!x.need || Math.abs(x.need - x.c.h) < AUTO_H_SLOP || (x.growOnly && x.need < x.c.h)) continue;
     x.el.style.height = x.need + "px";
     state.cards[x.id] = { ...x.c, h: x.need };
   }
@@ -7208,6 +7396,7 @@ function buildTodo(c, el, where = "board"){
     let clickTimer = null;    // delay the toggle so a double-click (edit) can win
     lb.addEventListener("click", () => {
       if (mode !== "check") return;        /* nothing to tick on a plain list */
+      if (String(getSelection() || "").trim()) return;   /* selecting text to copy isn't a tick */
       clearTimeout(clickTimer);
       clickTimer = setTimeout(() => { cb.checked = !cb.checked; cb.dispatchEvent(new Event("change")); }, 230);
     });
@@ -7232,14 +7421,27 @@ function buildTodo(c, el, where = "board"){
       patchCard(c.id, { items: card(c.id).items.filter(x => x.id !== it.id) });
       markDirty(); renderBoard();
     });
-    row.append(cb, lb, due, rm); list.appendChild(row);
+    /* drag the handle up or down to put the item somewhere else in the list */
+    const grip = document.createElement("span"); grip.className = "todo-drag"; grip.textContent = "\u2261"; grip.title = "Drag to move";
+    grip.addEventListener("pointerdown", e => todoDragItem(e, row, list, c.id));
+    row.dataset.item = it.id;
+    /* the row's tools float over its end on hover, so the text gets the whole width;
+       a due date that's set is part of the item and stays in line */
+    const tools = document.createElement("span"); tools.className = "todo-tools";
+    if (it.due){ row.append(cb, lb, due); tools.append(rm, grip); }
+    else { row.append(cb, lb); tools.append(due, rm, grip); }
+    row.appendChild(tools); list.appendChild(row);
   }
 
   const addWrap = document.createElement("div"); stop(addWrap);
   const openAddInput = () => {
     addWrap.innerHTML = "";
+    const row = document.createElement("div"); row.className = "todo-item todo-adding";
+    const box = document.createElement("span"); box.className = "todo-fakebox";
     const inp = document.createElement("input");
-    inp.type = "text"; inp.className = "todo-add-input"; inp.placeholder = "Add an item…";
+    inp.type = "text"; inp.className = "todo-add-input"; inp.setAttribute("aria-label", "New item");
+    if (mode === "check") row.appendChild(box);
+    row.appendChild(inp);
     let committed = false;                       // re-rendering fires blur; commit only once
     const commit = keepOpen => {
       if (committed) return;
@@ -7251,6 +7453,9 @@ function buildTodo(c, el, where = "board"){
         markDirty();
       }
       focusAddTodo = keepOpen && v ? fkey : null;
+      /* with nothing added the card isn't redrawn, so put the add row back
+         here: a used-up box stayed behind and ignored Enter until a reload (U-031) */
+      if (!v){ addWrap.innerHTML = ""; addWrap.appendChild(btn); }
       renderBoard();
     };
     inp.addEventListener("keydown", e => {
@@ -7259,7 +7464,7 @@ function buildTodo(c, el, where = "board"){
       if (e.key === "Escape"){ inp.value = ""; commit(false); }
     });
     inp.addEventListener("blur", () => commit(false));
-    addWrap.appendChild(inp); inp.focus();
+    addWrap.appendChild(row); inp.focus();
   };
   const btn = document.createElement("button"); btn.className = "todo-add"; btn.textContent = "＋ Add an item";
   btn.addEventListener("click", openAddInput);
@@ -7272,6 +7477,28 @@ function buildTodo(c, el, where = "board"){
     e.stopPropagation();
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "To-do" }));
   });
+}
+/* move an item within its list; followed on the page, not by capturing the
+   pointer, so moving the row in the list can't drop the drag part-way */
+function todoDragItem(e, row, list, listId){
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  row.classList.add("todo-moving");
+  const move = ev => {
+    const rows = [...list.querySelectorAll(":scope > .todo-item[data-item]")].filter(r => r !== row);
+    const before = rows.find(r => { const b = r.getBoundingClientRect(); return ev.clientY < b.top + b.height / 2; });
+    if (before){ if (row.nextElementSibling !== before) list.insertBefore(row, before); }
+    else { const last = rows[rows.length - 1]; if (last && last.nextElementSibling !== row) last.after(row); }
+  };
+  const up = () => {
+    removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+    row.classList.remove("todo-moving");
+    const order = [...list.querySelectorAll(":scope > .todo-item[data-item]")].map(r => r.dataset.item), L = card(listId);
+    if (!L || order.join() === (L.items || []).map(i => i.id).join()) return;
+    const byId = new Map(L.items.map(i => [i.id, i]));
+    pushUndo(); patchCard(listId, {items:order.map(id => byId.get(id)).filter(Boolean)}); markDirty(); renderBoard();
+  };
+  addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
 }
 function editTodoItem(c, it, row, cb, lb){
   const inp = document.createElement("input"); inp.type = "text"; inp.value = it.text;
@@ -8532,6 +8759,67 @@ function autoAccent(title){
 function unsortedHost(){
   return (inCardPage() && cpId) ? card(cpId) : cur();
 }
+/* Each thing in Unsorted looks like itself, as on the board: a board's tile,
+   a list's items, a column's contents, a note's text (U-033) */
+function drawerPreview(c, d){
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const line = t => String(t || "").split("\n").find(x => x.trim()) || "";
+  d.classList.add("dk-" + c.type);
+  if (c.type === "image"){
+    const i = el("img"), w = c.naturalW || c.w, h = c.naturalH || (c.h - (c.caption ? 28 : 0));
+    if (w > 0 && h > 0) i.style.aspectRatio = w + " / " + h;
+    lazySrc(i, c.dataUrl); i.title = c.caption || ""; i.alt = c.caption || ""; d.appendChild(i); return;
+  }
+  if (c.type === "board"){
+    const tile = el("div", "dp-tile"); tile.style.background = c.accent || "var(--surface)";
+    const ic = c.icon || autoIcon(c.title);
+    if (isIconRef(ic)) tile.appendChild(iconEl(ic, c.iconTone)); else tile.textContent = ic || (c.title || "B").trim().charAt(0).toUpperCase();
+    const m = el("div", "dp-main"); m.append(el("b", "", c.title || "Board"), el("span", "dp-sub", (c.shortcut ? "Shortcut \u00b7 " : "") + (board(c.boardId) ? boardCounts(c.boardId) : "")));
+    d.append(tile, m); return;
+  }
+  if (c.type === "todo"){
+    const L = c.linkTo ? card(c.linkTo) || c : c, items = L.items || [];
+    if (L.title && L.title !== "List") d.appendChild(el("b", "dp-title", L.title));
+    for (const it of items.slice(0, 6)){ const r = el("div", "dp-task" + (it.done ? " done" : "")); r.append(el("span", "dp-box" + (it.done ? " on" : "")), el("span", "", it.text)); d.appendChild(r); }
+    if (items.length > 6) d.appendChild(el("div", "dp-sub", "+" + (items.length - 6) + " more"));
+    if (!items.length) d.appendChild(el("div", "dp-sub", "Empty list"));
+    return;
+  }
+  if (c.type === "column" || c.type === "grid"){
+    const kids = (c.childIds || []).map(card).filter(Boolean);
+    d.append(el("b", "dp-colt", c.title || (c.type === "grid" ? "Folder" : "Column")), el("div", "dp-sub dp-center", kids.length ? boardCountsOfCards(kids) : "Empty"));
+    for (const k of kids.slice(0, 4)){ const inner = el("div", "ditem dp-inner"); drawerPreview(k, inner); d.appendChild(inner); }
+    if (kids.length > 4) d.appendChild(el("div", "dp-sub dp-center", "+" + (kids.length - 4) + " more"));
+    return;
+  }
+  if (c.type === "note" || c.type === "heading"){
+    const t = el("div", c.type === "heading" ? "dp-heading" : "dp-note"); t.textContent = (c.text || "").trim().slice(0, 400) || (c.type === "heading" ? "Heading" : "Empty note");
+    d.appendChild(t); return;
+  }
+  if (c.type === "link"){
+    let host = ""; try { host = new URL(c.url).hostname.replace(/^www\./, ""); } catch (_) {}
+    if (c.thumbDataUrl){ const i = el("img", "dp-thumb"); lazySrc(i, c.thumbDataUrl); d.appendChild(i); }
+    d.append(el("b", "dp-title", c.title || host || "Link"), el("span", "dp-sub", host + " \u2197"));
+    return;
+  }
+  if (c.type === "file"){ d.append(el("div", "dp-fileic", "\u{1F4CE}"), el("div", "dp-main")); d.lastChild.append(el("b", "", c.fileName || "File"), el("span", "dp-sub", c.fileSize ? humanSize(c.fileSize) : "")); return; }
+  if (c.type === "sheet"){
+    const face = c.sheet?.portrait, tile = el("div", "dp-tile dp-face");
+    if (face && /^data:image\//.test(face)){ const i = el("img"); i.src = face; tile.appendChild(i); } else tile.textContent = (c.sheet?.name || "?").trim().charAt(0).toUpperCase();
+    const m = el("div", "dp-main"); m.append(el("b", "", c.sheet?.name || "New Character"), el("span", "dp-sub", [c.sheet?.classLevel, c.sheet?.race].filter(Boolean).join(" \u00b7 ") || "D&D sheet"));
+    d.append(tile, m); return;
+  }
+  /* anything else: what it is and its name */
+  const name = c.type === "card" ? (c.name || "Unnamed card") : c.type === "doc" ? (c.title || "Untitled document") : c.type === "table" ? (c.title || "Table")
+    : c.type === "widget" ? (WIDGET_KINDS[c.widget]?.name || "Widget") + (c.label ? " \u00b7 " + c.label : "") : (c.title || c.name || line(c.text) || c.type);
+  d.append(el("span", "dp-sub", ({card:"Card", doc:"Document", table:"Table", widget:"Widget", sketch:"Drawing", palette:"Colours", comment:"Comment"})[c.type] || c.type), el("b", "dp-title", name));
+}
+/* "2 boards, 3 cards" for the things in a column */
+function boardCountsOfCards(list){
+  const nb = list.filter(k => k.type === "board").length, nc = list.length - nb, p = [];
+  if (nb) p.push(nb + " board" + (nb === 1 ? "" : "s")); if (nc) p.push(nc + " card" + (nc === 1 ? "" : "s"));
+  return p.join(", ");
+}
 function renderDrawer(){
   const b = unsortedHost(), list = $("#drawerList"), badge = $("#drawerBadge");
   list.innerHTML = "";
@@ -8548,24 +8836,7 @@ function renderDrawer(){
   for (const id of b.unsortedIds){
     const c = card(id);
     const d = document.createElement("div"); d.className = "ditem" + (c.type === "image" ? " d-img" : ""); d.dataset.id = id;
-    if (c.type !== "image"){ const k = document.createElement("div"); k.className="dkind"; k.textContent = c.type === "card" ? "card" : c.type; d.appendChild(k); }
-    if (c.type === "image"){
-      /* the picture keeps its shape before it loads, and loads when scrolled near */
-      const i = document.createElement("img"), w = c.naturalW || c.w, h = c.naturalH || (c.h - (c.caption ? 28 : 0));
-      if (w > 0 && h > 0) i.style.aspectRatio = w + " / " + h;
-      lazySrc(i, c.dataUrl); i.title = c.caption || ""; i.alt = c.caption || ""; d.appendChild(i);
-    }
-    else if (c.type === "note") d.appendChild(document.createTextNode((c.text||"").split("\n")[0].slice(0,60) || "Empty note"));
-    else if (c.type === "heading") d.appendChild(document.createTextNode((c.text||"Heading").split("\n")[0].slice(0,60)));
-    else if (c.type === "column") d.appendChild(document.createTextNode(c.title || "Column"));
-    else if (c.type === "grid") d.appendChild(document.createTextNode(c.title || "Untitled folder"));
-    else if (c.type === "card") d.appendChild(document.createTextNode(c.name || "Unnamed card"));
-    else if (c.type === "sheet") d.appendChild(document.createTextNode((c.sheet?.name || "New Character") + " (sheet)"));
-    else if (c.type === "link") d.appendChild(document.createTextNode(c.title || c.url));
-    else if (c.type === "todo") d.appendChild(document.createTextNode(c.title || "List"));
-    else if (c.type === "table") d.appendChild(document.createTextNode(c.title || "Table"));
-    else if (c.type === "widget") d.appendChild(document.createTextNode((WIDGET_KINDS[c.widget]?.name || "Widget") + (c.label ? " \u00b7 " + c.label : "")));
-    else if (c.type === "board") d.appendChild(document.createTextNode(c.title || "Board"));
+    drawerPreview(c, d);
     wireDrawerDrag(d, c);
     list.appendChild(d);
   }
@@ -8839,7 +9110,8 @@ function scrubCard(c){
   if (!c || typeof c !== "object") return c;
   let n = null; const set = (k, v) => { n = n || {...c}; if (v === undefined || v === "") delete n[k]; else n[k] = v; };
   for (const k of CARD_URL_FIELDS) if (c[k] != null && c[k] !== "" && safeWebUrl(c[k]) !== c[k]) set(k, safeWebUrl(c[k]));
-  for (const k of CARD_DATA_FIELDS) if (typeof c[k] === "string" && c[k] && !safeDataUrl(c[k])) set(k, undefined);
+  /* a picture not loaded yet is its storage token; that stays (U-034) */
+  for (const k of CARD_DATA_FIELDS) if (typeof c[k] === "string" && c[k] && !safeDataUrl(c[k]) && !ASSET_TOKEN_ONLY.test(c[k])) set(k, undefined);
   if (c.embedUrl && safeEmbedUrl(c.embedUrl) !== c.embedUrl) set("embedUrl", safeEmbedUrl(c.embedUrl));
   for (const k of CARD_COLOUR_FIELDS) if (c[k] != null && c[k] !== "" && safeCssColor(c[k]) !== c[k]) set(k, safeCssColor(c[k]));
   /* note and description HTML are cleaned where they are shown (noteHtml, the card page) */
@@ -9251,7 +9523,8 @@ document.addEventListener("pointerdown", e => {
   if (!activeEditor || !activeEditor.commit) return;
   const t = e.target;
   if (activeEditor.ed.contains(t)) return;
-  if (t.closest && t.closest("#textBarWrap, #tbColorPop")) return;
+  if (t.closest && t.closest("#textBarWrap, #tbColorPop, #railText, #txStylePop")) return;
+  if (tbHoldEdit) return;
   /* Clicks on the edited card's own chrome — its resize handle above all —
      must NOT end the edit. Ending it here is what broke "double-click then
      resize scales the text": the handle sits outside the contenteditable, so
@@ -9391,7 +9664,7 @@ function editNote(c, el){
   };
   ed.addEventListener("blur", () => setTimeout(() => {
     /* toolbar buttons preventDefault so focus stays; a real blur means editing is over */
-    if (document.activeElement !== ed) commit();
+    if (document.activeElement !== ed && !tbHoldEdit) commit();
   }, 0));
   ed.addEventListener("keydown", e => {
     e.stopPropagation();
@@ -12073,7 +12346,29 @@ function tbExec(cmd, val){
   /* keep the note's height honest while formatting changes its line count */
   if (activeEditor) growNoteWhileTyping(activeEditor.cardId);
 }
+/* Text being edited on a board (or a card's page) gets its tools in the left
+   toolbar, as Milanote does; text in a window over everything (a document,
+   a comment) keeps the floating bar, since the toolbar is behind it (U-024) */
+function railTextFor(t){
+  if (!t || !document.body.contains(t)) return false;
+  if (t.closest("#noteFull, .overlay, #sheetEditor, #cmtPanel, #todoWin, #tagSide, #favPanel, #searchPanel, #twHiddenPop")) return false;
+  const rail = $("#rail"); return !!rail && !!rail.offsetParent;
+}
+function syncRailText(){
+  const t = richTarget(), on = railTextFor(t) && richOf(document.activeElement) === t;
+  document.body.classList.toggle("text-editing", on);
+  if (!on) $("#txStylePop")?.classList.remove("open");
+  if (!on) return;
+  for (const b of document.querySelectorAll("#railText .tool[data-cmd]")){
+    let st = false; try { st = document.queryCommandState(b.dataset.cmd); } catch (_) {}
+    b.classList.toggle("on", !!st);
+  }
+  let block = "P"; try { block = (document.queryCommandValue("formatBlock") || "P").toUpperCase(); } catch (_) {}
+  $("#txCode").classList.toggle("on", block === "PRE");
+  for (const o of document.querySelectorAll("#txStylePop [data-block]")) o.classList.toggle("on", o.dataset.block === block);
+}
 function tbSyncState(){
+  syncRailText();
   const bar = $("#textBar"); if (!bar) return;
   const live = !!richTarget();
   $("#textBarWrap").classList.toggle("armed", live);
@@ -12099,8 +12394,10 @@ function tbSetOpen(open){
 }
 function tbIsOpen(){ return $("#textBarWrap").classList.contains("open"); }
 function tbAutoOpen(){
-  /* opens itself when a rich field takes focus; only the user closes it */
-  if (!tbPinned) tbSetOpen(true);
+  /* opens itself when a rich field takes focus; only the user closes it.
+     On a board the tools are in the left toolbar instead (U-024). */
+  if (tbPinned) return;
+  tbSetOpen(!railTextFor(tbTarget));
 }
 
 /* track the caret across the whole document */
@@ -12161,12 +12458,87 @@ $("#textBar").querySelectorAll(".tbb[data-cmd]").forEach(b =>
 $("#tbBlock").addEventListener("change", e => {
   tbExec("formatBlock", "<" + e.target.value + ">");
 });
+/* ---- pictures from the clipboard (U-027) ----------------------------------
+   Every "choose a picture" button (the Library, a sheet's portrait, a card's
+   picture, …) opens a hidden file chooser. Before it opens, a small menu offers
+   Paste from clipboard as well; Ctrl+V works while it's open. A pasted picture
+   is handed to the same chooser, so each place takes it exactly as a file. */
+let pickFor = null;
+const pickRealClick = HTMLInputElement.prototype.click;
+function pickTakes(inp){ return inp.type === "file" && (!inp.accept || /image/.test(inp.accept)) && !inp.dataset.noPaste; }
+HTMLInputElement.prototype.click = function(){
+  if (!pickTakes(this) || pickFor === this || window.__noPickMenu) return pickRealClick.call(this);
+  pickFor = this;
+  const pop = $("#pickPop"), z = uiz(), at = pickPointer || {x:innerWidth / 2, y:innerHeight / 3};
+  pop.classList.add("open");
+  pop.style.left = Math.min(at.x / z, innerWidth / z - 210) + "px"; pop.style.top = Math.min(at.y / z + 6, innerHeight / z - 120) + "px";
+};
+let pickPointer = null;
+addEventListener("pointerdown", e => { pickPointer = {x:e.clientX, y:e.clientY}; if (pickFor && !e.target.closest("#pickPop")) closePick(); }, true);
+function closePick(){ $("#pickPop").classList.remove("open"); pickFor = null; }
+/* hand files to the chooser as if they'd been picked */
+function pickDeliver(files){
+  const inp = pickFor; closePick(); if (!inp || !files.length) return;
+  const dt = new DataTransfer(); for (const f of inp.multiple ? files : files.slice(0, 1)) dt.items.add(f);
+  inp.files = dt.files; inp.dispatchEvent(new Event("change", {bubbles:true}));
+}
+$("#pickFile").addEventListener("click", () => { const inp = pickFor; closePick(); if (inp) pickRealClick.call(inp); });
+$("#pickPaste").addEventListener("click", async () => {
+  try {
+    const out = [];
+    for (const item of await navigator.clipboard.read()){
+      const type = item.types.find(t => t.startsWith("image/")); if (!type) continue;
+      const b = await item.getType(type); out.push(new File([b], "pasted." + (type.split("/")[1] || "png").replace("jpeg", "jpg"), {type}));
+    }
+    if (out.length) pickDeliver(out); else { closePick(); toast("There\u2019s no picture on the clipboard. Copy one first."); }
+  } catch (_) { toast("Couldn\u2019t read the clipboard here. Press Ctrl+V instead while this menu is open.", 7000); }
+});
+addEventListener("paste", e => {
+  if (!pickFor || !$("#pickPop").classList.contains("open")) return;
+  const files = [...(e.clipboardData?.files || [])].filter(f => !pickFor.accept || /^image\//.test(f.type));
+  if (!files.length) return;
+  e.preventDefault(); e.stopImmediatePropagation(); pickDeliver(files);
+}, true);
+addEventListener("keydown", e => { if (e.key === "Escape" && pickFor) closePick(); }, true);
+/* the left toolbar's text tools: every one keeps the caret in the note */
+$("#railText").addEventListener("pointerdown", e => { if (e.target.closest(".tool")) e.preventDefault(); });
+$("#txStylePop").addEventListener("pointerdown", e => e.preventDefault());
+$("#railText").querySelectorAll(".tool[data-cmd]").forEach(b => b.addEventListener("click", () => tbExec(b.dataset.cmd)));
+$("#txDone").addEventListener("click", () => { if (activeEditor?.commit) activeEditor.commit(); else document.activeElement?.blur?.(); syncRailText(); });
+$("#txStyle").addEventListener("click", () => {
+  const pop = $("#txStylePop"), open = !pop.classList.contains("open");
+  pop.classList.toggle("open", open); if (!open) return;
+  syncRailText();
+  const r = $("#txStyle").getBoundingClientRect(), z = uiz();
+  pop.style.left = (r.right / z + 6) + "px"; pop.style.top = Math.max(8, r.top / z) + "px";
+});
+$("#txStylePop").querySelectorAll("[data-block]").forEach(o => o.addEventListener("click", () => {
+  $("#txStylePop").classList.remove("open");
+  tbExec("formatBlock", "<" + o.dataset.block + ">");
+  syncRailText();
+}));
+$("#txAlign").addEventListener("click", () => {
+  let at = "left"; try { if (document.queryCommandState("justifyCenter")) at = "center"; else if (document.queryCommandState("justifyRight")) at = "right"; } catch (_) {}
+  tbExec(at === "left" ? "justifyCenter" : at === "center" ? "justifyRight" : "justifyLeft");
+});
+$("#txCode").addEventListener("click", () => {
+  let block = "P"; try { block = (document.queryCommandValue("formatBlock") || "P").toUpperCase(); } catch (_) {}
+  tbExec("formatBlock", block === "PRE" ? "<P>" : "<PRE>"); syncRailText();
+});
+$("#txLink").addEventListener("click", () => $("#tbLink").click());
+$("#txColor").addEventListener("click", () => tbPickColor("foreColor"));
+$("#txHighlight").addEventListener("click", () => tbPickColor("hiliteColor"));
+document.addEventListener("focusout", () => setTimeout(syncRailText, 0));
 $("#tbFore").addEventListener("click", () => tbPickColor("foreColor"));
 $("#tbBack").addEventListener("click", () => tbPickColor("hiliteColor"));
+let tbHoldEdit = false;   /* the note stays in editing while the link box is open */
 $("#tbLink").addEventListener("click", async () => {
   if (!richTarget()){ toast("Click into a note first."); return; }
-  const url = await askText({ title:"Add a link", message:"Link address",
-    value:"https://", placeholder:"https://…", okLabel:"Link" });
+  tbHoldEdit = true;
+  let url;
+  try { url = await askText({ title:"Add a link", message:"Link address",
+    value:"https://", placeholder:"https://…", okLabel:"Link" }); }
+  finally { setTimeout(() => { tbHoldEdit = false; }, 0); }
   if (!url || !url.trim()) return;
   tbExec("createLink", url.trim());
 });
@@ -12194,16 +12566,17 @@ function tbPickColor(cmd){
     }
     pop.appendChild(row);
   }
-  const r = (cmd === "foreColor" ? $("#tbFore") : $("#tbBack")).getBoundingClientRect();
+  const railMode = document.body.classList.contains("text-editing");
+  const r = (railMode ? (cmd === "foreColor" ? $("#txColor") : $("#txHighlight")) : (cmd === "foreColor" ? $("#tbFore") : $("#tbBack"))).getBoundingClientRect();
   const z = uiz();
-  pop.style.left = (r.left/z) + "px";
-  pop.style.top  = (r.bottom/z + 4) + "px";
+  pop.style.left = (railMode ? r.right / z + 6 : r.left / z) + "px";
+  pop.style.top  = (railMode ? r.top / z : r.bottom / z + 4) + "px";
   pop.classList.add("open");
 }
 document.addEventListener("pointerdown", e => {
   const pop = $("#tbColorPop");
   if (pop.classList.contains("open") && !pop.contains(e.target) &&
-      !e.target.closest("#tbFore, #tbBack")) pop.classList.remove("open");
+      !e.target.closest("#tbFore, #tbBack, #txColor, #txHighlight")) pop.classList.remove("open");
 }, true);
 
 /* close the colour and tag pops on an outside tap */
@@ -12377,6 +12750,7 @@ function openCtx(x, y, c){
     if (L){
       add("Create shortcut", () => createTodoShortcut(c));
       if (L !== c) add("Go to the original list", () => goToCard(L.id));
+      add(L.todoHidden ? "Show in To-dos" : "Hide from To-dos", () => setTodoHidden([L.id], !L.todoHidden));
       add("List colour…", () => openColorPicker({current:L.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(L.id, v); }}));
       add(L.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(L.id, L.calOn === false));
     }
@@ -14824,7 +15198,22 @@ document.addEventListener("keydown", e => {
   out.textContent = "Key check: received " + [...mods, e.key === " " ? "Space" : e.key].join(" + ") + ".";
 }, true);
 /* wheel: pans by default; zooms if the toggle is on, or with Ctrl held */
+/* the wheel over a card's own scrolling part (a D&D sheet, its tabs, a long
+   panel) scrolls that part until it reaches its end, then pans the board (U-025) */
+function wheelScrollsInside(e){
+  if (e.ctrlKey || e.metaKey) return false;
+  for (let el = e.target; el && el !== canvasEl && el.nodeType === 1; el = el.parentElement){
+    const oy = getComputedStyle(el).overflowY;
+    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1){
+      const dy = e.deltaY;
+      if ((dy < 0 && el.scrollTop > 0) || (dy > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1)) return true;
+    }
+    if (el.classList.contains("card")) break;
+  }
+  return false;
+}
 canvasEl.addEventListener("wheel", e => {
+  if (wheelScrollsInside(e)) return;
   e.preventDefault();
   if (e.ctrlKey || e.metaKey || state.settings?.wheelZoom){
     if (pinchGesture) return;
@@ -17059,9 +17448,10 @@ const TODO_WIN_KEY = "corkbork.todoWin";
 function todoWinPrefs(){ try { return JSON.parse(SAFE_STORE.get(TODO_WIN_KEY) || "{}") || {}; } catch (_) { return {}; } }
 function saveTodoWinPrefs(p){ try { SAFE_STORE.set(TODO_WIN_KEY, JSON.stringify(p)); } catch (_) {} }
 let todoWinSig = "";
-function todoWinLists(){
+let twSel = new Set();   /* lists picked with Ctrl-click, to hide several at once */
+function todoWinLists(hidden = false){
   const inBin = bid => { for (let b = state.boards[bid], n = 0; b && n < 500; b = state.boards[b.parentId], n++) if (b.id === TRASH_ID) return true; return false; };
-  return Object.values(state.cards).filter(c => c?.type === "todo" && !c.linkTo).filter(c => { const b = findCardBoard(c.id); return b && !inBin(b); })
+  return Object.values(state.cards).filter(c => c?.type === "todo" && !c.linkTo && !!c.todoHidden === hidden).filter(c => { const b = findCardBoard(c.id); return b && !inBin(b); })
     .sort((a, b) => searchCollator.compare(a.title || "List", b.title || "List") || (a.createdAt || 0) - (b.createdAt || 0));
 }
 function todoWhere(c){
@@ -17076,14 +17466,19 @@ function renderTodoWin(force){
   const rank = new Map((prefs.order || []).map((id, i) => [id, i]));
   const lists = todoWinLists().sort((a, b) => (rank.has(a.id) ? rank.get(a.id) : 1e9) - (rank.has(b.id) ? rank.get(b.id) : 1e9));
   const links = {}; for (const c of Object.values(state.cards)) if (c?.type === "todo" && c.linkTo) links[c.linkTo] = (links[c.linkTo] || 0) + 1;
-  const sig = lists.map(c => c.id + ":" + (c.updatedAt || 0) + ":" + findCardBoard(c.id) + ":" + (links[c.id] || 0) + ":" + folded.has(c.id)).join("|") + "|" + (focusAddTodo || "") + "|" + (prefs.order || []).join(",");
+  const hiddenN = todoWinLists(true).length;
+  for (const id of [...twSel]) if (!lists.some(c => c.id === id)) twSel.delete(id);
+  const sig = lists.map(c => c.id + ":" + (c.updatedAt || 0) + ":" + findCardBoard(c.id) + ":" + (links[c.id] || 0) + ":" + folded.has(c.id)).join("|") + "|" + (focusAddTodo || "") + "|" + (prefs.order || []).join(",") + "|h" + hiddenN + "|s" + [...twSel].join(",");
   if (!force && sig === todoWinSig) return;
   todoWinSig = sig;
   const body = $("#twBody"), top = body.scrollTop; body.innerHTML = "";
   $("#twCount").textContent = lists.length || "";
+  $("#twHiddenN").textContent = hiddenN ? "\u00b7 " + hiddenN : ""; $("#twHiddenBtn").classList.toggle("none", !hiddenN);
+  $("#twSelBar").classList.toggle("on", twSel.size > 0); $("#twSelN").textContent = twSel.size + " selected";
+  if ($("#twHiddenPop").classList.contains("open")) renderTodoHidden();
   for (const c of lists){
     const items = c.items || [], done = items.filter(x => x.done).length, isFolded = folded.has(c.id);
-    const block = document.createElement("div"); block.className = "tw-list" + (isFolded ? " folded" : ""); block.dataset.id = c.id;
+    const block = document.createElement("div"); block.className = "tw-list" + (isFolded ? " folded" : "") + (twSel.has(c.id) ? " tw-sel" : ""); block.dataset.id = c.id;
     const topRow = document.createElement("div"); topRow.className = "tw-top";
     const grip = document.createElement("span"); grip.className = "tw-drag"; grip.textContent = "\u22ee\u22ee"; grip.title = "Drag to move this list up or down";
     grip.addEventListener("pointerdown", e => todoWinDragList(e, block));
@@ -17097,11 +17492,25 @@ function renderTodoWin(force){
       const t = document.createElement("span"); t.className = "tw-ftitle"; t.textContent = c.title || "List";
       topRow.append(dot, t);
     }
-    const where = document.createElement("button"); where.type = "button"; where.className = "tw-where"; where.title = "Go to this list";
-    where.innerHTML = todoWhere(c) + (links[c.id] ? " \u00b7 " + links[c.id] + " shortcut" + (links[c.id] > 1 ? "s" : "") : "");
-    where.addEventListener("click", () => goToCard(c.id));
+    /* folded, the title gets the whole row; open, the list says where it lives */
+    if (!isFolded){
+      const where = document.createElement("button"); where.type = "button"; where.className = "tw-where"; where.title = "Go to this list";
+      where.innerHTML = todoWhere(c) + (links[c.id] ? " \u00b7 " + links[c.id] + " shortcut" + (links[c.id] > 1 ? "s" : "") : "");
+      where.addEventListener("click", () => goToCard(c.id));
+      topRow.appendChild(where);
+    }
     const prog = document.createElement("span"); prog.className = "tw-prog"; prog.textContent = items.length ? done + " of " + items.length : "";
-    topRow.append(where, prog);
+    const eye = document.createElement("button"); eye.type = "button"; eye.className = "tw-eye"; eye.title = "Hide from To-dos (it stays on its board)";
+    eye.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20L20 4"/></svg>';
+    eye.addEventListener("click", e => { e.stopPropagation(); setTodoHidden([c.id], true); });
+    const x = document.createElement("button"); x.type = "button"; x.className = "tw-x"; x.title = "Delete this list (Ctrl+Z brings it back)"; x.textContent = "\u2715";
+    x.addEventListener("click", e => { e.stopPropagation(); deleteCards([c.id]); renderAll(); });
+    topRow.append(prog, eye, x);
+    /* Ctrl-click (Cmd on a Mac) picks lists to hide several at once */
+    topRow.addEventListener("click", e => {
+      if (!(e.ctrlKey || e.metaKey) || e.target.closest(".tw-x, .tw-eye, .tw-chev, .tw-drag")) return;
+      e.preventDefault(); twSel.has(c.id) ? twSel.delete(c.id) : twSel.add(c.id); renderTodoWin(true);
+    });
     block.appendChild(topRow);
     if (!isFolded){ const inner = document.createElement("div"); inner.className = "tw-card"; buildTodo(c, inner, "win"); block.appendChild(inner); }
     block.addEventListener("contextmenu", e => { if (e.target.closest("input")) return; e.preventDefault(); e.stopPropagation(); openCtx(e.clientX, e.clientY, card(c.id)); });
@@ -17135,6 +17544,50 @@ function todoWinDragList(e, block){
   };
   addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
 }
+/* hiding is kept on the list itself, so it's the same on every device; Ctrl+Z undoes it */
+function setTodoHidden(ids, hide){
+  ids = ids.filter(id => card(id)?.type === "todo"); if (!ids.length) return;
+  pushUndo();
+  for (const id of ids){ if (hide) patchCard(id, {todoHidden:true}); else { const n = {...card(id)}; delete n.todoHidden; n.updatedAt = now(); state.cards[id] = n; } }
+  markDirty(); twSel.clear(); renderAll(); renderTodoWin(true);
+}
+let twhSel = new Set();
+function renderTodoHidden(){
+  const box = $("#twhList"); box.innerHTML = "";
+  const lists = todoWinLists(true);
+  for (const id of [...twhSel]) if (!lists.some(c => c.id === id)) twhSel.delete(id);
+  for (const c of lists){
+    const r = document.createElement("button"); r.type = "button"; r.className = "twh-row" + (twhSel.has(c.id) ? " sel" : "");
+    const dot = document.createElement("span"); dot.className = "tw-dot"; dot.style.background = c.color || "var(--text-dim)";
+    const t = document.createElement("span"); t.textContent = c.title || "List"; t.style.flex = "1";
+    const n = document.createElement("span"); n.className = "tw-prog"; n.textContent = (c.items || []).length ? (c.items.filter(i => i.done).length + " of " + c.items.length) : "";
+    r.append(dot, t, n);
+    r.addEventListener("click", e => {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) twhSel.has(c.id) ? twhSel.delete(c.id) : twhSel.add(c.id);
+      else twhSel = twhSel.size === 1 && twhSel.has(c.id) ? new Set() : new Set([c.id]);
+      renderTodoHidden();
+    });
+    r.addEventListener("dblclick", () => setTodoHidden([c.id], false));
+    box.appendChild(r);
+  }
+  if (!lists.length){ const n = document.createElement("div"); n.className = "snone"; n.textContent = "No hidden lists."; box.appendChild(n); }
+  $("#twhShow").disabled = !twhSel.size;
+  $("#twhShow").textContent = twhSel.size > 1 ? "Show " + twhSel.size + " in To-dos" : "Show in To-dos";
+}
+function placeTodoHidden(){
+  const pop = $("#twHiddenPop"), w = $("#todoWin").getBoundingClientRect(), z = uiz(), pw = (pop.offsetWidth || 280) * z;
+  const left = w.left - pw - 8 >= 0 ? w.left - pw - 8 : Math.min(w.right + 8, innerWidth - pw - 8);
+  pop.style.left = Math.max(8, left) / z + "px"; pop.style.top = Math.max(8, w.bottom - (pop.offsetHeight || 300) * z) / z + "px";
+}
+$("#twHiddenBtn").addEventListener("click", () => {
+  const pop = $("#twHiddenPop"), open = !pop.classList.contains("open");
+  pop.classList.toggle("open", open); if (open){ twhSel = new Set(); renderTodoHidden(); placeTodoHidden(); }
+});
+$("#twhClose").addEventListener("click", () => $("#twHiddenPop").classList.remove("open"));
+$("#twhShow").addEventListener("click", () => { setTodoHidden([...twhSel], false); twhSel = new Set(); renderTodoHidden(); });
+$("#twHiddenPop").addEventListener("pointerdown", e => e.stopPropagation());
+$("#twSelHide").addEventListener("click", () => setTodoHidden([...twSel], true));
+$("#twSelClear").addEventListener("click", () => { twSel.clear(); renderTodoWin(true); });
 function placeTodoWin(){
   const w = $("#todoWin"), p = todoWinPrefs(); if (p.x == null) return;
   const z = uiz(), W = w.offsetWidth || 340, H = w.offsetHeight || 200;
@@ -17150,6 +17603,7 @@ $("#twHideDone").addEventListener("click", () => { const p = todoWinPrefs(); p.h
 function openTodoWin(on){
   const w = $("#todoWin"), p = todoWinPrefs(); syncTodoHideDone();
   w.classList.toggle("open", on); $("#btnTodos").classList.toggle("on", on);
+  if (!on) $("#twHiddenPop").classList.remove("open");
   if (p.open !== on){ p.open = on; saveTodoWinPrefs(p); }
   if (on){ placeTodoWin(); renderTodoWin(true); }
 }
@@ -20717,7 +21171,14 @@ async function openMilanoteImport(){
   const v = await askOpen({title:"Import from Milanote", wide:true, build(body){
     const p = (html, cls) => { const d = document.createElement("div"); d.className = cls || "meta"; d.innerHTML = html; body.appendChild(d); return d; };
     p("Milanote’s own exports don’t keep your layout, so CORKBORK uses a short script that reads your board straight from Milanote, with every board inside it, its pictures and files, and where everything sits.");
-    p("<b>1.</b> In Chrome, open the board in Milanote (your Home board brings everything). <b>2.</b> Press F12 and open the <b>Console</b> tab. <b>3.</b> Press Copy script below, paste it there and press Enter (if Chrome refuses, type <i>allow pasting</i> first). <b>4.</b> Wait for “CORKBORK: done”. Big boards save a few numbered “pictures” files as well. <b>5.</b> Press Choose files and pick all of them together.", "");
+    /* one step per line (U-023) */
+    const steps = document.createElement("ol"); steps.className = "meta mn-steps";
+    for (const h of ["In Chrome, open the board in Milanote (your Home board brings everything).",
+      "Press F12 and open the <b>Console</b> tab.",
+      "Press Copy script below, paste it there and press Enter (if Chrome refuses, type <i>allow pasting</i> first).",
+      "Wait for the pop-up saying it\u2019s finished. Big boards save a few numbered \u201cpictures\u201d files as well.",
+      "Press Choose files and pick all of them together."]){ const li = document.createElement("li"); li.innerHTML = h; steps.appendChild(li); }
+    body.appendChild(steps);
     p("The script only reads your own boards and saves files to your computer. It isn’t made by Milanote, so a change on their side could stop it working. Lines, drawings, documents and comments come over too (comments need a file made with this version of the script).");
     const row = document.createElement("div"); row.className = "share-row";
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "primary"; copy.textContent = "Copy script";
@@ -22039,6 +22500,40 @@ function bzFilters(panel, names, current, onPick){
   panel.appendChild(f); return f;
 }
 const bzActFilter = new Map(), bzSpellFilter = new Map();
+/* Racial traits, class features, feats and a background feature that take an
+   action, bonus action or reaction, as rows for the Actions tab: Breath Weapon
+   and the like (U-026). The DC and dice come from the rules text where it
+   gives them; a dragonborn's ancestry fills in the breath's shape and type. */
+const DRACONIC = {Black:["acid", "5 by 30 ft line", "DEX"], Blue:["lightning", "5 by 30 ft line", "DEX"], Brass:["fire", "5 by 30 ft line", "DEX"],
+  Bronze:["lightning", "5 by 30 ft line", "DEX"], Copper:["acid", "5 by 30 ft line", "DEX"], Gold:["fire", "15 ft cone", "DEX"], Green:["poison", "15 ft cone", "CON"],
+  Red:["fire", "15 ft cone", "DEX"], Silver:["cold", "15 ft cone", "CON"], White:["cold", "15 ft cone", "CON"]};
+function sheetActionFeatures(sh){
+  const g = sheetGrants(sh), lvl = sheetLevel(sh) || classGrantsOf(sh).reduce((n, c) => n + (Number(c.level) || 0), 0) || 1, pb = sheetProf(sh), out = [];
+  const src = [];
+  for (const t of g.race?.traits || []) src.push({f:t, from:(g.race.name || "Racial") + " trait"});
+  for (const c of classGrantsOf(sh)) for (const f of [...classFeatureList(c), ...(c.chosen || [])]) if (!f.lvl || !c.level || f.lvl <= c.level) src.push({f, from:(c.name || "Class") + " feature"});
+  for (const f of featGrantsOf(sh)) src.push({f:{n:f.name, d:f.d}, from:"Feat"});
+  if (g.background?.feature) src.push({f:g.background.feature, from:"Background"});
+  const ancestry = (g.race?.traits || []).map(t => /^Draconic Ancestry:\s*(\w+)/i.exec(t.n || "")?.[1]).find(Boolean);
+  for (const {f, from} of src){
+    const d = String(f.d || ""); if (!d || !f.n) continue;
+    const kind = /\bbonus action\b/i.test(d) ? "Bonus action"
+      : /\b(?:use your|as a|take a) reaction\b|\byour reaction\b/i.test(d) ? "Reaction"
+      : /\b(?:use your action|as an action|use an action|take the [\w-]+ action)\b/i.test(d) ? "Action" : "";
+    if (!kind) continue;
+    const row = {name:f.n.replace(/\s*\([^)]*\)\s*$/, ""), sub:from, range:"", hit:"", hitRoll:"", dmg:"", notes:"", kind, feat:f};
+    const dc = /DC[^.]*?equals 8 \+ your (\w+) modifier \+ your proficiency bonus/i.exec(d);
+    let save = "";
+    if (/^breath weapon/i.test(f.n) && DRACONIC[ancestry]){ const [type, shape, sv] = DRACONIC[ancestry]; row.range = shape; save = sv; row.dmgType = type; }
+    if (dc){ const ab = SHEET_ABILITIES.find(a => a.toLowerCase().startsWith(dc[1].slice(0, 3).toLowerCase())) || dc[1].slice(0, 3).toUpperCase(); row.hit = "DC " + (8 + sheetMod(sh, ab) + pb) + (save ? " " + save : ""); }
+    let dice = (/(\d+d\d+)\s+(?:\w+\s+)?damage/i.exec(d) || [])[1] || "";
+    for (const m of d.matchAll(/increases? to (\d+d\d+) (?:at|when you reach) (\d+)(?:st|nd|rd|th) level/gi)) if (lvl >= Number(m[2])) dice = m[1];
+    if (dice) row.dmg = dice + (row.dmgType ? " " + row.dmgType : "");
+    row.notes = /short or long rest/i.test(d) ? "Once per short rest" : /long rest/i.test(d) && /(?:can't|cannot) use (?:it|this) again/i.test(d) ? "Once per long rest" : "";
+    out.push(row);
+  }
+  return out;
+}
 function bzActions(c, sh, panel){
   const id = c.id, f = bzActFilter.get(id) || "All";
   bzFilters(panel, ["All", "Attack", "Action", "Bonus action", "Reaction", "Limited use"], f, n => { bzActFilter.set(id, n); panel.textContent = ""; bzActions(c, sh, panel); });
@@ -22060,7 +22555,8 @@ function bzActions(c, sh, panel){
     rows.push({name:s.name, sub:(s.lvl ? ordinalLevel(s.lvl) + " level" : "Cantrip") + (s.det?.conc ? " · concentration" : ""), range:spellRangeShort(s.det?.range), hit:pl.hit, hitRoll:pl.hitRoll,
       dmg:pl.dmg + (pl.dmgType ? " " + pl.dmgType : ""), notes:pl.beams > 1 ? pl.beams + " beams, each its own attack" : "", kind:t === "1BA" ? "Bonus action" : t === "1R" ? "Reaction" : "Action", spell:s});
   }
-  const show = rows.filter(r => f === "All" || f === "Attack" || r.kind === f);
+  rows.push(...sheetActionFeatures(sh));
+  const show = rows.filter(r => f === "All" || (f === "Attack" ? !r.feat : r.kind === f));
   if (f !== "Limited use" && show.length){
     const t = bzEl("table", "bz-t");
     t.innerHTML = "<tr><th>Attack</th><th>Range</th><th>Hit / DC</th><th>Damage</th><th>Notes</th></tr>";
@@ -22068,6 +22564,7 @@ function bzActions(c, sh, panel){
       const tr = bzEl("tr");
       const n = bzEl("td", "bz-nm"); n.append(bzEl("b", "", r.name), bzEl("span", "bz-small", r.sub));
       if (r.spell){ n.classList.add("bz-click"); bzStop(n); n.addEventListener("click", e => { e.stopPropagation(); showSpellTip(r.spell, n); }); }
+      if (r.feat){ n.classList.add("bz-click"); bzStop(n); n.addEventListener("click", e => { e.stopPropagation(); bzPop(n, r.feat.n, r.feat.d); }); }
       const h = bzEl("td"); if (r.hitRoll) h.appendChild(rollBtn(r.hit, r.hitRoll, r.name, "to hit")); else h.textContent = r.hit || "—";
       const d = bzEl("td"); const dm = /^(\d+d\d+(?:[+-]\d+)?|\d+)\s*(.*)$/.exec(String(r.dmg).trim());
       if (dm){ d.appendChild(rollBtn(dm[1], dm[1], r.name, "damage")); if (dm[2]) d.append(" " + dm[2]); } else d.textContent = r.dmg || "—";
@@ -29577,12 +30074,70 @@ function shareBoot(){
   } else run();
 }
 
+/* ---- opening fast with a lot of pictures (U-034) ----------------------------
+   Reading every picture before showing anything took many seconds once a
+   workspace held hundreds of MB of them. Startup now reads the catalogue and
+   only the pictures on the board it opens on (everything else that isn't a
+   card comes in full), shows that, and brings the rest in behind. Until then
+   a picture is its storage token: saving keeps it as it is, and its card is
+   redrawn when it arrives. */
+let bootPending = null;   /* {memo, ids} while pictures are still coming in */
+async function fetchAssetsInto(memo, ids){
+  ids = ids.filter(id => !memo.has(ASSET_TOKEN_PREFIX + id));
+  for (let i = 0; i < ids.length; i += 300){
+    const got = await idbGetMany(ids.slice(i, i + 300).map(id => ASSET_KEY_PREFIX + id));
+    for (const [k, v] of got) if (typeof v === "string"){ const t = ASSET_TOKEN_PREFIX + k.slice(ASSET_KEY_PREFIX.length); memo.set(t, v); assetTokenCache.set(v, t); }
+  }
+}
+/* does anything in it still name a picture by token? */
+function hasAssetToken(v){
+  if (typeof v === "string") return v.includes(ASSET_TOKEN_PREFIX);
+  if (Array.isArray(v)) return v.some(hasAssetToken);
+  if (v && typeof v === "object"){ for (const k in v) if (hasAssetToken(v[k])) return true; }
+  return false;
+}
+async function bootReadWorkspace(){
+  const raw = await idbGetRaw("workspace");
+  if (!raw || !raw._assetStorageVersion || !raw.cards || !raw.boards) return raw ? unpackStoredWorkspace(raw, new Map()) : raw;
+  const memo = new Map(), root = raw.boards[raw.rootBoardId] || {}, first = new Set([...(root.cardIds || []), ...(root.unsortedIds || [])]);
+  for (const id of [...first]) for (const k of [...(raw.cards[id]?.childIds || []), ...(raw.cards[id]?.attachedIds || [])]) first.add(k);
+  const {cards, ...rest} = raw, firstCards = [...first].map(id => cards[id]).filter(Boolean);
+  await fetchAssetsInto(memo, [...collectAssetTokens([rest, firstCards]).keys()]);
+  /* the opening board and everything that isn't a card must be complete; a missing picture there stops the load */
+  const out = unpackFromMemo({...rest, cards:{}}, memo);
+  for (const [id, c] of Object.entries(cards)) out.cards[id] = first.has(id) ? unpackFromMemo(c, memo) : unpackFromMemo(c, memo, true);
+  const pendingIds = Object.keys(cards).filter(id => !first.has(id) && hasAssetToken(out.cards[id]));
+  if (pendingIds.length) bootPending = {memo, ids:pendingIds};
+  return out;
+}
+async function bootHydrateRest(){
+  if (!bootPending) return;
+  const {memo, ids} = bootPending;
+  const tokens = [...collectAssetTokens(ids.map(id => state.cards[id])).keys()];
+  for (let i = 0; i < tokens.length; i += 300){
+    await fetchAssetsInto(memo, tokens.slice(i, i + 300));
+    await new Promise(r => setTimeout(r, window.__slowAssets ? 1500 : 0));   /* let clicks and typing through (tests slow it down to act meanwhile) */
+  }
+  let missing = 0;
+  for (const id of ids){
+    for (const ws of [state, tabBase]){
+      const c = ws?.cards?.[id]; if (!c) continue;
+      const full = unpackFromMemo(c, memo, true);
+      if (ws === state && hasAssetToken(full)) missing++;
+      ws.cards[id] = full;
+    }
+  }
+  bootPending = null;
+  if (missing) console.warn("CORKBORK: " + missing + " card(s) refer to pictures missing from this browser's storage.");
+  renderAll();
+  if (!workspaceLoadFailure){ setTimeout(migrateSharedAssetStorage, 500); setTimeout(resumeMasterArchiveMigration, 1200); }
+}
 (async function boot(){
   loadRailLayout();   /* the saved toolbar order (needs SAFE_STORE, defined above boot) */
   let firstRun = false;
   let recoveredSnapshot = 0;
   try {
-    const saved = await idbGet("workspace");
+    const saved = await bootReadWorkspace();
     /* A record that exists but isn't a workspace we can open (garbage, or
        written by a newer build) is a load failure, not a first run. */
     if (saved != null){
@@ -29637,8 +30192,11 @@ function shareBoot(){
   if (!workspaceLoadFailure && lastIntegrityReport.ok) await takeSnapshot("recent");
   if (!workspaceLoadFailure) applyBugAudit();
   refreshSaveHealth();
-  if (!workspaceLoadFailure) setTimeout(migrateSharedAssetStorage, 500);
-  if (!workspaceLoadFailure) setTimeout(resumeMasterArchiveMigration, 1200);
+  if (bootPending) setTimeout(bootHydrateRest, 50);
+  else {
+    if (!workspaceLoadFailure) setTimeout(migrateSharedAssetStorage, 500);
+    if (!workspaceLoadFailure) setTimeout(resumeMasterArchiveMigration, 1200);
+  }
   if (workspaceLoadFailure) setTimeout(() => toast(recoveredSnapshot
     ? "Local storage is incomplete. A readable restore point is open, but saving is blocked until you restore or import a valid copy."
     : "Local storage is incomplete. Saving is blocked so CORKBORK cannot overwrite it. Restore or import a valid copy in Backup & data.", 12000), 300);
@@ -29651,6 +30209,12 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b167", [
+    "Opens much faster with lots of pictures: the board you open on comes first, the rest load behind. Editing text puts its tools in the left toolbar (Text style, bold, italic, lists, quote, code, link, colour), and they now apply and stay. Quotes look like Milanote\u2019s.",
+    "Lists: they grow to fit, you can copy their text, Enter always adds, the add row is plain, items drag by a \u2261 handle, and their colour and type buttons only show while you\u2019re on the list.",
+    "To-dos window: wider, full titles, smaller controls, an \u2715 to delete a list (Ctrl+Z brings it back), and an eye to hide lists that are really notes (Hidden lists brings them back; Ctrl-click picks several).",
+    "Unsorted shows each thing like its card. D&D sheets: the wheel scrolls a sheet and its tabs, long lists scroll inside, and Breath Weapon and other racial or class actions are on the Actions tab. Anywhere you choose a picture you can paste one. The Milanote import steps are one per line."
+  ]],
   ["b166", [
     "List shortcuts: right-click a list \u203a Create shortcut, then move or paste it to any board. It is the same list: tick, add or change it anywhere and every copy changes.",
     "To-dos (the tick button in the top bar): every list in a window that stays open over your boards. Drag it by its header, drag lists up and down by their grip, fold them, hide ticked items, and edit them just like on the board. \uff0b New list puts a list in Unsorted on Home.",
@@ -29700,10 +30264,6 @@ const PATCH_NOTES = [
   ]],
   ["b153", [
     "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Lines, drawings and comments come over too. It lands as one new board on the board you have open; nothing already there changes."
-  ]],
-  ["b152", [
-    "Shared boards: whatever someone else is editing, moving or just changed is outlined in their colour with their name on top. D&D sheets: Sheet Colors sets the page colour and the accent to any colour; new sheets open in the Beyond view, which is as tall as its content and moves like any card (click once to use its buttons).",
-    "Search shows a character sheet's face and name, and boards' drawn icons. A late update to a deleted card can no longer stop saving (\u201cWorkspace needs repair\u201d). The Cards button is hidden for now (Search covers it)."
   ]],
 ];
 function renderPatchNotes(){
