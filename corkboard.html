@@ -4785,7 +4785,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b167";
+window.BUILD = "b168";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -28098,7 +28098,7 @@ function authWorkerUrl(){
 const SYNC = {
   get clientId(){ return SAFE_STORE.get("cb_clientId") || ""; },
   set clientId(v){ v ? SAFE_STORE.set("cb_clientId", v) : SAFE_STORE.del("cb_clientId"); },
-  token: null, tokenExp: 0, status: "off", lastError: "", detail: "", lastSync: 0, layout: null
+  token: null, tokenExp: 0, status: "off", lastError: "", detail: "", progress: null, lastSync: 0, layout: null
 };
 function loadGIS(){
   return new Promise((res, rej) => {
@@ -28233,15 +28233,25 @@ const DRIVE_CHUNK = 8 * 1024 * 1024;
 const SYNC_BASE_KEY = "sync:base", SYNC_STATE_KEY = "sync:meta", DRIVE_CACHE_PREFIX = "drivefile:";
 const SYNC_POLL_MS = 60 * 1000;
 
+/* Drive answers "slow down" (429, or 403 with a rate-limit reason) and the
+   odd 5xx when many files go up at once; those are waited out and retried. */
+const DRIVE_RETRY_MS = [1000, 2000, 4000, 8000, 16000];
 async function driveFetch(path, opts = {}){
-  const t = await getToken(false);
-  const r = await fetch(DRIVE_API + path, {...opts, headers:{...(opts.headers || {}), Authorization:"Bearer " + t}});
-  if (r.status === 401){ SYNC.token = null; SAFE_STORE.del("cb_token"); throw new Error("Google needs a fresh sign-in."); }
-  if (!r.ok){
-    let why = ""; try { why = (await r.json())?.error?.message || ""; } catch (_) {}
+  for (let attempt = 0; ; attempt++){
+    const t = await getToken(false);
+    const r = await fetch(DRIVE_API + path, {...opts, headers:{...(opts.headers || {}), Authorization:"Bearer " + t}});
+    if (r.status === 401){ SYNC.token = null; SAFE_STORE.del("cb_token"); throw new Error("Google needs a fresh sign-in."); }
+    if (r.ok) return r;
+    let err = null; try { err = (await r.json())?.error || null; } catch (_) {}
+    const reason = err?.errors?.[0]?.reason || "";
+    const busy = [408, 429, 500, 502, 503, 504].includes(r.status) || (r.status === 403 && /rateLimit/i.test(reason));
+    if (busy && attempt < DRIVE_RETRY_MS.length){
+      await new Promise(res => setTimeout(res, (window.__driveRetryMs ?? DRIVE_RETRY_MS[attempt]) * (1 + Math.random() / 2)));
+      continue;
+    }
+    const why = err?.message || "";
     const e = new Error("Drive error " + r.status + (why ? " — " + why : "")); e.status = r.status; throw e;
   }
-  return r;
 }
 const driveJson = async (path, opts) => (await driveFetch(path, opts)).json();
 const driveQ = s => encodeURIComponent(s);
@@ -28314,30 +28324,96 @@ async function cloudCatalogue(base){
   pub.withheld = syncWithheld(base?.withheld, pub, priv);
   return packWorkspaceForStorage(cloneWorkspaceForSave(pub));
 }
+/* A big import is thousands of pictures. Asking Drive about each one, then
+   sending it, one at a time, kept the first sync going for hours with
+   nothing to show for it (U-035). Drive's picture folder is listed once (a
+   thousand names a request), pictures go four at a time, the chip shows how
+   far along it is, and what's done is remembered, so a reload carries on. */
+const DRIVE_PARALLEL = 4;
+async function driveAssetIndex(folder){
+  const index = new Map(); let pageToken = "";
+  do {
+    const q = `'${folder}' in parents and trashed=false`;
+    const j = await driveJson(`/drive/v3/files?q=${driveQ(q)}&fields=nextPageToken,files(id,appProperties)&spaces=drive&pageSize=1000` +
+      (pageToken ? "&pageToken=" + encodeURIComponent(pageToken) : ""));
+    for (const f of j.files || []){
+      const role = f.appProperties?.corkbork || "";
+      if (role.startsWith("asset:") && !index.has(role.slice(6))) index.set(role.slice(6), f.id);
+    }
+    pageToken = j.nextPageToken || "";
+  } while (pageToken);
+  return index;
+}
+async function runPool(items, limit, fn){
+  let next = 0, failed = false;
+  const worker = async () => {
+    while (!failed && next < items.length){ const i = next++; try { await fn(items[i], i); } catch (e){ failed = true; throw e; } }
+  };
+  await Promise.all(Array.from({length:Math.min(limit, items.length)}, worker));
+}
+/* a handful of new pictures: one lookup each is cheaper than listing the folder */
+async function driveAssetLookup(ids, folder){
+  if (ids.length > 3) return driveAssetIndex(folder);
+  const found = new Map();
+  for (const id of ids){ const f = await driveFind("asset:" + id, folder); if (f) found.set(id, f.id); }
+  return found;
+}
+function syncProgress(verb, done, total){
+  if (total < 2){ SYNC.progress = null; SYNC.detail = ""; }
+  else {
+    SYNC.progress = Math.floor(done / total * 100);
+    SYNC.detail = verb + " pictures: " + done.toLocaleString() + " of " + total.toLocaleString() + ". " +
+      (verb === "Uploading" ? "Your other devices get these boards when this finishes; keep CORKBORK open." : "The new boards appear when this finishes.");
+  }
+  refreshSyncUI();
+}
+/* progress is written as it goes, one write at a time */
+function assetProgressSaver(meta){
+  let since = 0, chain = Promise.resolve();
+  return {
+    tick(){ if (++since >= 25){ since = 0; chain = chain.then(() => setSyncMeta({assets:{...meta.assets}})).catch(() => {}); } },
+    flush(){ return chain.then(() => setSyncMeta({assets:{...meta.assets}})).catch(() => {}); }
+  };
+}
 async function uploadAssets(catalogue, meta){
   const {assets:folder} = await driveLayout();
-  for (const id of collectAssetTokens(catalogue).keys()){
-    if (meta.assets[id]) continue;
-    const found = await driveFind("asset:" + id, folder);
-    if (found){ meta.assets[id] = found.id; continue; }
-    const dataUrl = await idbGetRaw(ASSET_KEY_PREFIX + id);
-    if (typeof dataUrl !== "string") throw new Error("an attachment is missing from this device's storage");
-    meta.assets[id] = (await driveCreate({name:"asset-" + id.replace(/[^a-z0-9]/gi, "_"), parents:[folder],
-      appProperties:{corkbork:"asset:" + id}}, dataUrl, "text/plain")).id;
-  }
+  let todo = [...collectAssetTokens(catalogue).keys()].filter(id => !meta.assets[id]);
+  if (!todo.length) return;
+  const index = await driveAssetLookup(todo, folder);
+  for (const id of todo) if (index.has(id)) meta.assets[id] = index.get(id);
+  todo = todo.filter(id => !meta.assets[id]);
+  if (!todo.length){ await setSyncMeta({assets:{...meta.assets}}); return; }
+  const saver = assetProgressSaver(meta);
+  let done = 0; syncProgress("Uploading", 0, todo.length);
+  try {
+    await runPool(todo, DRIVE_PARALLEL, async id => {
+      const dataUrl = await idbGetRaw(ASSET_KEY_PREFIX + id);
+      if (typeof dataUrl !== "string") throw new Error("an attachment is missing from this device's storage");
+      meta.assets[id] = (await driveCreate({name:"asset-" + id.replace(/[^a-z0-9]/gi, "_"), parents:[folder],
+        appProperties:{corkbork:"asset:" + id}}, dataUrl, "text/plain")).id;
+      saver.tick(); syncProgress("Uploading", ++done, todo.length);
+    });
+  } finally { await saver.flush(); syncProgress("", 0, 0); }
 }
 async function downloadAssets(catalogue, meta){
-  const want = [...collectAssetTokens(catalogue).keys()];
+  const have = new Set(await idbKeys());
+  const want = [...collectAssetTokens(catalogue).keys()].filter(id => !have.has(ASSET_KEY_PREFIX + id));
+  if (!want.length) return;
   const remoteMap = catalogue.driveAssets || {};
-  for (const id of want){
-    if (await idbHas(ASSET_KEY_PREFIX + id)) continue;
-    let fileId = remoteMap[id] || meta.assets[id];
-    if (!fileId) fileId = (await driveFind("asset:" + id))?.id;
-    if (!fileId) throw new Error("Drive is missing an attachment another device uploaded. Sync that device first.");
-    const text = await (await driveFetch(`/drive/v3/files/${fileId}?alt=media`)).text();
-    await idbSet(ASSET_KEY_PREFIX + id, text);
-    meta.assets[id] = fileId;
-  }
+  const unknown = want.filter(id => !remoteMap[id] && !meta.assets[id]);
+  const index = unknown.length ? await driveAssetLookup(unknown, (await driveLayout()).assets) : null;
+  const saver = assetProgressSaver(meta);
+  let done = 0; syncProgress("Downloading", 0, want.length);
+  try {
+    await runPool(want, DRIVE_PARALLEL, async id => {
+      const fileId = remoteMap[id] || meta.assets[id] || index?.get(id);
+      if (!fileId) throw new Error("Drive is missing an attachment another device uploaded. Sync that device first.");
+      const text = await (await driveFetch(`/drive/v3/files/${fileId}?alt=media`)).text();
+      await idbSet(ASSET_KEY_PREFIX + id, text);
+      meta.assets[id] = fileId;
+      saver.tick(); syncProgress("Downloading", ++done, want.length);
+    });
+  } finally { await saver.flush(); syncProgress("", 0, 0); }
 }
 /* Originals: anything this device holds that Drive does not have yet. */
 function cardUploadSource(c){
@@ -28673,7 +28749,7 @@ async function cloudSyncOnce(){
     refreshSyncUI(); tabShareSync(); return true;
   } catch (e){
     SYNC.status = syncLooksOffline(e) ? "offline" : SYNC.token ? "error" : "reconnect";
-    SYNC.lastError = e.message; SYNC.detail = "";
+    SYNC.lastError = e.message; SYNC.detail = ""; SYNC.progress = null;
     refreshSyncUI(); tabShareSync(); return false;
   }
 }
@@ -28706,7 +28782,7 @@ function updateCloudChip(){
     st = SYNC.status === "syncing" ? "syncing" : SYNC.pending ? "pending" : SYNC.status;
     const t = SYNC.lastSync ? new Date(SYNC.lastSync).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}) : "";
     ({
-      syncing:  () => { text = "Syncing…"; tip = SYNC.detail || "Sending changes to Google Drive."; },
+      syncing:  () => { text = SYNC.progress != null ? "Syncing " + SYNC.progress + "%" : "Syncing…"; tip = SYNC.detail || "Sending changes to Google Drive."; },
       pending:  () => { text = "Saved · syncing soon"; tip = "Saved on this device. Sending to Drive in a moment."; },
       ok:       () => { text = t ? "Synced " + t : "Synced"; tip = "Everything is saved on this device and in Google Drive."; },
       offline:  () => { text = "Offline · saved here"; tip = "No internet. Everything is saved on this device and will sync when you're back online."; },
@@ -30209,6 +30285,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b168", [
+    "Sync after a big import is much faster: pictures go to Drive four at a time instead of one by one, the sync button shows how far along it is (Syncing 40%), and a sync that\u2019s interrupted carries on where it stopped. Your other devices get the imported boards when it reaches 100%."
+  ]],
   ["b167", [
     "Opens much faster with lots of pictures: the board you open on comes first, the rest load behind. Editing text puts its tools in the left toolbar (Text style, bold, italic, lists, quote, code, link, colour), and they now apply and stay. Quotes look like Milanote\u2019s.",
     "Lists: they grow to fit, you can copy their text, Enter always adds, the add row is plain, items drag by a \u2261 handle, and their colour and type buttons only show while you\u2019re on the list.",
@@ -30261,9 +30340,6 @@ const PATCH_NOTES = [
   ["b154", [
     "Calmer look: toolbar buttons keep their colours as a soft tint with plain icons, bigger icons and smaller labels; space instead of lines between groups; flatter cards; fainter board dots. Recycle and Trash float on the board’s bottom-left corner like Unsorted.",
     "Top bar: zoom and snap, then the sync status, then Search and Tags, then Bugs and Settings. Favourites are at the top of Search (hover to peek, click to keep open). The board folder is in the sync menu; ? still opens the shortcuts."
-  ]],
-  ["b153", [
-    "Import from Milanote (share button \u203a From Milanote\u2026): copy a short script into your Milanote tab\u2019s console and it saves the board you\u2019re on, every board inside it, its pictures and files, and where everything sits. Choose those files here and the boards are rebuilt with their layout. Lines, drawings and comments come over too. It lands as one new board on the board you have open; nothing already there changes."
   ]],
 ];
 function renderPatchNotes(){
