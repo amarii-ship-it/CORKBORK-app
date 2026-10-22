@@ -2027,6 +2027,63 @@ body.in-card #zoomCtl{z-index:170;}
 #lbClose:hover{background:rgba(255,255,255,.14);}
 
 /* search */
+#todoWin{position:fixed; top:56px; right:24px; width:min(340px, calc(100vw - 16px)); max-height:min(74vh, 680px); z-index:120;
+  background:var(--surface-hi); border:1px solid var(--border); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.32);
+  display:none; flex-direction:column; overflow:hidden; font-size:14px;}
+#todoWin.open{display:flex;}
+#twHead{display:flex; align-items:center; gap:8px; padding:10px 10px 10px 12px; cursor:grab; user-select:none; border-bottom:1px solid var(--border); touch-action:none;}
+#twHead.moving{cursor:grabbing;}
+#twHead .tw-grip{color:var(--text-dim); letter-spacing:-2px; font-size:13px; opacity:.7;}
+#twHead .tw-title{font-weight:700; font-size:15px; flex:1; color:var(--text); white-space:nowrap;}
+#twHead button{white-space:nowrap; flex:none;}
+#twCount{font-size:11px; font-weight:700; color:var(--canvas); background:var(--accent); border-radius:5px; padding:1px 6px;}
+#twCount:empty{display:none;}
+/* on a phone there is no room beside Search: Favourites and Tags open over it */
+.side-back{display:none; align-self:flex-start; margin:10px 10px 0; padding:4px 8px; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-dim);}
+.side-back:hover{color:var(--text); background:var(--surface);}
+#favPanel.over .side-back, #tagSide.over .side-back{display:block;}
+#favPanel.over input, #tagSide.over input{margin-top:6px;}
+#twHideDone{font-size:11.5px; font-weight:600; padding:4px 8px; border-radius:7px; color:var(--text-dim); border:1px solid var(--border);}
+#twHideDone:hover{color:var(--text);}
+#twHideDone.on{color:var(--canvas); background:var(--accent); border-color:var(--accent);}
+#todoWin.hide-done .todo-item.done{display:none;}
+@media (max-width:520px){
+  #twHead{gap:6px; padding:9px 8px 9px 10px;}
+  #twHead .tw-grip, .tw-newword{display:none;}
+  #twNew{padding:4px 9px; font-size:14px;}
+}
+#twNew{font-size:12px; font-weight:600; padding:5px 10px; border-radius:7px; background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text);}
+#twNew:hover{background:color-mix(in srgb, var(--text) 14%, transparent);}
+#twClose{width:26px; height:26px; border-radius:6px; color:var(--text-dim);}
+#twClose:hover{background:var(--surface); color:var(--text);}
+#twBody{overflow-y:auto; padding:2px 10px 10px;}
+.tw-list{border-radius:9px; padding:6px 8px 4px; margin-top:8px; background:color-mix(in srgb, var(--text) 4%, transparent);}
+.tw-top{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim);}
+.tw-drag{color:var(--text-dim); letter-spacing:-2px; font-size:12px; cursor:grab; padding:2px 3px 2px 0; opacity:.55; flex:none; touch-action:none; user-select:none;}
+.tw-list:hover .tw-drag{opacity:1;}
+.tw-list.tw-moving{opacity:.85; box-shadow:0 6px 18px rgba(0,0,0,.28); outline:1px dashed var(--accent);}
+.tw-list.tw-moving .tw-drag{cursor:grabbing;}
+.tw-chev{width:18px; height:18px; border-radius:4px; color:var(--text-dim); font-size:13px; flex:none; display:flex; align-items:center; justify-content:center;}
+.tw-chev span{display:inline-block; transform:rotate(90deg); transition:transform .12s ease;}
+.tw-list.folded .tw-chev span{transform:none;}
+.tw-chev:hover{background:var(--surface); color:var(--text);}
+.tw-ftitle{font-size:14px; font-weight:700; color:var(--text);}
+.tw-dot{width:9px; height:9px; border-radius:50%; flex:none;}
+.tw-where{flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); font-size:11px; padding:1px 2px; border-radius:4px;}
+.tw-where b{font-weight:600;}
+.tw-where:hover{color:var(--text); text-decoration:underline;}
+.tw-list.folded .tw-where{flex:0 1 auto;}
+.tw-list.folded .tw-ftitle{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.tw-prog{flex:none;}
+.tw-card{position:relative; padding:2px 0 0 18px;}
+.tw-card .list-head{min-height:24px;}
+.tw-card .card-title{font-weight:700; font-size:15px;}
+.tw-card .todo-items{padding:2px 0 4px;}
+.tw-list:hover .list-color{opacity:1;}
+.tw-card .inline-title{position:static; width:100%; margin:2px 0;}
+#btnTodos.on{color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent);}
+.todo-linkmark{color:var(--edit); font-weight:700; font-size:13px; flex:none;}
+.todo-gone{padding:12px; font-size:13px; color:var(--text-dim);}
 #favPanel, #tagSide{
   position:fixed; top:44px; right:8px; width:min(360px, calc(100vw - 16px)); max-height:72vh;
   background:var(--surface-hi); border:1px solid var(--border); border-radius:6px;
@@ -3482,6 +3539,9 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
   <button class="barbtn iconbtn" id="btnLabels" title="Tags">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12.3 2.8H20a1.2 1.2 0 0 1 1.2 1.2v7.7a2 2 0 0 1-.6 1.4l-8.2 8.2a2 2 0 0 1-2.8 0L4 15.7a2 2 0 0 1 0-2.8l8.3-8.3a2 2 0 0 1 0 0z"/><circle cx="16.4" cy="7.6" r="1.5"/></svg>
   </button>
+  <button class="barbtn iconbtn" id="btnTodos" title="To-dos — every list, in a window you can keep open">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 12.2l2.8 2.8L16.5 9"/></svg>
+  </button>
   <button class="barbtn iconbtn" id="btnFavs" style="display:none" title="Favourites — starred boards and cards">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.6l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.8l5.9-.8z"/></svg>
   </button>
@@ -3628,10 +3688,19 @@ body.note-full-open #textBar{max-width:none; width:100%; opacity:1; padding:3px 
 <!-- Favourites. Same shape and same row markup as search, filtered to
      starred items, so the two read and behave identically. -->
 <div id="favPanel">
+  <button type="button" class="side-back" data-back="fav">‹ Search</button>
   <input type="text" id="favInput" placeholder="Filter favourites…" autocomplete="off">
   <div id="favScroll"></div>
 </div>
+<!-- To-dos: every list, in a window over the workspace that stays open -->
+<div id="todoWin" role="dialog" aria-label="To-dos">
+  <div id="twHead"><span class="tw-grip" aria-hidden="true">⋮⋮</span><span class="tw-title">To-dos</span><span id="twCount"></span>
+    <button id="twHideDone" type="button" aria-pressed="false" title="Hide ticked items here (they stay on the board)">Hide done</button>
+    <button id="twNew" type="button" title="New list">＋<span class="tw-newword"> New list</span></button><button id="twClose" type="button" title="Close">✕</button></div>
+  <div id="twBody"></div>
+</div>
 <div id="tagSide">
+  <button type="button" class="side-back" data-back="tag">‹ Search</button>
   <input type="text" id="tagSideInput" placeholder="Filter tags…" autocomplete="off">
   <div id="tagSideScroll"></div>
 </div>
@@ -4574,7 +4643,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b165";
+window.BUILD = "b166";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5807,7 +5876,10 @@ function fitToContent(){
 }
 
 /* ---------------- rendering ---------------- */
-function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); }
+function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); todoWinBoot(); }
+/* the To-dos window comes back open if it was open */
+let todoWinBooted = false;
+function todoWinBoot(){ if (todoWinBooted || !state) return; todoWinBooted = true; if (todoWinPrefs().open) openTodoWin(true); }
 
 function boardCardFor(bid){
   const t = cardIndex().tile.get(bid);
@@ -6017,7 +6089,8 @@ function renderBoard(){
     const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") + (board(c.boardId)?.share ? ":shared" : board(c.boardId)?.joined ? ":joined" : "") :
       (c.type === "column" || c.type === "grid")
         ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") :
-      c.type === "widget" && c.widget === "calendar" ? calSignature(id) : null;
+      c.type === "widget" && c.widget === "calendar" ? calSignature(id) :
+      c.type === "todo" && c.linkTo ? "L" + (card(c.linkTo)?.updatedAt ?? "gone") : null;
     if (hit && hit.el && (hit.ref === c || id === editingId) && hit.dependency === dependency){
       el = hit.el;
       el.classList.remove("dragging", "drag-src", "droptarget", "new-card");
@@ -7056,7 +7129,22 @@ const LIST_MODES = [
   { id:"bullet", glyph:"\u2022", label:"Bulleted"  },
   { id:"number", glyph:"1.",      label:"Numbered"  }
 ];
-function buildTodo(c, el){
+/* A list shortcut (linkTo) shows and edits the list it points at, so a list
+   can sit on several boards and stay one list. `where` keeps the add-item box
+   focused in the place you typed (a board, or the To-dos window). */
+function buildTodo(c, el, where = "board"){
+  const host = c;
+  if (c.linkTo){
+    el.classList.add("todo-link");
+    const src = card(c.linkTo);
+    if (!src || src.type !== "todo"){
+      const g = document.createElement("div"); g.className = "todo-gone";
+      g.textContent = "\u2197 The list this pointed to was deleted.";
+      el.appendChild(g); return;
+    }
+    c = src;
+  }
+  const fkey = where + ":" + host.id;
   const stop = x => x.addEventListener("pointerdown", e => e.stopPropagation());
   const mode = c.listMode || "check";
   const head = document.createElement("div"); head.className = "list-head";
@@ -7080,6 +7168,7 @@ function buildTodo(c, el){
   dot.title = "List colour (also its colour on the calendar)"; stop(dot);
   dot.addEventListener("click", e => { e.stopPropagation(); openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}); });
   head.append(t, dot);
+  if (host !== c){ const lk = document.createElement("span"); lk.className = "todo-linkmark"; lk.textContent = "\u2197"; lk.title = "Shortcut to a list: changes here change the list everywhere"; head.insertBefore(lk, t); }
   if ((c.items || []).some(it => it.due)){
     const on = c.calOn !== false;
     const cal = document.createElement("button"); cal.className = "list-cal" + (on ? " on" : "");
@@ -7161,7 +7250,7 @@ function buildTodo(c, el){
         patchCard(c.id, { items: [...card(c.id).items, { id: uid("t"), text: v, done: false }] });
         markDirty();
       }
-      focusAddTodo = keepOpen && v ? c.id : null;
+      focusAddTodo = keepOpen && v ? fkey : null;
       renderBoard();
     };
     inp.addEventListener("keydown", e => {
@@ -7177,7 +7266,7 @@ function buildTodo(c, el){
   addWrap.appendChild(btn);
   list.appendChild(addWrap);
   el.appendChild(list);
-  if (focusAddTodo === c.id){ focusAddTodo = null; requestAnimationFrame(openAddInput); }
+  if (focusAddTodo === fkey){ focusAddTodo = null; requestAnimationFrame(openAddInput); }
 
   t.addEventListener("dblclick", e => {
     e.stopPropagation();
@@ -7324,10 +7413,11 @@ function buildColumnChild(col, k){
     d.appendChild(h);
   }
   else if (k.type === "todo"){
+    const L = k.linkTo ? (card(k.linkTo) || {title:"Deleted list", items:[]}) : k, items = L.items || [];
     const w = document.createElement("div"); w.className = "cc-todo";
-    const t = document.createElement("div"); t.className = "cc-title"; t.textContent = k.title || "To-do";
-    const done = k.items.filter(x => x.done).length;
-    const s = document.createElement("div"); s.className = "cc-sub"; s.textContent = done + " of " + k.items.length + " done";
+    const t = document.createElement("div"); t.className = "cc-title"; t.textContent = (k.linkTo ? "\u2197 " : "") + (L.title || "To-do");
+    const done = items.filter(x => x.done).length;
+    const s = document.createElement("div"); s.className = "cc-sub"; s.textContent = done + " of " + items.length + " done";
     w.append(t, s); d.appendChild(w);
   }
   else {
@@ -9869,8 +9959,10 @@ function enterEdit(c){
   else if (c.type === "comment") openComments(c.id, true);
   else if (c.type === "doc") openNoteFull(c.id);
   else if (c.type === "link") openLinkDialog(c);
-  else if (c.type === "todo")
-    editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "List" }));
+  else if (c.type === "todo"){
+    const L = c.linkTo ? card(c.linkTo) : c;
+    if (L) editTitleInline(L, el, "title", v => patchCard(L.id, { title: v || "List" }));
+  }
   else if (c.type === "table")
     editTitleInline(c, el, "title", v => patchCard(c.id, { title: v || "Table" }));
   else if (isContainer(c))
@@ -12182,6 +12274,27 @@ async function editImageMetadata(c){
   pushUndo(); patchCard(c.id, patch); markDirty(); renderBoard(); toast("Metadata saved.");
   return true;
 }
+/* go to wherever a card lives: its board, then the card (or what holds it) */
+function goToCard(id){
+  const c = card(id), bid = c && findCardBoard(id); if (!bid) return;
+  if (bid !== currentBoardId) openBoard(bid);
+  const b = board(bid);
+  if (b.cardIds.includes(id)){ setSelection([id]); centerOnCard(card(id)); return; }
+  if (b.unsortedIds.includes(id)){ $("#drawer").classList.remove("collapsed"); $("#drawerFab").classList.add("hidden"); renderDrawer(); return; }
+  const holder = findCardContainer(id);
+  if (holder && b.cardIds.includes(holder.id)){ setSelection([holder.id]); centerOnCard(holder); }
+}
+/* a list's shortcut: one more place the same list shows, always the original's items */
+function createTodoShortcut(c){
+  const src = c.linkTo ? card(c.linkTo) : c; if (!src) return null;
+  pushUndo();
+  const id = uid("c"), here = cur().cardIds.includes(c.id), at = here ? {x:c.x + 28, y:c.y + 28} : (p => ({x:p.x - (c.w || 260) / 2, y:p.y - (c.h || 200) / 2}))(viewCenterWorld());
+  state.cards[id] = {id, type:"todo", linkTo:src.id, title:src.title || "List", items:[], listMode:src.listMode || "check",
+    x:Math.round(at.x), y:Math.round(at.y), w:c.w || 260, h:c.h || 200, z:maxZ() + 1, createdAt:now(), updatedAt:now()};
+  cur().cardIds.push(id);
+  markDirty(); renderAll(); setSelection([id]);
+  return state.cards[id];
+}
 function openCtx(x, y, c){
   ctx.innerHTML = "";
   const item = (into, label, fn, cls) => {
@@ -12260,8 +12373,13 @@ function openCtx(x, y, c){
     : board(c.boardId).private ? "\u{1F513} Make public" : "\u{1F512} Make private", () => toggleBoardPrivate(c.boardId));
   if (TAGGABLE.has(c.type) && c.type !== "image") add("Add tags", openTagsFor);
   if (c.type === "todo"){
-    add("List colour…", () => openColorPicker({current:c.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(c.id, v); }}));
-    add(c.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(c.id, c.calOn === false));
+    const L = c.linkTo ? card(c.linkTo) : c;
+    if (L){
+      add("Create shortcut", () => createTodoShortcut(c));
+      if (L !== c) add("Go to the original list", () => goToCard(L.id));
+      add("List colour…", () => openColorPicker({current:L.color || "", allowNone:true, onPick:v => { if (!isGradient(v)) setListColor(L.id, v); }}));
+      add(L.calOn === false ? "Show on calendar" : "Hide from calendar", () => setListOnCalendar(L.id, L.calOn === false));
+    }
   }
   /* Same payload Ctrl+C writes, reachable without the keyboard. On a single
      image it copies the picture itself, for pasting anywhere. */
@@ -16608,6 +16726,7 @@ function boardRow(bid){
   return row;
 }
 function cardDisplayName(c){
+  if (c.type === "todo" && c.linkTo) return card(c.linkTo)?.title || "Deleted list";
   if (c.type === "sheet") return c.sheet?.name || "Unnamed character";
   const preview = c.fileName || c.name || c.sheet?.name || c.title || c.caption || c.text ||
     c.html?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || c.url || (c.type === "sketch" ? "Drawing" : c.type);
@@ -16710,7 +16829,7 @@ function searchItems(){
     items.push({kind:"board", id:b.id, name:b.title || "Untitled", at:Math.max(b.lastViewedAt || 0, tile?.updatedAt || 0), labels:tile?.labelIds || []});
   }
   for (const c of Object.values(state.cards)){
-    if (!c || SEARCH_HIDDEN_TYPES.has(c.type)) continue;
+    if (!c || SEARCH_HIDDEN_TYPES.has(c.type) || (c.type === "todo" && c.linkTo)) continue;
     const home = findCardBoard(c.id); if (!home || inBin(home)) continue;
     items.push({kind:searchKindOf(c), id:c.id, card:c, name:cardDisplayName(c), at:c.updatedAt || c.createdAt || 0, labels:c.labelIds || []});
   }
@@ -16867,13 +16986,20 @@ function renderFavPanel(q){
 /* Favourites open from the top of the Search panel: hovering shows them
    to the left of Search, a click pins them open until Search closes. */
 let favPinned = false, favHideTimer = null;
-function placeFavs(){
-  const fp = $("#favPanel"), sp = $("#searchPanel");
-  if (!sp.classList.contains("open")){ fp.style.right = ""; fp.style.top = ""; return; }
-  const z = uiz(), r = sp.getBoundingClientRect();
-  fp.style.right = Math.max(8, (innerWidth - r.left) / z + 8) + "px";
+/* Favourites and Tags open beside Search, to its left; where that would run
+   off the screen (a phone), they open over Search with a way back */
+function placeSidePanel(fp){
+  const sp = $("#searchPanel");
+  if (!sp.classList.contains("open")){ fp.style.right = ""; fp.style.top = ""; fp.style.width = ""; fp.style.maxHeight = ""; fp.classList.remove("over"); return; }
+  const z = uiz(), r = sp.getBoundingClientRect(), need = Math.min(360, innerWidth / z - 16) * z + 16;
+  const over = r.left < need;
+  fp.classList.toggle("over", over);
+  fp.style.right = over ? Math.max(0, (innerWidth - r.right) / z) + "px" : Math.max(8, (innerWidth - r.left) / z + 8) + "px";
   fp.style.top = (r.top / z) + "px";
+  fp.style.width = over ? (r.width / z) + "px" : "";
+  fp.style.maxHeight = over ? (r.height / z) + "px" : "";
 }
+function placeFavs(){ placeSidePanel($("#favPanel")); }
 function openFavs(focus=true){
   clearTimeout(favHideTimer); if (typeof closeTagSide === "function" && $("#tagSide").classList.contains("open")) closeTagSide();
   const was = $("#favPanel").classList.contains("open");
@@ -16907,7 +17033,7 @@ function openTagSide(focus=true){
   clearTimeout(tagSideTimer); closeFavs();
   const tp = $("#tagSide"), sp = $("#searchPanel"), was = tp.classList.contains("open");
   tp.classList.add("open");
-  if (sp.classList.contains("open")){ const z = uiz(), r = sp.getBoundingClientRect(); tp.style.right = Math.max(8, (innerWidth - r.left) / z + 8) + "px"; tp.style.top = (r.top / z) + "px"; }
+  placeSidePanel(tp);
   if (!was){ $("#tagSideInput").value = ""; renderTagSide(""); }
   if (focus) $("#tagSideInput").focus();
 }
@@ -16922,7 +17048,146 @@ $("#searchTags").addEventListener("click", () => {
   tagSidePinned = true; $("#searchTags").classList.add("on"); openTagSide(true);
 });
 $("#tagSideInput").addEventListener("input", e => renderTagSide(e.target.value));
+for (const b of document.querySelectorAll(".side-back")) b.addEventListener("click", e => { e.stopPropagation(); b.dataset.back === "tag" ? closeTagSide() : closeFavs(); $("#searchInput").focus(); });
 $("#tagSideInput").addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Escape") closeTagSide(); });
+/* ---- To-dos window --------------------------------------------------------
+   Every list in the workspace (not shortcuts: those are the same lists), in a
+   window over the workspace that stays open across boards and reloads. Each
+   list is the same list as on its board, edited the same way. New lists go
+   to Unsorted on Home. */
+const TODO_WIN_KEY = "corkbork.todoWin";
+function todoWinPrefs(){ try { return JSON.parse(SAFE_STORE.get(TODO_WIN_KEY) || "{}") || {}; } catch (_) { return {}; } }
+function saveTodoWinPrefs(p){ try { SAFE_STORE.set(TODO_WIN_KEY, JSON.stringify(p)); } catch (_) {} }
+let todoWinSig = "";
+function todoWinLists(){
+  const inBin = bid => { for (let b = state.boards[bid], n = 0; b && n < 500; b = state.boards[b.parentId], n++) if (b.id === TRASH_ID) return true; return false; };
+  return Object.values(state.cards).filter(c => c?.type === "todo" && !c.linkTo).filter(c => { const b = findCardBoard(c.id); return b && !inBin(b); })
+    .sort((a, b) => searchCollator.compare(a.title || "List", b.title || "List") || (a.createdAt || 0) - (b.createdAt || 0));
+}
+function todoWhere(c){
+  const bid = findCardBoard(c.id), b = board(bid); if (!b) return "";
+  const holder = !b.cardIds.includes(c.id) && !b.unsortedIds.includes(c.id) ? findCardContainer(c.id) : null;
+  return (b.unsortedIds.includes(c.id) ? "in <b>Unsorted</b> on " : holder ? "in <b>" + escapeHtml(archiveCardTitle(holder)) + "</b> on " : "on ") + "<b>" + escapeHtml(b.title || "Untitled") + "</b>";
+}
+function renderTodoWin(force){
+  const w = $("#todoWin"); if (!w || !w.classList.contains("open") || !state) return;
+  const prefs = todoWinPrefs(), folded = new Set(prefs.folded || []);
+  /* the order you dragged them into, then any others A–Z */
+  const rank = new Map((prefs.order || []).map((id, i) => [id, i]));
+  const lists = todoWinLists().sort((a, b) => (rank.has(a.id) ? rank.get(a.id) : 1e9) - (rank.has(b.id) ? rank.get(b.id) : 1e9));
+  const links = {}; for (const c of Object.values(state.cards)) if (c?.type === "todo" && c.linkTo) links[c.linkTo] = (links[c.linkTo] || 0) + 1;
+  const sig = lists.map(c => c.id + ":" + (c.updatedAt || 0) + ":" + findCardBoard(c.id) + ":" + (links[c.id] || 0) + ":" + folded.has(c.id)).join("|") + "|" + (focusAddTodo || "") + "|" + (prefs.order || []).join(",");
+  if (!force && sig === todoWinSig) return;
+  todoWinSig = sig;
+  const body = $("#twBody"), top = body.scrollTop; body.innerHTML = "";
+  $("#twCount").textContent = lists.length || "";
+  for (const c of lists){
+    const items = c.items || [], done = items.filter(x => x.done).length, isFolded = folded.has(c.id);
+    const block = document.createElement("div"); block.className = "tw-list" + (isFolded ? " folded" : ""); block.dataset.id = c.id;
+    const topRow = document.createElement("div"); topRow.className = "tw-top";
+    const grip = document.createElement("span"); grip.className = "tw-drag"; grip.textContent = "\u22ee\u22ee"; grip.title = "Drag to move this list up or down";
+    grip.addEventListener("pointerdown", e => todoWinDragList(e, block));
+    topRow.appendChild(grip);
+    const chev = document.createElement("button"); chev.type = "button"; chev.className = "tw-chev"; chev.title = isFolded ? "Show this list" : "Fold this list";
+    chev.innerHTML = "<span>\u203a</span>";
+    chev.addEventListener("click", () => { const p = todoWinPrefs(), f = new Set(p.folded || []); isFolded ? f.delete(c.id) : f.add(c.id); p.folded = [...f]; saveTodoWinPrefs(p); renderTodoWin(true); });
+    topRow.appendChild(chev);
+    if (isFolded){
+      const dot = document.createElement("span"); dot.className = "tw-dot"; dot.style.background = c.color || "var(--text-dim)";
+      const t = document.createElement("span"); t.className = "tw-ftitle"; t.textContent = c.title || "List";
+      topRow.append(dot, t);
+    }
+    const where = document.createElement("button"); where.type = "button"; where.className = "tw-where"; where.title = "Go to this list";
+    where.innerHTML = todoWhere(c) + (links[c.id] ? " \u00b7 " + links[c.id] + " shortcut" + (links[c.id] > 1 ? "s" : "") : "");
+    where.addEventListener("click", () => goToCard(c.id));
+    const prog = document.createElement("span"); prog.className = "tw-prog"; prog.textContent = items.length ? done + " of " + items.length : "";
+    topRow.append(where, prog);
+    block.appendChild(topRow);
+    if (!isFolded){ const inner = document.createElement("div"); inner.className = "tw-card"; buildTodo(c, inner, "win"); block.appendChild(inner); }
+    block.addEventListener("contextmenu", e => { if (e.target.closest("input")) return; e.preventDefault(); e.stopPropagation(); openCtx(e.clientX, e.clientY, card(c.id)); });
+    body.appendChild(block);
+  }
+  if (!lists.length){ const n = document.createElement("div"); n.className = "snone"; n.textContent = "No lists yet. \uff0b New list makes one."; body.appendChild(n); }
+  body.scrollTop = top;
+}
+/* drag a list by its grip to put it higher or lower; the order is remembered */
+function todoWinDragList(e, block){
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  /* followed on the page, not by capturing the pointer: moving the list in
+     the window would drop a capture part-way */
+  const body = $("#twBody");
+  block.classList.add("tw-moving");
+  const move = ev => {
+    const others = [...body.querySelectorAll(".tw-list")].filter(b => b !== block);
+    const before = others.find(b => { const r = b.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; });
+    if (before) { if (block.nextElementSibling !== before) body.insertBefore(block, before); }
+    else if (body.lastElementChild !== block) body.appendChild(block);
+    /* near the edges, scroll the window */
+    const r = body.getBoundingClientRect();
+    if (ev.clientY < r.top + 24) body.scrollTop -= 12; else if (ev.clientY > r.bottom - 24) body.scrollTop += 12;
+  };
+  const up = () => {
+    removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+    block.classList.remove("tw-moving");
+    const p = todoWinPrefs(); p.order = [...body.querySelectorAll(".tw-list")].map(b => b.dataset.id); saveTodoWinPrefs(p);
+    renderTodoWin(true);
+  };
+  addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+}
+function placeTodoWin(){
+  const w = $("#todoWin"), p = todoWinPrefs(); if (p.x == null) return;
+  const z = uiz(), W = w.offsetWidth || 340, H = w.offsetHeight || 200;
+  w.style.right = "auto";
+  w.style.left = Math.min(Math.max(0, p.x), innerWidth / z - Math.min(W, 120)) + "px";
+  w.style.top = Math.min(Math.max(0, p.y), innerHeight / z - 40) + "px";
+}
+function syncTodoHideDone(){
+  const on = !!todoWinPrefs().hideDone;
+  $("#todoWin").classList.toggle("hide-done", on); $("#twHideDone").classList.toggle("on", on); $("#twHideDone").setAttribute("aria-pressed", String(on));
+}
+$("#twHideDone").addEventListener("click", () => { const p = todoWinPrefs(); p.hideDone = !p.hideDone; saveTodoWinPrefs(p); syncTodoHideDone(); });
+function openTodoWin(on){
+  const w = $("#todoWin"), p = todoWinPrefs(); syncTodoHideDone();
+  w.classList.toggle("open", on); $("#btnTodos").classList.toggle("on", on);
+  if (p.open !== on){ p.open = on; saveTodoWinPrefs(p); }
+  if (on){ placeTodoWin(); renderTodoWin(true); }
+}
+$("#btnTodos").addEventListener("click", () => openTodoWin(!$("#todoWin").classList.contains("open")));
+$("#twClose").addEventListener("click", () => openTodoWin(false));
+$("#todoWin").addEventListener("pointerdown", e => e.stopPropagation());
+$("#todoWin").addEventListener("keydown", e => e.stopPropagation());
+$("#twNew").addEventListener("click", () => {
+  const home = state.boards[state.rootBoardId]; if (!home) return;
+  pushUndo();
+  const id = uid("c"), sz = defaultSize("todo");
+  state.cards[id] = {id, type:"todo", title:"New list", items:[], listMode:"check", x:0, y:0, w:sz.w, h:sz.h, z:maxZ() + 1, createdAt:now(), updatedAt:now()};
+  home.unsortedIds.push(id);
+  const pr = todoWinPrefs(); pr.order = [id, ...(pr.order || todoWinLists().map(c => c.id)).filter(x => x !== id)]; saveTodoWinPrefs(pr);
+  markDirty(); renderAll(); renderTodoWin(true);
+  /* straight into naming it */
+  const inner = $('#twBody .tw-list[data-id="' + id + '"] .tw-card');
+  if (inner){ inner.closest(".tw-list").scrollIntoView({block:"nearest"}); editTitleInline(card(id), inner, "title", v => patchCard(id, {title:v || "List"})); }
+});
+(function(){
+  const head = $("#twHead"), w = $("#todoWin"); let sx = 0, sy = 0, ox = 0, oy = 0, moving = false;
+  head.addEventListener("pointerdown", e => {
+    if (e.target.closest("button")) return;
+    const z = uiz(), r = w.getBoundingClientRect();
+    moving = true; sx = e.clientX; sy = e.clientY; ox = r.left / z; oy = r.top / z;
+    head.classList.add("moving"); head.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  head.addEventListener("pointermove", e => {
+    if (!moving) return;
+    const z = uiz(), p = todoWinPrefs();
+    p.x = ox + (e.clientX - sx) / z; p.y = oy + (e.clientY - sy) / z; saveTodoWinPrefs(p); placeTodoWin();
+  });
+  const end = () => { moving = false; head.classList.remove("moving"); };
+  head.addEventListener("pointerup", end); head.addEventListener("pointercancel", end);
+  addEventListener("resize", () => { if (w.classList.contains("open")) placeTodoWin(); });
+})();
+/* whatever redraws the board refreshes the window too (it skips when nothing in it changed) */
+{ const drawBoard = renderBoard; renderBoard = function(){ const r = drawBoard.apply(this, arguments); try { renderTodoWin(); } catch (e){ console.warn("To-dos window:", e); } return r; }; }
 /* one order for every section, remembered on this device */
 $("#searchSort").addEventListener("click", e => {
   const b = e.target.closest("button[data-sort]"); if (!b) return;
@@ -29386,6 +29651,11 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b166", [
+    "List shortcuts: right-click a list \u203a Create shortcut, then move or paste it to any board. It is the same list: tick, add or change it anywhere and every copy changes.",
+    "To-dos (the tick button in the top bar): every list in a window that stays open over your boards. Drag it by its header, drag lists up and down by their grip, fold them, hide ticked items, and edit them just like on the board. \uff0b New list puts a list in Unsorted on Home.",
+    "On phones: Favourites and Tags open over Search with \u2039 Search to go back, and the To-dos window fits the screen."
+  ]],
   ["b165", [
     "Search lists everything by kind with nothing typed: Boards, Lists, D&D sheets, Cards, Links, Files, Documents and the rest (a kind you have none of doesn't show), each showing its first few with Show all. Click a heading to fold it away (Notes, Images and Comments start folded). A\u2013Z or Recent, top right, orders them all. Tags, under Favourites, groups everything by tag. With Search open, drag a card or picture onto a board in the list to put it in that board.",
     "Unsorted is a full-height panel on the right edge with pictures full width, instead of a small window that squeezed them into strips."
