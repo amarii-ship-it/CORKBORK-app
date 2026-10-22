@@ -1566,21 +1566,140 @@ details[open] > summary .se-chev{transform:rotate(-135deg); margin-top:4px;}
 #modeBar button svg{width:19px; height:19px;}
 #modeBar button:hover{background:var(--surface); color:var(--text);}
 #modeBar button.on{background:var(--accent); color:#14181c;}
-#sprintPanel{position:absolute; right:14px; bottom:60px; z-index:36; background:var(--surface-hi); border:1px solid var(--border); border-radius:5px; padding:12px; display:none; flex-direction:column; gap:8px; width:190px; box-shadow:0 8px 24px rgba(0,0,0,.4);}
-#sprintPanel.open{display:flex;}
-#sprintDisplay{font-family:var(--font-serif); font-size:34px; font-weight:700; text-align:center; letter-spacing:.02em;}
-#sprintControls{display:flex; gap:5px;}
-#sprintCustom{display:flex; gap:5px; align-items:center; margin-top:6px;}
-#sprintCustom input{flex:1; min-width:0; padding:5px 7px; font-size:12px; border-radius:6px;}
-#sprintCustom span{font-size:12px; color:var(--text-dim);}
-#sprintCustom button{padding:5px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px;}
-#sprintCustom button:hover{background:var(--surface); border-color:var(--accent);}
-#sprintControls button{flex:1; padding:5px 0; border:1px solid var(--border); border-radius:6px; font-size:12px;}
-#sprintControls button:hover, #sprintControls button.sel{background:var(--surface); border-color:var(--accent);}
-.sprintRow{display:flex; gap:6px;}
-.sprintRow button{flex:1; padding:6px 0; border:1px solid var(--border); border-radius:6px; font-size:13px;}
-.sprintRow button:hover{background:var(--surface);}
-#sprintDisplay.done{color:var(--accent);}
+/* ---- focus timer (replaces the old sprint panel): a countdown or a stopwatch ---- */
+.fz-time{font-family:var(--font-serif); font-size:36px; font-weight:700; text-align:center; letter-spacing:.02em; padding:6px 0 2px; font-variant-numeric:tabular-nums;}
+.fz-time.idle{color:var(--text-dim);}
+.fz-row{display:flex; gap:6px; align-items:center; justify-content:center;}
+.fz-min{width:64px; border:none; outline:none; background:color-mix(in srgb, var(--text) 6%, transparent); border-radius:8px; padding:6px 8px; font:inherit; font-size:12.5px; color:var(--text); text-align:center;}
+.fz-btn{flex:1; padding:8px 0; border-radius:9px; font-size:13px; font-weight:700; color:var(--text); background:color-mix(in srgb, var(--text) 7%, transparent);}
+.fz-btn:hover{background:color-mix(in srgb, var(--text) 12%, transparent);}
+.fz-btn.go{background:var(--accent); color:#fff;}
+.fz-btn.go:hover{filter:brightness(1.06);}
+.fz-note{font-size:11px; color:var(--text-dim); text-align:center; line-height:1.4;}
+#focusChip{display:none; gap:7px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; border-radius:20px; padding:5px 11px 5px 7px;
+  background:color-mix(in srgb, var(--accent) 14%, transparent);}
+#focusChip.on{display:flex;}
+#focusChip i{width:15px; height:15px; border-radius:50%; flex:none; background:conic-gradient(var(--accent) 0 var(--fz-p, 0%), color-mix(in srgb, var(--text) 14%, transparent) 0);}
+#focusChip.paused{opacity:.7;}
+#btnDone{position:relative;}
+#btnDone.has-pull::after{content:""; position:absolute; right:3px; top:3px; width:7px; height:7px; border-radius:50%; background:#D9A441; box-shadow:0 0 0 2px var(--surface-hi);}
+/* ---- Done page ---- */
+#doneOverlay{background:color-mix(in srgb, var(--canvas) 45%, rgba(0,0,0,.35)); backdrop-filter:blur(2px);}
+#donePanel{width:min(920px,100%); max-height:min(92vh,1000px); overflow-y:auto; background:var(--surface); color:var(--text); border-radius:16px; padding:22px 28px 26px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08), 0 24px 60px rgba(0,0,0,.22); display:flex; flex-direction:column;}
+.dn-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.dn-top h2{font-family:var(--font-serif); font-size:25px; margin:0; flex:1;}
+.dn-x{width:32px; height:32px; border-radius:50%; color:var(--text-dim); font-size:15px;}
+.dn-x:hover{background:color-mix(in srgb, var(--text) 7%, transparent); color:var(--text);}
+.dn-say{font-family:var(--font-serif); font-size:18px; line-height:1.45; margin:14px 0;}
+.dn-say b{color:var(--accent);}
+.dn-nums{display:grid; grid-template-columns:repeat(auto-fit, minmax(118px,1fr)); gap:10px;}
+.dn-num{background:color-mix(in srgb, var(--text) 4%, transparent); border-radius:12px; padding:10px 12px;}
+.dn-num b{display:block; font-family:var(--font-serif); font-size:23px; line-height:1.2;}
+.dn-num span{font-size:11.5px; color:var(--text-dim); font-weight:600;}
+.dn-sec{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim); font-weight:800; margin:22px 2px 9px; display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+.dn-sec em{font-style:normal; text-transform:none; letter-spacing:0; font-weight:600; font-size:12px;}
+.dn-sec button{font-size:12px; font-weight:700; color:var(--text-dim); text-transform:none; letter-spacing:0; padding:2px 6px; border-radius:6px;}
+.dn-sec button:hover{color:var(--text); background:color-mix(in srgb, var(--text) 6%, transparent);}
+.dn-two{display:grid; grid-template-columns:330px 1fr; gap:24px;}
+@media (max-width:760px){ .dn-two{grid-template-columns:1fr;} #donePanel{padding:18px 16px;} }
+.dn-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+.dn-wd{font-size:10px; color:var(--text-dim); text-align:center; font-weight:700;}
+.dn-d{height:36px; border-radius:8px; background:color-mix(in srgb, var(--text) 4%, transparent); position:relative; padding:0;}
+.dn-d span{position:absolute; left:5px; top:3px; font-size:10px; color:var(--text-dim); font-weight:700;}
+.dn-d.blank{background:transparent; pointer-events:none;}
+.dn-d.fut{background:transparent; box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent); pointer-events:none;}
+.dn-d.l1{background:color-mix(in srgb, var(--accent) 25%, transparent);} .dn-d.l2{background:color-mix(in srgb, var(--accent) 45%, transparent);}
+.dn-d.l3{background:color-mix(in srgb, var(--accent) 70%, transparent);} .dn-d.l4{background:var(--accent);}
+.dn-d.l3 span, .dn-d.l4 span{color:#fff;}
+.dn-d.today{box-shadow:0 0 0 2px var(--text);}
+.dn-d.sel{outline:2px solid var(--accent); outline-offset:2px;}
+.dn-hab{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid color-mix(in srgb, var(--text) 7%, transparent); font-size:13px;}
+.dn-hab .nm{width:120px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border-radius:4px; outline:none;}
+.dn-hd{display:flex; gap:5px;}
+.dn-hd button{width:19px; height:19px; border-radius:6px; background:color-mix(in srgb, var(--text) 6%, transparent); padding:0;}
+.dn-hd button:hover{box-shadow:inset 0 0 0 1.5px var(--hc);}
+.dn-hd button.on{background:var(--hc);}
+.dn-hd button.today{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--text) 30%, transparent);}
+.dn-hab em{font-style:normal; color:var(--text-dim); font-size:11.5px; margin-left:auto; white-space:nowrap;}
+.dn-hab .rm{visibility:hidden; color:var(--text-dim); font-size:12px; padding:0 4px;}
+.dn-hab:hover .rm{visibility:visible;}
+.dn-addh{display:flex; gap:6px; padding-top:8px;}
+.dn-addh input{flex:1; border:none; outline:none; background:color-mix(in srgb, var(--text) 5%, transparent); border-radius:8px; padding:6px 10px; font:inherit; font-size:12.5px; color:var(--text);}
+.dn-pics{display:grid; grid-template-columns:repeat(auto-fill, minmax(52px,1fr)); gap:4px;}
+.dn-pics img{width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; display:block; background:color-mix(in srgb, var(--text) 6%, transparent); cursor:pointer;}
+.dn-empty{font-size:12.5px; color:var(--text-dim); padding:4px 2px;}
+.dn-day{display:flex; gap:16px; padding:9px 0; border-top:1px solid color-mix(in srgb, var(--text) 7%, transparent);}
+.dn-when{width:92px; flex:none;} .dn-when b{display:block; font-size:13px;} .dn-when span{font-size:11px; color:var(--text-dim);}
+.dn-what{flex:1; display:flex; flex-direction:column; gap:5px; min-width:0;}
+.dn-row{display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap;}
+.dn-dot{width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; color:var(--text);}
+.dn-dot svg{width:13px; height:13px;}
+.dn-m{color:var(--text-dim); font-size:12px;}
+.dn-link{color:var(--text); border-bottom:1px solid color-mix(in srgb, var(--text) 20%, transparent); cursor:pointer;}
+.dn-link.gone{cursor:default; border-bottom:none;}
+.dn-trim{font-size:11.5px; font-weight:700; color:var(--accent); padding:0 4px;}
+/* stickers */
+.dn-stk{display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
+.dn-packbtn{width:96px; height:124px; border-radius:12px; position:relative; flex:none; overflow:hidden;
+  background:linear-gradient(135deg,#F2C14E,#E77F67 45%,#9B6BD3); box-shadow:0 3px 10px rgba(0,0,0,.18); color:#fff; font-weight:800; font-size:12px;}
+.dn-packbtn::before{content:""; position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(255,255,255,.0) 0 14px, rgba(255,255,255,.22) 14px 18px);}
+.dn-packbtn span{position:relative;}
+.dn-packbtn:disabled{filter:grayscale(.9) opacity(.45);}
+.dn-packbtn:not(:disabled):hover{transform:translateY(-2px) rotate(-1deg);}
+.dn-meter{flex:1; min-width:200px; font-size:12.5px;}
+.dn-meter .bar{height:7px; border-radius:4px; background:color-mix(in srgb, var(--text) 8%, transparent); overflow:hidden; margin:6px 0;}
+.dn-meter .bar i{display:block; height:100%; background:#D9A441;}
+.dn-meter p{margin:0; color:var(--text-dim); font-size:11.5px; line-height:1.5;}
+.dn-book{display:grid; grid-template-columns:repeat(auto-fill, minmax(32px,1fr)); gap:7px; margin-top:12px;}
+.dn-book .stk.none{font-size:10px;}
+.stk{aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; box-shadow:0 0 0 2.5px #fff, 0 1px 4px rgba(0,0,0,.25);}
+.stk svg{width:52%; height:52%; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+.stk.rare{box-shadow:0 0 0 2.5px #F2D27A, 0 1px 4px rgba(0,0,0,.3);}
+.stk.shiny{box-shadow:0 0 0 2.5px #fff, 0 0 10px 2px rgba(242,210,122,.75);}
+.stk.shiny::after{content:""; position:absolute; inset:0; border-radius:50%; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 45%, transparent 60%); background-size:250% 100%; animation:stkShine 2.6s linear infinite;}
+@keyframes stkShine{from{background-position:120% 0;} to{background-position:-130% 0;}}
+.stk.none{background:color-mix(in srgb, var(--text) 5%, transparent); box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--text) 12%, transparent); color:color-mix(in srgb, var(--text) 25%, transparent); font-weight:800; font-size:13px;}
+.stk b{position:absolute; right:-4px; bottom:-4px; font-size:10px; background:var(--text); color:var(--surface); border-radius:8px; padding:0 5px; line-height:15px;}
+/* the pack reveal */
+#packStage{position:fixed; inset:0; z-index:520; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
+  background:color-mix(in srgb, #000 62%, transparent); backdrop-filter:blur(3px);}
+#packStage .pack{width:170px; height:230px; border-radius:16px; position:relative; cursor:pointer; overflow:visible;}
+#packStage .pk-top, #packStage .pk-body{position:absolute; left:0; right:0; background:linear-gradient(135deg,#F2C14E,#E77F67 45%,#9B6BD3); box-shadow:0 10px 30px rgba(0,0,0,.35);}
+#packStage .pk-top{top:0; height:40px; border-radius:16px 16px 3px 3px; transition:transform .45s cubic-bezier(.3,1.4,.6,1), opacity .45s;}
+#packStage .pk-body{top:42px; bottom:0; border-radius:3px 3px 16px 16px; display:flex; align-items:center; justify-content:center; color:#fff; font:800 15px var(--font-ui); letter-spacing:.08em; text-transform:uppercase; transition:transform .5s ease, opacity .5s;}
+#packStage .pk-top::before, #packStage .pk-body::before{content:""; position:absolute; inset:0; border-radius:inherit; background:repeating-linear-gradient(115deg, rgba(255,255,255,0) 0 16px, rgba(255,255,255,.22) 16px 21px);}
+#packStage .pack.shake{animation:pkShake .38s ease;}
+@keyframes pkShake{0%,100%{transform:rotate(0);} 20%{transform:rotate(-5deg);} 40%{transform:rotate(5deg);} 60%{transform:rotate(-3deg);} 80%{transform:rotate(2deg);}}
+#packStage .pack.torn .pk-top{transform:translate(40px,-120px) rotate(28deg); opacity:0;}
+#packStage .pack.torn .pk-body{transform:translateY(160px) scale(.9); opacity:0;}
+#packStage .cards{display:flex; gap:18px; position:absolute; pointer-events:none;}
+#packStage.out .cards{pointer-events:auto;} #packStage .pack.torn{pointer-events:none;}
+#packStage .pc{width:150px; height:204px; perspective:800px; cursor:pointer; opacity:0; transform:translateY(80px) scale(.6); transition:transform .55s cubic-bezier(.2,1.3,.5,1), opacity .35s;}
+#packStage.out .pc{opacity:1; transform:none;}
+#packStage.out .pc:nth-child(1){transition-delay:.05s;} #packStage.out .pc:nth-child(2){transition-delay:.15s;} #packStage.out .pc:nth-child(3){transition-delay:.25s;}
+#packStage .pc-in{position:relative; width:100%; height:100%; transition:transform .6s cubic-bezier(.3,1.3,.5,1); transform-style:preserve-3d;}
+#packStage .pc.flip .pc-in{transform:rotateY(180deg);}
+#packStage .pc-back, #packStage .pc-face{position:absolute; inset:0; border-radius:14px; backface-visibility:hidden; -webkit-backface-visibility:hidden;}
+#packStage .pc-back{background:linear-gradient(135deg,#3B2B4F,#6A4A7D); box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 0 0 5px rgba(255,255,255,.12);}
+#packStage .pc-back::after{content:"?"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.55); font:800 40px var(--font-serif);}
+#packStage .pc-face{transform:rotateY(180deg); background:var(--surface); color:var(--text); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,.4);}
+#packStage .pc-face .stk{width:84px; height:84px;}
+#packStage .pc-face b{font-size:14px;}
+#packStage .pc-face small{font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim);}
+#packStage .pc-face small.rare{color:#C9952F;} #packStage .pc-face small.shiny{color:#C9952F;}
+#packStage .pc-face .new{position:absolute; top:9px; right:10px; font-size:10px; font-weight:800; color:#fff; background:var(--accent); border-radius:8px; padding:1px 6px;}
+#packStage .pc.shiny .pc-face{box-shadow:0 0 0 3px #F2D27A, 0 0 30px 6px rgba(242,210,122,.6);}
+#packStage .pk-hint{color:#fff; font-size:13px; font-weight:700; opacity:.85; min-height:18px; position:absolute; bottom:12%;}
+#packStage .pk-done{position:absolute; bottom:calc(12% - 50px); padding:9px 18px; border-radius:10px; background:#fff; color:#3B2B29; font-weight:800; font-size:13px; opacity:0; pointer-events:none; transition:opacity .3s;}
+#packStage.all .pk-done{opacity:1; pointer-events:auto;}
+/* the rare "Good job!" */
+#praisePop{position:fixed; left:50%; top:84px; z-index:530; transform:translateX(-50%) scale(.6); opacity:0; pointer-events:none;
+  background:var(--surface); color:var(--text); border-radius:16px; padding:12px 22px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,.12), 0 16px 40px rgba(0,0,0,.2);
+  transition:transform .4s cubic-bezier(.2,1.6,.5,1), opacity .3s;}
+#praisePop.show{transform:translateX(-50%) scale(1); opacity:1;}
+#praisePop b{display:block; font-family:var(--font-serif); font-size:24px; color:var(--accent);}
+#praisePop span{font-size:12.5px; color:var(--text-dim);}
 /* focus mode hides chrome */
 body.focus-mode #topbar, body.focus-mode #rail, body.focus-mode #drawerFab,
 body.focus-mode #drawer, body.focus-mode #modeBar, body.focus-mode #zoomCtl{display:none !important;}
@@ -3550,11 +3669,16 @@ table.tb input.is-formula{color:var(--edit); font-weight:600;}
 #docFind button{padding:5px 10px; border-radius:8px; font-weight:600; color:var(--text);}
 #docFind button:hover{background:color-mix(in srgb, var(--text) 7%, transparent);}
 #noteFullScroll{flex:1; overflow-y:auto; display:flex; justify-content:center; padding:4px 20px 0;}
-#noteFullEd{width:min(var(--doc-w, 760px),100%); font-size:15.5px; line-height:1.75; outline:none; color:var(--text);
-  min-height:calc(100% - 4px); padding:64px 84px 120px; background:var(--surface); border:none; border-radius:14px 14px 0 0;
-  box-shadow:0 2px 24px rgba(0,0,0,.06); height:max-content;}
+/* U-041: a sheet of A4 (210 x 297 mm at 96 px/in = 794 x 1123 px) with a
+   1-inch margin, not a slab across the screen. .cp-rich's flex:1 is what
+   stretched it; the faint line marks where each printed page ends. */
+#noteFullEd{flex:0 1 auto; width:min(var(--doc-w, 794px),100%); font-size:15.5px; line-height:1.75; outline:none; color:var(--text);
+  min-height:1123px; padding:96px 96px 120px; border:none; border-radius:4px; margin-bottom:40px;
+  background:linear-gradient(to bottom, transparent 1122px, color-mix(in srgb, var(--text) 13%, transparent) 1122px, color-mix(in srgb, var(--text) 13%, transparent) 1123px, transparent 1123px) 0 0 / 100% 1123px repeat-y, var(--surface);
+  box-shadow:0 1px 3px rgba(0,0,0,.08), 0 8px 30px rgba(0,0,0,.10); height:max-content;}
+#noteFullScroll{padding-top:10px;}
 #noteFull.wide{--doc-w:1040px;}
-@media (max-width:720px){ #noteFullEd{padding:32px 22px 90px;} .nf-back, #noteFullCount{display:none;} }
+@media (max-width:720px){ #noteFullEd{padding:32px 22px 90px; min-height:calc(100% - 4px); background:var(--surface); margin-bottom:0;} .nf-back, #noteFullCount{display:none;} }
 .doc-page h1{font-family:var(--font-serif); font-size:30px; line-height:1.25; margin:0 0 14px;}
 .doc-page h2{font-family:var(--font-serif); font-size:21px; line-height:1.3; margin:26px 0 8px;}
 .doc-page h3{font-family:var(--font-serif); font-size:17px; margin:20px 0 6px;}
@@ -3584,7 +3708,7 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
   body.doc-printing #noteFullBar, body.doc-printing #nfBarWrap, body.doc-printing #docFind{display:none !important;}
   body.doc-printing #noteFull{position:static; display:block; background:#fff;}
   body.doc-printing #noteFullScroll{overflow:visible; display:block; padding:0;}
-  body.doc-printing #noteFullEd{box-shadow:none; padding:0; width:auto; color:#000; background:#fff;}
+  body.doc-printing #noteFullEd{box-shadow:none; padding:0; width:auto; min-height:0; margin:0; color:#000; background:#fff;}
 }
 /* open as a document: just the mark, no bubble, while you're on the note */
 .note-expand{
@@ -3863,6 +3987,10 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
     <div id="barMoreMenu" role="menu"></div>
   </div>
   <div class="barGroup">
+    <button class="barbtn" id="focusChip" title="Focus session: click for the timer"><i></i><span id="focusChipT">0:00</span></button>
+    <button class="barbtn iconbtn small" id="btnDone" title="Done: what you've done, habits and stickers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M9.3 9.2l1.9 1.9 3.6-3.8 M8.5 14.2 7 21l5-2.6 5 2.6-1.5-6.8"/></svg>
+    </button>
     <button class="barbtn iconbtn small" id="btnBugs" title="Bug list — jot down anything broken">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8V6a3 3 0 0 1 6 0v2 M6 10h12v6a6 6 0 0 1-12 0v-6z M4 10l2.5 1.5 M20 10l-2.5 1.5 M4 17l2.5-1.5 M20 17l-2.5-1.5 M12 10v9"/></svg>
     </button>
@@ -4207,26 +4335,12 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
       <button id="mbFocus" title="Focus mode — hide all UI (Esc or F to exit)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4 M20 9V5a1 1 0 0 0-1-1h-4 M4 15v4a1 1 0 0 0 1 1h4 M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
       </button>
-      <button id="mbTimer" title="Writing sprint timer">
+      <button id="mbTimer" title="Focus timer: a countdown or a stopwatch">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V9 M9 2h6 M18 6l1.5-1.5"/></svg>
       </button>
       <button id="mbExport" title="Share: share this board live, export a copy, or open what someone sent you">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4 M8 8l4-4 4 4 M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
       </button>
-    </div>
-    <div id="sprintPanel">
-      <div id="sprintDisplay">25:00</div>
-      <div id="sprintControls">
-        <button data-min="15">15m</button><button data-min="25">25m</button><button data-min="45">45m</button>
-      </div>
-      <div id="sprintCustom">
-        <input id="sprintMin" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="Custom" aria-label="Custom minutes">
-        <span>min</span><button id="sprintSet">Set</button>
-      </div>
-      <div class="sprintRow">
-        <button id="sprintStart">Start</button>
-        <button id="sprintReset">Reset</button>
-      </div>
     </div>
   </div>
 
@@ -4764,6 +4878,8 @@ ul[data-check] > li[data-done]::before{background:var(--accent); border-color:va
   </div>
 </div>
 
+<div class="overlay" id="doneOverlay"><div id="donePanel" role="dialog" aria-label="Done"></div></div>
+<div id="praisePop" aria-live="polite"><b></b><span></span></div>
 <div class="overlay" id="settingsOverlay">
   <div class="panel settings-panel">
     <div class="settings-nav">
@@ -5039,7 +5155,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b171";
+window.BUILD = "b172";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -5069,7 +5185,7 @@ window.BUILD = "b171";
    - Word-layout and OCR engines download on first use. Offline failures fall
      back to extracted text and always retain the original file.
    - PNG board export stays disabled until it is reliable with stored images.
-   - The sprint timer has no completion sound and still needs visual polish.
+   - The focus timer has no completion sound yet (sounds come later, sparingly).
    - Search filters, import previews, shortcut customization, individual
      board/card theme presets and general widgets are post-1.0 work.
    - Milanote import is post-1.0 work.
@@ -5302,7 +5418,9 @@ function patchCard(id, patch){
      slow save) used to bring back an empty record with no id, and the
      integrity check then stopped all saving (U-014) */
   if (!state.cards[id]){ console.warn("patchCard: card " + id + " no longer exists; update ignored", new Error().stack); return; }
-  state.cards[id] = Object.assign({}, state.cards[id], patch, { updatedAt: now() });
+  const before = state.cards[id];
+  state.cards[id] = Object.assign({}, before, patch, { updatedAt: now() });
+  if (patch.items || "text" in patch || "html" in patch) doneWatch(before, state.cards[id], patch);
 }
 /* An unreferenced card record with no id or type of its own is debris, not
    work: drop it so it can never block saving. Returns how many went. */
@@ -5871,7 +5989,7 @@ function tabMergeWorkspace(base, local, remote){
   if (local.mood || remote.mood) out.mood = tabMergeMap(base.mood, local.mood, remote.mood, byTime);
   if (local.spellLib || remote.spellLib) out.spellLib = tabMergeMap(base.spellLib, local.spellLib, remote.spellLib, byTime);
   for (const k of ["raceLib", "classLib", "bgLib", "featLib"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
-  for (const k of ["calCats", "calEvents"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
+  for (const k of ["calCats", "calEvents", "doneLog", "habits", "stickers"]) if (local[k] || remote[k]) out[k] = tabMergeMap(base[k], local[k], remote[k], byTime);
   if (local.favorites || remote.favorites) out.favorites = syncMergeIdList(base.favorites || [], local.favorites || [], remote.favorites || []);
   {
     const key = x => x?.id ?? JSON.stringify(x);
@@ -5893,7 +6011,7 @@ function tabMergeWorkspace(base, local, remote){
   };
   out.settings = {...(local.settings || {})};
   take(out.settings, base.settings || {}, local.settings || {}, remote.settings || {});
-  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","classLib","bgLib","featLib","calCats","calEvents","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
+  const handled = new Set(["boards","cards","labels","library","mood","spellLib","raceLib","classLib","bgLib","featLib","calCats","calEvents","doneLog","habits","stickers","favorites","bugs","settings","lastModified","saveRevision","_assetStorageVersion"]);
   const pick = o => Object.fromEntries(Object.entries(o).filter(([k]) => !handled.has(k)));
   take(out, pick(base), pick(local), pick(remote));
   out.lastModified = Math.max(local.lastModified || 0, remote.lastModified || 0);
@@ -6320,9 +6438,10 @@ function fitToContent(){
 }
 
 /* ---------------- rendering ---------------- */
-function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); todoWinBoot(); }
+function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); todoWinBoot(); doneBoot(); }
 /* the To-dos window comes back open if it was open */
-let todoWinBooted = false;
+let todoWinBooted = false, doneBooted = false;
+function doneBoot(){ if (doneBooted || !state) return; doneBooted = true; donePullDot(); }
 function todoWinBoot(){ if (todoWinBooted || !state) return; todoWinBooted = true; if (todoWinPrefs().open) openTodoWin(true); }
 
 function boardCardFor(bid){
@@ -9559,6 +9678,7 @@ function addCard(type, wx, wy, extra={}, toUnsorted=false){
   }
   state.cards[id] = c;
   (toUnsorted ? cur().unsortedIds : cur().cardIds).push(id);
+  doneCreated(c);
   markDirty(); renderAll();
   return c;
 }
@@ -9636,28 +9756,16 @@ async function hardDelete(ids, silent){
   /* a favourite nested inside something being deleted is rescued too */
   const nested = rescueFavorites([...acc.cards]);
   for (const id of nested) acc.cards.delete(id);
-  const bn = acc.boards.size;
-  /* Only warn when something would actually be LOST. Deleting empty boards
-     takes nothing with them, so the prompt was pure friction: acc.cards then
-     holds just the board cards being deleted and nothing nested. */
-  const nestedCount = acc.cards.size - ids.length;
-  if (bn > 0 && nestedCount > 0 && !silent){
-    const ok = await askConfirm({
-      title: "Delete permanently?",
-      message: `${bn} board${bn!==1?"s":""} and ${acc.cards.size} card${acc.cards.size!==1?"s":""} will be deleted, including everything inside them.`,
-      detail: "This cannot be undone.",
-      okLabel: "Delete", danger: true });
-    if (!ok) return;
-  }
+  /* U-042: no prompt here. Undo (and the message's Undo button) brings it back. */
   pushUndo();
   for (const bid of acc.boards) delete state.boards[bid];
   for (const cid of acc.cards) delete state.cards[cid];
   detachEverywhere([...acc.cards]);
   selection.clear(); markDirty(); renderAll();
 }
-/* As few "are you sure?" prompts as possible: only for what holds real work
-   (a note or document with writing, a board with things in it, a D&D sheet).
-   Everything else goes at once, with Undo on the message. */
+/* As few "are you sure?" prompts as possible (U-039, U-042): only a really
+   long piece of writing or a board with things in it asks, and only once.
+   Everything else goes at once with Undo on the message. */
 const LONG_WRITING_WORDS = 150;
 function wordCount(t){ return String(t || "").trim().split(/\s+/).filter(Boolean).length; }
 function deleteNeedsAsk(ids){
@@ -9666,7 +9774,6 @@ function deleteNeedsAsk(ids){
     const c = card(id); if (!c) continue;
     /* only a really long piece of writing asks (U-039); short notes go with Undo */
     if ((c.type === "note" || c.type === "doc") && wordCount(c.text) >= LONG_WRITING_WORDS) what.push(c.type === "doc" ? "a long document" : "a long note");
-    else if (c.type === "sheet") what.push("a D&D sheet");
     else if (c.type === "board" && !c.shortcut){ const b = board(c.boardId); if (b && (b.cardIds.length || b.unsortedIds.length)) what.push("a board with things in it"); }
   }
   return what;
@@ -12457,13 +12564,7 @@ $("#cpResetLayout").addEventListener("click", async () => {
 initCpBlockInteractions();
 $("#cpDelete").addEventListener("click", async () => {
   const c = cpData(); if (!c) return;
-  /* An untouched card has nothing to lose, so it deletes without asking. */
-  const hasContent = !!(c.name || "").trim() || !!(c.desc || "").trim() ||
-    (c.props || []).length || (c.relations || []).length || (c.timeline || []).length ||
-    (c.customBlocks || []).length || c.portraitDataUrl || (c.unsortedIds || []).length;
-  if (hasContent && !await askConfirm({ title:"Delete this card?",
-    message:"\u201c" + (c.name || "Unnamed") + "\u201d will be deleted.",
-    okLabel:"Delete", danger:true })) return;
+  /* U-042: no prompt; deleteCards offers Undo. */
   const id = cpId;
   closeCardPage();
   deleteCards([id]);
@@ -15588,7 +15689,14 @@ function startCardDrag(e, cardEl){
     if (overDeleteBin(ev)){
       $("#toolDelete").classList.remove("droptarget");
       clearGuides(); drag = null;
-      hardDelete(draggedIds);
+      (async () => {
+        const what = deleteNeedsAsk(draggedIds);
+        if (what.length && !await askConfirm({ title: draggedIds.length === 1 ? "Delete this?" : "Delete " + draggedIds.length + " things?",
+          message: draggedIds.length === 1 ? "It's " + what[0] + "." : "They include " + [...new Set(what)].join(", ") + ".",
+          detail: "Ctrl+Z brings it back.", okLabel:"Delete", danger:true })) return;
+        await hardDelete(draggedIds);
+        toast(draggedIds.length === 1 ? "Deleted." : draggedIds.length + " deleted.", 5000, {label:"Undo", fn:() => undo()});
+      })();
       return;
     }
     if (overTrash(ev)){
@@ -16035,6 +16143,7 @@ const ESC_LAYERS = [
   {sel:"#barMoreMenu"}, {sel:"#cloudMenu"},
   {sel:"#zoomPanel", panel:true}, {sel:"#searchPanel", panel:true}, {sel:"#favPanel", panel:true}, {sel:"#tagSide", panel:true, close:() => closeTagSide()},
   {sel:"#libraryPanel", panel:true, close:() => openLibrary(false)},
+  {sel:"#doneOverlay", close:() => closeDone()},
 ];
 function escapeTopLayer(e){
   if ($("#askOverlay")?.classList.contains("open") || tourAt >= 0) return false;
@@ -20009,55 +20118,620 @@ function setFocusMode(on){
 $("#mbFocus").addEventListener("click", () => setFocusMode(!document.body.classList.contains("focus-mode")));
 $("#focusExitBtn").addEventListener("click", () => setFocusMode(false));
 
-/* ---- writing sprint timer ---- */
-let sprintDur = 25*60, sprintLeft = 25*60, sprintTimer = null;
 function fmtClock(s){
   const h = Math.floor(s/3600), m = Math.floor(s/60) % 60, ss = s%60;
   return (h ? h + ":" + String(m).padStart(2,"0") : Math.floor(s/60)) + ":" + String(ss).padStart(2,"0");
 }
-function paintSprint(){ $("#sprintDisplay").textContent = fmtClock(sprintLeft); }
-function stopSprint(){ clearInterval(sprintTimer); sprintTimer = null; $("#sprintStart").textContent = "Start"; }
-$("#mbTimer").addEventListener("click", () => {
-  const p = $("#sprintPanel"); p.classList.toggle("open");
-  $("#mbTimer").classList.toggle("on", p.classList.contains("open"));
-});
-document.querySelectorAll("#sprintControls button").forEach(b => {
-  b.addEventListener("click", () => {
-    document.querySelectorAll("#sprintControls button").forEach(x => x.classList.toggle("sel", x === b));
-    sprintDur = Number(b.dataset.min) * 60; sprintLeft = sprintDur;
-    stopSprint(); $("#sprintDisplay").classList.remove("done"); paintSprint();
-  });
-});
+
+/* ---- the Done log ------------------------------------------------------
+   Everything you do, kept automatically: ticks, words, boards, pictures,
+   characters, focus sessions and time in the app. It lives in state.doneLog
+   (synced like the mood log), apart from the cards, so deleting a card never
+   deletes the record of what you did with it. Entries are keyed
+   kind:day:ref and add up within a day. Plain facts, no streaks. */
+const DONE_KINDS = {
+  tick:      {one:"Ticked 1 thing", many:n => "Ticked " + n.toLocaleString() + " things", tint:"#F6D9D4", ic:"M5 12.5l4.5 4.5L19 7.5"},
+  list:      {one:"Finished a list", many:n => "Finished " + n + " lists", tint:"#FBEFD6", ic:"M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"},
+  word:      {one:"Wrote 1 word", many:n => "Wrote " + n.toLocaleString() + " words", tint:"#E1E9F7", ic:"M4 20l4-1L19 8l-3-3L5 16z M14 7l3 3"},
+  board:     {one:"Started a board", many:n => "Started " + n + " boards", tint:"#E3F1E7", ic:"M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"},
+  picture:   {one:"Added a picture", many:n => "Added " + n.toLocaleString() + " pictures", tint:"#EDE7E5", ic:"M4 5h16v14H4z M4 16l5-5 4 4 2-2 5 5 M15 9h.01"},
+  character: {one:"Made a character", many:n => "Made " + n + " characters", tint:"#F3E4F4", ic:"M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"},
+  focus:     {one:"Focused", many:() => "Focused", tint:"#F7EBD3", ic:"M12 13m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0 M12 13V9 M9 2h6"},
+  habit:     {one:"Habit", many:() => "Habits", tint:"#DDF0E3", ic:"M4 12h4l3-7 3 14 3-7h3"},
+};
+let doneQuiet = 0;       /* >0 while bulk work (imports) runs: those aren't "done today" */
+let doneActiveAt = Date.now();
+function doneDay(t = Date.now()){ return calKeyOf(new Date(t)); }
+function doneDevice(){
+  let d = SAFE_STORE.get("cb_device");
+  if (!d){ d = uid("d"); SAFE_STORE.set("cb_device", d); }
+  return d;
+}
+function doneCardName(c){
+  if (!c) return "";
+  const t = c.title || c.name || c.caption || c.sheet?.name || c.fileName || (c.text ? String(c.text).replace(/<[^>]+>/g, " ").trim().split(/\n/)[0] : "");
+  return String(t || "").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+function doneEntryAdd(kind, n, ref, info = {}){
+  if (doneQuiet || !n) return null;
+  const day = doneDay(), id = kind + ":" + day + ":" + (ref || "");
+  const log = state.doneLog = Object.assign({}, state.doneLog || {});
+  const prev = log[id];
+  const rec = Object.assign({id, day, kind, n:0, ref:ref || null, at:now()}, prev, info, {updatedAt:now()});
+  if (!prev && ref && donePrivateEntry(rec, state, workspacePrivacy())) rec.priv = true;
+  rec.n = Math.max(0, (prev?.n || 0) + n);
+  log[id] = rec;
+  doneChanged(kind);
+  return rec;
+}
+function doneSet(id, rec){
+  const log = state.doneLog = Object.assign({}, state.doneLog || {});
+  if (rec) log[id] = Object.assign({}, rec, {updatedAt:now()}); else delete log[id];
+  doneChanged(rec?.kind);
+}
+function doneChanged(kind){
+  markDirty();
+  if ($("#doneOverlay")?.classList.contains("open")) scheduleDoneRender();
+  donePullDot();
+  if (kind) donePraiseCheck();
+}
+function donePlainWords(html){ return wordCount(String(html || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ")); }
+function doneTicksIn(html){ return (String(html || "").match(/<li[^>]*\sdata-done/g) || []).length; }
+/* Called by patchCard with the card before and after. Only edits a person
+   makes come through here; sync and undo swap whole states instead. */
+function doneWatch(before, after, patch){
+  if (doneQuiet || !before || !after) return;
+  try {
+    if (patch.items && after.type === "todo" && !after.linkTo && (after.listMode || "check") === "check"){
+      const was = new Map((before.items || []).map(x => [x.id, !!x.done]));
+      let d = 0;
+      for (const it of after.items || []) if (was.has(it.id) && was.get(it.id) !== !!it.done) d += it.done ? 1 : -1;
+      const where = {name:doneCardName(after) || "List"};
+      if (d) doneEntryAdd("tick", d, after.id, where);
+      const all = x => (x.items || []).length >= 2 && x.items.every(i => i.done);
+      if (all(after) && !all(before)) doneEntryAdd("list", 1, after.id, where);
+    }
+    const field = after.type === "doc" ? "html" : (after.type === "note" || after.type === "heading") ? "text" : null;
+    if (field && field in patch && patch[field] !== before[field]){
+      const id = "word:" + doneDay() + ":" + after.id, prev = state.doneLog?.[id];
+      const nowWords = donePlainWords(after[field]);
+      const base = prev ? prev.base : donePlainWords(before[field]);
+      const n = Math.max(0, nowWords - base);
+      if (n !== (prev?.n || 0)){
+        const rec = {...(prev || {id, day:doneDay(), kind:"word", ref:after.id, at:now()}), base, n, name:doneCardName(after) || (after.type === "doc" ? "Document" : "Note")};
+        if (!prev && donePrivateEntry(rec, state, workspacePrivacy())) rec.priv = true;
+        doneSet(id, rec);
+        if (n > (prev?.n || 0)) donePraiseCheck();
+      }
+      const t = doneTicksIn(after[field]) - doneTicksIn(before[field]);
+      if (t) doneEntryAdd("tick", t, after.id, {name:doneCardName(after) || "Checklist"});
+    }
+  } catch(e){ console.warn("Done log:", e); }
+}
+/* addCard calls this for things worth remembering */
+function doneCreated(c){
+  if (doneQuiet || !c) return;
+  if (c.type === "board" && !c.shortcut) doneEntryAdd("board", 1, c.id, {name:board(c.boardId)?.title || c.title || "Board"});
+  else if (c.type === "sheet") doneEntryAdd("character", 1, c.id, {name:c.sheet?.name || "Character"});
+  else if (c.type === "image"){ const b = currentBoardId; doneEntryAdd("picture", 1, b, {name:board(b)?.title || "a board", board:true}); }
+}
+
+/* ---- time spent in the app and focus sessions ---- */
+let doneAppPending = 0;
+function doneNoteActivity(){ doneActiveAt = Date.now(); }
+for (const ev of ["pointerdown", "keydown", "wheel", "touchstart"]) document.addEventListener(ev, doneNoteActivity, {capture:true, passive:true});
+document.addEventListener("pointermove", () => { if (Date.now() - doneActiveAt > 20000) doneActiveAt = Date.now(); }, {capture:true, passive:true});
+function doneAppFlush(){
+  if (doneAppPending < 1) return;
+  const secs = doneAppPending; doneAppPending = 0;
+  const q = doneQuiet; doneQuiet = 0;
+  doneEntryAdd("app", secs, doneDevice());
+  doneQuiet = q;
+}
+setInterval(() => {
+  /* a minute counts when this tab is showing and you did something in the last 5 */
+  if (!document.hidden && Date.now() - doneActiveAt < 5 * 60000) doneAppPending += 60;
+  if (doneAppPending >= 600) doneAppFlush();
+  focusTick();
+}, 60000);
+document.addEventListener("visibilitychange", () => { if (document.hidden) doneAppFlush(); });
+
+const FOCUS_IDLE_MS = 2 * 3600 * 1000;
+let focusUI = null;      /* the open panel's repaint, if any */
+function focusGet(){ try { return JSON.parse(SAFE_STORE.get("cb_focus") || "null"); } catch(e){ return null; } }
+function focusPut(f){ if (f) SAFE_STORE.set("cb_focus", JSON.stringify(f)); else SAFE_STORE.del("cb_focus"); }
+function focusElapsed(f, at = Date.now()){ if (!f?.start) return 0; return Math.max(0, ((f.pauseAt || at) - f.start - (f.paused || 0)) / 1000); }
+function focusStart(mode, dur){
+  focusPut({id:uid("f"), mode, dur:mode === "down" ? dur : 0, start:Date.now(), paused:0, pauseAt:null, lastAct:Date.now()});
+  focusPaint();
+}
+function focusPause(){
+  const f = focusGet(); if (!f) return;
+  if (f.pauseAt){ f.paused += Date.now() - f.pauseAt; f.pauseAt = null; } else f.pauseAt = Date.now();
+  focusPut(f); focusPaint();
+}
+/* end a session and keep it. auto: it stopped itself after 2 idle hours */
+function focusStop(why){
+  const f = focusGet(); if (!f) return;
+  focusPut(null);
+  let end = Date.now();
+  if (why === "idle") end = Math.min(end, f.lastAct + FOCUS_IDLE_MS);
+  let secs = Math.round(focusElapsed(f, end));
+  if (f.mode === "down") secs = Math.min(secs, f.dur);
+  if (secs >= 60){
+    const info = {name:f.mode === "down" ? "Timer" : "Stopwatch"};
+    if (why === "idle"){ info.auto = true; info.activeSecs = Math.max(60, Math.round(focusElapsed(f, f.lastAct))); }
+    const q = doneQuiet; doneQuiet = 0;
+    doneEntryAdd("focus", secs, f.id, info);
+    doneQuiet = q;
+    toast(why === "idle" ? "Your focus session ended itself after 2 quiet hours: " + doneDur(secs) + " kept. Trim it in Done if you'd stepped away."
+      : why === "done" ? "Timer done: " + doneDur(secs) + " of focus. It's in your Done log." : "Focused for " + doneDur(secs) + ". It's in your Done log.", 6000);
+  } else if (why !== "idle") toast("Under a minute, so it wasn't kept.");
+  focusPaint();
+}
+function focusTick(){
+  const f = focusGet(); if (!f) return;
+  if (!f.pauseAt && Date.now() - doneActiveAt < 60000 && doneActiveAt > f.lastAct){ f.lastAct = doneActiveAt; focusPut(f); }
+  if (f.mode === "down" && !f.pauseAt && focusElapsed(f) >= f.dur){ focusStop("done"); return; }
+  if (Date.now() - Math.max(f.lastAct, f.pauseAt || 0) >= FOCUS_IDLE_MS) focusStop("idle");
+}
+function doneDur(secs){
+  const h = Math.floor(secs / 3600), m = Math.round((secs % 3600) / 60);
+  return h ? h + "h" + (m ? " " + m + "m" : "") : Math.max(1, m) + " min";
+}
+let focusTimer = null;
+function focusPaint(){
+  const f = focusGet(), chip = $("#focusChip");
+  if (chip){
+    chip.classList.toggle("on", !!f); chip.classList.toggle("paused", !!f?.pauseAt);
+    if (f){
+      const e = focusElapsed(f), show = f.mode === "down" ? Math.max(0, f.dur - e) : e;
+      $("#focusChipT").textContent = fmtClock(Math.floor(show));
+      chip.style.setProperty("--fz-p", (f.mode === "down" ? Math.min(100, e / f.dur * 100) : (e % 3600) / 36) + "%");
+    }
+  }
+  $("#mbTimer")?.classList.toggle("on", !!f);
+  focusUI?.();
+  clearInterval(focusTimer); focusTimer = null;
+  if (f && !f.pauseAt) focusTimer = setInterval(() => {
+    const g = focusGet();
+    if (g?.mode === "down" && !g.pauseAt && focusElapsed(g) >= g.dur){ focusStop("done"); return; }
+    focusPaintLite();
+  }, 1000);
+}
+function focusPaintLite(){
+  const f = focusGet(); if (!f){ focusPaint(); return; }
+  const e = focusElapsed(f), show = f.mode === "down" ? Math.max(0, f.dur - e) : e;
+  $("#focusChipT").textContent = fmtClock(Math.floor(show));
+  $("#focusChip").style.setProperty("--fz-p", (f.mode === "down" ? Math.min(100, e / f.dur * 100) : (e % 3600) / 36) + "%");
+  focusUI?.();
+}
+let focusMode = "down", focusDur = 25 * 60;
+try { const p = JSON.parse(localStorage.getItem("cb_focusPrefs") || "{}"); if (p.mode) focusMode = p.mode; if (p.dur) focusDur = p.dur; } catch(e){}
+function focusPrefs(){ SAFE_STORE.set("cb_focusPrefs", JSON.stringify({mode:focusMode, dur:focusDur})); }
 /* any length from 1 minute to 10 hours */
-function setSprintMinutes(min){
+function setFocusMinutes(min){
   min = Math.round(Number(min));
   if (!Number.isFinite(min) || min < 1 || min > 600){ toast("Pick between 1 and 600 minutes."); return false; }
-  document.querySelectorAll("#sprintControls button").forEach(x => x.classList.toggle("sel", Number(x.dataset.min) === min));
-  sprintDur = min * 60; sprintLeft = sprintDur;
-  stopSprint(); $("#sprintDisplay").classList.remove("done"); paintSprint();
-  return true;
+  focusDur = min * 60; focusPrefs(); focusUI?.(); return true;
 }
-$("#sprintSet").addEventListener("click", () => { if (setSprintMinutes($("#sprintMin").value)) $("#sprintMin").blur(); });
-$("#sprintMin").addEventListener("keydown", e => {
-  e.stopPropagation();
-  if (e.key === "Enter" && setSprintMinutes(e.target.value)) e.target.blur();
-});
-$("#sprintStart").addEventListener("click", () => {
-  if (sprintTimer){ stopSprint(); return; }
-  $("#sprintStart").textContent = "Pause";
-  $("#sprintDisplay").classList.remove("done");
-  sprintTimer = setInterval(() => {
-    sprintLeft--;
-    paintSprint();
-    if (sprintLeft <= 0){
-      stopSprint(); $("#sprintDisplay").classList.add("done");
-      $("#sprintDisplay").textContent = "Done!";
-      toast("Sprint complete. Nice work.");
-      try { new AudioContext(); } catch(e){}
+function openFocusPanel(anchor){
+  openMiniPop(anchor, (pop, close) => {
+    pop.classList.add("fz-pop"); pop.style.display = "flex"; pop.style.flexDirection = "column"; pop.style.gap = "8px";
+    const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+    const seg = mk("div", "mp-seg"), bDown = mk("button", "", "Timer"), bUp = mk("button", "", "Stopwatch");
+    seg.append(bDown, bUp);
+    const time = mk("div", "fz-time");
+    const chips = mk("div", "mp-chips");
+    const custom = mk("div", "fz-row"), min = mk("input", "fz-min"); min.type = "number"; min.min = 1; min.max = 600; min.placeholder = "Custom"; min.id = "focusMin";
+    const set = mk("button", "mp-chip", "Set"); custom.append(min, mk("span", "mp-dim", "min"), set);
+    const row = mk("div", "fz-row"), go = mk("button", "fz-btn go"), stop = mk("button", "fz-btn", "Stop");
+    go.id = "focusGo"; stop.id = "focusStop";
+    row.append(go, stop);
+    const note = mk("div", "fz-note", "Counts toward your Done log. It stops by itself after 2 hours with nothing happening in CORKBORK.");
+    for (const m of [15, 25, 45, 60]){
+      const b = mk("button", "mp-chip", m + "m"); b.dataset.min = m;
+      b.addEventListener("click", () => { focusDur = m * 60; focusPrefs(); paint(); });
+      chips.appendChild(b);
     }
-  }, 1000);
+    bDown.addEventListener("click", () => { if (!focusGet()){ focusMode = "down"; focusPrefs(); paint(); } });
+    bUp.addEventListener("click", () => { if (!focusGet()){ focusMode = "up"; focusPrefs(); paint(); } });
+    set.addEventListener("click", () => { if (setFocusMinutes(min.value)) min.value = ""; });
+    min.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && setFocusMinutes(min.value)) min.value = ""; });
+    go.addEventListener("click", () => { const f = focusGet(); if (f) focusPause(); else focusStart(focusMode, focusDur); });
+    stop.addEventListener("click", () => { if (focusGet()) focusStop("stop"); });
+    pop.append(seg, time, chips, custom, row, note);
+    function paint(){
+      const f = focusGet(), mode = f ? f.mode : focusMode;
+      bDown.classList.toggle("on", mode === "down"); bUp.classList.toggle("on", mode === "up");
+      seg.style.opacity = f ? ".55" : "";
+      const e = f ? focusElapsed(f) : 0;
+      time.textContent = fmtClock(Math.floor(mode === "down" ? Math.max(0, (f ? f.dur : focusDur) - e) : e));
+      time.classList.toggle("idle", !f || !!f.pauseAt);
+      chips.style.display = custom.style.display = (!f && mode === "down") ? "" : "none";
+      for (const b of chips.children) b.classList.toggle("on", Number(b.dataset.min) * 60 === focusDur);
+      go.textContent = !f ? "Start" : f.pauseAt ? "Resume" : "Pause";
+      stop.style.display = f ? "" : "none";
+    }
+    focusUI = paint; paint();
+    return go;
+  }, {width:250, onClose:() => { focusUI = null; }});
+}
+$("#mbTimer").addEventListener("click", e => openFocusPanel(e.currentTarget));
+$("#focusChip").addEventListener("click", e => openFocusPanel(e.currentTarget));
+
+/* ---- stickers ----------------------------------------------------------
+   Placeholder art: 25 line icons in three colourways. 50 common, 18 rare,
+   7 shiny. You earn a pack of three for every 10 things ticked, 500 words,
+   hour of focus or finished list, plus one to start. Your own drawings can
+   replace these later; the ids stay. */
+const STK_ICONS = [
+  ["Star", "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"],
+  ["Heart", "M12 20c-5-3-8-6.5-8-10.5A4 4 0 0 1 12 7a4 4 0 0 1 8 2.5c0 4-3 7.5-8 10.5z"],
+  ["Moon", "M20 13.5A8 8 0 1 1 10.5 4 6.3 6.3 0 0 0 20 13.5z"],
+  ["Sun", "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 2v2.5 M12 19.5V22 M2 12h2.5 M19.5 12H22 M4.9 4.9l1.8 1.8 M17.3 17.3l1.8 1.8 M4.9 19.1l1.8-1.8 M17.3 6.7l1.8-1.8"],
+  ["Raindrop", "M12 3c3 4.2 6 7.3 6 11a6 6 0 0 1-12 0c0-3.7 3-6.8 6-11z"],
+  ["Leaf", "M4 20c7 0 15-4 16-16C9 5 4 11 4 20z M4 20l8-8"],
+  ["Bloom", "M12 10c-1.5-3-1.5-6 0-7 1.5 1 1.5 4 0 7z M14 12c3-1.5 6-1.5 7 0-1 1.5-4 1.5-7 0z M12 14c1.5 3 1.5 6 0 7-1.5-1-1.5-4 0-7z M10 12c-3 1.5-6 1.5-7 0 1-1.5 4-1.5 7 0z M12 10.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8z"],
+  ["Cloud", "M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"],
+  ["Bolt", "M13 2L5 13.5h6L10 22l8-11.5h-6z"],
+  ["Tune", "M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"],
+  ["Pencil", "M4 20l4-1L19 8l-3-3L5 16z M14 7l3 3"],
+  ["Book", "M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z M13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z"],
+  ["Teacup", "M5 8h11v6a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z M16 10h1.5a2.5 2.5 0 0 1 0 5H16 M8 3v2 M11 3v2"],
+  ["Key", "M7.5 11a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z M10.7 12.3L20 3 M16 7l2.5 2.5 M18 5l2 2"],
+  ["Bell", "M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0"],
+  ["Gem", "M6 4h12l3 5-9 11L3 9z M3 9h18 M9.5 4L12 20 M14.5 4L12 20"],
+  ["Mushroom", "M4 12a8 7 0 0 1 16 0z M9 12v6a3 3 0 0 0 6 0v-6 M9 8.5h.01 M14.5 7h.01"],
+  ["Fish", "M3 12c3-4 8-5 12-3l5-3v12l-5-3c-4 2-9 1-12-3z M8 11h.01"],
+  ["Planet", "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z M4.5 15.5C2.5 18 5 18.5 10 16.5s10-6 9.5-8.5c-.3-1.3-2-1.3-4.3-.6"],
+  ["Crown", "M3 8l4 4 5-7 5 7 4-4-2 11H5z"],
+  ["Feather", "M20 4c-8 0-14 6-14 14v2 M6 18c4 0 9-2 11-6 M10 14h5 M20 4c0 6-3 10-8 12"],
+  ["Shell", "M12 4c-5 0-8 4-8 9 0 3 2 5 8 7 6-2 8-4 8-7 0-5-3-9-8-9z M12 4v16 M8 6l2 13 M16 6l-2 13"],
+  ["Candle", "M9 10h6v10H9z M12 10V7 M12 3c1 1.3 1.5 2.2 0 4-1.5-1.8-1-2.7 0-4z"],
+  ["Twinkle", "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"],
+  ["Cat", "M5 9l1-5 4 3h4l4-3 1 5v5a7 7 0 0 1-14 0z M9.5 12h.01 M14.5 12h.01 M11 15h2"],
+];
+const STK_SOFT = ["#D99A92", "#9FB9A0", "#A7B5D6", "#D6B783", "#B9A3CF", "#8FC0BC", "#D7A3B8", "#A9B98E"];
+const STK_BRIGHT = ["#E25549", "#3E9E6E", "#2E8BE6", "#E3A43A", "#9A55C9", "#1FA295", "#D84A9A", "#EE7A2E"];
+const STK_NIGHT = ["#2B2D5C", "#3B2347", "#1F3A3A", "#4A2230", "#25324F", "#3C3A1E"];
+const STICKERS = [];
+STK_ICONS.forEach(([name, d], i) => {
+  STICKERS.push({id:"s" + String(i).padStart(2, "0"), name:"Soft " + name.toLowerCase(), icon:d, tier:"common", bg:STK_SOFT[i % STK_SOFT.length]});
+  STICKERS.push({id:"s" + String(25 + i).padStart(2, "0"), name:"Bright " + name.toLowerCase(), icon:d, tier:"common", bg:STK_BRIGHT[i % STK_BRIGHT.length]});
+  const shiny = i < 7;
+  STICKERS.push({id:"s" + String(50 + i).padStart(2, "0"), name:(shiny ? "Golden " : "Night ") + name.toLowerCase(), icon:d, tier:shiny ? "shiny" : "rare",
+    bg:shiny ? "linear-gradient(135deg,#F2C14E,#E77F67 50%,#9B6BD3)" : STK_NIGHT[i % STK_NIGHT.length]});
 });
-$("#sprintReset").addEventListener("click", () => { stopSprint(); sprintLeft = sprintDur; $("#sprintDisplay").classList.remove("done"); paintSprint(); });
+STICKERS.sort((a, b) => a.id < b.id ? -1 : 1);
+const STK_BY_ID = Object.fromEntries(STICKERS.map(s => [s.id, s]));
+function stickerEl(s, count){
+  const d = document.createElement("div");
+  if (!s){ d.className = "stk none"; d.textContent = "?"; return d; }
+  d.className = "stk " + s.tier; d.style.background = s.bg; d.title = s.name + (s.tier !== "common" ? " (" + s.tier + ")" : "");
+  d.innerHTML = '<svg viewBox="0 0 24 24"><path d="' + s.icon + '"/></svg>';
+  if (count > 1){ const b = document.createElement("b"); b.textContent = "×" + count; d.appendChild(b); }
+  return d;
+}
+function doneTotals(fromDay, toDay){
+  const t = {tick:0, word:0, list:0, board:0, picture:0, character:0, focus:0, app:0, habit:0};
+  for (const e of Object.values(state.doneLog || {})){
+    if (!e || !(e.kind in t)) continue;
+    if (fromDay && e.day < fromDay) continue;
+    if (toDay && e.day > toDay) continue;
+    t[e.kind] += e.n || 0;
+  }
+  for (const h of Object.values(state.habits || {}))
+    for (const k of Object.keys(h.days || {})) if ((!fromDay || k >= fromDay) && (!toDay || k <= toDay)) t.habit++;
+  return t;
+}
+const PULL_RULES = {tick:10, word:500, focus:3600, list:1};
+function pullsEarned(){
+  const t = doneTotals();
+  return 1 + Math.floor(t.tick / PULL_RULES.tick) + Math.floor(t.word / PULL_RULES.word) + Math.floor(t.focus / PULL_RULES.focus) + t.list;
+}
+function pullsOpened(){ return Object.values(state.stickers || {}).filter(x => x?.id?.startsWith("_opened:")).reduce((a, x) => a + (x.n || 0), 0); }
+function pullsLeft(){ return Math.max(0, pullsEarned() - pullsOpened()); }
+/* how far along the next pack is, as the closest of the four ways to earn one */
+function pullProgress(){
+  const t = doneTotals();
+  const parts = [["tick", t.tick, PULL_RULES.tick, n => n + " more thing" + (n === 1 ? "" : "s") + " ticked"],
+    ["word", t.word, PULL_RULES.word, n => n + " more words"],
+    ["focus", t.focus, PULL_RULES.focus, n => Math.ceil(n / 60) + " more minutes of focus"]];
+  let best = null;
+  for (const [, have, per, say] of parts){ const left = per - (have % per); const frac = 1 - left / per; if (!best || frac > best.frac) best = {frac, say:say(left)}; }
+  return best;
+}
+function stickerOwned(){ const o = {}; for (const [k, v] of Object.entries(state.stickers || {})) if (!k.startsWith("_") && v?.n) o[k] = v.n; return o; }
+function rollSticker(){
+  const r = Math.random(), tier = r < 0.04 ? "shiny" : r < 0.22 ? "rare" : "common";
+  const pool = STICKERS.filter(s => s.tier === tier);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function openPack(){
+  if (pullsLeft() < 1) return null;
+  const got = [rollSticker(), rollSticker(), rollSticker()];
+  const owned = stickerOwned();
+  const st = state.stickers = Object.assign({}, state.stickers || {});
+  const oid = "_opened:" + doneDevice();
+  st[oid] = {id:oid, n:(st[oid]?.n || 0) + 1, updatedAt:now()};
+  const fresh = new Set();
+  for (const s of got){
+    if (!owned[s.id] && !fresh.has(s.id)) fresh.add(s.id);
+    st[s.id] = {id:s.id, n:(st[s.id]?.n || 0) + 1, firstAt:st[s.id]?.firstAt || now(), updatedAt:now()};
+  }
+  markDirty(); donePullDot();
+  return got.map(s => ({s, isNew:fresh.has(s.id) && (fresh.delete(s.id), true)}));
+}
+function showPackReveal(){
+  const got = openPack(); if (!got) return;
+  const stage = document.createElement("div"); stage.id = "packStage";
+  stage.innerHTML = '<div class="pack"><div class="pk-top"></div><div class="pk-body">Sticker pack</div></div><div class="cards"></div><div class="pk-hint">Click the pack to open it</div><button class="pk-done">Into the book</button>';
+  document.body.appendChild(stage);
+  const pack = stage.querySelector(".pack"), cards = stage.querySelector(".cards"), hint = stage.querySelector(".pk-hint");
+  for (const {s, isNew} of got){
+    const pc = document.createElement("div"); pc.className = "pc " + s.tier;
+    pc.innerHTML = '<div class="pc-in"><div class="pc-back"></div><div class="pc-face"></div></div>';
+    const face = pc.querySelector(".pc-face");
+    face.appendChild(stickerEl(s));
+    const nm = document.createElement("b"); nm.textContent = s.name; face.appendChild(nm);
+    const tl = document.createElement("small"); tl.className = s.tier; tl.textContent = s.tier === "shiny" ? "✦ Shiny" : s.tier === "rare" ? "Rare" : "Common"; face.appendChild(tl);
+    if (isNew){ const n = document.createElement("span"); n.className = "new"; n.textContent = "New"; face.appendChild(n); }
+    pc.addEventListener("click", e => { e.stopPropagation(); if (!stage.classList.contains("out")) return; pc.classList.add("flip"); check(); });
+    cards.appendChild(pc);
+  }
+  let opened = false;
+  const open = () => {
+    if (opened) return; opened = true;
+    pack.classList.add("shake");
+    setTimeout(() => { pack.classList.add("torn"); setTimeout(() => { stage.classList.add("out"); hint.textContent = "Click each card to flip it"; }, 260); }, 380);
+  };
+  const check = () => { if ([...cards.children].every(x => x.classList.contains("flip"))){ stage.classList.add("all"); hint.textContent = ""; } };
+  const done = () => { stage.remove(); document.removeEventListener("keydown", onKey, true); renderDonePage(); };
+  const onKey = e => {
+    if (e.key === "Escape"){ e.stopPropagation(); e.preventDefault(); done(); }
+    else if (e.key === " " || e.key === "Enter"){ e.stopPropagation(); e.preventDefault(); if (!opened) open(); else if (!stage.classList.contains("all")){ const n = [...cards.children].find(x => !x.classList.contains("flip")); n?.classList.add("flip"); check(); } else done(); }
+  };
+  document.addEventListener("keydown", onKey, true);
+  pack.addEventListener("click", open);
+  stage.querySelector(".pk-done").addEventListener("click", done);
+  stage.addEventListener("pointerdown", e => { if (e.target === stage && stage.classList.contains("all")) done(); });
+  return stage;
+}
+function donePullDot(){ if (state) $("#btnDone")?.classList.toggle("has-pull", pullsLeft() > 0); }
+
+/* ---- the rare "Good job!" ---- */
+const PRAISE = [["Good job!", "You've done a lot today."], ["Waow!", "That's a big day."], ["Look at you go.", "Today counts."], ["Nice!", "That all adds up."]];
+function donePraiseCheck(){
+  const today = doneDay(), t = doneTotals(today, today);
+  const big = t.tick >= 20 || t.word >= 1500 || t.focus >= 3 * 3600 || t.list >= 3;
+  if (!big || SAFE_STORE.get("cb_praised") === today) return;
+  SAFE_STORE.set("cb_praised", today);
+  const [h, sub] = PRAISE[Math.floor(Math.random() * PRAISE.length)];
+  const p = $("#praisePop"); if (!p) return;
+  p.querySelector("b").textContent = h; p.querySelector("span").textContent = sub;
+  p.classList.add("show"); clearTimeout(p._t); p._t = setTimeout(() => p.classList.remove("show"), 2600);
+}
+
+/* ---- habits: tick a day, see every day you did it ---- */
+const HABIT_COLORS = ["#5C8FD6", "#C9786F", "#3E9E6E", "#D9A441", "#9A55C9", "#1FA295", "#D84A9A", "#EE7A2E"];
+function habitList(){ return Object.values(state.habits || {}).filter(h => h && !h.gone).sort((a, b) => (a.order || 0) - (b.order || 0)); }
+function habitPut(h){ state.habits = Object.assign({}, state.habits || {}, {[h.id]:Object.assign({}, h, {updatedAt:now()})}); markDirty(); }
+function habitAdd(name){
+  name = String(name || "").trim().slice(0, 60); if (!name) return null;
+  const list = habitList();
+  const h = {id:uid("h"), name, color:HABIT_COLORS[list.length % HABIT_COLORS.length], days:{}, order:list.length, createdAt:now()};
+  habitPut(h); return h;
+}
+function habitToggle(id, day){
+  const h = state.habits?.[id]; if (!h) return;
+  const days = Object.assign({}, h.days || {});
+  if (days[day]) delete days[day]; else days[day] = 1;
+  habitPut({...h, days});
+  if (days[day]) donePraiseCheck();
+}
+
+/* ---- the Done page ---- */
+let doneRange = "week", doneSelDay = null, doneMonth = null, doneRenderT = 0;
+function scheduleDoneRender(){ clearTimeout(doneRenderT); doneRenderT = setTimeout(renderDonePage, 120); }
+function doneRangeStart(r){
+  const d = calDay0(new Date());
+  if (r === "today") return doneDay(d);
+  if (r === "week"){ const w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); return doneDay(d); }
+  if (r === "month"){ d.setDate(1); return doneDay(d); }
+  return null;
+}
+function doneDayScore(day, byDay){
+  const t = byDay[day]; if (!t) return 0;
+  return t.tick + t.list * 3 + t.word / 100 + t.focus / 1200 + t.board * 2 + t.character * 2 + t.picture / 5 + t.habit;
+}
+function doneByDay(){
+  const m = {};
+  const get = d => m[d] || (m[d] = {tick:0, word:0, list:0, board:0, picture:0, character:0, focus:0, app:0, habit:0, rows:[]});
+  for (const e of Object.values(state.doneLog || {})){ if (!e?.day || !e.n) continue; const t = get(e.day); if (e.kind in t) t[e.kind] += e.n; t.rows.push(e); }
+  for (const h of habitList()) for (const k of Object.keys(h.days || {})){ const t = get(k); t.habit++; t.rows.push({kind:"habit", day:k, n:1, name:h.name}); }
+  return m;
+}
+function openDone(){ doneSelDay = null; doneMonth = null; renderDonePage(); openOverlay("#doneOverlay"); doneAppFlush(); }
+function closeDone(){ closeOverlay("#doneOverlay"); }
+function doneSentence(t, range){
+  const bits = [];
+  if (t.tick) bits.push(["ticked", t.tick.toLocaleString() + (t.tick === 1 ? " thing" : " things")]);
+  if (t.word) bits.push(["wrote", t.word.toLocaleString() + " words"]);
+  if (t.picture) bits.push(["added", t.picture.toLocaleString() + (t.picture === 1 ? " picture" : " pictures")]);
+  if (t.character) bits.push(["made", t.character === 1 ? "1 new character" : t.character + " new characters"]);
+  if (t.board) bits.push(["started", t.board === 1 ? "a new board" : t.board + " new boards"]);
+  if (t.focus >= 60) bits.push(["focused for", doneDur(t.focus)]);
+  const when = {today:"Today", week:"This week", month:"This month", all:"So far"}[range];
+  if (!bits.length) return when + " is a blank page so far. Anything you tick, write or add shows up here.";
+  const parts = bits.map(([v, n]) => v + " <b>" + n + "</b>");
+  const list = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
+  return when + " you " + list + ".";
+}
+function renderDonePage(){
+  const panel = $("#donePanel"); if (!panel) return;
+  const keep = panel.scrollTop;
+  const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  panel.innerHTML = "";
+  const top = mk("div", "dn-top"); top.appendChild(mk("h2", "", "Done"));
+  const seg = mk("div", "mp-seg");
+  for (const [k, l] of [["today", "Today"], ["week", "This week"], ["month", "Month"], ["all", "All time"]]){
+    const b = mk("button", doneRange === k ? "on" : "", l); b.dataset.range = k;
+    b.addEventListener("click", () => { doneRange = k; renderDonePage(); }); seg.appendChild(b);
+  }
+  const x = mk("button", "dn-x", "✕"); x.title = "Close (Esc)"; x.addEventListener("click", closeDone);
+  top.append(seg, x); panel.appendChild(top);
+  const from = doneRangeStart(doneRange), t = doneTotals(from), all = doneRange === "all" ? t : doneTotals();
+  const say = mk("div", "dn-say"); say.innerHTML = doneSentence(t, doneRange); panel.appendChild(say);
+  const nums = mk("div", "dn-nums");
+  const appHrs = all.app / 3600;
+  for (const [n, l] of [[t.tick.toLocaleString(), "things ticked"], [t.word.toLocaleString(), "words written"], [t.picture.toLocaleString(), "pictures added"],
+    [t.character, t.character === 1 ? "character made" : "characters made"], [t.focus >= 60 ? doneDur(t.focus) : "0", "in focus sessions"],
+    [appHrs >= 10 ? Math.round(appHrs).toLocaleString() + "h" : appHrs >= 1 ? appHrs.toFixed(1) + "h" : Math.round(all.app / 60) + "m", "in CORKBORK, all time"]]){
+    const d = mk("div", "dn-num"); d.append(mk("b", "", n), mk("span", "", l)); nums.appendChild(d);
+  }
+  panel.appendChild(nums);
+  const byDay = doneByDay();
+  /* calendar + habits */
+  const two = mk("div", "dn-two"), left = mk("div"), right = mk("div");
+  const base = doneMonth ? new Date(doneMonth) : new Date(); base.setDate(1);
+  const calHead = mk("div", "dn-sec"); calHead.appendChild(mk("span", "", base.toLocaleDateString([], {month:"long", year:"numeric"})));
+  const nav = mk("em");
+  const prev = mk("button", "", "‹"), next = mk("button", "", "›"); prev.title = "Earlier month"; next.title = "Later month";
+  prev.addEventListener("click", () => { const d = new Date(base); d.setMonth(d.getMonth() - 1); doneMonth = d.getTime(); renderDonePage(); });
+  next.addEventListener("click", () => { const d = new Date(base); d.setMonth(d.getMonth() + 1); doneMonth = d.getTime(); renderDonePage(); });
+  nav.append(prev, next); calHead.appendChild(nav); left.appendChild(calHead);
+  const cal = mk("div", "dn-cal");
+  for (const w of ["M", "T", "W", "T", "F", "S", "S"]) cal.appendChild(mk("div", "dn-wd", w));
+  const lead = (base.getDay() + 6) % 7; for (let i = 0; i < lead; i++) cal.appendChild(mk("div", "dn-d blank"));
+  const today = doneDay(), dim = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  for (let i = 1; i <= dim; i++){
+    const key = doneDay(new Date(base.getFullYear(), base.getMonth(), i)), sc = doneDayScore(key, byDay);
+    const lv = key > today ? -1 : sc <= 0 ? 0 : sc < 4 ? 1 : sc < 10 ? 2 : sc < 20 ? 3 : 4;
+    const b = mk("button", "dn-d" + (lv > 0 ? " l" + lv : "") + (lv < 0 ? " fut" : "") + (key === today ? " today" : "") + (key === doneSelDay ? " sel" : ""));
+    b.dataset.day = key; b.appendChild(mk("span", "", String(i)));
+    if (lv >= 0) b.addEventListener("click", () => { doneSelDay = doneSelDay === key ? null : key; renderDonePage(); });
+    cal.appendChild(b);
+  }
+  left.appendChild(cal);
+  const hh = mk("div", "dn-sec"); hh.append(mk("span", "", "Habits"), mk("em", "", "Mon – Sun")); right.appendChild(hh);
+  const wk0 = calDay0(new Date()); wk0.setDate(wk0.getDate() - (wk0.getDay() + 6) % 7);
+  const weekDays = [...Array(7)].map((_, i) => { const d = new Date(wk0); d.setDate(d.getDate() + i); return doneDay(d); });
+  for (const h of habitList()){
+    const row = mk("div", "dn-hab"); row.style.setProperty("--hc", h.color);
+    const nm = mk("span", "nm", h.name); nm.title = "Double-click to rename";
+    nm.addEventListener("dblclick", () => {
+      nm.setAttribute("contenteditable", "plaintext-only"); nm.classList.add("renaming"); nm.focus();
+      const rg = document.createRange(); rg.selectNodeContents(nm); getSelection().removeAllRanges(); getSelection().addRange(rg);
+      let cancel = false;
+      nm.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter"){ e.preventDefault(); nm.blur(); } if (e.key === "Escape"){ e.preventDefault(); cancel = true; nm.blur(); } });
+      nm.addEventListener("blur", () => { const v = nm.textContent.replace(/\s+/g, " ").trim().slice(0, 60); if (!cancel && v && v !== h.name) habitPut({...state.habits[h.id], name:v}); renderDonePage(); }, {once:true});
+    });
+    const hd = mk("div", "dn-hd");
+    for (const k of weekDays){
+      const b = mk("button", (h.days?.[k] ? "on" : "") + (k === today ? " today" : "")); b.dataset.day = k;
+      b.title = new Date(k + "T12:00").toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"});
+      if (k > today) b.disabled = true;
+      b.addEventListener("click", () => { habitToggle(h.id, k); renderDonePage(); });
+      hd.appendChild(b);
+    }
+    const total = Object.keys(h.days || {}).length, wk = weekDays.filter(k => h.days?.[k]).length;
+    const em = mk("em", "", wk + " this week · " + total + " in all");
+    const rm = mk("button", "rm", "✕"); rm.title = "Remove this habit";
+    rm.addEventListener("click", () => {
+      const keep = state.habits[h.id];
+      const hs = Object.assign({}, state.habits); delete hs[h.id]; state.habits = hs; markDirty(); renderDonePage();
+      toast("Habit removed.", 5000, {label:"Undo", fn:() => { state.habits = Object.assign({}, state.habits, {[keep.id]:{...keep, updatedAt:now()}}); markDirty(); renderDonePage(); }});
+    });
+    row.append(nm, hd, em, rm); right.appendChild(row);
+  }
+  const add = mk("div", "dn-addh"), inp = mk("input"); inp.placeholder = "＋ New habit (water, drew something…)"; inp.maxLength = 60; inp.id = "habitNew";
+  inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && habitAdd(inp.value)){ renderDonePage(); $("#habitNew")?.focus(); } });
+  add.appendChild(inp); right.appendChild(add);
+  two.append(left, right); panel.appendChild(two);
+  /* stickers */
+  const owned = stickerOwned(), nOwned = Object.keys(owned).length, left1 = pullsLeft();
+  const sh = mk("div", "dn-sec"); sh.append(mk("span", "", "Sticker book · " + nOwned + " of " + STICKERS.length), mk("em", "", left1 ? left1 + (left1 === 1 ? " pack" : " packs") + " to open" : "")); panel.appendChild(sh);
+  const stk = mk("div", "dn-stk");
+  const packBtn = mk("button", "dn-packbtn"); packBtn.id = "doneOpenPack"; packBtn.disabled = !left1;
+  packBtn.appendChild(mk("span", "", left1 ? "Open a pack" : "No packs yet"));
+  packBtn.addEventListener("click", () => showPackReveal());
+  const meter = mk("div", "dn-meter"), pp = pullProgress();
+  meter.append(mk("div", "", "Next pack: " + pp.say));
+  const bar = mk("div", "bar"), bi = mk("i"); bi.style.width = Math.round(pp.frac * 100) + "%"; bar.appendChild(bi); meter.appendChild(bar);
+  meter.appendChild(mk("p", "", "A pack of 3 for every 10 things ticked, 500 words, hour of focus or finished list. Common, rare and shiny. These are placeholder stickers until you draw the real set."));
+  stk.append(packBtn, meter); panel.appendChild(stk);
+  const book = mk("div", "dn-book");
+  for (const s of STICKERS) book.appendChild(owned[s.id] ? stickerEl(s, owned[s.id]) : stickerEl(null));
+  panel.appendChild(book);
+  /* pictures */
+  const pics = Object.values(state.cards).filter(c => c?.type === "image" && c.dataUrl);
+  const ph = mk("div", "dn-sec"); ph.append(mk("span", "", "Pictures in your boards · " + pics.length.toLocaleString())); panel.appendChild(ph);
+  if (!pics.length) panel.appendChild(mk("div", "dn-empty", "Pictures you add to boards show up here."));
+  else {
+    const wall = mk("div", "dn-pics");
+    for (const c of pics.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 42)){
+      const im = mk("img"); im.alt = c.caption || ""; im.loading = "lazy"; lazySrc(im, c.dataUrl);
+      im.title = "Go to this picture"; im.addEventListener("click", () => { closeDone(); goToCard(c.id); });
+      wall.appendChild(im);
+    }
+    panel.appendChild(wall);
+  }
+  /* day by day */
+  const dh = mk("div", "dn-sec");
+  dh.appendChild(mk("span", "", doneSelDay ? new Date(doneSelDay + "T12:00").toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}) : "Day by day"));
+  if (doneSelDay){ const b = mk("button", "", "Show all days"); b.addEventListener("click", () => { doneSelDay = null; renderDonePage(); }); dh.appendChild(b); }
+  panel.appendChild(dh);
+  const days = Object.keys(byDay).filter(k => byDay[k].rows.some(r => r.kind !== "app")).sort().reverse();
+  const shown = doneSelDay ? days.filter(k => k === doneSelDay) : days.slice(0, 14);
+  if (!shown.length) panel.appendChild(mk("div", "dn-empty", doneSelDay ? "Nothing logged that day." : "Tick something, write something or add a picture, and it shows up here."));
+  for (const k of shown) panel.appendChild(doneDayRow(k, byDay[k].rows, mk));
+  panel.scrollTop = keep;
+  donePullDot();
+}
+function doneDayRow(day, rows, mk){
+  const box = mk("div", "dn-day"), when = mk("div", "dn-when"), what = mk("div", "dn-what");
+  const d = new Date(day + "T12:00"), today = doneDay(), yest = doneDay(Date.now() - 86400000);
+  when.append(mk("b", "", day === today ? "Today" : day === yest ? "Yesterday" : d.toLocaleDateString([], {weekday:"long"})), mk("span", "", d.toLocaleDateString([], {month:"short", day:"numeric", year:d.getFullYear() === new Date().getFullYear() ? undefined : "numeric"})));
+  const link = r => {
+    const live = r.board ? board(r.ref)?.title : card(r.ref) && (card(r.ref).type === "board" ? board(card(r.ref).boardId)?.title : card(r.ref).type === "sheet" ? card(r.ref).sheet?.name : doneCardName(card(r.ref)));
+    const s = mk("span", "dn-link", live || r.name || "Untitled");
+    const target = r.board ? null : r.ref && card(r.ref) ? r.ref : null;
+    if (r.board && r.ref && board(r.ref)) s.addEventListener("click", () => { closeDone(); openBoard(r.ref); });
+    else if (target) s.addEventListener("click", () => { closeDone(); goToCard(target); });
+    else { s.classList.add("gone"); if (r.ref && !r.board) s.title = "Deleted since. The record stays."; }
+    return s;
+  };
+  const group = kind => rows.filter(r => r.kind === kind && r.n > 0);
+  const line = (kind, text, extra) => {
+    const r = mk("div", "dn-row"), dot = mk("span", "dn-dot"); dot.style.background = DONE_KINDS[kind].tint;
+    dot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DONE_KINDS[kind].ic + '"/></svg>';
+    r.append(dot, mk("span", "", text)); if (extra) r.appendChild(extra); what.appendChild(r);
+  };
+  const names = (list, pre) => { if (!list.length) return null; const m = mk("span", "dn-m", pre + " "); list.slice(0, 3).forEach((x, i) => { if (i) m.append(", "); m.appendChild(link(x)); }); if (list.length > 3) m.append(" and " + (list.length - 3) + " more"); return m; };
+  const sum = list => list.reduce((a, x) => a + x.n, 0);
+  const ticks = group("tick"); if (ticks.length){ const n = sum(ticks); line("tick", n === 1 ? DONE_KINDS.tick.one : DONE_KINDS.tick.many(n), names(ticks, "in")); }
+  for (const r of group("list")) line("list", DONE_KINDS.list.one, (() => { const m = mk("span", "dn-m"); m.appendChild(link(r)); return m; })());
+  const words = group("word"); if (words.length){ const n = sum(words); line("word", n === 1 ? DONE_KINDS.word.one : DONE_KINDS.word.many(n), names(words, "in")); }
+  const bs = group("board"); if (bs.length) line("board", bs.length === 1 ? DONE_KINDS.board.one : DONE_KINDS.board.many(bs.length), names(bs, ""));
+  const ch = group("character"); if (ch.length) line("character", ch.length === 1 ? DONE_KINDS.character.one : DONE_KINDS.character.many(ch.length), names(ch, ""));
+  const pics = group("picture"); if (pics.length){ const n = sum(pics); line("picture", n === 1 ? DONE_KINDS.picture.one : DONE_KINDS.picture.many(n), names(pics, "to")); }
+  for (const r of group("focus")){
+    const extra = mk("span", "dn-m", r.name ? "· " + r.name.toLowerCase() : "");
+    if (r.auto && r.activeSecs && r.activeSecs < r.n){
+      extra.append(" · ended on its own after 2 quiet hours ");
+      const b = mk("button", "dn-trim", "Trim to " + doneDur(r.activeSecs)); b.title = "Keep only the time up to when you last did something";
+      b.addEventListener("click", () => { doneSet(r.id, {...r, n:r.activeSecs, auto:false, trimmed:true}); renderDonePage(); });
+      extra.appendChild(b);
+    }
+    line("focus", "Focused for " + doneDur(r.n), extra);
+  }
+  const hb = rows.filter(r => r.kind === "habit"); if (hb.length) line("habit", hb.map(r => r.name).join(", "));
+  box.append(when, what); return box;
+}
+$("#btnDone").addEventListener("click", openDone);
+$("#doneOverlay").addEventListener("pointerdown", e => { if (e.target === e.currentTarget) closeDone(); });
+setTimeout(() => { focusPaint(); focusTick(); donePullDot(); }, 0);
 
 /* ---- widgets -----------------------------------------------------------
    Live cards placed from the Widget tool (above More). One look for all of
@@ -21559,7 +22233,7 @@ function dueLabel(due){
   const d = new Date(p[0], p[1] - 1, p[2]), today = calDay0(new Date()), diff = Math.round((d - today) / 86400000);
   if (diff === 0) return "Today";
   if (diff === 1) return "Tomorrow";
-  if (diff === -1) return "Yesterday";
+  /* past dates show the date itself, in red, never "late" or "overdue" words */
   return d.toLocaleDateString([], d.getFullYear() === today.getFullYear() ? {month:"short", day:"numeric"} : {month:"short", day:"numeric", year:"numeric"});
 }
 /* the Widget tool's picker: one row per widget, short names */
@@ -28859,13 +29533,28 @@ function syncLockedPlaceholder(c){
   return {id:c.id, type:"note", locked:true, text:LOCKED_NOTE_TEXT,
     x:c.x, y:c.y, w:c.w, h:c.h, z:c.z, createdAt:c.createdAt || 0, updatedAt:c.createdAt || 0};
 }
+/* The Done log keeps names of the things you did. One from a private board
+   (then or now) goes to Drive as "Private": the counts travel, the words don't. */
+function donePrivateEntry(e, ws, priv){
+  if (!e || e.kind === "app" || e.kind === "focus") return false;
+  if (e.priv || priv.cards.has(e.ref) || priv.boards.has(e.ref)) return true;
+  const c = ws.cards?.[e.ref];
+  return !!(c && c.type === "board" && priv.boards.has(c.boardId));
+}
+function donePublicLog(ws, priv){
+  const out = {};
+  for (const [id, e] of Object.entries(ws.doneLog || {}))
+    out[id] = donePrivateEntry(e, ws, priv) ? {...syncClone(e), name:"Private", priv:true} : syncClone(e);
+  return out;
+}
 /* The copy that may leave this device. */
 function syncPublicProjection(ws, priv=syncPrivacy(ws)){
   const out = {schemaVersion:ws.schemaVersion, rootBoardId:ws.rootBoardId, lastModified:ws.lastModified || 0,
     boards:{}, cards:{}, labels:syncClone((ws.labels || {})),
     bugs:syncClone((ws.bugs || [])), settings:{}, library:syncClone((ws.library || {})), mood:syncClone((ws.mood || {})),
     favorites:(ws.favorites || []).filter(id => !priv.cards.has(id)),
-    calCats:syncClone((ws.calCats || {})), calEvents:syncClone((ws.calEvents || {}))};
+    calCats:syncClone((ws.calCats || {})), calEvents:syncClone((ws.calEvents || {})),
+    doneLog:donePublicLog(ws, priv), habits:syncClone((ws.habits || {})), stickers:syncClone((ws.stickers || {}))};
   for (const [k, v] of Object.entries(ws.settings || {}))
     if (!SYNC_DEVICE_SETTINGS.has(k)) out.settings[k] = syncClone((v ?? null));
   const keep = id => !priv.cards.has(id);
@@ -29013,6 +29702,10 @@ function syncMergeWorkspace(base, local, remote){
   /* the calendar: its calendars and events, newest edit wins */
   mergeMap("calCats", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
   mergeMap("calEvents", () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  /* the Done log, habits and the sticker book: newest edit of each entry wins */
+  for (const k of ["doneLog", "habits", "stickers"]) mergeMap(k, () => false, (l, r) => (l.updatedAt || 0) >= (r.updatedAt || 0));
+  /* a card another device made private: what this device logged about it stays here, nameless in Drive */
+  for (const [id, e] of Object.entries(out.doneLog || {})) if (e?.ref && withheld.has(e.ref) && !e.priv) out.doneLog[id] = {...e, priv:true};
   /* favourites: a starred card is protected from deletion, so stars travel; private stars stay */
   if (local.favorites || remote.favorites){
     const privFav = (local.favorites || []).filter(id => priv.cards.has(id));
@@ -31369,6 +32062,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b172", [
+    "Done (the rosette beside Settings): everything you do, kept by itself \u2014 things ticked, words written, pictures, boards, characters, focus time and hours in CORKBORK. A calendar fills in the days you did anything, habits tick per day, and deleting a card never deletes the record.",
+    "Sticker book: earn a pack of 3 for every 10 things ticked, 500 words, hour of focus or finished list (one to start). Open it, flip the cards, collect 75 placeholder stickers in common, rare and shiny. A big day gets a rare \u201cGood job!\u201d.",
+    "The focus timer replaces the old sprint timer: a countdown of any length or a stopwatch, shown in the top bar while it runs, and it stops itself after 2 quiet hours. Documents are an A4 sheet; past due dates show the date in red; deleting asks only for long writing and boards with things in them, once.",
+  ]],
   ["b171", [
     "New look for text: titles in Noticia Text, everything else in Karla, both built in so they work offline.",
     "Documents (and notes opened with \u2922) have a new editor: tools along the top in one soft bar \u2014 Text style (Title, Heading, Subheading, Quote, Code, each shown as it looks), Insert (picture, table, divider, checklist, date, link), bold to highlight, lists and checklists, indent, align, find and replace (Ctrl+F), size and more. Export as text, Markdown, a web page, or print to PDF.",
@@ -31417,13 +32115,6 @@ const PATCH_NOTES = [
   ]],
   ["b159", [
     "Milanote export script: very big exports no longer stop with \u201cInvalid string length\u201d. Pictures are saved in smaller parts, and a single file over 250 MB stays in Milanote and comes in as a note saying so."
-  ]],
-  ["b158", [
-    "Import from Milanote: the export script tells you with a pop-up when it\u2019s finished, and choosing a .corkboard file there says it\u2019s a CORKBORK board file and where to open it."
-  ]],
-  ["b157", [
-    "Top bar: Snap, then Centre view, then Zoom. Tables are titled Table.",
-    "Import from Milanote: newer drawings and sketch pages, tables, and colour swatches (with their names) now come in. A card CORKBORK can\u2019t show yet (like a map) comes in as a note with its name and address instead of being left out."
   ]],
 ];
 function renderPatchNotes(){
