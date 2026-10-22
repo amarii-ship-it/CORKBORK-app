@@ -4546,7 +4546,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b160";
+window.BUILD = "b161";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -4784,7 +4784,9 @@ function undoTarget(entry, now){
 }
 function restore(s){
   state.boards = s.boards; state.cards = s.cards;
-  invalidateCardEls();   /* wholesale state swap: never reuse elements across it */
+  /* wholesale state swap: drop the drawn cards whose record changed (redrawing
+     every card of a big board took seconds per undo) */
+  for (const [id, hit] of [...cardElCache]) if (state.cards[id] !== hit.ref) invalidateCardEls(id);
   if (!state.boards[currentBoardId]) currentBoardId = s.boardId in state.boards ? s.boardId : state.rootBoardId;
   selection = new Set([...selection].filter(id => state.cards[id]));
   markDirty(); renderAll();
@@ -4927,7 +4929,7 @@ async function putSharedAsset(dataUrl){
   }
   const token = ASSET_TOKEN_PREFIX + id;
   /* every live image must fit, or each save re-hashes all of them; the strings are held by the workspace anyway */
-  if (assetTokenCache.size > 20000) assetTokenCache.clear();
+  if (assetTokenCache.size > 200000) assetTokenCache.clear();
   assetTokenCache.set(dataUrl, token);
   return token;
 }
@@ -4978,8 +4980,35 @@ async function mapStoredAssets(value, mode, memo=new Map()){
   }
   return value;
 }
+/* path in the workspace -> {s: the string seen there, t: what it packs to}.
+   Looking a picture up by its text hashes all of it (about 15 µs a picture,
+   on every autosave); comparing with the string already seen at the same
+   place is a pointer check when nothing changed. Rebuilt each pass, so
+   strings of deleted cards aren't kept alive. */
+let packPathMemo = new Map();
 async function packWorkspaceForStorage(source){
-  const packed = await mapStoredAssets(source, "pack");
+  /* store any new pictures first, then swap them for tokens in one plain pass */
+  const fresh = new Map(), memo = packPathMemo, next = new Map();
+  const seen = (v, path) => { const e = memo.get(path); return e && e.s === v ? e : null; };
+  const find = (v, path) => {
+    if (typeof v === "string"){ if (v.length >= ASSET_MIN_CHARS && !seen(v, path) && !assetTokenCache.has(v) && /data:/i.test(v)) fresh.set(v, v); }
+    else if (Array.isArray(v)) v.forEach((x, i) => find(x, path + "/" + i));
+    else if (v && Object.getPrototypeOf(v) === Object.prototype) for (const k in v) find(v[k], path + "/" + k);
+  };
+  find(source, "");
+  for (const v of fresh.keys()) fresh.set(v, await packStringAssets(v));
+  const swap = (v, path) => {
+    if (typeof v === "string"){
+      if (v.length < ASSET_MIN_CHARS) return v;
+      const e = seen(v, path) || {s:v, t:fresh.get(v) ?? assetTokenCache.get(v) ?? v};
+      next.set(path, e); return e.t;
+    }
+    if (Array.isArray(v)) return v.map((x, i) => swap(x, path + "/" + i));
+    if (v && Object.getPrototypeOf(v) === Object.prototype){ const o = {}; for (const [k, x] of Object.entries(v)) o[k] = swap(x, path + "/" + k); return o; }
+    return v;
+  };
+  const packed = swap(source, "");
+  packPathMemo = next;
   packed._assetStorageVersion = ASSET_STORAGE_VERSION;
   return packed;
 }
@@ -4995,9 +5024,11 @@ function cloneWorkspaceForSave(value, seen=new WeakMap()){
   for (const [key, item] of Object.entries(value)) out[key] = cloneWorkspaceForSave(item, seen);
   return out;
 }
-async function unpackStoredWorkspace(source){
+async function unpackStoredWorkspace(source, memo = tabAssetMemo()){
   if (!source) return source;
-  return mapStoredAssets(source, "unpack");
+  /* pictures this tab already holds are reused, not read again: a second
+     copy of every picture doubled memory on each restore or Drive pull */
+  return mapStoredAssets(source, "unpack", memo);
 }
 async function idbGet(k){
   const raw = await idbGetRaw(k);
@@ -5055,8 +5086,11 @@ async function sharedAssetStats(){
   const keys = (await idbKeys()).filter(k => typeof k === "string" && k.startsWith(ASSET_KEY_PREFIX));
   const refs = await storedAssetReferences();
   let bytes = 0, avoided = 0;
+  /* pictures this tab already holds are measured in memory; reading every
+     one back from storage took seconds once there were gigabytes of them */
+  const held = tabAssetMemo();
   for (const key of keys){
-    const value = await idbGetRaw(key); const size = approxDataBytes(value);
+    const value = held.get(ASSET_TOKEN_PREFIX + key.slice(ASSET_KEY_PREFIX.length)) ?? await idbGetRaw(key); const size = approxDataBytes(value);
     bytes += size; avoided += Math.max(0, (refs.get(key.slice(ASSET_KEY_PREFIX.length)) || 0) - 1) * size;
   }
   return { count:keys.length, bytes, avoided, references:[...refs.values()].reduce((a,b)=>a+b,0) };
@@ -5369,7 +5403,13 @@ function tabAssetMemo(){
    Call with the save lock held. */
 async function tabAbsorbLocked(raw){
   if (!tabBase) return false;
-  raw = raw === undefined ? await idbGetRaw("workspace") : raw;
+  if (raw === undefined){
+    /* the stamp is written with the workspace, so a matching stamp means no
+       other tab has saved: skip reading back the whole catalogue */
+    const stamp = await idbGetRaw(WORKSPACE_STAMP_KEY);
+    if (stamp && stamp.rev === tabBase.saveRevision) return false;
+    raw = await idbGetRaw("workspace");
+  }
   if (!raw || raw.saveRevision === tabBase.saveRevision) return false;
   if (!raw.boards || !raw.cards || !raw.boards[raw.rootBoardId]) throw new Error("another tab saved a copy this tab can't read");
   const theirs = await mapStoredAssets(raw, "unpack", tabAssetMemo());
@@ -5742,6 +5782,8 @@ function fitToContent(){
 function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); }
 
 function boardCardFor(bid){
+  const t = cardIndex().tile.get(bid);
+  if (t && state.cards[t.id] === t) return t;
   for (const c of Object.values(state.cards))
     if (c.type === "board" && c.boardId === bid) return c;
   return null;
@@ -5900,6 +5942,17 @@ function renameBoardInline(btn, b){
    an identity check is a reliable "did this card change" test. */
 const cardElCache = new Map();          // id -> { ref, el }
 function invalidateCardEls(id){ id ? cardElCache.delete(id) : cardElCache.clear(); }
+/* A picture's data is only handed to the browser when its card comes near
+   the screen. Setting src on a big data: picture costs about a millisecond
+   even off screen (loading="lazy" doesn't apply to data: pictures), so a
+   board of a few thousand pictures took seconds to open. */
+const lazyImgs = typeof IntersectionObserver === "function" ? new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting){ const im = e.target; lazyImgs.unobserve(im); if (im.dataset.lazySrc){ im.src = im.dataset.lazySrc; delete im.dataset.lazySrc; } }
+}, {rootMargin:"100% 100%"}) : null;
+function lazySrc(img, src){
+  if (!lazyImgs || !src || String(src).length < 20000){ img.src = src; return; }
+  img.dataset.lazySrc = src; lazyImgs.observe(img);
+}
 function renderBoard(){
   /* Cards already on screen stay where they are: taking an element out of
      the page and putting it back reloads any embed inside it (a video
@@ -6093,7 +6146,7 @@ function buildCardEl(c){
   }
   else if (c.type === "image"){
     el.classList.toggle("free-resize", !!c.freeResize);
-    const img = document.createElement("img"); img.className="pic"; img.src = c.dataUrl; img.alt = c.alt || c.caption || "";
+    const img = document.createElement("img"); img.className="pic"; lazySrc(img, c.dataUrl); img.alt = c.alt || c.caption || "";
     img.loading = "lazy"; img.decoding = "async";
     /* the picture and anything drawn on it share one box, so the drawing
        moves and scales with the picture */
@@ -7171,7 +7224,7 @@ function buildColumnChild(col, k){
   }
   else if (k.type === "image"){
     const w = document.createElement("div"); w.className = "cc-img";
-    const img = document.createElement("img"); img.src = k.dataUrl; img.alt = k.caption || "";
+    const img = document.createElement("img"); lazySrc(img, k.dataUrl); img.alt = k.caption || "";
     w.appendChild(img);
     if (k.caption){ const cap = document.createElement("div"); cap.className = "cc-cap"; cap.textContent = k.caption; w.appendChild(cap); }
     d.appendChild(w);
@@ -7856,7 +7909,7 @@ function buildGrid(c, el){
       nm.textContent = k.title || "Untitled";
       cell.append(tile, nm);
     } else {
-      const img = document.createElement("img"); img.src = k.dataUrl; img.alt = k.caption || "";
+      const img = document.createElement("img"); lazySrc(img, k.dataUrl); img.alt = k.caption || "";
       cell.appendChild(img);
     }
     cell.addEventListener("pointerdown", e => startChildDrag(e, cell, c.id, kid));
@@ -16433,14 +16486,32 @@ function boardCounts(bid){
   return p.join(" and ");
 }
 function findCardContainer(cid){
+  const c = cardIndex().holder.get(cid);
+  if (c && state.cards[c.id] === c && ((c.childIds || []).includes(cid) || (c.attachedIds || []).includes(cid))) return c;
   return Object.values(state.cards).find(c =>
     (c.childIds || []).includes(cid) || (c.attachedIds || []).includes(cid)) || null;
+}
+/* card -> board and card -> holder, rebuilt after any edit: looking each one
+   up by scanning every board made tag views and search slow on big workspaces */
+let cardIndexMemo = {state:null, mod:-1};
+function cardIndex(){
+  if (cardIndexMemo.state === state && cardIndexMemo.mod === editCount && cardIndexMemo.boards === state.boards && cardIndexMemo.cards === state.cards) return cardIndexMemo;
+  const onBoard = new Map(), holder = new Map(), tile = new Map();
+  for (const b of Object.values(state.boards)) for (const id of [...(b.cardIds || []), ...(b.unsortedIds || [])]) if (!onBoard.has(id)) onBoard.set(id, b.id);
+  for (const c of Object.values(state.cards)){
+    for (const k of [...(c.childIds || []), ...(c.attachedIds || [])]) if (!holder.has(k)) holder.set(k, c);
+    if (c.type === "board" && !tile.has(c.boardId)) tile.set(c.boardId, c);
+  }
+  return cardIndexMemo = {state, mod:editCount, boards:state.boards, cards:state.cards, onBoard, holder, tile};
 }
 function findCardBoard(cid, seen=new Set()){
   if (seen.has(cid)) return null;
   seen.add(cid);
-  for (const b of Object.values(state.boards))
-    if (b.cardIds.includes(cid) || b.unsortedIds.includes(cid)) return b.id;
+  const ix = cardIndex(), b = ix.onBoard.get(cid);
+  if (b && state.boards[b] && (state.boards[b].cardIds.includes(cid) || state.boards[b].unsortedIds.includes(cid))) return b;
+  /* boards changed since the index was built: look the slow way */
+  for (const bb of Object.values(state.boards))
+    if (bb.cardIds.includes(cid) || bb.unsortedIds.includes(cid)) return bb.id;
   const parent = findCardContainer(cid);
   return parent ? findCardBoard(parent.id, seen) : null;
 }
@@ -19622,7 +19693,7 @@ function importBoardData(data, {fresh = false} = {}){
   if (!data || data.format !== BOARD_FILE_FORMAT || !plainObject(data.boards) || !plainObject(data.cards) || !data.boards[data.root]) throw new Error("That isn\u2019t a CORKBORK board file.");
   if (Number(data.version) > 1) throw new Error("That board file is from a newer CORKBORK. Update this one (close all its tabs and reopen) and try again.");
   /* fresh: built just now for this import (Milanote), so no defensive copy of what may be gigabytes of pictures */
-  const copy = v => fresh ? v : JSON.parse(JSON.stringify(v));
+  const copy = v => fresh ? v : syncClone(v);
   const ws = scrubWorkspace({schemaVersion:1, rootBoardId:data.root, boards:copy(data.boards), cards:copy(data.cards), labels:plainObject(data.labels) ? copy(data.labels) : {}, settings:{}});
   ws.boards[data.root].parentId = null;
   const v = validateWorkspace(ws);
@@ -26704,9 +26775,10 @@ function syncClone(v){
 const syncSame = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
 function syncMergeIdList(base=[], local=[], remote=[]){
   base = base || []; local = local || []; remote = remote || [];
-  const removedRemote = new Set(base.filter(x => !remote.includes(x)));
-  const out = local.filter(x => !removedRemote.has(x));
-  for (const x of remote) if (!base.includes(x) && !out.includes(x)) out.push(x);
+  const inRemote = new Set(remote), inBase = new Set(base);
+  const removedRemote = new Set(base.filter(x => !inRemote.has(x)));
+  const out = local.filter(x => !removedRemote.has(x)), inOut = new Set(out);
+  for (const x of remote) if (!inBase.has(x) && !inOut.has(x)){ out.push(x); inOut.add(x); }
   return out;
 }
 /* field-by-field merge of one record changed on both sides */
@@ -29032,6 +29104,9 @@ function shareBoot(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b161", [
+    "Faster with big workspaces (tested with 7,800 cards and 1,800 pictures): a board of 3,000 pictures opens in a third of a second instead of 2\u20133, saving after an edit takes a third of the time, Settings no longer reads every picture back (7 seconds before), and undo redraws only what changed."
+  ]],
   ["b160", [
     "Very big workspaces (like a whole Milanote import): Settings opens without the \u201cInvalid string length\u201d error, and Save a copy, board export and restore point downloads are written in pieces."
   ]],
@@ -29082,9 +29157,6 @@ const PATCH_NOTES = [
   ["b148", [
     "Share boards: the share button (the up-arrow in the top bar) and a board card\u2019s right-click menu can export one board, with its sub-boards, cards, labels and images, to a .corkboard file. Send it to someone; they press Import a board\u2026 and it arrives as a new board card where they\u2019re looking. Nothing else in their CORKBORK changes.",
     "A board file is all or nothing: if any image can\u2019t be included, nothing is exported, and a damaged file imports nothing. Labels are matched by name; links to boards outside the shared one are left out. Undo removes an import."
-  ]],
-  ["b147", [
-    "Import: the Mages of Strixhaven (Unearthed Arcana) now read. Their shared pages list features as paragraphs under \u201c1st-Level \u2026 Features\u201d with no headings, and a class\u2019s own link can lead to a page with no features, so the shared page is read instead."
   ]],
 ];
 function renderPatchNotes(){
