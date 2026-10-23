@@ -3980,6 +3980,9 @@ input[type=radio]{accent-color:var(--accent);}
 #sheetEditor input[type=checkbox]{border-color:var(--ppb, #C9B08A);}
 #sheetEditor input[type=checkbox]:checked{background-color:var(--pink2, #8A6D3B); border-color:var(--pink2, #8A6D3B);}
 #sheetEditor select{padding-right:26px !important;}
+/* U-043: sheet fields take the sheet's ink, never the app theme's text colour */
+#sheetEditor input, #sheetEditor textarea, #sheetEditor select{color:var(--pink, #2C2415) !important;}
+#sheetEditor input::placeholder, #sheetEditor textarea::placeholder{color:color-mix(in srgb, var(--pink, #2C2415) 45%, transparent);}
 .se-arrow{background:var(--pink2, #8A6D3B); border-radius:10px;}
 .se-arrow:hover{background:var(--pink, #2C2415);}
 /* small helper buttons (More colours, Automatic, colour picker actions) */
@@ -3996,6 +3999,14 @@ input[type=radio]{accent-color:var(--accent);}
 .cpblock > .cpb-body{background:color-mix(in srgb, var(--surface) 70%, transparent);}
 .cpb-bar{border-bottom:1px solid color-mix(in srgb, var(--text) 7%, transparent); background:var(--surface); padding:8px 12px;}
 .cpblock.dragging{box-shadow:0 12px 30px rgba(0,0,0,.28);}
+/* From your Library */
+.lib-pick{display:flex; flex-direction:column; gap:8px;}
+.lp-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; max-height:300px; overflow-y:auto;}
+.lp-item{aspect-ratio:1; border-radius:8px; overflow:hidden; padding:0; background:color-mix(in srgb, var(--text) 6%, transparent); font-size:10px; color:var(--text-dim); word-break:break-all;}
+.lp-item img{width:100%; height:100%; object-fit:cover; display:block;}
+.lp-item:hover{box-shadow:0 0 0 2px var(--accent);}
+.lp-item.busy{opacity:.5;}
+.lp-grid .mp-dim{grid-column:1 / -1; padding:8px 4px;}
 </style>
 </head>
 <body>
@@ -4127,6 +4138,7 @@ input[type=radio]{accent-color:var(--accent);}
 <div id="pickPop" role="menu" aria-label="Add a picture">
   <button type="button" id="pickFile">Choose a file…</button>
   <button type="button" id="pickPaste">Paste from clipboard</button>
+  <button type="button" id="pickLib">From your Library…</button>
   <div class="pick-tip">or press Ctrl+V</div>
 </div>
 <div id="txStylePop" role="menu" aria-label="Text style">
@@ -5269,7 +5281,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b174";
+window.BUILD = "b175";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6498,7 +6510,7 @@ function wireScrollbar(el, axis){
   const thumb = el.querySelector(".sbthumb");
   thumb.addEventListener("pointerdown", e => {
     e.preventDefault(); e.stopPropagation();
-    thumb.setPointerCapture(e.pointerId);
+    try { thumb.setPointerCapture(e.pointerId); } catch (_) {}
     const start = axis === "v" ? e.clientY : e.clientX;
     const z0 = uiz();
     const rng = el._range; if (!rng) return;
@@ -8171,7 +8183,7 @@ function startChildDrag(e, dEl, colId, kidId){
   if (e.button === 2) return;
   const ghost = $("#ghost");
   const sx = e.clientX, sy = e.clientY; let moved = false;
-  dEl.setPointerCapture(e.pointerId);
+  try { dEl.setPointerCapture(e.pointerId); } catch (_) {}
   let longpress = null;
   if (e.pointerType === "touch")
     longpress = setTimeout(() => { if (!moved){ openChildCtx(sx, sy, colId, kidId); cleanup(); } }, 550);
@@ -9391,7 +9403,7 @@ function wireDrawerDrag(el, c){
     e.stopPropagation(); e.preventDefault();
     const sx = e.clientX, sy = e.clientY;
     let moved = false;
-    el.setPointerCapture(e.pointerId);
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
     const move = ev => {
       if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 5){
         moved = true;
@@ -11875,7 +11887,7 @@ function wireCpBlock(el){
       e.preventDefault();
       const L = cpLayout(), start = { ...L[key] };
       const sx = e.clientX, sy = e.clientY;
-      bar.setPointerCapture(e.pointerId);
+      try { bar.setPointerCapture(e.pointerId); } catch (_) {}
       el.classList.add("dragging");
       let box = { ...start };
       /* Identity carries its attached stack; every other block moves alone.
@@ -11924,7 +11936,7 @@ function wireCpBlock(el){
       e.preventDefault(); e.stopPropagation();
       const L = cpLayout(), start = { ...L[key] };
       const sx = e.clientX, sy = e.clientY;
-      rsz.setPointerCapture(e.pointerId);
+      try { rsz.setPointerCapture(e.pointerId); } catch (_) {}
       let box = { ...start };
       const move = ev => {
         const z = cpz();   /* card canvas may be zoomed out by Fit */
@@ -12592,7 +12604,7 @@ $("#cpPortrait").addEventListener("pointerdown", e => {
   const port = $("#cpPortrait"), img = port.querySelector("img"); if (!img) return;
   cpPortraitDragging = true;
   const sx = e.clientX, sy = e.clientY, ox = c.portraitX||0, oy = c.portraitY||0;
-  port.setPointerCapture(e.pointerId);
+  try { port.setPointerCapture(e.pointerId); } catch (_) {}
   const move = ev => {
     const z = cpz();   /* card canvas may be zoomed out by Fit */
     const nx = ox + (ev.clientX - sx)/z, ny = oy + (ev.clientY - sy)/z;
@@ -13360,9 +13372,50 @@ HTMLInputElement.prototype.click = function(){
   if (!pickTakes(this) || pickFor === this || window.__noPickMenu) return pickRealClick.call(this);
   pickFor = this;
   const pop = $("#pickPop"), z = uiz(), at = pickPointer || {x:innerWidth / 2, y:innerHeight / 3};
+  $("#pickLib").hidden = !libPickable(this).length;
   pop.classList.add("open");
-  pop.style.left = Math.min(at.x / z, innerWidth / z - 210) + "px"; pop.style.top = Math.min(at.y / z + 6, innerHeight / z - 120) + "px";
+  pop.style.left = Math.min(at.x / z, innerWidth / z - 210) + "px"; pop.style.top = Math.min(at.y / z + 6, innerHeight / z - 150) + "px";
 };
+/* pictures in the Library this chooser can take */
+function libPickable(inp){
+  return Object.values(state?.library || {}).filter(it => it && (it.kind === "image" || /^image\//.test(it.type || "")) && (!inp?.accept || /image/.test(inp.accept)))
+    .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+}
+function pickDeliverTo(inp, files){
+  if (!inp || !files.length) return;
+  const dt = new DataTransfer(); for (const f of inp.multiple ? files : files.slice(0, 1)) dt.items.add(f);
+  inp.files = dt.files; inp.dispatchEvent(new Event("change", {bubbles:true}));
+}
+/* From your Library: a small grid of your Library pictures; click one */
+function openLibPick(inp, anchor){
+  openMiniPop(anchor, (pop, close) => {
+    pop.classList.add("lib-pick");
+    const find = document.createElement("input"); find.className = "mp-find"; find.placeholder = "Search your Library"; find.type = "search";
+    const grid = document.createElement("div"); grid.className = "lp-grid";
+    const fill = () => {
+      grid.innerHTML = "";
+      const q = find.value.trim().toLowerCase();
+      const list = libPickable(inp).filter(it => !q || (it.name || "").toLowerCase().includes(q));
+      if (!list.length){ const m = document.createElement("div"); m.className = "mp-dim"; m.textContent = q ? "Nothing matches." : "No pictures in your Library yet."; grid.appendChild(m); }
+      for (const it of list.slice(0, 120)){
+        const b = document.createElement("button"); b.type = "button"; b.className = "lp-item"; b.title = it.name; b.dataset.id = it.id;
+        if (it.thumb){ const im = document.createElement("img"); im.src = it.thumb; im.alt = it.name; b.appendChild(im); } else b.textContent = it.name;
+        b.addEventListener("click", async () => {
+          b.classList.add("busy");
+          try {
+            const blob = await libItemBlob(it);
+            close(); pickDeliverTo(inp, [new File([blob], it.name || "picture", {type:it.type || blob.type})]);
+          } catch (e){ b.classList.remove("busy"); toast("Couldn\u2019t use " + (it.name || "that picture") + ": " + (e?.message || "unknown error"), 7000); }
+        });
+        grid.appendChild(b);
+      }
+    };
+    find.addEventListener("input", fill);
+    pop.append(find, grid); fill();
+    return find;
+  }, {width:320});
+}
+$("#pickLib").addEventListener("click", () => { const inp = pickFor, at = $("#pickLib"); const r = at.getBoundingClientRect(); closePick(); if (inp) openLibPick(inp, {getBoundingClientRect:() => r}); });
 let pickPointer = null;
 addEventListener("pointerdown", e => { pickPointer = {x:e.clientX, y:e.clientY}; if (pickFor && !e.target.closest("#pickPop")) closePick(); }, true);
 function closePick(){ $("#pickPop").classList.remove("open"); pickFor = null; }
@@ -15682,7 +15735,7 @@ function startCardDrag(e, cardEl){
       if (drag && !drag.moved){ openCtx(sx, sy, c); cancel(); }
     }, 550);
   }
-  if (!headerGesture) cardEl.setPointerCapture(e.pointerId);
+  if (!headerGesture) try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
 
   /* Pens and fast trackpads send 120-240 moves a second; the work below
      (hit tests, guides, highlights) runs once per screen frame on the latest
@@ -15895,7 +15948,7 @@ function startResize(e, cardEl){
   const natRatio = c.naturalW && c.naturalH ? c.naturalW / c.naturalH : (w0 / h0);
   const isCol = c.type === "column" || c.type === "grid";
   const minW = isCol ? 160 : 120;
-  cardEl.setPointerCapture(e.pointerId);
+  try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
   const gen = gestureGen;
   const move = ev => {
     /* a second finger turned this into a pinch: drop the resize */
@@ -15979,7 +16032,7 @@ function startGroupResize(e, primaryId){
   const sx = e.clientX, sy = e.clientY;
   const pw0 = p.w, ph0 = p.h;
   const cardEl0 = worldEl.querySelector(`.card[data-id="${primaryId}"]`);
-  cardEl0.setPointerCapture(e.pointerId);
+  try { cardEl0.setPointerCapture(e.pointerId); } catch (_) {}
   let last = null;
   const move = ev => {
     const z = uiz();
@@ -16422,7 +16475,7 @@ document.querySelectorAll(".tool[data-type]").forEach(btn => {
     const sx = e.clientX, sy = e.clientY;
     let moved = false;
     const ghost = $("#ghost");
-    btn.setPointerCapture(e.pointerId);
+    try { btn.setPointerCapture(e.pointerId); } catch (_) {}
     const move = ev => {
       if (!moved && Math.hypot(ev.clientX-sx, ev.clientY-sy) > 5){
         moved = true;
@@ -17651,7 +17704,7 @@ $("#drawerList").addEventListener("pointerdown", e => {
   const id = item.dataset.id;
   const ghost = $("#ghost");
   const sx = e.clientX, sy = e.clientY; let moved = false;
-  item.setPointerCapture(e.pointerId);
+  try { item.setPointerCapture(e.pointerId); } catch (_) {}
   const move = ev => {
     if (!moved && Math.hypot(ev.clientX-sx, ev.clientY-sy) > 5){
       moved = true;
@@ -18648,7 +18701,7 @@ $("#twNew").addEventListener("click", () => {
     if (e.target.closest("button")) return;
     const z = uiz(), r = w.getBoundingClientRect();
     moving = true; sx = e.clientX; sy = e.clientY; ox = r.left / z; oy = r.top / z;
-    head.classList.add("moving"); head.setPointerCapture(e.pointerId); e.preventDefault();
+    head.classList.add("moving"); try { head.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault();
   });
   head.addEventListener("pointermove", e => {
     if (!moving) return;
@@ -18667,7 +18720,7 @@ $("#twNew").addEventListener("click", () => {
     /* pin the top-left corner where it is, so only the bottom-right moves */
     if (p.x == null){ p.x = r.left / z; p.y = r.top / z; saveTodoWinPrefs(p); }
     rs = {sx:e.clientX, sy:e.clientY, w:r.width / z, h:r.height / z};
-    w.classList.add("resizing"); grip.setPointerCapture(e.pointerId);
+    w.classList.add("resizing"); try { grip.setPointerCapture(e.pointerId); } catch (_) {}
   });
   grip.addEventListener("pointermove", e => {
     if (!rs) return;
@@ -27730,7 +27783,7 @@ function seCropper(src, sh){
   zoom.addEventListener("input", () => { crop.z = Number(zoom.value); place(); });
   zoom.addEventListener("change", save);
   let drag = null;
-  box.addEventListener("pointerdown", e => { e.preventDefault(); drag = {x:e.clientX, y:e.clientY, cx:crop.x, cy:crop.y}; box.setPointerCapture(e.pointerId); });
+  box.addEventListener("pointerdown", e => { e.preventDefault(); drag = {x:e.clientX, y:e.clientY, cx:crop.x, cy:crop.y}; try { box.setPointerCapture(e.pointerId); } catch (_) {} });
   box.addEventListener("pointermove", e => {
     if (!drag || !im.naturalWidth) return;
     const w = parseFloat(im.style.width), h = parseFloat(im.style.height), z = uiz();
@@ -29575,7 +29628,7 @@ $("#lbApply").addEventListener("click", () => {
   stage.addEventListener("pointerdown", e => {
     if (LB.mode !== "edit") return;
     e.preventDefault();
-    stage.setPointerCapture(e.pointerId);
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
     start = { x: e.clientX, y: e.clientY };
     const move = ev => {
       if (!start) return;
@@ -32225,6 +32278,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b175", [
+    "Every \u201cadd a picture\u201d menu (D&D sheet portrait, cards, the rest) has From your Library: pick one of your Library pictures from a small grid. Fixed: the D&D sheet's dropdown text was hard to read on dark themes, and a \u201csetPointerCapture\u201d script error when pressing on a card.",
+  ]],
   ["b174", [
     "One look everywhere: tick boxes, dropdowns and text boxes are soft and rounded in the theme's colours instead of the browser's; dialog buttons are soft pills with the main one in your accent; the first-run bar and tour use your accent instead of blue.",
     "Share is one tidy menu: Share live at the top, then Save a copy (picture, PDF, images, a copy) and Bring in (import, open a shared link, Milanote). Edit board shows 16 colours, with More colours for the rest.",
@@ -32266,10 +32322,6 @@ const PATCH_NOTES = [
     "List shortcuts: right-click a list \u203a Create shortcut, then move or paste it to any board. It is the same list: tick, add or change it anywhere and every copy changes.",
     "To-dos (the tick button in the top bar): every list in a window that stays open over your boards. Drag it by its header, drag lists up and down by their grip, fold them, hide ticked items, and edit them just like on the board. \uff0b New list puts a list in Unsorted on Home.",
     "On phones: Favourites and Tags open over Search with \u2039 Search to go back, and the To-dos window fits the screen."
-  ]],
-  ["b165", [
-    "Search lists everything by kind with nothing typed: Boards, Lists, D&D sheets, Cards, Links, Files, Documents and the rest (a kind you have none of doesn't show), each showing its first few with Show all. Click a heading to fold it away (Notes, Images and Comments start folded). A\u2013Z or Recent, top right, orders them all. Tags, under Favourites, groups everything by tag. With Search open, drag a card or picture onto a board in the list to put it in that board.",
-    "Unsorted is a full-height panel on the right edge with pictures full width, instead of a small window that squeezed them into strips."
   ]],
 ];
 function renderPatchNotes(){
