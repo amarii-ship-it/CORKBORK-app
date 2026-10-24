@@ -463,7 +463,25 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 #rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none; fill:var(--text);}
 .tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi));}
 .tool[data-type="note"], .tool[data-type="block"]{--hue:#FFFFFF;}
-#toolWidget{--hue:oklch(72% .13 355);} #toolWidget svg{stroke:var(--text);}
+#toolWidget{--hue:oklch(72% .13 305);} #toolWidget svg{stroke:var(--text);} #toolWidget svg *{fill:var(--text);}
+/* b181: Board is the CORKBORK cat without its face, in Document's blue */
+.tool[data-type="board"]{--hue:oklch(72% .13 250) !important;}
+/* the Note family is all white; the drawing family all rose; Card shares the D&D sheet's gold */
+.tool[data-type="doc"], .tool[data-type="heading"]{--hue:#FFFFFF !important;}
+:root[data-theme="light"] .tool[data-type="doc"], :root[data-theme="light"] .tool[data-type="heading"]{background:color-mix(in srgb, #FFFFFF 52%, transparent);}
+#toolArrow, #toolLine{--hue:oklch(72% .13 20) !important;}
+.tool[data-type="card"]{--hue:oklch(72% .13 75) !important;}
+/* b181 groups: one tool shows, the rest fly out beside it */
+.railgrp{position:relative; flex:none; display:flex;}
+.railtri{position:absolute; right:3px; bottom:3px; width:0; height:0; border-left:5px solid transparent; border-bottom:5px solid var(--text); opacity:.55; cursor:pointer; z-index:2;}
+.railtri::after{content:""; position:absolute; right:-5px; bottom:-6px; width:18px; height:18px;}
+.railfly{display:none; position:fixed; z-index:108; gap:4px; padding:6px; background:var(--surface-hi); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.22);}
+.railgrp.open .railfly{display:flex;}
+.railgrp.open > .tool:first-child{background:color-mix(in srgb, var(--hue) calc(var(--tint, 15%) + 13%), transparent);}
+.railgrp > .tool[data-type="sheet"] span{font-size:8px !important; letter-spacing:-.3px !important; margin-right:6px;}
+.railhid{display:none;}
+body.in-card .railgrp, body.in-card .railfly, body.in-card .railhid{display:contents;}
+body.in-card .railtri{display:none;}
 :root[data-theme="light"] .tool[data-type="note"], :root[data-theme="light"] .tool[data-type="block"]{background:color-mix(in srgb, #FFFFFF 52%, transparent);}
 :root[data-theme="light"] #rail .tool[data-type="note"] svg, :root[data-theme="light"] #rail .tool[data-type="block"] svg{stroke:var(--text);}
 /* Image and Upload: a pink-cream button, like Note's white one */
@@ -1775,6 +1793,28 @@ body.focus-mode #focusExit{display:flex;}
 .settings-body details > summary{color:var(--text-dim); font-weight:600;}
 .settings-body details > summary:hover{color:var(--text);}
 .tool-list{display:flex; flex-direction:column; gap:2px;}
+/* b181 Settings › Toolbar */
+.tb-wrap{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
+#tbEd{flex:1 1 300px; display:flex; flex-direction:column; gap:4px; min-width:0;}
+.tb-side{flex:1 1 200px; display:flex; flex-direction:column; gap:10px;}
+.tb-row{display:flex; align-items:center; gap:6px; padding:4px 6px; border-radius:10px; background:color-mix(in srgb, var(--text) 4%, transparent); min-height:40px; position:relative;}
+.tb-row.gap{min-height:18px; background:none; border:1.5px dashed color-mix(in srgb, var(--text) 18%, transparent); font-size:11px; color:var(--text-dim); justify-content:space-between;}
+.tb-row.gap button{font-size:12px; color:var(--text-dim); padding:0 6px;}
+.tb-h{cursor:grab; color:var(--text-dim); font-size:14px; padding:0 3px; touch-action:none; user-select:none;}
+.tb-chip{display:inline-flex; align-items:center; gap:6px; padding:5px 9px 5px 7px; border-radius:8px; font-size:12px; font-weight:600; cursor:grab; touch-action:none; user-select:none;
+  background:color-mix(in srgb, var(--hue, var(--text-dim)) 18%, var(--surface)); color:var(--text); white-space:nowrap;}
+.tb-chip svg{width:18px; height:18px; stroke:var(--text); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+.tb-chip[data-k="board"] svg{stroke:none; fill:var(--text);} .tb-chip[data-k="board"] svg .boardwin{fill:var(--surface);}
+.tb-chip[data-k="toolWidget"] svg *{fill:var(--text);}
+.tb-row .tb-chip:first-of-type{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--text) 35%, transparent);}
+.tb-row .tb-chip:not(:first-of-type){opacity:.85;}
+.tb-box{border-radius:12px; padding:8px 10px 10px; background:color-mix(in srgb, var(--text) 4%, transparent); min-height:64px;}
+.tb-box > b{display:block; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
+.tb-chips{display:flex; flex-wrap:wrap; gap:5px; min-height:30px;}
+.tb-join{box-shadow:0 0 0 2px var(--accent);}
+.tb-ins{height:3px; border-radius:2px; background:var(--accent); flex:none;}
+.tb-ghost{position:fixed; z-index:400; pointer-events:none; box-shadow:0 8px 20px rgba(0,0,0,.25);}
+.tb-dragging{opacity:.35;}
 .tool-row{display:grid; grid-template-columns:96px 34px 1fr; gap:10px; align-items:baseline; padding:7px 4px; border-bottom:1px solid var(--border); font-size:13px;}
 .tool-row kbd, .setsec .meta kbd{font:600 11px/1.2 var(--font-ui); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-align:center;}
 .setup-steps li{margin-bottom:12px;}
@@ -4448,11 +4488,11 @@ body.note-full-open #textBar{visibility:hidden !important;}
          .boardwin class is what CSS recolours to the rail's own background
          so the windows look cut out rather than drawn on top. -->
     <button class="tool" data-type="board" title="Board [B]">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><rect class="boardwin" x="6.5" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="6.5" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="6.5" y="13.2" width="4.3" height="4.3" rx="1.1"/><rect class="boardwin" x="13.2" y="13.2" width="4.3" height="4.3" rx="1.1"/></svg>Board</button>
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><path class="boardwin" transform="translate(5.4 5.7) scale(.55)" d="M4 9.5 5.5 3l4 3.5h5L18.5 3 20 9.5v7.5a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/></svg>Board</button>
     <button class="tool" data-type="todo" title="List [T] — checklist, bulleted or numbered">
       <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z M8 9l1.5 1.5L12.5 7.5 M8 15h8"/></svg>List</button>
     <button class="tool" id="toolWidget" title="Widgets — clock, timer, countdown, mood, calendar">
-      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widget</button>
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/></svg>Widgets</button>
     <button class="tool" id="toolArrow" title="Arrow — click one card, then another, to connect them">
       <svg viewBox="0 0 24 24"><path d="M5 19L19 5 M12 5h7v7"/></svg>Arrow</button>
     <button class="tool" id="toolDraw" title="Draw (P) — circle and mark up pictures, or draw anywhere">
@@ -5186,6 +5226,7 @@ body.note-full-open #textBar{visibility:hidden !important;}
       <button class="setnav" data-sec="canvas" style="--c:#6E86D6"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg></i>Board &amp; canvas</button>
       <button class="setnav" data-sec="data" style="--c:#4FA872"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/></svg></i>Sync &amp; backups</button>
       <button class="setnav" data-sec="tools" style="--c:#D9A441"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg></i>Tools</button>
+      <button class="setnav" data-sec="toolbar" style="--c:#C9748F"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="17" rx="2"/><path d="M13 6h7 M13 12h7 M13 18h5"/></svg></i>Toolbar</button>
       <button class="setnav" data-sec="help" style="--c:#9A6CD0"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4.5 M12 18h.01"/></svg></i>Help</button>
       <button class="setnav" data-sec="patches" style="--c:#3FA3B3"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></i>What's new</button>
       <div class="set-nohit meta" id="setNoHit" hidden>No setting matches.</div>
@@ -5241,7 +5282,7 @@ body.note-full-open #textBar{visibility:hidden !important;}
       <div class="setsec" data-sec="tools" style="display:none;">
         <h2 class="set-title">Tools</h2>
         <div><button id="setEditRail" class="primary" style="padding:7px 14px; border-radius:8px;">Edit toolbar…</button>
-          <span class="meta" style="margin-left:8px;">Reorder tools, move them into More, add dividers. Saved on this device.</span></div>
+          <span class="meta" style="margin-left:8px;">Grouped or Classic, your own groups, saved templates.</span></div>
         <div class="meta">Every tool on the left rail. Click or drag one onto the canvas, or press its key.</div>
         <div class="tool-list">
           <div class="tool-row"><b>Note</b><kbd>N</kbd><span>A sticky note for writing. Double-click to type; text can be bold, listed, coloured.</span></div>
@@ -5253,16 +5294,32 @@ body.note-full-open #textBar{visibility:hidden !important;}
           <div class="tool-row"><b>Album</b><kbd>G</kbd><span>Holds photos and boards in a tidy grid. Resize it to scale everything inside; double-click it to resize the grid itself.</span></div>
           <div class="tool-row"><b>Link</b><kbd>L</kbd><span>Saves a web address with its title and preview.</span></div>
           <div class="tool-row"><b>Heading</b><kbd>H</kbd><span>Big text for labelling parts of a board.</span></div>
-          <div class="tool-row"><b>Image</b><kbd>I</kbd><span>Adds a picture from your device.</span></div>
+          <div class="tool-row"><b>Image</b><kbd>I</kbd><span>Adds a picture from your device. (Grouped toolbar: use Upload, or press I.)</span></div>
           <div class="tool-row"><b>Upload</b><kbd>U</kbd><span>Upload files from your computer's local storage.</span></div>
           <div class="tool-row"><b>Library</b><kbd>—</kbd><span>Cloud-based library of images, videos and files. Upload your own files to access them from anywhere.</span></div>
           <div class="tool-row"><b>Table</b><kbd>E</kbd><span>(Under More.) A spreadsheet with formulas.</span></div>
-          <div class="tool-row"><b>Card</b><kbd>D</kbd><span>(Under More.) A character, item or place. Mentions of its name link to it in notes.</span></div>
-          <div class="tool-row"><b>D&amp;D sheet</b><kbd>R</kbd><span>(Under More.) A fillable D&amp;D 5e character sheet.</span></div>
+          <div class="tool-row"><b>Card</b><kbd>D</kbd><span>(Grouped with D&amp;D sheet.) A character, item or place. Mentions of its name link to it in notes.</span></div>
+          <div class="tool-row"><b>D&amp;D sheet</b><kbd>R</kbd><span>A fillable D&amp;D 5e character sheet.</span></div>
         </div>
         <div class="meta"><b>Everywhere:</b> <kbd>Ctrl+K</kbd> search · <kbd>Ctrl+Z</kbd> undo · <kbd>Delete</kbd> remove ·
           <kbd>Z</kbd> fit everything · <kbd>S</kbd> snap to grid · <kbd>F</kbd> focus mode · <kbd>?</kbd> all shortcuts.
           Right-click any card for more, such as making a board private.</div>
+      </div>
+
+      <div class="setsec" data-sec="toolbar" style="display:none;">
+        <h2 class="set-title">Toolbar</h2>
+        <div class="set-card"><div class="set-row"><div class="set-t"><b>Layout</b><span>Grouped keeps similar tools together: hover one with a corner triangle to see the rest. Classic is the toolbar from before build 181. Saved on this device.</span></div></div>
+          <div class="mp-seg" id="tbPick" style="margin:0 0 12px; flex-wrap:wrap;"></div></div>
+        <div class="set-label">Edit <span id="tbState" style="text-transform:none; letter-spacing:0; font-weight:600;"></span></div>
+        <div class="tb-wrap">
+          <div id="tbEd"></div>
+          <div class="tb-side">
+            <div class="tb-box" id="tbMore"><b>In More</b><div class="tb-chips"></div></div>
+            <div class="tb-box" id="tbHidden"><b>Hidden</b><div class="tb-chips"></div></div>
+          </div>
+        </div>
+        <div class="meta">Drag a tool onto another row to group them; the first tool in a row is the one that shows, and the one you used last takes its place. Drag between rows to give a tool its own spot. Drag a row by &#8942;&#8942; to move it.</div>
+        <div class="btnrow"><button id="tbGap">+ Gap</button><button id="tbSave">Save as template&hellip;</button><button id="tbRename">Rename template</button><button id="tbDelete">Delete template</button><button id="tbUndo">Undo my changes</button></div>
       </div>
 
       <div class="setsec" data-sec="help" style="display:none;">
@@ -5447,7 +5504,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b180";
+window.BUILD = "b181";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -14972,38 +15029,134 @@ document.addEventListener("pointerdown", e => {
 const RAIL_LAYOUT_KEY = "cb_railLayout";
 const railMain = () => $("#railTools"), railMoreBox = () => $("#morePop > div");
 const railKey = el => el.classList.contains("railDivider") ? "|" : (el.dataset.type || el.id);
+/* b181: a layout's main list holds a key per tool, "|" for a gap, or a list
+   of keys for a group (its first tool shows; the rest fly out beside it,
+   Photoshop style). hidden: tools kept off the toolbar. */
 function readRailLayout(){
-  const keys = box => [...box.children].filter(el => el.classList.contains("tool") || el.classList.contains("railDivider")).map(railKey);
-  return {main:keys(railMain()), more:keys(railMoreBox())};
+  const main = [], hidden = [];
+  for (const el of railMain().children){
+    if (el.classList.contains("railgrp")) main.push([...el.querySelectorAll(".tool")].map(railKey));
+    else if (el.classList.contains("railhid")) hidden.push(...[...el.children].map(railKey));
+    else if (el.classList.contains("tool") || el.classList.contains("railDivider")) main.push(railKey(el));
+  }
+  const more = [...railMoreBox().children].filter(el => el.classList.contains("tool")).map(railKey);
+  return {main, more, hidden};
 }
 let railDefault = null;
 function applyRailLayout(layout){
   if (!layout || !Array.isArray(layout.main)) return;
+  closeRailFly();
   const pool = new Map();
-  for (const box of [railMain(), railMoreBox()])
-    for (const el of [...box.children]){
-      if (el.classList.contains("railDivider")){ el.remove(); continue; }
-      if (el.classList.contains("tool")) pool.set(railKey(el), el);
+  for (const el of [...railMain().querySelectorAll(".tool"), ...railMoreBox().querySelectorAll(".tool")]) pool.set(railKey(el), el);
+  for (const el of [...railMain().children]) if (!el.classList.contains("tool")) el.remove();
+  const take = k => { const el = pool.get(k); if (el) pool.delete(k); return el; };
+  for (const k of layout.main){
+    if (k === "|"){ const d = document.createElement("div"); d.className = "railDivider"; railMain().appendChild(d); continue; }
+    if (Array.isArray(k)){
+      const els = k.filter(x => typeof x === "string" && x !== "railMore").map(take).filter(Boolean);
+      if (els.length === 1) railMain().appendChild(els[0]);
+      else if (els.length > 1){
+        const g = document.createElement("div"); g.className = "railgrp";
+        const tri = document.createElement("span"); tri.className = "railtri"; tri.title = "More tools like this";
+        const fly = document.createElement("div"); fly.className = "railfly";
+        fly.append(...els.slice(1)); g.append(els[0], tri, fly); railMain().appendChild(g);
+      }
+      continue;
     }
-  const place = (box, keys) => {
-    for (const k of keys){
-      if (k === "|"){ if (box === railMain()){ const d = document.createElement("div"); d.className = "railDivider"; box.appendChild(d); } continue; }
-      const el = pool.get(k); if (!el || (k === "railMore" && box !== railMain())) continue;
-      box.appendChild(el); pool.delete(k);
-    }
-  };
-  place(railMain(), layout.main); place(railMoreBox(), layout.more || []);
+    const el = take(k); if (el) railMain().appendChild(el);
+  }
+  for (const k of layout.more || []){ if (k === "railMore") continue; const el = take(k); if (el) railMoreBox().appendChild(el); }
+  const hid = document.createElement("div"); hid.className = "railhid";
+  for (const k of layout.hidden || []){ if (k === "railMore") continue; const el = take(k); if (el) hid.appendChild(el); }
+  railMain().appendChild(hid);
   /* tools this layout doesn't know (added in a later build) go where they shipped */
   for (const [k, el] of pool){
     const inMore = (railDefault?.more || []).includes(k), list = inMore ? railDefault.more : (railDefault?.main || []);
-    const prev = list[list.indexOf(k) - 1], after = prev && prev !== "|" && [...(inMore ? railMoreBox() : railMain()).children].find(x => railKey(x) === prev);
-    if (after) after.after(el); else (inMore ? railMoreBox() : railMain()).appendChild(el);
+    const prev = list[list.indexOf(k) - 1], after = prev && prev !== "|" && [...(inMore ? railMoreBox() : railMain()).children].find(x => x.classList.contains("tool") && railKey(x) === prev);
+    if (after) after.after(el); else if (inMore) railMoreBox().appendChild(el); else railMain().insertBefore(el, hid);
   }
+  railMain().appendChild(hid);
 }
+/* ---- the built-in toolbars and saved templates (per device) ---- */
+const RAIL_GROUPED = {main:[["note", "doc", "heading", "block"], "board", "todo", "toolWidget", ["column", "grid"], "|",
+  ["toolArrow", "toolDraw", "toolLine", "sketch"], ["sheet", "card"], "|", "railMore", "|", "toolUpload", "toolLibrary"],
+  more:["table", "link", "palette", "comment"], hidden:["image"]};
+const RAIL_TEMPLATES_KEY = "cb_railTemplates";
+let railActive = "grouped";
+function railTemplates(){ try { const t = JSON.parse(SAFE_STORE.get(RAIL_TEMPLATES_KEY) || "[]"); return Array.isArray(t) ? t.filter(x => x && x.id && Array.isArray(x.main)) : []; } catch (_) { return []; } }
+function railSaveTemplates(list){ SAFE_STORE.set(RAIL_TEMPLATES_KEY, JSON.stringify(list)); }
+function railTemplateLayout(id){
+  if (id === "grouped") return RAIL_GROUPED;
+  if (id === "classic") return {main:railDefault.main, more:railDefault.more, hidden:[]};
+  return railTemplates().find(t => t.id === id) || null;
+}
+function railTemplateName(id){ return id === "grouped" ? "Grouped" : id === "classic" ? "Classic" : (railTemplates().find(t => t.id === id)?.name || "Custom"); }
+const railNorm = l => JSON.stringify({main:(l.main || []).map(e => Array.isArray(e) ? [...e].sort() : e), more:l.more || [], hidden:l.hidden || []});
+function railEdited(){ const t = railTemplateLayout(railActive); return !t || railNorm(t) !== railNorm(readRailLayout()); }
+function railUseTemplate(id){
+  const t = railTemplateLayout(id); if (!t) return false;
+  railActive = id; applyRailLayout(JSON.parse(JSON.stringify(t))); saveRailLayout(); queueFitTopbar?.();
+  return true;
+}
+function railSaveAsTemplate(name){
+  const list = railTemplates(), id = "t" + Date.now().toString(36);
+  list.push({id, name:String(name || "My toolbar").slice(0, 40), ...readRailLayout()});
+  railSaveTemplates(list); railActive = id; saveRailLayout();
+  return id;
+}
+/* ---- groups: the rest of a group flies out beside it ---- */
+let railFlyOpen = null, railFlyT = 0;
+function openRailFly(g){
+  clearTimeout(railFlyT);
+  if (railFlyOpen === g) return;
+  closeRailFly();
+  if (document.body.classList.contains("in-card") || document.body.classList.contains("rail-edit")) return;
+  const fly = g.querySelector(".railfly"), r = g.getBoundingClientRect(), z = uiz();
+  fly.style.left = (r.right / z + 6) + "px"; fly.style.top = Math.max(4, r.top / z - 6) + "px";
+  g.classList.add("open"); railFlyOpen = g;
+}
+function closeRailFly(){ clearTimeout(railFlyT); railFlyOpen?.classList.remove("open"); railFlyOpen = null; }
+/* a tool used from the flyout becomes the one the group shows */
+function railPromote(el){
+  const g = el.closest(".railgrp"), fly = el.closest(".railfly"); if (!g || !fly) return;
+  const face = g.firstElementChild; if (face === el) return;
+  fly.replaceChild(face, el); g.insertBefore(el, g.firstChild);
+  closeRailFly(); saveRailLayout();
+}
+railMain().addEventListener("pointerover", e => {
+  if (e.pointerType === "touch") return;
+  const g = e.target.closest?.(".railgrp"); if (!g) return;
+  clearTimeout(railFlyT);
+  if (railFlyOpen !== g) railFlyT = setTimeout(() => openRailFly(g), railFlyOpen ? 0 : 90);
+});
+railMain().addEventListener("pointerout", e => {
+  if (e.pointerType === "touch" || !railFlyOpen || railFlyPending) return;   /* not while a tool from it is being dragged out */
+  if (e.relatedTarget && railFlyOpen.contains(e.relatedTarget)) return;
+  clearTimeout(railFlyT); railFlyT = setTimeout(closeRailFly, 240);
+});
+/* on a touch screen the corner triangle opens the group */
+railMain().addEventListener("pointerdown", e => {
+  const tri = e.target.closest?.(".railtri"); if (!tri) return;
+  e.preventDefault(); e.stopPropagation();
+  const g = tri.closest(".railgrp"); railFlyOpen === g ? closeRailFly() : openRailFly(g);
+}, true);
+let railFlyPending = null;
+railMain().addEventListener("pointerdown", e => { railFlyPending = e.target.closest?.(".railfly .tool") || null; });
+addEventListener("pointerup", () => { const el = railFlyPending; railFlyPending = null; if (el) setTimeout(() => railPromote(el), 0); }, true);
+document.addEventListener("pointerdown", e => { if (railFlyOpen && !railFlyOpen.contains(e.target)) closeRailFly(); }, true);
 /* v3 (b170): Heading and Link moved into More, by request; a saved toolbar
    is upgraded once, and anything arranged after that stays as it is */
-const RAIL_LAYOUT_VERSION = 3;
-function saveRailLayout(){ SAFE_STORE.set(RAIL_LAYOUT_KEY, JSON.stringify({...readRailLayout(), v:RAIL_LAYOUT_VERSION})); }
+const RAIL_LAYOUT_VERSION = 4;
+function saveRailLayout(){
+  const L = readRailLayout();
+  SAFE_STORE.set(RAIL_LAYOUT_KEY, JSON.stringify({...L, v:RAIL_LAYOUT_VERSION, active:railActive}));
+  /* your own template follows what you change; Grouped and Classic stay as shipped */
+  if (railActive !== "grouped" && railActive !== "classic"){
+    const list = railTemplates(), t = list.find(x => x.id === railActive);
+    if (t){ Object.assign(t, L); railSaveTemplates(list); }
+  }
+  if ($("#settingsOverlay")?.classList.contains("open")) renderToolbarSettings();
+}
 /* b113 reordered the top of the toolbar; a saved toolbar that still has the
    old run of tools unchanged takes the new order, anything rearranged by hand stays */
 const RAIL_OLD_RUN = ["note", "toolArrow", "board", "todo", "block", "heading", "link"];
@@ -15029,13 +15182,178 @@ function railUpgradeB113(saved){
   return Object.assign({}, saved, {main:[...head, ...RAIL_NEW_RUN.filter(k => !inMore || k !== "toolWidget"), ...tail]});
 }
 function loadRailLayout(){
-  railDefault = readRailLayout();
-  try {
-    const saved = JSON.parse(SAFE_STORE.get(RAIL_LAYOUT_KEY) || "null");
-    if (saved && saved.v >= RAIL_LAYOUT_VERSION) applyRailLayout(saved);
-    else if (saved){ applyRailLayout(railUpgrade(saved)); saveRailLayout(); }
-  } catch (_) {}
+  if (!railDefault) railDefault = readRailLayout();   /* the classic toolbar, as shipped */
+  let saved = null; try { saved = JSON.parse(SAFE_STORE.get(RAIL_LAYOUT_KEY) || "null"); } catch (_) {}
+  if (saved && saved.v >= 4 && Array.isArray(saved.main)){
+    railActive = saved.active && (saved.active === "grouped" || saved.active === "classic" || railTemplateLayout(saved.active)) ? saved.active : "grouped";
+    applyRailLayout(saved); return;
+  }
+  /* b181: everyone moves to the grouped toolbar; a toolbar arranged by hand
+     before then is kept as a template to go back to (Settings › Toolbar) */
+  if (saved && Array.isArray(saved.main)){
+    const up = railUpgrade(saved);
+    if (railNorm({main:up.main, more:up.more}) !== railNorm({main:railDefault.main, more:railDefault.more})){
+      const list = railTemplates();
+      if (!list.some(t => t.id === "mine")) list.push({id:"mine", name:"My toolbar (before b181)", main:up.main, more:up.more || [], hidden:[]});
+      railSaveTemplates(list);
+    }
+  }
+  railActive = "grouped"; applyRailLayout(JSON.parse(JSON.stringify(RAIL_GROUPED)));
+  if (saved) saveRailLayout();
 }
+/* ---- Settings › Toolbar (b181) ---------------------------------------------
+   Pick Grouped, Classic or a saved template; drag tools between rows (a row
+   of more than one is a group), into More or Hidden; save the result as a
+   template. Changes apply to the toolbar as you make them. */
+function openToolbarSettings(){
+  closeRailFly();
+  if (document.body.classList.contains("rail-edit")) endRailEdit();
+  if (!$("#settingsOverlay").classList.contains("open")) openSettings();
+  document.querySelector('.setnav[data-sec="toolbar"]')?.click();
+}
+const tbarToolEl = k => [...railMain().querySelectorAll(".tool"), ...railMoreBox().querySelectorAll(".tool")].find(el => railKey(el) === k);
+function tbarChip(k){
+  const el = tbarToolEl(k), c = document.createElement("span"); c.className = "tb-chip"; c.dataset.k = k;
+  if (!el) { c.textContent = k; return c; }
+  const svg = el.querySelector("svg"); if (svg) c.appendChild(svg.cloneNode(true));
+  c.appendChild(document.createTextNode(el.textContent.trim()));
+  c.style.setProperty("--hue", getComputedStyle(el).getPropertyValue("--hue") || "");
+  return c;
+}
+function renderToolbarSettings(){
+  const pick = $("#tbPick"); if (!pick) return;
+  pick.textContent = "";
+  for (const id of ["grouped", "classic", ...railTemplates().map(t => t.id)]){
+    const b = document.createElement("button"); b.type = "button"; b.dataset.t = id; b.textContent = railTemplateName(id);
+    b.classList.toggle("on", id === railActive);
+    b.addEventListener("click", async () => {
+      if (id === railActive) return;
+      if ((railActive === "grouped" || railActive === "classic") && railEdited() && !await askConfirm({title:"Switch toolbar?",
+        message:"Your changes to " + railTemplateName(railActive) + " aren’t saved as a template.", detail:"Save as template keeps them.", okLabel:"Switch anyway"})) return;
+      railUseTemplate(id); renderToolbarSettings();
+    });
+    pick.appendChild(b);
+  }
+  const own = railActive !== "grouped" && railActive !== "classic", edited = railEdited();
+  $("#tbState").textContent = "· " + railTemplateName(railActive) + (own ? " (your template; changes are kept)" : edited ? " (changed)" : "");
+  $("#tbRename").style.display = $("#tbDelete").style.display = own ? "" : "none";
+  $("#tbUndo").style.display = !own && edited ? "" : "none";
+  const L = readRailLayout(), ed = $("#tbEd"); ed.textContent = "";
+  L.main.forEach((e, i) => {
+    const row = document.createElement("div"); row.className = "tb-row"; row.dataset.i = i;
+    if (e === "|"){
+      row.classList.add("gap"); row.innerHTML = '<span class="tb-h" title="Drag to move">&#8942;&#8942;</span><span>Gap</span>';
+      const x = document.createElement("button"); x.type = "button"; x.textContent = "✕"; x.title = "Remove this gap";
+      x.addEventListener("click", () => tbarCommit(rows => rows.splice(i, 1))); row.appendChild(x);
+    } else {
+      row.innerHTML = '<span class="tb-h" title="Drag to move">&#8942;&#8942;</span>';
+      for (const k of Array.isArray(e) ? e : [e]) row.appendChild(tbarChip(k));
+    }
+    ed.appendChild(row);
+  });
+  for (const [box, keys] of [[$("#tbMore .tb-chips"), L.more], [$("#tbHidden .tb-chips"), L.hidden]]){
+    box.textContent = ""; for (const k of keys) box.appendChild(tbarChip(k));
+  }
+}
+/* rows: [{gap} | {keys:[…]}], changed in place by fn, then applied */
+function tbarCommit(fn){
+  const L = readRailLayout();
+  const rows = L.main.map(e => e === "|" ? {gap:true} : {keys:Array.isArray(e) ? e.slice() : [e]});
+  const box = {more:L.more.slice(), hidden:L.hidden.slice()};
+  if (fn(rows, box) === false) return;
+  const main = rows.filter(r => r.gap || r.keys.length).map(r => r.gap ? "|" : r.keys.length === 1 ? r.keys[0] : r.keys);
+  applyRailLayout({main, more:box.more, hidden:box.hidden}); saveRailLayout(); renderToolbarSettings(); queueFitTopbar?.();
+}
+function tbarTarget(x, y, rowsOnly){
+  const under = document.elementFromPoint(x, y);
+  if (!under) return null;
+  if (!rowsOnly && under.closest("#tbMore")) return {to:"more"};
+  if (!rowsOnly && under.closest("#tbHidden")) return {to:"hidden"};
+  const ed = $("#tbEd"), rows = [...ed.querySelectorAll(".tb-row")];
+  if (!under.closest("#tbEd")){
+    const r = ed.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y > r.bottom - 4 && y < r.bottom + 40) return {to:"slot", at:rows.length};
+    return null;
+  }
+  const row = under.closest(".tb-row");
+  if (!row) return {to:"slot", at:rows.length};
+  const i = +row.dataset.i, r = row.getBoundingClientRect(), f = (y - r.top) / r.height;
+  if (rowsOnly || row.classList.contains("gap")) return {to:"slot", at:f < .5 ? i : i + 1};
+  if (f < .25) return {to:"slot", at:i};
+  if (f > .75) return {to:"slot", at:i + 1};
+  const chip = under.closest(".tb-chip"); let pos = row.querySelectorAll(".tb-chip").length;
+  if (chip){ const cr = chip.getBoundingClientRect(); pos = [...row.querySelectorAll(".tb-chip")].indexOf(chip) + (x > cr.left + cr.width / 2 ? 1 : 0); }
+  return {to:"join", row:i, pos};
+}
+function tbarShow(t){
+  document.querySelectorAll(".tb-join").forEach(e => e.classList.remove("tb-join"));
+  document.querySelector(".tb-ins")?.remove();
+  if (!t) return;
+  if (t.to === "more") $("#tbMore").classList.add("tb-join");
+  else if (t.to === "hidden") $("#tbHidden").classList.add("tb-join");
+  else if (t.to === "join") $("#tbEd").children[t.row]?.classList.add("tb-join");
+  else { const ins = document.createElement("div"); ins.className = "tb-ins"; const rows = $("#tbEd").children; rows[t.at] ? rows[t.at].before(ins) : $("#tbEd").appendChild(ins); }
+}
+document.addEventListener("pointerdown", e => {
+  const chip = e.target.closest?.(".setsec[data-sec=toolbar] .tb-chip"), handle = e.target.closest?.(".setsec[data-sec=toolbar] .tb-h");
+  if (!chip && !handle) return;
+  e.preventDefault();
+  const src = chip || handle.closest(".tb-row"), key = chip?.dataset.k, rowI = handle ? +handle.closest(".tb-row").dataset.i : null;
+  const sx = e.clientX, sy = e.clientY, r = src.getBoundingClientRect(), z = uiz();
+  let ghost = null, target = null;
+  const move = ev => {
+    if (!ghost){
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+      ghost = src.cloneNode(true); ghost.classList.add("tb-ghost"); ghost.style.width = r.width / z + "px"; document.body.appendChild(ghost); src.classList.add("tb-dragging");
+    }
+    ghost.style.left = (ev.clientX - (sx - r.left)) / z + "px"; ghost.style.top = (ev.clientY - (sy - r.top)) / z + "px";
+    target = tbarTarget(ev.clientX, ev.clientY, !!handle);
+    if (key === "railMore" && target && (target.to !== "slot")) target = null;   /* More stays a toolbar button of its own */
+    tbarShow(target);
+  };
+  const up = () => {
+    removeEventListener("pointermove", move, true); removeEventListener("pointerup", up, true);
+    ghost?.remove(); src.classList.remove("tb-dragging"); tbarShow(null);
+    if (!ghost || !target) return;
+    if (handle) return tbarCommit(rows => {
+      const [row] = rows.splice(rowI, 1); rows.splice(target.at > rowI ? target.at - 1 : target.at, 0, row);
+    });
+    tbarCommit((rows, box) => {
+      const ref = target.to === "join" ? rows[target.row] : rows[target.at] || null;
+      if (target.to === "join" && ref.keys.includes("railMore")) return false;
+      /* where it was */
+      let pos = target.pos;
+      for (const rw of rows) if (!rw.gap){ const j = rw.keys.indexOf(key); if (j >= 0){ if (rw === ref && j < pos) pos--; rw.keys.splice(j, 1); } }
+      box.more = box.more.filter(k => k !== key); box.hidden = box.hidden.filter(k => k !== key);
+      if (target.to === "more") box.more.push(key);
+      else if (target.to === "hidden") box.hidden.push(key);
+      else if (target.to === "join") ref.keys.splice(pos, 0, key);
+      else { const at = ref ? rows.indexOf(ref) : rows.length; rows.splice(at, 0, {keys:[key]}); }
+    });
+  };
+  addEventListener("pointermove", move, true); addEventListener("pointerup", up, true);
+}, true);
+$("#tbGap").addEventListener("click", () => tbarCommit(rows => { rows.push({gap:true}); }));
+$("#tbUndo").addEventListener("click", () => { railUseTemplate(railActive); renderToolbarSettings(); });
+$("#tbSave").addEventListener("click", async () => {
+  const name = await askOpen({title:"Save as template", build(body){ const i = document.createElement("input"); i.type = "text"; i.maxLength = 40; i.value = railActive === "grouped" || railActive === "classic" ? "My toolbar" : railTemplateName(railActive) + " copy"; i.style.width = "100%"; body.appendChild(i); return {focus:() => { i.focus(); i.select(); }, i}; },
+    buttons:[{label:"Cancel", value:null}, {label:"Save", primary:true, value:a => a.i.value.trim() || "My toolbar"}]});
+  if (!name) return;
+  railSaveAsTemplate(name); renderToolbarSettings(); toast("Saved “" + name + "”.");
+});
+$("#tbRename").addEventListener("click", async () => {
+  const list = railTemplates(), t = list.find(x => x.id === railActive); if (!t) return;
+  const name = await askOpen({title:"Rename template", build(body){ const i = document.createElement("input"); i.type = "text"; i.maxLength = 40; i.value = t.name; i.style.width = "100%"; body.appendChild(i); return {focus:() => { i.focus(); i.select(); }, i}; },
+    buttons:[{label:"Cancel", value:null}, {label:"Rename", primary:true, value:a => a.i.value.trim()}]});
+  if (!name) return;
+  t.name = name; railSaveTemplates(list); renderToolbarSettings();
+});
+$("#tbDelete").addEventListener("click", async () => {
+  const list = railTemplates(), t = list.find(x => x.id === railActive); if (!t) return;
+  if (!await askConfirm({title:"Delete “" + t.name + "”?", message:"The toolbar goes back to Grouped.", okLabel:"Delete", danger:true})) return;
+  railSaveTemplates(list.filter(x => x !== t)); railUseTemplate("grouped"); renderToolbarSettings();
+});
+document.querySelector('.setnav[data-sec="toolbar"]')?.addEventListener("click", renderToolbarSettings);
 function startRailEdit(){
   if (document.body.classList.contains("rail-edit")) return;
   document.body.classList.add("rail-edit");
@@ -15051,7 +15369,7 @@ function startRailEdit(){
     bar.querySelector("#railAddDiv").addEventListener("click", () => {
       const d = document.createElement("div"); d.className = "railDivider"; railMain().insertBefore(d, $("#railMore")); saveRailLayout();
     });
-    bar.querySelector("#railReset").addEventListener("click", () => { applyRailLayout(railDefault); SAFE_STORE.set(RAIL_LAYOUT_KEY, ""); toast("Toolbar reset."); });
+    bar.querySelector("#railReset").addEventListener("click", () => { railUseTemplate(railActive) || railUseTemplate("grouped"); toast("Toolbar reset."); });
     bar.querySelector("#railDone").addEventListener("click", endRailEdit);
   }
 }
@@ -15124,14 +15442,18 @@ document.addEventListener("pointerdown", e => {
 document.addEventListener("click", e => {
   if (document.body.classList.contains("rail-edit") && e.target.closest?.("#railTools .tool, #morePop .tool")){ e.preventDefault(); e.stopImmediatePropagation(); }
 }, true);
-/* right-click the toolbar */
+/* right-click the toolbar: rearranging in place works on a toolbar without
+   groups (Classic); anything else goes to Settings › Toolbar */
 $("#rail").addEventListener("contextmenu", e => {
   if (e.target.closest?.("#railCardPage")) return;
   e.preventDefault(); ctx.innerHTML = "";
+  const grouped = !!railMain().querySelector(".railgrp");
   const b = document.createElement("button");
   b.textContent = document.body.classList.contains("rail-edit") ? "Done editing toolbar" : "Edit toolbar\u2026";
-  b.addEventListener("click", () => { closeCtx(); document.body.classList.contains("rail-edit") ? endRailEdit() : startRailEdit(); });
-  ctx.appendChild(b); ctx.classList.add("open");
+  b.addEventListener("click", () => { closeCtx(); document.body.classList.contains("rail-edit") ? endRailEdit() : grouped ? openToolbarSettings() : startRailEdit(); });
+  const t = document.createElement("button"); t.textContent = "Toolbar settings\u2026";
+  t.addEventListener("click", () => { closeCtx(); openToolbarSettings(); });
+  ctx.append(b, t); ctx.classList.add("open");
   const z = uiz(); ctx.style.left = (e.clientX / z) + "px"; ctx.style.top = (e.clientY / z) + "px";
 });
 /* Card/Sheet inside #morePop stay put; Block moves between there and the
@@ -17136,6 +17458,7 @@ const ESC_LAYERS = [
   {sel:"#ctx", close:() => closeCtx()},
   {sel:"#crumbPop"}, {sel:"#cpEmojiPop"}, {sel:"#cpAddPop"},
   {sel:"#tbColorPop"}, {sel:"#colorPop"}, {sel:"#labelPop"}, {sel:"#widgetPop"},
+  {sel:".railgrp.open", close:() => closeRailFly()},
   {sel:"#morePop", close:() => document.body.classList.contains("rail-edit") ? endRailEdit() : $("#morePop").classList.remove("open")},
   {sel:"#barMoreMenu"}, {sel:"#cloudMenu"},
   {sel:"#zoomPanel", panel:true}, {sel:"#searchPanel", panel:true}, {sel:"#favPanel", panel:true}, {sel:"#tagSide", panel:true, close:() => closeTagSide()},
@@ -19085,7 +19408,7 @@ async function renderBoardFolder(){
   btn(row(), "Update archive", async e => { e.target.disabled = true; e.target.textContent = "Updating\u2026"; await updateArchiveFolder(null, true); renderBoardFolder(); });
 }
 $("#btnBoardFolder").addEventListener("click", openBoardFolderPanel);
-$("#setEditRail").addEventListener("click", () => { closeOverlay($("#settingsOverlay")); startRailEdit(); });
+$("#setEditRail").addEventListener("click", () => openToolbarSettings());
 $("#btnLabels").addEventListener("click", () => {
   /* with cards selected, this labels all of them at once */
   if (selection.size){
@@ -33490,6 +33813,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b181", [
+    "New toolbar: similar tools grouped. Hover a corner triangle for the rest.",
+    "Settings \u203a Toolbar: Grouped or Classic, edit groups, save templates.",
+    "New Board and Widgets icons. Image merged into Upload.",
+  ]],
   ["b180", [
     "PDF reader: select and copy text, highlight, fill in forms, zoom. Works on iPad.",
     "PDF reader: Convert to document opens the text in the editor.",
@@ -33520,15 +33848,6 @@ const PATCH_NOTES = [
     "PDF, Word and text files import as documents.",
     "Notes delete without asking.",
     "Mood tracker and calendar scale when resized.",
-  ]],
-  ["b175", [
-    "Picture menus: added From your Library.",
-    "Fixed: D&D sheet dropdown text unreadable on dark themes.",
-    "Fixed: \u201csetPointerCapture\u201d script error.",
-  ]],
-  ["b174", [
-    "Restyled tick boxes, dropdowns, text fields and dialog buttons.",
-    "Share menu reorganised. Edit board shows 16 colours.",
   ]],
 ];
 function renderPatchNotes(){
