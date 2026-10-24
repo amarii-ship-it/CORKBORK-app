@@ -4098,6 +4098,11 @@ body.note-full-open #textBar{visibility:hidden !important;}
 .card.type-grid.album-free{outline:2px solid color-mix(in srgb, var(--edit) 80%, transparent); outline-offset:2px;}
 /* headings scale their words with the box */
 .card.type-heading .h-text, .card.type-heading .note-edit{font-size:calc(27px * var(--fscale, 1));}
+/* U-049: a list inside a column is the full, working list */
+.colchild.cc-fulllist{padding:0; background:var(--surface);}
+.cc-list{padding:10px 12px 8px; cursor:default;}
+.cc-list .list-head{margin-bottom:4px;}
+.colchild .cc-preview{background:transparent; box-shadow:none; border:none; margin:0; cursor:inherit; max-height:none;}
 </style>
 </head>
 <body>
@@ -5388,7 +5393,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b177";
+window.BUILD = "b178";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6885,7 +6890,7 @@ function renderBoard(){
        cards therefore carry the count they were drawn with. */
     const dependency = c.type === "board" ? subBoardCounts(c.boardId) + (boardIsPrivate(c.boardId) ? ":private" : "") + (board(c.boardId)?.share ? ":shared" : board(c.boardId)?.joined ? ":joined" : "") :
       (c.type === "column" || c.type === "grid")
-        ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0)).join("|") :
+        ? (c.childIds || []).map(k => k + ":" + (card(k)?.updatedAt || 0) + (card(k)?.linkTo ? ":" + (card(card(k).linkTo)?.updatedAt || 0) : "")).join("|") :
       c.type === "widget" && c.widget === "calendar" ? calSignature(id) :
       c.type === "todo" && c.linkTo ? "L" + (card(c.linkTo)?.updatedAt ?? "gone") : null;
     if (hit && hit.el && (hit.ref === c || id === editingId) && hit.dependency === dependency){
@@ -8262,24 +8267,20 @@ function buildColumnChild(col, k){
     d.appendChild(h);
   }
   else if (k.type === "todo"){
-    const L = k.linkTo ? (card(k.linkTo) || {title:"Deleted list", items:[]}) : k, items = L.items || [];
-    const w = document.createElement("div"); w.className = "cc-todo";
-    const t = document.createElement("div"); t.className = "cc-title"; t.textContent = (k.linkTo ? "\u2197 " : "") + (L.title || "To-do");
-    const done = items.filter(x => x.done).length;
-    const s = document.createElement("div"); s.className = "cc-sub"; s.textContent = done + " of " + items.length + " done";
-    w.append(t, s); d.appendChild(w);
+    /* U-049: a list in a column is the whole list, and works like one:
+       tick, add, due dates, colours, reorder. Columns group things; they
+       don't shrink them. */
+    d.classList.add("cc-fulllist");
+    const w = document.createElement("div"); w.className = "cc-list";
+    buildTodo(k, w, "col");
+    d.appendChild(w);
   }
   else {
-    /* Fallback for any type without a dedicated chip (grid, sheet, column,
-       and anything added later). Previously an unhandled type produced an
-       EMPTY .colchild — invisible on screen, so it could not be selected,
-       dragged out or deleted. Never render nothing. */
-    const w = document.createElement("div"); w.className = "cc-generic";
-    const t = document.createElement("div"); t.className = "cc-title";
-    t.textContent = k.title || k.name || k.caption || typeLabel(k.type);
-    const s2 = document.createElement("div"); s2.className = "cc-sub";
-    s2.textContent = typeLabel(k.type);
-    w.append(t, s2); d.appendChild(w);
+    /* Anything else looks like itself, the same way Unsorted draws it
+       (U-033, U-049): a sheet's face, a file, a document's name, an album… */
+    const w = document.createElement("div"); w.className = "ditem cc-preview";
+    drawerPreview(k, w);
+    d.appendChild(w);
   }
   /* drag a child out of (or between) columns */
   d.addEventListener("pointerdown", e => startChildDrag(e, d, col.id, k.id));
@@ -32964,6 +32965,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b178", [
+    "Columns show their contents in full. Lists inside a column work like normal lists.",
+  ]],
   ["b177", [
     "Albums: resizing scales the icons. Double-click to resize the grid only.",
     "Headings: resizing scales the text. Double-click to edit.",
