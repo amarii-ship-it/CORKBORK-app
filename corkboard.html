@@ -1024,7 +1024,18 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz-temp{border:1px dashed var(--ppb, #C9B08A); border-radius:5px; padding:4px 0; background:transparent; cursor:pointer; text-align:center;}
 .bz-tv{font:700 18px Georgia; color:var(--pink, #2C2415);}
 .bz-main{display:grid; grid-template-columns:220px 228px 1fr; gap:8px; margin-top:14px; align-items:start;}
-.bz-col{display:flex; flex-direction:column; gap:8px;}
+.bz-col{display:flex; flex-direction:column; gap:8px; min-width:0; min-height:40px;}
+.bz-main[data-wide="0"]{grid-template-columns:minmax(0,1fr) 220px 228px;}
+.bz-main[data-wide="1"]{grid-template-columns:220px minmax(0,1fr) 228px;}
+.bz-main[data-wide="2"]{grid-template-columns:220px 228px minmax(0,1fr);}
+/* b180: Arrange — drag the boxes between the three columns */
+.bz.bz-arranging .bz-main > .bz-col{outline:1.5px dashed color-mix(in srgb, var(--acc) 45%, transparent); outline-offset:3px; border-radius:6px;}
+.bz.bz-arranging .bz-main [data-bz]{cursor:grab; touch-action:none; user-select:none; position:relative;}
+.bz.bz-arranging .bz-main [data-bz] *{pointer-events:none;}
+.bz.bz-arranging .bz-main [data-bz]::after{content:"\2725"; position:absolute; top:4px; right:6px; font-size:11px; color:var(--acc);}
+.bz .bz-dragging{background:var(--pp0, #FBF6EC); z-index:50; transition:none; box-shadow:0 10px 26px rgba(0,0,0,.28); cursor:grabbing;}
+.bz .bz-drop{height:4px; border-radius:2px; background:var(--acc); flex:none;}
+.bz-btn.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 .bz-sec{padding:7px 10px;}
 .bz-sec h4{font-size:13px; color:var(--pink3, #5A4A2E); border-bottom:1px solid var(--pp3, #D8C7A5); padding-bottom:3px; margin-bottom:5px;}
 .bz-ia{display:flex; justify-content:space-around; text-align:center;}
@@ -1098,7 +1109,7 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 @media (max-width:900px){
   .bz-top{grid-template-columns:repeat(6, 1fr);}
   .bz-hp{grid-column:1/-1;}
-  .bz-main{grid-template-columns:1fr;}
+  .bz-main, .bz-main[data-wide]{grid-template-columns:1fr;}
   .bz-head .bz-gap{flex-basis:100%; height:0;}
   .bz-sep{display:none;}
   .bz-ab .bz-lab{font-size:6.5px; letter-spacing:0;}
@@ -3621,14 +3632,48 @@ table.tb input{
 table.tb input:focus{background:var(--canvas); box-shadow:inset 0 0 0 1px var(--accent);}
 table.tb input.is-formula{color:var(--edit); font-weight:600;}
 #pdfReader{position:fixed; inset:0; z-index:320; background:var(--canvas); display:none; flex-direction:column;}
-#pdfReader.open{display:flex;}
+#pdfReader.open{display:flex;} #pdfReader:focus{outline:none;}
 #pdfBar{display:flex; align-items:center; gap:12px; padding:9px 16px; flex:none;
   background:var(--surface-hi); border-bottom:1px solid var(--border);}
 #pdfName{font-weight:600; font-size:14px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .pdfnav{display:flex; align-items:center; gap:4px; flex:none;}
 #pdfPage{width:54px; text-align:center; font-size:13px; padding:4px 6px; border-radius:5px;
   background:var(--surface); border:1px solid var(--border); color:var(--text);}
-#pdfFrame{flex:1; width:100%; border:0; background:#525659;}
+#pdfFrame{flex:1; width:100%; border:0; background:#525659; display:none;}
+#pdfReader.basic #pdfFrame{display:block;} #pdfReader.basic #pdfScroll, #pdfReader.basic .pdfzoom, #pdfReader.basic #pdfHlMode{display:none;}
+#pdfScroll{flex:1; overflow:auto; background:#525659; padding:18px 12px 70px; -webkit-overflow-scrolling:touch;}
+#pdfPages{display:flex; flex-direction:column; align-items:center; gap:14px; min-width:min-content;}
+.pdfpg{position:relative; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.35); flex:none; overflow:hidden;}
+.pdfpg > canvas{position:absolute; inset:0; width:100%; height:100%;}
+.pdfpg .pdfhl{position:absolute; inset:0; z-index:1; pointer-events:none;}
+.pdfhl i{position:absolute; mix-blend-mode:multiply; border-radius:2px;}
+.pdfpg .textLayer{position:absolute; inset:0; overflow:hidden; line-height:1; text-align:initial; z-index:2;
+  -webkit-text-size-adjust:none; text-size-adjust:none; forced-color-adjust:none; transform-origin:0 0;}
+.pdfpg .textLayer :is(span,br){color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0 0;}
+.pdfpg .textLayer span.markedContent{top:0; height:0;}
+.pdfpg .textLayer ::selection{background:rgba(40,120,255,.35);}
+.pdfpg .textLayer br::selection{background:transparent;}
+.pdfpg .textLayer .endOfContent{display:block; position:absolute; inset:100% 0 0; z-index:-1; cursor:default; user-select:none;}
+.pdfpg .textLayer .endOfContent.active{top:0;}
+.pdfpg .annotationLayer{position:absolute; inset:0; z-index:3; pointer-events:none; transform-origin:0 0;}
+.pdfpg .annotationLayer section{position:absolute; pointer-events:auto; box-sizing:border-box; text-align:initial;}
+.pdfpg .annotationLayer :is(.linkAnnotation, .buttonWidgetAnnotation.pushButton) > a{position:absolute; inset:0;}
+.pdfpg .annotationLayer :is(input, textarea, select){position:absolute; inset:0; width:100%; height:100%; box-sizing:border-box; margin:0;
+  font:calc(9px * var(--scale-factor)) Helvetica, Arial, sans-serif; color:#000; background:rgba(0,84,255,.10); border:1px solid transparent; border-radius:0; padding:0 2px; resize:none;}
+.pdfpg .annotationLayer :is(input, textarea, select):hover{border-color:rgba(0,84,255,.6);}
+.pdfpg .annotationLayer :is(input, textarea, select):focus{background:rgba(0,84,255,.04); border-color:#0054ff; outline:none;}
+.pdfpg .annotationLayer input:is([type=checkbox],[type=radio]){appearance:auto; -webkit-appearance:auto; accent-color:#0054ff; padding:0;}
+.pdfpg .annotationLayer .popupAnnotation, .pdfpg .annotationLayer .popup{display:none;}
+.pdfpg .pdfwait{position:absolute; inset:0; display:grid; place-items:center; color:#999; font-size:13px;}
+#pdfHlMode.on{background:#ffe066; color:#3a2b00;}
+#pdfZoomPct{font-size:12px; min-width:40px; text-align:center; color:var(--text-dim);}
+#pdfSelChip{position:fixed; z-index:330; display:none; gap:4px; align-items:center; padding:5px; border-radius:10px;
+  background:var(--surface-hi); border:1px solid var(--border); box-shadow:0 6px 20px rgba(0,0,0,.25);}
+#pdfSelChip.open{display:flex;}
+#pdfSelChip [data-hl]{width:22px; height:22px; border-radius:50%; border:2px solid rgba(0,0,0,.15); padding:0; cursor:pointer;}
+#pdfSelChip [data-hl=y]{background:#ffe066;} #pdfSelChip [data-hl=g]{background:#9be38f;} #pdfSelChip [data-hl=b]{background:#9fd3ff;} #pdfSelChip [data-hl=p]{background:#ffaad4;}
+#pdfSelChip [data-act]{font:600 12px inherit; padding:4px 9px; border-radius:7px; border:0; background:var(--surface); color:var(--text); cursor:pointer;}
+#pdfSelChip.sel [data-act=unhl], #pdfSelChip.mark [data-hl], #pdfSelChip.mark [data-act=copy]{display:none;}
 #pdfOcrStatus{font-size:11px; color:var(--text-dim); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 #docReader{position:fixed; inset:0; z-index:320; background:var(--canvas); display:none; flex-direction:column;}
 #docReader.open{display:flex;}
@@ -4914,15 +4959,24 @@ body.note-full-open #textBar{visibility:hidden !important;}
   <div id="pdfBar">
     <span id="pdfName"></span>
     <span class="pdfnav">
-      <button id="pdfPrev" class="barbtn">\u2039</button>
+      <button id="pdfPrev" class="barbtn" title="Previous page">&#8249;</button>
       <input id="pdfPage" type="number" min="1" value="1">
-      <button id="pdfNext" class="barbtn">\u203a</button>
+      <button id="pdfNext" class="barbtn" title="Next page">&#8250;</button>
     </span>
-    <button id="pdfAsNote" class="barbtn">Make a document</button>
+    <span class="pdfnav pdfzoom">
+      <button id="pdfZoomOut" class="barbtn" title="Zoom out">−</button>
+      <span id="pdfZoomPct">100%</span>
+      <button id="pdfZoomIn" class="barbtn" title="Zoom in">+</button>
+    </span>
+    <button id="pdfHlMode" class="barbtn" title="Highlight: anything you select is highlighted">Highlight</button>
+    <button id="pdfAsNote" class="barbtn" title="Turn this PDF's text into a document you can edit">Convert to document</button>
+    <button id="pdfSaveFilled" class="barbtn" style="display:none" title="Download a copy of this PDF with your answers filled in">Download filled PDF</button>
     <button id="pdfOcr" class="barbtn">OCR this page</button><span id="pdfOcrStatus"></span>
     <button id="pdfOpenTab" class="barbtn">Open in tab</button>
     <button id="pdfDone" class="barbtn">Done</button>
   </div>
+  <div id="pdfScroll"><div id="pdfPages"></div></div>
+  <div id="pdfSelChip"><button data-hl="y" title="Yellow"></button><button data-hl="g" title="Green"></button><button data-hl="b" title="Blue"></button><button data-hl="p" title="Pink"></button><button data-act="copy">Copy</button><button data-act="unhl">Remove highlight</button></div>
   <iframe id="pdfFrame"></iframe>
 </div>
 <!-- Plain-text document reader. TXT is editable in place; DOCX is shown as
@@ -5393,7 +5447,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b179";
+window.BUILD = "b180";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -7463,6 +7517,25 @@ function buildFile(c, el){
    Full page, with the page number kept on the card so closing at page 7 and
    coming back later lands on page 7 — including on the small preview. */
 let pdfReaderId = null;
+/* b180: the reader draws pages itself with pdf.js (already used for import
+   and OCR), so text can be selected and copied, forms filled in and text
+   highlighted, on iPad too (its built-in viewer shows one page in a frame).
+   Without pdf.js (offline before its first download) the browser's own
+   viewer is the fallback. Highlights and form answers live on the card. */
+let pdfView = null;
+const PDF_HL = {y:"#ffe066", g:"#9be38f", b:"#9fd3ff", p:"#ffaad4"};
+const PDF_L10N = {getLanguage:async () => "en", getDirection:async () => "ltr", get:async (k, a, fb) => fb || "", translate:async () => {}};
+const pdfLinks = { externalLinkTarget:2, externalLinkRel:"noopener noreferrer nofollow", eventBus:null, isInPresentationMode:false,
+  getDestinationHash:() => "#", getAnchorUrl:() => "#", setHash(){}, executeNamedAction(){}, executeSetOCGState(){}, cachePageRef(){},
+  goToDestination(dest){ pdfJumpToDest(dest); }, goToPage(n){ pdfGo(n); },
+  addLinkAttributes(link, url){ const u = safeWebUrl(url); if (u){ link.href = u; link.target = "_blank"; link.rel = "noopener noreferrer nofollow"; } } };
+async function pdfJumpToDest(dest){
+  const v = pdfView; if (!v) return;
+  try {
+    const d = typeof dest === "string" ? await v.pdf.getDestination(dest) : dest;
+    if (Array.isArray(d) && d[0]) pdfGo((await v.pdf.getPageIndex(d[0])) + 1);
+  } catch (_) {}
+}
 async function openPdfReader(id){
   const c = card(id); if (!cardCanOpen(c)) return;
   pdfReaderId = id;
@@ -7470,24 +7543,249 @@ async function openPdfReader(id){
   $("#pdfName").textContent = c.fileName || "Document";
   $("#pdfPage").value = page;
   $("#pdfReader").classList.add("open");
-  try { $("#pdfFrame").src = ((c.archiveRef || !c.dataUrl) ? await cardSourceUrl(c) : c.dataUrl) + "#page=" + page + "&view=FitH"; }
-  catch (err){ toast("Could not open that archived PDF: " + (err?.message || "unknown error"), 8000); closePdfReader(); }
+  $("#pdfReader").classList.remove("basic");
+  $("#pdfReader").focus({preventScroll:true});
+  $("#pdfSaveFilled").style.display = "none";
+  $("#pdfPages").textContent = "";
+  pdfCloseChip();
+  let blob;
+  try { blob = await cardSourceBlob(c); }
+  catch (err){ toast("Could not open that archived PDF: " + (err?.message || "unknown error"), 8000); closePdfReader(); return; }
+  if (pdfReaderId !== id) return;
+  try {
+    await loadPdfRenderer();
+    const pdf = await window.pdfjsLib.getDocument({data:new Uint8Array(await blob.arrayBuffer()), isEvalSupported:false}).promise;
+    if (pdfReaderId !== id){ pdf.destroy?.(); return; }
+    for (const [k, v] of Object.entries(c.pdfForm || {})) if (v && typeof v === "object") pdf.annotationStorage.setValue(k, v);
+    let fields = null; try { fields = await pdf.getFieldObjects(); } catch (_) {}
+    pdfView = {id, pdf, fields, zoom:pdfView?.zoom || 1, pages:[], io:null};
+    $("#pdfSaveFilled").style.display = fields && Object.keys(fields).length ? "" : "none";
+    await pdfLayout();
+    pdfGo(page, true);
+  } catch (err){
+    /* the browser's own viewer: reading only */
+    if (pdfReaderId !== id) return;
+    $("#pdfReader").classList.add("basic");
+    try { $("#pdfFrame").src = URL.createObjectURL(blob) + "#page=" + page + "&view=FitH"; } catch (_) {}
+    toast("Basic PDF view: highlighting and forms need internet the first time.", 6000);
+  }
 }
-function pdfGo(n){
+/* page boxes for every page; each is drawn when it scrolls near */
+async function pdfLayout(){
+  const v = pdfView; if (!v) return;
+  v.io?.disconnect();
+  const host = $("#pdfPages"); host.textContent = ""; v.pages = [];
+  const first = await v.pdf.getPage(1), base = first.getViewport({scale:1});
+  const room = Math.max(200, $("#pdfScroll").clientWidth - 28);
+  v.scale = Math.min(room / base.width, 1.6) * v.zoom;
+  $("#pdfZoomPct").textContent = Math.round(v.zoom * 100) + "%";
+  for (let n = 1; n <= v.pdf.numPages; n++){
+    const el = document.createElement("div"); el.className = "pdfpg"; el.dataset.page = n;
+    el.style.width = base.width * v.scale + "px"; el.style.height = base.height * v.scale + "px";
+    el.style.setProperty("--scale-factor", v.scale);
+    el.innerHTML = '<div class="pdfwait">' + n + '</div>';
+    host.appendChild(el); v.pages.push({n, el, drawn:false});
+  }
+  v.io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) pdfDrawPage(+e.target.dataset.page); },
+    {root:$("#pdfScroll"), rootMargin:"900px 0px"});
+  for (const pg of v.pages) v.io.observe(pg.el);
+}
+async function pdfDrawPage(n){
+  const v = pdfView, pg = v?.pages[n - 1]; if (!pg || pg.drawn) return;
+  pg.drawn = true;
+  try {
+    const page = await v.pdf.getPage(n), vp = page.getViewport({scale:v.scale});
+    if (pdfView !== v) return;
+    const el = pg.el; el.style.width = vp.width + "px"; el.style.height = vp.height + "px";
+    /* iPad Safari refuses canvases much past 16 million pixels */
+    const dpr = Math.min(window.devicePixelRatio || 1, Math.sqrt(16e6 / (vp.width * vp.height)), 3);
+    const cv = document.createElement("canvas"); cv.width = Math.floor(vp.width * dpr); cv.height = Math.floor(vp.height * dpr);
+    await page.render({canvasContext:cv.getContext("2d"), viewport:vp, transform:dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
+      annotationMode:window.pdfjsLib.AnnotationMode?.ENABLE_FORMS ?? 2, annotationStorage:v.pdf.annotationStorage}).promise;
+    if (pdfView !== v) return;
+    const hl = document.createElement("div"); hl.className = "pdfhl";
+    const tl = document.createElement("div"); tl.className = "textLayer";
+    const al = document.createElement("div"); al.className = "annotationLayer";
+    el.textContent = ""; el.append(cv, hl, tl, al);
+    pdfPaintMarks(n);
+    try {
+      const task = window.pdfjsLib.renderTextLayer({textContentSource:page.streamTextContent ? page.streamTextContent() : await page.getTextContent(),
+        container:tl, viewport:vp, textDivs:[]});
+      await task.promise;
+      const end = document.createElement("div"); end.className = "endOfContent"; tl.appendChild(end);
+    } catch (_) {}
+    try {
+      const annotations = await page.getAnnotations({intent:"display"});
+      if (annotations.length){
+        const layer = new window.pdfjsLib.AnnotationLayer({div:al, accessibilityManager:null, annotationCanvasMap:null, l10n:PDF_L10N, page, viewport:vp.clone({dontFlip:true})});
+        await layer.render({viewport:vp.clone({dontFlip:true}), div:al, annotations, page, linkService:pdfLinks, downloadManager:null,
+          annotationStorage:v.pdf.annotationStorage, imageResourcesPath:"", renderForms:true, enableScripting:false,
+          hasJSActions:false, fieldObjects:v.fields});
+      }
+    } catch (_) {}
+  } catch (err){ pg.drawn = false; }
+}
+function pdfCurrentPage(){
+  const v = pdfView; if (!v) return 1;
+  const top = $("#pdfScroll").getBoundingClientRect().top + 60;
+  let best = 1;
+  for (const pg of v.pages){ if (pg.el.getBoundingClientRect().top <= top) best = pg.n; else break; }
+  return best;
+}
+function pdfGo(n, instant){
   if (!pdfReaderId) return;
-  const page = Math.max(1, Math.round(n) || 1);
-  $("#pdfPage").value = page;
   const c = card(pdfReaderId); if (!c) return;
-  /* reloading with a new #page is the only way to drive the built-in viewer */
-  const base = $("#pdfFrame").src.split("#")[0] || c.dataUrl || "";
-  $("#pdfFrame").src = base + "#page=" + page + "&view=FitH";
-  patchCard(pdfReaderId, { pdfPage: page }); markDirty();
+  const max = pdfView ? pdfView.pdf.numPages : Infinity;
+  const page = Math.min(max, Math.max(1, Math.round(n) || 1));
+  $("#pdfPage").value = page;
+  if (pdfView){
+    const el = pdfView.pages[page - 1]?.el;
+    if (el) $("#pdfScroll").scrollTop = el.offsetTop - 14;
+  } else if ($("#pdfReader").classList.contains("basic")){
+    const base = $("#pdfFrame").src.split("#")[0];
+    if (base) $("#pdfFrame").src = base + "#page=" + page + "&view=FitH";
+  }
+  if (c.pdfPage !== page){ patchCard(pdfReaderId, { pdfPage: page }); markDirty(); }
+}
+let pdfScrollT = 0;
+function pdfOnScroll(){
+  pdfCloseChip();
+  clearTimeout(pdfScrollT);
+  pdfScrollT = setTimeout(() => {
+    if (!pdfView || !pdfReaderId) return;
+    const n = pdfCurrentPage(); $("#pdfPage").value = n;
+    if (card(pdfReaderId)?.pdfPage !== n){ patchCard(pdfReaderId, {pdfPage:n}); markDirty(); }
+  }, 250);
+}
+async function pdfZoom(f){
+  const v = pdfView; if (!v) return;
+  const n = pdfCurrentPage();
+  v.zoom = Math.min(4, Math.max(.4, Math.round(v.zoom * f * 100) / 100));
+  await pdfLayout(); pdfGo(n, true);
+}
+/* ---- form answers: kept on the card, so they come back next time ---- */
+let pdfFormT = 0;
+function pdfFormSave(){
+  clearTimeout(pdfFormT);
+  const v = pdfView; if (!v || !card(v.id)) return;
+  let all = null; try { all = v.pdf.annotationStorage.getAll(); } catch (_) {}
+  const out = {};
+  for (const [k, x] of Object.entries(all || {})){
+    if (!x || typeof x !== "object" || typeof x.serialize === "function") continue;   /* pdf.js's own drawing tools */
+    try { out[k] = JSON.parse(JSON.stringify(x)); } catch (_) {}
+  }
+  if (JSON.stringify(out) === JSON.stringify(card(v.id).pdfForm || {})) return;
+  patchCard(v.id, {pdfForm:out}); markDirty();
+}
+function pdfFormChanged(){ clearTimeout(pdfFormT); pdfFormT = setTimeout(pdfFormSave, 350); }
+async function pdfSaveFilled(){
+  const v = pdfView; if (!v) return;
+  try {
+    const bytes = await v.pdf.saveDocument();
+    const name = (card(v.id)?.fileName || "document.pdf").replace(/\.pdf$/i, "") + " (filled).pdf";
+    downloadBlob(new Blob([bytes], {type:"application/pdf"}), name);
+  } catch (err){ toast("Couldn't make the filled copy: " + (err?.message || "unknown error"), 7000); }
+}
+/* ---- highlights: rectangles as fractions of the page ---- */
+function pdfPaintMarks(n){
+  const v = pdfView, el = v?.pages[n - 1]?.el, box = el?.querySelector(".pdfhl"); if (!box) return;
+  box.textContent = "";
+  for (const m of card(v.id)?.pdfMarks || []){
+    if (m.p !== n) continue;
+    for (const r of m.r || []){
+      const i = document.createElement("i"); i.dataset.mark = m.id;
+      i.style.cssText = `left:${r[0] * 100}%;top:${r[1] * 100}%;width:${r[2] * 100}%;height:${r[3] * 100}%;background:${PDF_HL[m.c] || PDF_HL.y}`;
+      box.appendChild(i);
+    }
+  }
+}
+function pdfSelectionRects(){
+  const sel = getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+  const byPage = new Map();
+  for (let k = 0; k < sel.rangeCount; k++){
+    for (const r of sel.getRangeAt(k).getClientRects()){
+      if (r.width < 1 || r.height < 1) continue;
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const pg = pdfView?.pages.find(p => { const b = p.el.getBoundingClientRect(); return cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom; });
+      if (!pg) continue;
+      const b = pg.el.getBoundingClientRect();
+      const list = byPage.get(pg.n) || []; byPage.set(pg.n, list);
+      list.push([(r.left - b.left) / b.width, (r.top - b.top) / b.height, r.width / b.width, r.height / b.height]);
+    }
+  }
+  /* one rectangle per line: pieces on the same line join up */
+  for (const [n, list] of byPage){
+    list.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+    const out = [];
+    for (const r of list){
+      const last = out[out.length - 1];
+      if (last && Math.abs(last[1] - r[1]) < last[3] * .5 && r[0] <= last[0] + last[2] + .02){
+        const x2 = Math.max(last[0] + last[2], r[0] + r[2]), y2 = Math.max(last[1] + last[3], r[1] + r[3]);
+        last[0] = Math.min(last[0], r[0]); last[1] = Math.min(last[1], r[1]); last[2] = x2 - last[0]; last[3] = y2 - last[1];
+      } else out.push(r.slice());
+    }
+    byPage.set(n, out.map(r => r.map(x => Math.round(x * 1e4) / 1e4)));
+  }
+  return byPage.size ? byPage : null;
+}
+function pdfHighlight(colour){
+  const v = pdfView, rects = pdfSelectionRects(); if (!v || !rects) return false;
+  pushUndo();
+  const marks = [...(card(v.id)?.pdfMarks || [])];
+  for (const [p, r] of rects) marks.push({id:uid("h"), p, c:PDF_HL[colour] ? colour : "y", r});
+  patchCard(v.id, {pdfMarks:marks}); markDirty();
+  try { localStorage.setItem("cb_pdfHl", colour); } catch (_) {}
+  getSelection().removeAllRanges();
+  for (const p of rects.keys()) pdfPaintMarks(p);
+  pdfCloseChip();
+  return true;
+}
+function pdfMarkAt(x, y){
+  const v = pdfView; if (!v) return null;
+  for (const i of document.querySelectorAll("#pdfPages .pdfhl i")){
+    const b = i.getBoundingClientRect();
+    if (x >= b.left && x <= b.right && y >= b.top && y <= b.bottom) return i.dataset.mark;
+  }
+  return null;
+}
+function pdfRemoveMark(markId){
+  const v = pdfView; if (!v) return;
+  const marks = card(v.id)?.pdfMarks || [], m = marks.find(x => x.id === markId); if (!m) return;
+  pushUndo(); patchCard(v.id, {pdfMarks:marks.filter(x => x.id !== markId)}); markDirty();
+  pdfPaintMarks(m.p); pdfCloseChip();
+}
+function pdfOpenChip(x, y, mode, markId){
+  const chip = $("#pdfSelChip");
+  chip.className = "open " + mode; chip.dataset.mark = markId || "";
+  chip.style.left = Math.max(8, Math.min(innerWidth - 260, x - 60)) + "px";
+  chip.style.top = Math.max(60, Math.min(innerHeight - 50, y + 12)) + "px";
+}
+function pdfCloseChip(){ const c = $("#pdfSelChip"); if (c) c.className = ""; }
+function pdfAfterPointer(e){
+  if (!pdfView) return;
+  if (e.target.closest(".annotationLayer section, #pdfSelChip")) return;
+  setTimeout(() => {
+    const rects = pdfSelectionRects();
+    if (rects){
+      if ($("#pdfHlMode").classList.contains("on")){ let c = "y"; try { c = localStorage.getItem("cb_pdfHl") || "y"; } catch (_) {} pdfHighlight(c); return; }
+      const r = getSelection().getRangeAt(getSelection().rangeCount - 1).getBoundingClientRect();
+      pdfOpenChip(r.left + r.width / 2, r.bottom, "sel"); return;
+    }
+    const mark = pdfMarkAt(e.clientX, e.clientY);
+    if (mark) pdfOpenChip(e.clientX, e.clientY, "mark", mark); else pdfCloseChip();
+  }, 10);
 }
 function closePdfReader(){
   if (!pdfReaderId) return;
-  const id = pdfReaderId; pdfReaderId = null;
-  $("#pdfReader").classList.remove("open");
-  $("#pdfFrame").src = "";
+  pdfReaderId = null;
+  pdfFormSave();                 /* keep the last answer typed */
+  const v = pdfView;
+  if (v){ v.io?.disconnect(); try { v.pdf.destroy(); } catch (_) {} }
+  pdfView = null;
+  pdfCloseChip();
+  $("#pdfReader").classList.remove("open", "basic");
+  $("#pdfPages").textContent = "";
+  const src = $("#pdfFrame").src; $("#pdfFrame").src = ""; if (src.startsWith("blob:")) URL.revokeObjectURL(src.split("#")[0]);
   renderBoard();                 /* the thumbnail picks up the new page */
 }
 let docReaderId = null;
@@ -15144,6 +15442,28 @@ function inkPathD(p){
   return d + `L${f(p[p.length-2])} ${f(p[p.length-1])}`;
 }
 function inkPoints(st){ return Array.isArray(st?.p) ? st.p.map(Number).filter(Number.isFinite) : []; }
+/* b180 pen pressure: t holds one width factor per point (Apple Pencil and
+   other pens). The stroke is drawn as a filled outline whose edges sit half
+   the width either side of the line, with round ends. */
+function inkPressure(st, n){
+  if (!Array.isArray(st?.t) || st.t.length !== n) return null;
+  return st.t.map(v => inkNum(v, 0.05, 3, 1));
+}
+function inkPressurePathD(p, t, w){
+  const n = p.length >> 1, f = v => Math.round(v * 10) / 10;
+  const r = i => Math.max(0.15, w * t[i] / 2);
+  if (n === 1) return `M${f(p[0] - r(0))} ${f(p[1])}a${f(r(0))} ${f(r(0))} 0 1 0 ${f(2 * r(0))} 0a${f(r(0))} ${f(r(0))} 0 1 0 ${f(-2 * r(0))} 0Z`;
+  const L = [], R = [];
+  for (let i = 0; i < n; i++){
+    const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+    let dx = p[2*b] - p[2*a], dy = p[2*b+1] - p[2*a+1]; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+    const x = p[2*i], y = p[2*i+1], k = r(i);
+    L.push(x - dy * k, y + dx * k); R.push(x + dy * k, y - dx * k);
+  }
+  const back = []; for (let i = R.length - 2; i >= 0; i -= 2) back.push(R[i], R[i+1]);
+  const cap = (i, x, y) => `A${f(r(i))} ${f(r(i))} 0 0 1 ${f(x)} ${f(y)}`;
+  return inkPathD(L) + cap(n - 1, back[0], back[1]) + inkPathD(back).replace(/^M[^QL]*/, "") + cap(0, L[0], L[1]) + "Z";
+}
 function inkStrokeEl(st, i){
   const path = document.createElementNS(SVGNS, "path");
   if (st.f){
@@ -15153,7 +15473,15 @@ function inkStrokeEl(st, i){
     if (i != null) path.dataset.i = i;
     return path;
   }
-  path.setAttribute("d", inkPathD(inkPoints(st)));
+  const pts = inkPoints(st), t = inkPressure(st, pts.length >> 1);
+  if (t){
+    path.setAttribute("d", inkPressurePathD(pts, t, inkNum(st.w, 0.1, 500, 3)));
+    path.setAttribute("fill", inkColourOk(st.c)); path.setAttribute("stroke", "none");
+    if (st.o) path.setAttribute("fill-opacity", String(inkNum(st.o, 0.05, 1, 1)));
+    if (i != null) path.dataset.i = i;
+    return path;
+  }
+  path.setAttribute("d", inkPathD(pts));
   path.setAttribute("stroke", inkColourOk(st.c));
   path.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3)));
   if (st.o) path.setAttribute("stroke-opacity", String(inkNum(st.o, 0.05, 1, 1)));
@@ -15166,7 +15494,7 @@ function fillInkSvg(svg, ink, hit){
     svg.appendChild(inkStrokeEl(st, i));
     /* a drawing on the bare board is clicked by its lines; thin ones get a
        wider invisible line on top so they can still be picked up */
-    if (hit){ const h = inkStrokeEl({...st, f:undefined}, i); h.setAttribute("class", "ink-hit"); h.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3) + 12)); svg.appendChild(h); }
+    if (hit){ const h = inkStrokeEl({...st, f:undefined, t:undefined}, i); h.setAttribute("class", "ink-hit"); h.setAttribute("stroke-width", String(inkNum(st.w, 0.1, 500, 3) + 12)); svg.appendChild(h); }
   });
 }
 function inkSvg(ink, hit){
@@ -15186,7 +15514,13 @@ function buildSketch(c, el){
 
 /* Ramer–Douglas–Peucker: drop points that don't change the line's shape */
 function inkSimplify(p, tol){
-  const n = p.length >> 1; if (n <= 2) return p.slice();
+  const keep = inkSimplifyKeep(p, tol), out = [];
+  for (let i = 0; i < keep.length; i++) if (keep[i]) out.push(p[2*i], p[2*i+1]);
+  return out;
+}
+/* which points the simplified line keeps (pressure goes with its point) */
+function inkSimplifyKeep(p, tol){
+  const n = p.length >> 1; if (n <= 2) return new Uint8Array(n).fill(1);
   const keep = new Uint8Array(n); keep[0] = keep[n-1] = 1;
   const stack = [[0, n-1]];
   while (stack.length){
@@ -15200,8 +15534,7 @@ function inkSimplify(p, tol){
     }
     if (far >= 0){ keep[far] = 1; stack.push([a, far], [far, b]); }
   }
-  const out = []; for (let i = 0; i < n; i++) if (keep[i]) out.push(p[2*i], p[2*i+1]);
-  return out;
+  return keep;
 }
 const inkRound = p => p.map(v => Math.round(v * 10) / 10);
 
@@ -15317,6 +15650,7 @@ function inkBegin(e){
   const layer = inkLiveLayer();
   if (tool === "pen" || tool === "hl"){
     L.target = inkTargetAt(e);
+    if (tool === "pen" && e.pointerType === "pen"){ L.pr = inkPressureOf(e, null); L.t = [L.pr]; }
     L.w = (tool === "hl" ? INK_HL_SIZES : INK_SIZES)[size] / zoom;
     L.c = inkPrefs.colour; L.o = tool === "hl" ? 0.35 : 0;
     L.path = document.createElementNS(SVGNS, "path");
@@ -15348,11 +15682,13 @@ function inkMove(e){
     const w = screenToWorld(ev.clientX, ev.clientY);
     const px = L.pts[L.pts.length - 2], py = L.pts[L.pts.length - 1];
     L.sx = ev.clientX; L.sy = ev.clientY; L.pts.push(w.x, w.y);
+    if (L.t){ L.pr = inkPressureOf(ev, L.pr); L.t.push(L.pr); }
     if (L.ring) inkEraseAlong(L, px, py, w.x, w.y);
   }
   if (!L.raf) L.raf = requestAnimationFrame(() => {
     L.raf = 0;
-    if (L.path) L.path.setAttribute("d", inkPathD(L.pts));
+    if (L.path && L.t){ L.path.setAttribute("d", inkPressurePathD(L.pts, L.t, L.w)); L.path.setAttribute("fill", inkColourOk(L.c)); L.path.setAttribute("stroke", "none"); }
+    else if (L.path) L.path.setAttribute("d", inkPathD(L.pts));
     if (L.ring){ L.ring.setAttribute("cx", String(L.pts[L.pts.length-2])); L.ring.setAttribute("cy", String(L.pts[L.pts.length-1])); }
     for (const o of L.owners || []) if (o.dirty){ o.dirty = false; inkRedrawOwner(o); }
   });
@@ -15374,20 +15710,30 @@ function inkEnd(e){
   const L = inkStop();
   if (L.tool === "pen" || L.tool === "hl") inkCommitStroke(L); else inkCommitErase(L);
 }
+/* pressure 0..1 to a width factor: a normal press (0.5) is the chosen size,
+   lighter is thinner down to a fifth, harder up to 1.8×; smoothed so the
+   edge doesn't wobble */
+function inkPressureOf(e, prev){
+  const p = Number.isFinite(e.pressure) && e.pressure > 0 ? e.pressure : 0.5;
+  const f = Math.max(0.2, Math.min(1.8, 0.2 + 1.6 * p));
+  return prev == null ? f : prev * 0.6 + f * 0.4;
+}
 function inkCommitStroke(L){
-  const pts = inkSimplify(L.pts, 0.35 / zoom);
+  const keep = inkSimplifyKeep(L.pts, 0.35 / zoom), pts = [], tf = [];
+  for (let i = 0; i < keep.length; i++) if (keep[i]){ pts.push(L.pts[2*i], L.pts[2*i+1]); if (L.t) tf.push(Math.round(L.t[i] * 100) / 100); }
+  const withT = st => (L.t && tf.some(v => Math.abs(v - 1) > 0.04) ? {...st, t:tf} : st);
   if (L.target && card(L.target)){
     const f = inkFrame(L.target); if (!f) return;
     const c = card(L.target), loc = [];
     for (let i = 0; i < pts.length; i += 2) loc.push((pts[i] - f.ox) / f.kx, (pts[i+1] - f.oy) / f.ky);
-    const st = {c:L.c, w:Math.round(L.w / f.kx * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o;
+    let st = {c:L.c, w:Math.round(L.w / f.kx * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o; st = withT(st);
     pushUndo();
     patchCard(c.id, {ink:{vw:f.vw, vh:f.vh, s:[...(c.ink?.s || []), st]}});
     markDirty(); renderBoard();
     return;
   }
   /* on the bare board: this session's drawing card, grown to fit */
-  const pad = L.w / 2 + 2;
+  const pad = L.w * Math.max(1, ...(L.t || [1])) / 2 + 2;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < pts.length; i += 2){ x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]); y0 = Math.min(y0, pts[i+1]); y1 = Math.max(y1, pts[i+1]); }
   x0 = Math.floor(x0 - pad); y0 = Math.floor(y0 - pad); x1 = Math.ceil(x1 + pad); y1 = Math.ceil(y1 + pad);
@@ -15396,7 +15742,7 @@ function inkCommitStroke(L){
   if (!sess){
     const id = uid("c"), w = x1 - x0, h = y1 - y0;
     const loc = []; for (let i = 0; i < pts.length; i += 2) loc.push(pts[i] - x0, pts[i+1] - y0);
-    const st = {c:L.c, w:Math.round(L.w * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o;
+    let st = {c:L.c, w:Math.round(L.w * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o; st = withT(st);
     state.cards[id] = {id, type:"sketch", x:x0, y:y0, w, h, z:maxZ() + 1, createdAt:now(), updatedAt:now(), ink:{vw:w, vh:h, s:[st]}};
     cur().cardIds.push(id); inkSession = id;
   } else {
@@ -15406,7 +15752,7 @@ function inkCommitStroke(L){
     const dx = (sess.x - nx) / kx, dy = (sess.y - ny) / ky;
     const old = (sess.ink?.s || []).map(s => ({...s, p:inkRound(inkPoints(s).map((v, i) => v + (i % 2 ? dy : dx)))}));
     const loc = []; for (let i = 0; i < pts.length; i += 2) loc.push((pts[i] - nx) / kx, (pts[i+1] - ny) / ky);
-    const st = {c:L.c, w:Math.round(L.w / kx * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o;
+    let st = {c:L.c, w:Math.round(L.w / kx * 100) / 100, p:inkRound(loc)}; if (L.o) st.o = L.o; st = withT(st);
     patchCard(sess.id, {x:nx, y:ny, w:nw, h:nh, ink:{vw:nw / kx, vh:nh / ky, s:[...old, st]}});
   }
   markDirty(); renderBoard();
@@ -15426,7 +15772,8 @@ function inkOwners(){
         const x = f.ox + p[i] * f.kx, y = f.oy + p[i+1] * f.ky; wp.push(x, y);
         x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
       }
-      return {src:s, wp, hw:inkNum(s.w, 0.1, 500, 3) * Math.max(f.kx, f.ky) / 2, box:[x0, y0, x1, y1]};
+      const t = inkPressure(s, p.length >> 1);
+      return {src:s, wp, t, hw:inkNum(s.w, 0.1, 500, 3) * Math.max(f.kx, f.ky) * Math.max(1, ...(t || [1])) / 2, box:[x0, y0, x1, y1]};
     });
     out.push({...f, strokes, changed:false, dirty:false});
   }
@@ -15463,26 +15810,30 @@ function inkEraseAlong(L, ax, ay, bx, by){
         next.push(st);
       } else {
         /* pixel eraser: walk the stroke in small steps and keep the runs outside the eraser */
-        const step = Math.max(r / 3, 0.4), runs = []; let run = [], cutHere = false;
-        const visit = (x, y) => {
-          if (inkNear(L, x, y, ax, ay, bx, by, reach)){ if (run.length){ runs.push(run); run = []; } cutHere = true; }
-          else run.push(x, y);
+        const step = Math.max(r / 3, 0.4), runs = [], tw = st.t; let run = [], runT = [], cutHere = false;
+        const visit = (x, y, w) => {
+          if (inkNear(L, x, y, ax, ay, bx, by, reach)){ if (run.length){ runs.push([run, runT]); run = []; runT = []; } cutHere = true; }
+          else { run.push(x, y); runT.push(w); }
         };
-        if (p.length === 2) visit(p[0], p[1]);
+        if (p.length === 2) visit(p[0], p[1], tw?.[0]);
         for (let i = 0; i + 3 < p.length; i += 2){
           const sx = p[i], sy = p[i+1], ex = p[i+2], ey = p[i+3];
           const steps = Math.max(1, Math.ceil(Math.hypot(ex - sx, ey - sy) / step));
-          for (let k = i ? 1 : 0; k <= steps; k++){ const t = k / steps; visit(sx + (ex - sx) * t, sy + (ey - sy) * t); }
+          for (let k = i ? 1 : 0; k <= steps; k++){
+            const t = k / steps;
+            visit(sx + (ex - sx) * t, sy + (ey - sy) * t, tw && Math.round((tw[i/2] + (tw[i/2+1] - tw[i/2]) * t) * 100) / 100);
+          }
         }
-        if (run.length) runs.push(run);
+        if (run.length) runs.push([run, runT]);
         if (!cutHere){ next.push(st); continue; }
         hit = true;
-        for (const rp of runs){
+        for (const [rp, rt] of runs){
           if (rp.length < 4) continue;
-          const sp = inkSimplify(rp, 0.3 / zoom);
+          const keep = inkSimplifyKeep(rp, 0.3 / zoom), sp = [], sw = [];
+          for (let j = 0; j < keep.length; j++) if (keep[j]){ sp.push(rp[2*j], rp[2*j+1]); if (tw) sw.push(rt[j]); }
           let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
           for (let j = 0; j < sp.length; j += 2){ x0 = Math.min(x0, sp[j]); x1 = Math.max(x1, sp[j]); y0 = Math.min(y0, sp[j+1]); y1 = Math.max(y1, sp[j+1]); }
-          next.push({src:{...st.src, p:null}, wp:sp, hw:st.hw, box:[x0, y0, x1, y1], cut:true});
+          next.push({src:{...st.src, p:null, t:tw ? sw : undefined}, wp:sp, t:tw ? sw : null, hw:st.hw, box:[x0, y0, x1, y1], cut:true});
         }
       }
     }
@@ -17757,8 +18108,8 @@ async function importStoredFileAsNote(c){
   try {
     const blob = await cardSourceBlob(c);
     const file = new File([blob], c.fileName || "document." + fileExt(c.fileName), { type:c.fileType || blob.type });
-    await addFileAsNote(file, c.x + c.w + 210, c.y + 140, false);
-  } catch (err){ toast("Couldn't make a document: " + (err?.message || "unreadable file"), 8000); }
+    return await addFileAsNote(file, c.x + c.w + 210, c.y + 140, false);
+  } catch (err){ toast("Couldn't make a document: " + (err?.message || "unreadable file"), 8000); return null; }
 }
 /* A CSV is data, not an attachment: it opens as an editable sheet. */
 function parseCsv(text){
@@ -19477,31 +19828,62 @@ async function backupNow(){
   toast("Backup verified and added to local version history.");
   return true;
 }
+/* b180: a .corkbork copy is laid out like the archive folder: a small
+   catalogue that names each picture by token, each picture once in Assets,
+   originals in Stored Files, and originals that live only in Google Drive in
+   Drive Files. A copy holding every picture inside the catalogue became one
+   string bigger than the browser allows, so a big workspace saved a copy it
+   could never open again. It is made from storage, so pictures still loading
+   in after opening are included too. */
+const PACKAGE_VERSION = 2;
 async function saveCopy(){
   if (!await saveNow()) return false;
   try {
-    const files=[], seen=new Set(), workspace=new File(jsonPieces(state),"CORKBORK-workspace.json",{type:"application/json"});
-    Object.defineProperty(workspace,"webkitRelativePath",{value:"CORKBORK-workspace.json"}); files.push(workspace);
-    let sourceBytes=0, largest=0;
+    const packed = await packWorkspaceForStorage(cloneWorkspaceForSave(state));
+    packed._packageVersion = PACKAGE_VERSION;
+    const files=[], seen=new Set(), missing=[];
+    const add=(blob,path,name,type,lastModified)=>{
+      const f=new File([blob],name,{type:type||blob.type||"",lastModified:lastModified||Date.now()});
+      Object.defineProperty(f,"webkitRelativePath",{value:path}); files.push(f);
+    };
+    add(new Blob(jsonPieces(packed),{type:"application/json"}),"CORKBORK-workspace.json","CORKBORK-workspace.json","application/json");
+    const memo=tabAssetMemo(); let pictures=0;
+    for (const id of collectAssetTokens(packed).keys()){
+      const dataUrl=memo.get(ASSET_TOKEN_PREFIX+id) ?? await idbGetRaw(ASSET_KEY_PREFIX+id);
+      if (typeof dataUrl!=="string"){ missing.push("picture "+id.slice(0,10)); continue; }
+      add(new Blob([dataUrl],{type:"text/plain"}),"Assets/"+archiveAssetName(id),archiveAssetName(id),"text/plain"); pictures++;
+    }
+    let sourceBytes=0, largest=0, driveFiles=0;
     for (const c of Object.values(state.cards)){
-      if (!c?.archiveRef) continue;
-      const path="Stored Files/"+archiveStorageId(c.archiveRef.dir)+"/"+archiveSafeFileName(c.archiveRef.name,"Attachment");
-      if (seen.has(path)) continue; seen.add(path);
-      const source=await archiveReferenceFile(c.archiveRef,null,true);
-      sourceBytes+=source.size; largest=Math.max(largest,source.size);
-      const item=new File([source],c.archiveRef.name,{type:c.fileType||source.type,lastModified:source.lastModified});
-      Object.defineProperty(item,"webkitRelativePath",{value:path}); files.push(item);
+      if (c?.archiveRef){
+        const path="Stored Files/"+archiveStorageId(c.archiveRef.dir)+"/"+archiveSafeFileName(c.archiveRef.name,"Attachment");
+        if (seen.has(path)) continue; seen.add(path);
+        const source=await archiveReferenceFile(c.archiveRef,null,true);
+        sourceBytes+=source.size; largest=Math.max(largest,source.size);
+        add(source,path,c.archiveRef.name,c.fileType||source.type,source.lastModified);
+      } else if (c?.driveRef?.id && !(c.type==="file" && c.dataUrl)){
+        const path="Drive Files/"+archiveStorageId(c.driveRef.id)+"/"+archiveSafeFileName(c.fileName||c.caption||"Original","Original");
+        if (seen.has(path)) continue; seen.add(path);
+        let blob; try { blob=await driveOriginalBlob(c.driveRef,true); } catch (_) { missing.push(c.fileName||c.caption||"a Drive original"); continue; }
+        sourceBytes+=blob.size; largest=Math.max(largest,blob.size); driveFiles++;
+        add(blob,path,c.fileName||"Original",c.driveRef.type||blob.type);
+      }
     }
     if (sourceBytes>512*1024*1024 || largest>512*1024*1024){
-      toast("This master archive is too large for one browser ZIP. Choose a folder for the streamed archive copy.",7000);
-      return copyMasterArchiveToFolder();
+      if (await archiveHandle()){
+        toast("This master archive is too large for one browser ZIP. Choose a folder for the streamed archive copy.",7000);
+        return copyMasterArchiveToFolder();
+      }
     }
-    toast("Building a self-contained CORKBORK copy…",5000);
-    const zip=await createZipFile(files,"corkbork-package.zip",["Stored Files"]);
+    if (missing.length && !await askConfirm({title:"Some things can't go in the copy",
+      message:missing.length+" item"+(missing.length===1?" isn\u2019t":"s aren\u2019t")+" on this device: "+missing.slice(0,4).join(", ")+(missing.length>4?"\u2026":"")+".",
+      detail:"Drive originals need an internet connection the first time. Everything else will be in the copy.",okLabel:"Make the copy anyway"})) return false;
+    toast("Building a self-contained CORKBORK copy\u2026",5000);
+    const zip=await createZipFile(files,"corkbork-package.zip",["Assets","Stored Files","Drive Files"]);
     const packageFile=new File([zip],`corkbork-${stamp()}.corkbork`,{type:"application/x-corkbork+zip"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(packageFile); a.download=packageFile.name;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-    toast("Self-contained copy downloaded: "+a.download); return true;
+    downloadBlob(packageFile,packageFile.name);
+    toast("Copy downloaded: "+packageFile.name+" \u2014 "+pictures+" picture"+(pictures===1?"":"s")+(seen.size?", "+seen.size+" original"+(seen.size===1?"":"s"):"")+(missing.length?". "+missing.length+" missing (see above).":"."),9000);
+    return true;
   } catch (err){ toast("Could not make a complete copy: "+(err?.message||"unknown error"),9000); return false; }
 }
 /* The chip opens a small menu: what the cloud state is, and the backup
@@ -20346,6 +20728,18 @@ async function readCorkborkPackage(file){
   if(!workspaceEntry)throw new Error("That package has no CORKBORK workspace catalogue.");
   const workspaceBlob=await readZipEntry(file,workspaceEntry); let data;
   try{data=JSON.parse(await workspaceBlob.text());}catch(_){throw new Error("The package workspace catalogue is invalid JSON.");}
+  /* b180 copies: pictures are in Assets, one file each */
+  let missingPictures=0;
+  if(data?._assetStorageVersion){
+    const memo=tabAssetMemo();
+    for(const id of collectAssetTokens(data).keys()){
+      const token=ASSET_TOKEN_PREFIX+id; if(memo.has(token))continue;
+      const entry=entries.get("Assets/"+archiveAssetName(id));
+      if(!entry){missingPictures++;continue;}
+      memo.set(token,await(await readZipEntry(file,entry)).text());
+    }
+    data=unpackFromMemo(data,memo,true); delete data._packageVersion;
+  }
   const integrity=validateWorkspace(data); lastIntegrityReport=integrity;
   if(!integrity.ok)throw new Error("Workspace integrity failed: "+integrity.errors.slice(0,3).join("; "));
   if(!await confirmWorkspaceReplacement(data,file.name))return null;
@@ -20362,6 +20756,17 @@ async function readCorkborkPackage(file){
       if(written.size!==Number(ref.size))throw new Error(path+" failed its archive size check.");
     }
   }
+  /* originals that live in Google Drive come back into this browser's
+     offline copy, so they open without a connection (a computer with an
+     archive folder then files them there as usual) */
+  for(const c of Object.values(data.cards||{})){
+    if(!c?.driveRef?.id||c.archiveRef)continue;
+    const entry=entries.get("Drive Files/"+archiveStorageId(c.driveRef.id)+"/"+archiveSafeFileName(c.fileName||c.caption||"Original","Original"));
+    if(!entry)continue;
+    const raw=await readZipEntry(file,entry),blob=c.driveRef.type?new Blob([raw],{type:c.driveRef.type}):raw;
+    try{await idbSet(DRIVE_CACHE_PREFIX+c.driveRef.id,blob);}catch(_){}
+  }
+  if(missingPictures)toast(missingPictures+" picture"+(missingPictures===1?" was":"s were")+" missing from this copy; the rest came back.",9000);
   return data;
 }
 $("#btnOpenFile").addEventListener("click",()=>$("#fileOpen").click());
@@ -23274,8 +23679,15 @@ async function boardFileData(boardId){
     for (const k of ["childIds", "attachedIds"]) if (c[k]) c[k] = keep(c[k]);
     if (Array.isArray(c.relations)) c.relations = c.relations.filter(r => cards[r.id]);
   }
+  /* pictures still coming in after opening (U-034) are read from storage */
+  if (hasAssetToken(cards)){
+    const memo = tabAssetMemo();
+    await fetchAssetsInto(memo, [...collectAssetTokens(cards).keys()]);
+    for (const [id, c] of Object.entries(cards)) cards[id] = unpackFromMemo(c, memo, true);
+  }
   /* every original goes in the file itself */
   const missing = [];
+  for (const c of Object.values(cards)) if (hasAssetToken(c)) missing.push(c.fileName || c.caption || c.title || "a picture");
   for (const c of Object.values(cards)){
     if (!c.archiveRef && !c.driveRef) continue;
     try { c.dataUrl = await blobToDataUrl(await cardSourceBlob(card(c.id))); delete c.archiveRef; delete c.driveRef; }
@@ -24331,7 +24743,64 @@ async function renderSnapshots(){
 $("#snapNow").addEventListener("click", backupNow);
 $("#saveWarn").addEventListener("click", () => saveCopy());
 $("#pdfDone").addEventListener("click", closePdfReader);
-$("#pdfAsNote").addEventListener("click", () => { const c = card(pdfReaderId); if (c) importStoredFileAsNote(c); });
+$("#pdfAsNote").addEventListener("click", async () => {
+  const c = card(pdfReaderId); if (!c) return;
+  const d = await importStoredFileAsNote(c);
+  if (d){ closePdfReader(); openNoteFull(d.id); }
+});
+$("#pdfZoomIn").addEventListener("click", () => pdfZoom(1.25));
+$("#pdfZoomOut").addEventListener("click", () => pdfZoom(.8));
+$("#pdfHlMode").addEventListener("click", () => {
+  const on = $("#pdfHlMode").classList.toggle("on");
+  if (on && pdfSelectionRects()){ let c = "y"; try { c = localStorage.getItem("cb_pdfHl") || "y"; } catch (_) {} pdfHighlight(c); }
+});
+$("#pdfSaveFilled").addEventListener("click", pdfSaveFilled);
+$("#pdfScroll").addEventListener("scroll", pdfOnScroll, {passive:true});
+$("#pdfPages").addEventListener("pointerup", pdfAfterPointer);
+$("#pdfPages").addEventListener("input", e => { if (e.target.closest(".annotationLayer")) pdfFormChanged(); });
+$("#pdfPages").addEventListener("change", e => { if (e.target.closest(".annotationLayer")) pdfFormChanged(); });
+/* iPad: the selection handles change the selection without a pointerup */
+let pdfSelT = 0, pdfPtrDown = false;
+$("#pdfPages").addEventListener("pointerdown", () => { pdfPtrDown = true; });
+document.addEventListener("pointerup", () => { pdfPtrDown = false; }, true);
+document.addEventListener("selectionchange", () => {
+  if (!pdfView) return;
+  clearTimeout(pdfSelT);
+  pdfSelT = setTimeout(() => {
+    if (pdfPtrDown || $("#pdfSelChip").classList.contains("mark")) return;
+    const sel = getSelection();
+    if (!sel.rangeCount || sel.isCollapsed || !$("#pdfPages").contains(sel.anchorNode)){ if ($("#pdfSelChip").classList.contains("sel")) pdfCloseChip(); return; }
+    if (!pdfSelectionRects()) return;
+    const r = sel.getRangeAt(sel.rangeCount - 1).getBoundingClientRect();
+    pdfOpenChip(r.left + r.width / 2, r.bottom, "sel");
+  }, 450);
+});
+$("#pdfSelChip").addEventListener("pointerdown", e => e.preventDefault());   /* keep the selection */
+$("#pdfSelChip").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.hl) pdfHighlight(b.dataset.hl);
+  else if (b.dataset.act === "copy"){
+    const t = getSelection().toString();
+    try { await navigator.clipboard.writeText(t); toast("Copied."); } catch (_) { document.execCommand("copy"); }
+    getSelection().removeAllRanges(); pdfCloseChip();
+  }
+  else if (b.dataset.act === "unhl") pdfRemoveMark($("#pdfSelChip").dataset.mark);
+});
+/* the reader covers the board: board shortcuts (Delete, letters, arrows)
+   stop here. The reader takes focus so keys pass through it. */
+$("#pdfReader").tabIndex = -1;
+$("#pdfReader").addEventListener("keydown", e => {
+  if (e.key === "Escape") return;
+  if ((e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key) && !isTextEntry()){
+    setTimeout(() => pdfView?.pages.forEach(p => p.drawn && pdfPaintMarks(p.n)), 0); return;   /* undo a highlight */
+  }
+  if ((e.ctrlKey || e.metaKey) && /^a$/i.test(e.key) && !isTextEntry()){
+    e.preventDefault(); const r = document.createRange(); r.selectNodeContents($("#pdfPages")); getSelection().removeAllRanges(); getSelection().addRange(r);
+  }
+  e.stopPropagation();
+});
+$("#pdfPages").addEventListener("pointerdown", e => { if (!e.target.closest("input,textarea,select,a")) $("#pdfReader").focus({preventScroll:true}); });
+window.addEventListener("resize", () => { if (pdfView){ clearTimeout(pdfView.rt); pdfView.rt = setTimeout(() => { const n = pdfCurrentPage(); pdfLayout().then(() => pdfGo(n, true)); }, 250); } });
 $("#pdfOcr").addEventListener("click", ocrPdfPage);
 $("#pdfOpenTab").addEventListener("click", () => { const c = card(pdfReaderId); if (c) openFileCard(c); });
 $("#pdfPrev").addEventListener("click", () => pdfGo(Number($("#pdfPage").value) - 1));
@@ -24900,6 +25369,46 @@ function sheetRest(cardId, kind, {heal = 0, hitDiceUsed:spentDice = null} = {}){
   toast(kind === "long" ? "Long rest: hit points full, spell slots, uses and half your hit dice back." : (heal ? "Short rest: +" + heal + " hit points. " : "Short rest: ") + "Short-rest uses" + (pact || sheetGrants(sh).class?.pact ? " and pact slots" : "") + " are back.");
 }
 
+/* b180: which boxes sit in which of the three columns. Kept on the sheet
+   (sh.layout); anything missing or unknown falls back to where it started. */
+const BZ_LAYOUT = [["ia", "saves", "senses", "profs"], ["skills"], ["tabs"]];
+const bzArrange = new Set();   /* sheets being arranged, while the app runs */
+function bzLayout(sh){
+  const L = Array.isArray(sh?.layout) && sh.layout.length === 3 ? sh.layout : BZ_LAYOUT, seen = new Set();
+  const all = BZ_LAYOUT.flat();
+  const out = L.map(col => (Array.isArray(col) ? col : []).filter(k => all.includes(k) && !seen.has(k) && seen.add(k)));
+  BZ_LAYOUT.forEach((col, i) => col.forEach(k => { if (!seen.has(k)) out[i].push(k); }));
+  return out;
+}
+function bzArrangeDrag(e, box, main, id){
+  if (e.button > 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const r0 = box.getBoundingClientRect(), k = r0.width / (box.offsetWidth || r0.width) || 1;   /* the board's zoom */
+  const sx = e.clientX, sy = e.clientY, drop = bzEl("div", "bz-drop");
+  box.classList.add("bz-dragging");
+  let moved = false;
+  const move = ev => {
+    if (ev.pointerId !== e.pointerId) return;
+    if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+    moved = true;
+    box.style.transform = `translate(${(ev.clientX - sx) / k}px, ${(ev.clientY - sy) / k}px)`;
+    const cols = [...main.children];
+    let col = cols.find(c => { const r = c.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right; });
+    if (!col) col = cols.reduce((a, c) => { const r = c.getBoundingClientRect(), d = Math.abs(ev.clientX - (r.left + r.width / 2)); return !a || d < a.d ? {c, d} : a; }, null).c;
+    const before = [...col.children].find(x => x !== box && x !== drop && (() => { const r = x.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; })());
+    if (before) col.insertBefore(drop, before); else col.appendChild(drop);
+  };
+  const up = ev => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener("pointermove", move, true); removeEventListener("pointerup", up, true); removeEventListener("pointercancel", up, true);
+    box.classList.remove("bz-dragging"); box.style.transform = "";
+    if (!moved || !drop.parentNode){ drop.remove(); return; }
+    drop.replaceWith(box);
+    const layout = [...main.children].map(col => [...col.children].map(x => x.dataset.bz).filter(Boolean));
+    sheetPatch(id, {layout});
+  };
+  addEventListener("pointermove", move, true); addEventListener("pointerup", up, true); addEventListener("pointercancel", up, true);
+}
 function buildBeyondSheet(c, host, {face = false} = {}){
   const sh = { ...blankSheet(), ...(c.sheet || {}) }, id = c.id;
   const pb = sheetProf(sh), st = spellStats(sh), sp = sheetSpells(sh), prefs = sheetPrefs(sh);
@@ -24922,6 +25431,10 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   const play = bzEl("div", "bz-grp");
   play.append(btn("☾ Short rest", () => shortRestDialog(id), "", "Spend hit dice to heal; short-rest uses come back"), btn("☾ Long rest", () => longRest(id), "", "Hit points, spell slots and uses back, and half your hit dice"));
   const out = bzEl("div", "bz-grp");
+  const arr = btn(bzArrange.has(id) ? "Done arranging" : "\u2725 Arrange", () => { bzArrange.has(id) ? bzArrange.delete(id) : bzArrange.add(id); invalidateCardEls(id); if (seCardId === id && $("#sheetEditor").classList.contains("open")) renderSheetEditor(); renderBoard(); },
+    bzArrange.has(id) ? "on" : "", "Drag the boxes to move them; the layout is kept with this sheet");
+  out.append(arr);
+  if (bzArrange.has(id)) out.append(btn("Reset layout", () => sheetPatch(id, {layout:undefined}), "", "Put the boxes back where they started"));
   if (face){
     out.append(sheetViewSwitch(c));
     out.append(btn("Open", () => openSheet(id), "o", "Open the sheet full screen"));
@@ -25007,14 +25520,14 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   i2.append(bzEl("div", "bz-lab", "Armour class"), acEl);
   if (acS.guess) i2.append(bzEl("div", "bz-small", "no armour"));
   else if (acS.armor && itemStats(acS.armor).st) i2.append(bzEl("div", "bz-small", "stealth disadv."));
-  ia.append(i1, i2); left.appendChild(ia);
+  ia.append(i1, i2); ia.dataset.bz = "ia"; left.appendChild(ia);
   const saves = bzEl("div", "bz-box bz-sec"); saves.append(bzEl("h4", "", "Saving throws"));
   const sg = bzEl("div", "bz-saves");
   for (const ab of SHEET_ABILITIES){
     const r = bzEl("div", "bz-save"); r.append(bzEl("i", "bz-dot" + (saveProf(sh, ab) ? " on" : "")), bzEl("span", "", ab));
     r.append(rollBtn(fmtMod(saveBonus(sh, ab)), fmtMod(saveBonus(sh, ab)), ABILITY_FULL[ab], "save")); sg.appendChild(r);
   }
-  saves.appendChild(sg); left.appendChild(saves);
+  saves.appendChild(sg); saves.dataset.bz = "saves"; left.appendChild(saves);
   const senses = bzEl("div", "bz-box bz-sec"); senses.append(bzEl("h4", "", "Senses"));
   for (const [sk, lab] of [["Perception", "Passive Perception"], ["Investigation", "Passive Investigation"], ["Insight", "Passive Insight"]]){
     const r = bzEl("div", "bz-pas"); r.append(bzEl("b", "", passiveScore(sh, sk)), bzEl("span", "", lab)); senses.appendChild(r);
@@ -25027,7 +25540,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
       r.append(s); senses.appendChild(r);
     }
   }
-  left.appendChild(senses);
+  senses.dataset.bz = "senses"; left.appendChild(senses);
   const profs = bzEl("div", "bz-box bz-sec bz-profs"); profs.append(bzEl("h4", "", "Proficiencies"));
   let anyProf = false;
   for (const [lab, k] of [["Armour", "armor"], ["Weapons", "weapons"], ["Tools", "tools"], ["Languages", "languages"]]){
@@ -25037,8 +25550,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   }
   if (String(sh.otherProfs || "").trim()){ anyProf = true; profs.append(bzEl("div", "bz-pt", sh.otherProfs)); }
   if (!anyProf) profs.append(bzEl("div", "bz-empty", "Add them in Edit character › Abilities › Saving Throws, Skills & Proficiencies."));
-  left.appendChild(profs);
-  main.appendChild(left);
+  profs.dataset.bz = "profs"; left.appendChild(profs);
 
   const skills = bzEl("div", "bz-box bz-sec bz-skills"); skills.append(bzEl("h4", "", "Skills"));
   for (const [name, ab] of SHEET_SKILLS){
@@ -25049,8 +25561,7 @@ function buildBeyondSheet(c, host, {face = false} = {}){
   }
   const lg = bzEl("div", "bz-legend");
   lg.innerHTML = '<span><i class="bz-dot"></i>none</span><span><i class="bz-dot half"></i>half</span><span><i class="bz-dot on"></i>proficient</span><span><i class="bz-dot exp"></i>expertise</span>';
-  skills.appendChild(lg);
-  main.appendChild(skills);
+  skills.appendChild(lg); skills.dataset.bz = "skills";
 
   /* ---- tabs ---- */
   const tabsBox = bzEl("div", "bz-box bz-tabsbox");
@@ -25062,8 +25573,15 @@ function buildBeyondSheet(c, host, {face = false} = {}){
     tabBar.appendChild(b);
   }
   bzRenderTab(cur, c, sh, panel);
-  tabsBox.append(tabBar, panel);
-  main.appendChild(tabsBox);
+  tabsBox.append(tabBar, panel); tabsBox.dataset.bz = "tabs";
+  /* the boxes go into three columns as this sheet's layout says */
+  const boxes = {ia, saves, senses, profs, skills, tabs:tabsBox};
+  const cols = bzLayout(sh).map(keys => { const col = bzEl("div", "bz-col"); for (const k of keys) col.appendChild(boxes[k]); main.appendChild(col); return col; });
+  main.dataset.wide = Math.max(0, cols.findIndex(col => col.contains(tabsBox)));
+  if (bzArrange.has(id)){
+    root.classList.add("bz-arranging");
+    main.addEventListener("pointerdown", e => { const b = e.target.closest("[data-bz]"); if (b && main.contains(b)) bzArrangeDrag(e, b, main, id); });
+  }
   root.appendChild(main);
   host.appendChild(root);
   return root;
@@ -32972,6 +33490,14 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b180", [
+    "PDF reader: select and copy text, highlight, fill in forms, zoom. Works on iPad.",
+    "PDF reader: Convert to document opens the text in the editor.",
+    "PDF reader: Download filled PDF.",
+    "Draw: Apple Pencil pressure changes line width.",
+    "D&D sheet: Arrange moves the boxes. Layout saved per sheet.",
+    "Save a copy: big workspaces open again; includes Drive originals.",
+  ]],
   ["b179", [
     "Lines: the end you drag stays under the pointer.",
     "Lines no longer drop into, or attach to, boards and columns.",
@@ -33003,15 +33529,6 @@ const PATCH_NOTES = [
   ["b174", [
     "Restyled tick boxes, dropdowns, text fields and dialog buttons.",
     "Share menu reorganised. Edit board shows 16 colours.",
-  ]],
-  ["b173", [
-    "Settings redesigned. Added Find a setting.",
-    "Themes: removed Pumpkin, Moss, Dusty plum. Society renamed Jericho. Save your own themes.",
-  ]],
-  ["b172", [
-    "Added Done page: automatic log, habits, sticker packs.",
-    "Focus timer: countdown or stopwatch; stops after 2 idle hours.",
-    "Documents are A4 width.",
   ]],
 ];
 function renderPatchNotes(){
