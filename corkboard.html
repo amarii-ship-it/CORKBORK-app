@@ -5526,7 +5526,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b183";
+window.BUILD = "b184";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -16937,7 +16937,10 @@ function startCardDrag(e, cardEl){
       if (drag && !drag.moved){ openCtx(sx, sy, c); cancel(); }
     }, 550);
   }
-  if (!headerGesture) try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
+  /* U-051: a press on a palette swatch must still be a click on it; holding
+     the pointer straight away sent the click to the card instead */
+  const lateCapture = headerGesture || !!e.target.closest?.(".pal-sw, .pal-add");
+  if (!lateCapture) try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
 
   /* Pens and fast trackpads send 120-240 moves a second; the work below
      (hit tests, guides, highlights) runs once per screen frame on the latest
@@ -16955,7 +16958,7 @@ function startCardDrag(e, cardEl){
     if (!drag.moved && Math.hypot(dx,dy) > 4){
       drag.moved = true;
       shareHere(drag.id);
-      if (drag.headerGesture) try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
+      if (lateCapture) try { cardEl.setPointerCapture(e.pointerId); } catch (_) {}
       if (!already && !e.shiftKey) setSelection([id]);
       drag.els.forEach(el => el.classList.add("dragging"));
       clearTimeout(drag.longpress);
@@ -33915,6 +33918,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b184", [
+    "Fixed: palette card colours couldn\u2019t be edited with a mouse.",
+  ]],
   ["b183", [
     "Toolbar: plain tiles, coloured icons, one colour per group. Bigger icons.",
   ]],
