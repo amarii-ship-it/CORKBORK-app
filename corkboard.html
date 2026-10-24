@@ -471,6 +471,24 @@ body.in-card #railMore{display:none;}    /* Sheet/Card/D&D sheet are board-only;
 :root[data-theme="light"] .tool[data-type="doc"], :root[data-theme="light"] .tool[data-type="heading"]{background:color-mix(in srgb, #FFFFFF 52%, transparent);}
 #toolArrow, #toolLine{--hue:oklch(72% .13 20) !important;}
 .tool[data-type="card"]{--hue:oklch(72% .13 75) !important;}
+/* b183: plain light tiles, the colour in the icon; one colour per group */
+#rail .tool, #morePop .tool, .railfly .tool{background:rgba(255,255,255,.38) !important; --ic:var(--text);}
+#rail .tool:hover, #morePop .tool:hover, .railfly .tool:hover{background:rgba(255,255,255,.6) !important;}
+:root[data-theme="dark"] #rail .tool, :root[data-theme="dark"] #morePop .tool, :root[data-theme="dark"] .railfly .tool{background:color-mix(in srgb, var(--text) 10%, transparent) !important;}
+.tool[data-type="note"], .tool[data-type="doc"], .tool[data-type="heading"], .tool[data-type="block"]{--ic:oklch(55% .05 250) !important;}
+.tool[data-type="board"]{--ic:oklch(55% .15 25) !important;}
+.tool[data-type="todo"]{--ic:oklch(55% .15 355) !important;}
+#toolWidget{--ic:oklch(55% .15 320) !important;}
+.tool[data-type="column"], .tool[data-type="grid"]{--ic:oklch(55% .13 285) !important;}
+#toolArrow, #toolDraw, #toolLine, .tool[data-type="sketch"]{--ic:oklch(55% .14 245) !important;}
+.tool[data-type="sheet"], .tool[data-type="card"]{--ic:oklch(55% .11 195) !important;}
+.tool[data-type="table"]{--ic:oklch(55% .12 140) !important;} .tool[data-type="link"]{--ic:oklch(55% .12 160) !important;}
+.tool[data-type="palette"]{--ic:oklch(58% .13 60) !important;} .tool[data-type="comment"]{--ic:oklch(55% .12 265) !important;}
+#rail .tool svg, #morePop .tool svg, .railfly .tool svg{stroke:var(--ic) !important; width:30px !important; height:30px !important;}
+#rail .tool[data-type="board"] svg, #morePop .tool[data-type="board"] svg{stroke:none !important; fill:var(--ic) !important;}
+.tool[data-type="board"] svg .boardwin{fill:var(--chrome, var(--surface-hi)) !important;}
+#toolWidget svg *{fill:var(--ic) !important;}
+#rail .tool.armed{background:var(--accent) !important;}
 /* b181 groups: one tool shows, the rest fly out beside it */
 .railgrp{position:relative; flex:none; display:flex;}
 .railtri{position:absolute; right:3px; bottom:3px; width:0; height:0; border-left:5px solid transparent; border-bottom:5px solid var(--text); opacity:.55; cursor:pointer; z-index:2;}
@@ -5508,7 +5526,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b182";
+window.BUILD = "b183";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -33897,6 +33915,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b183", [
+    "Toolbar: plain tiles, coloured icons, one colour per group. Bigger icons.",
+  ]],
   ["b182", [
     "Toolbar: click picks a tool; double-click or drag to add it.",
     "Toolbar: More and Widgets open on hover.",
