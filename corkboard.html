@@ -487,6 +487,9 @@ body.in-card .railtri{display:none;}
 /* Image and Upload: a pink-cream button, like Note's white one */
 .tool[data-type="image"], #toolUpload{--hue:#F2C6C0;}
 :root[data-theme="light"] .tool[data-type="image"], :root[data-theme="light"] #toolUpload{background:color-mix(in srgb, #FBE4DE 70%, transparent);}
+/* b182: Upload and Library share one plain, lighter-than-the-toolbar tile */
+#toolUpload, #toolLibrary{--hue:#FFFFFF !important; background:color-mix(in srgb, #FFFFFF 34%, transparent) !important;}
+#toolUpload:hover, #toolLibrary:hover{background:color-mix(in srgb, #FFFFFF 50%, transparent) !important;}
 /* every tool colour has the same lightness and strength; only the hue
    changes, so the rainbow reads as one set */
 #toolArrow{--hue:oklch(72% .13 305);}
@@ -5308,8 +5311,9 @@ body.note-full-open #textBar{visibility:hidden !important;}
 
       <div class="setsec" data-sec="toolbar" style="display:none;">
         <h2 class="set-title">Toolbar</h2>
-        <div class="set-card"><div class="set-row"><div class="set-t"><b>Layout</b><span>Grouped keeps similar tools together: hover one with a corner triangle to see the rest. Classic is the toolbar from before build 181. Saved on this device.</span></div></div>
-          <div class="mp-seg" id="tbPick" style="margin:0 0 12px; flex-wrap:wrap;"></div></div>
+        <div class="set-card"><div class="set-row"><div class="set-t"><b>Layout</b><span>Grouped keeps similar tools together: hover one with a corner triangle to see the rest. Classic is the toolbar from before build 181.</span></div></div>
+          <div class="mp-seg" id="tbPick" style="margin:0 0 12px; flex-wrap:wrap;"></div>
+          <label class="set-row"><div class="set-t"><b>Same toolbar on all my devices</b><span>On: this toolbar and your templates go to every device that syncs this workspace, and a change on any of them applies everywhere. Off: each device keeps its own.</span></div><input type="checkbox" id="tbShared"></label></div>
         <div class="set-label">Edit <span id="tbState" style="text-transform:none; letter-spacing:0; font-weight:600;"></span></div>
         <div class="tb-wrap">
           <div id="tbEd"></div>
@@ -5504,7 +5508,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b181";
+window.BUILD = "b182";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6787,7 +6791,7 @@ function fitToContent(){
 }
 
 /* ---------------- rendering ---------------- */
-function renderAll(){ applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); todoWinBoot(); doneBoot(); }
+function renderAll(){ try { railApplyShared(); } catch (e){ console.warn("Shared toolbar:", e); } applyUiPrefs(); renderCrumbs(); renderBoard(); renderDrawer(); updateRail(); renderBarTitle(); shareUpdateBar(); todoWinBoot(); doneBoot(); }
 /* the To-dos window comes back open if it was open */
 let todoWinBooted = false, doneBooted = false;
 function doneBoot(){ if (doneBooted || !state) return; doneBooted = true; donePullDot(); }
@@ -15012,9 +15016,31 @@ $("#rlWeight").addEventListener("click", () => { const w = ((Number(selectedLine
 $("#rlLabel").addEventListener("click", () => { const c = selectedLines()[0]; if (c) editLineLabel(c.id); });
 $("#railMore").addEventListener("click", () => {
   const p = $("#morePop"), r = $("#railMore").getBoundingClientRect();
+  if (p.classList.contains("open") && Date.now() - (hoverOpenedAt.get(p) || 0) < 700) return;   /* just opened by hovering */
   p.style.top = Math.min(r.top / uiz(), innerHeight / uiz() - 160) + "px";
   p.classList.toggle("open");
 });
+/* b182: More and Widgets open on hover too, like the groups */
+const hoverOpenedAt = new WeakMap();
+function railHoverPopup(btnSel, popSel, open){
+  let t = 0;
+  const btn = $(btnSel), pop = () => $(popSel);
+  const leave = e => {
+    if (e.pointerType === "touch") return;
+    const to = e.relatedTarget;
+    if (to && (btn.contains(to) || pop()?.contains(to))) return;
+    clearTimeout(t); t = setTimeout(() => { if (!document.body.classList.contains("rail-edit")) pop()?.classList.remove("open"); }, 260);
+  };
+  btn.addEventListener("pointerover", e => {
+    if (e.pointerType === "touch" || document.body.classList.contains("rail-edit") || document.body.classList.contains("in-card")) return;
+    clearTimeout(t);
+    if (!pop()?.classList.contains("open")) t = setTimeout(() => { if (!pop()?.classList.contains("open")){ open(); hoverOpenedAt.set(pop(), Date.now()); } }, 90);
+  });
+  btn.addEventListener("pointerout", leave);
+  document.addEventListener("pointerover", e => { if (pop()?.contains(e.target)) clearTimeout(t); });
+  document.addEventListener("pointerout", e => { if (pop()?.classList.contains("open") && pop().contains(e.target)) leave(e); });
+}
+railHoverPopup("#railMore", "#morePop", () => { closeRailFly(); const p = $("#morePop"), r = $("#railMore").getBoundingClientRect(); p.style.top = Math.min(r.top / uiz(), innerHeight / uiz() - 160) + "px"; p.classList.add("open"); });
 document.addEventListener("pointerdown", e => {
   if (document.body.classList.contains("rail-edit")) return;   /* More stays open while editing the toolbar */
   if (!$("#morePop").contains(e.target) && e.target !== $("#railMore") && !$("#railMore").contains(e.target))
@@ -15078,13 +15104,45 @@ function applyRailLayout(layout){
   railMain().appendChild(hid);
 }
 /* ---- the built-in toolbars and saved templates (per device) ---- */
-const RAIL_GROUPED = {main:[["note", "doc", "heading", "block"], "board", "todo", "toolWidget", ["column", "grid"], "|",
+const RAIL_GROUPED = {main:[["note", "doc", "heading", "block"], "board", "todo", "toolWidget", ["column", "grid"],
   ["toolArrow", "toolDraw", "toolLine", "sketch"], ["sheet", "card"], "|", "railMore", "|", "toolUpload", "toolLibrary"],
   more:["table", "link", "palette", "comment"], hidden:["image"]};
+/* b181 had a gap between Column and Arrow; an unchanged Grouped toolbar loses it (b182) */
+const RAIL_GROUPED_B181 = {...RAIL_GROUPED, main:[...RAIL_GROUPED.main.slice(0, 5), "|", ...RAIL_GROUPED.main.slice(5)]};
 const RAIL_TEMPLATES_KEY = "cb_railTemplates";
 let railActive = "grouped";
 function railTemplates(){ try { const t = JSON.parse(SAFE_STORE.get(RAIL_TEMPLATES_KEY) || "[]"); return Array.isArray(t) ? t.filter(x => x && x.id && Array.isArray(x.main)) : []; } catch (_) { return []; } }
-function railSaveTemplates(list){ SAFE_STORE.set(RAIL_TEMPLATES_KEY, JSON.stringify(list)); }
+function railSaveTemplates(list){ SAFE_STORE.set(RAIL_TEMPLATES_KEY, JSON.stringify(list)); railPushShared(); }
+/* ---- the same toolbar on every device (b182) --------------------------------
+   Off (the default), each device keeps its own toolbar. On, the toolbar and
+   the saved templates travel in the workspace's settings (which sync), and
+   whatever changes on one device is applied on the others when it arrives. */
+const RAIL_SHARED_AT_KEY = "cb_railSharedAt";
+let railSharedApplying = false;
+const railShared = () => state?.settings?.sharedToolbar || null;
+function railPushShared(){
+  const sh = railShared(); if (!sh?.on || railSharedApplying || !railDefault) return;
+  const at = Date.now();
+  state.settings = Object.assign({}, state.settings, {sharedToolbar:{on:true, at, active:railActive, layout:readRailLayout(), templates:railTemplates()}});
+  SAFE_STORE.set(RAIL_SHARED_AT_KEY, String(at)); markDirty();
+}
+function railSetShared(on){
+  if (on){ state.settings = Object.assign({}, state.settings, {sharedToolbar:{on:true}}); railPushShared(); }
+  else { state.settings = Object.assign({}, state.settings, {sharedToolbar:{on:false, at:Date.now()}}); markDirty(); }
+}
+/* a newer shared toolbar from another device is applied here */
+function railApplyShared(){
+  const sh = railShared(); if (!sh?.on || !sh.layout || !railDefault) return false;
+  if (Number(SAFE_STORE.get(RAIL_SHARED_AT_KEY) || 0) >= Number(sh.at || 0)) return false;
+  railSharedApplying = true;
+  try {
+    if (Array.isArray(sh.templates)) SAFE_STORE.set(RAIL_TEMPLATES_KEY, JSON.stringify(sh.templates.filter(t => t && t.id && Array.isArray(t.main))));
+    railActive = typeof sh.active === "string" ? sh.active : "grouped";
+    applyRailLayout(sh.layout); saveRailLayout(); queueFitTopbar?.();
+  } finally { railSharedApplying = false; }
+  SAFE_STORE.set(RAIL_SHARED_AT_KEY, String(sh.at || 0));
+  return true;
+}
 function railTemplateLayout(id){
   if (id === "grouped") return RAIL_GROUPED;
   if (id === "classic") return {main:railDefault.main, more:railDefault.more, hidden:[]};
@@ -15142,7 +15200,9 @@ railMain().addEventListener("pointerdown", e => {
 }, true);
 let railFlyPending = null;
 railMain().addEventListener("pointerdown", e => { railFlyPending = e.target.closest?.(".railfly .tool") || null; });
-addEventListener("pointerup", () => { const el = railFlyPending; railFlyPending = null; if (el) setTimeout(() => railPromote(el), 0); }, true);
+/* the face changes after a moment, so a double-click lands on the same tool */
+let railPromoteT = 0;
+addEventListener("pointerup", () => { const el = railFlyPending; railFlyPending = null; if (!el) return; clearTimeout(railPromoteT); railPromoteT = setTimeout(() => railPromote(el), 320); }, true);
 document.addEventListener("pointerdown", e => { if (railFlyOpen && !railFlyOpen.contains(e.target)) closeRailFly(); }, true);
 /* v3 (b170): Heading and Link moved into More, by request; a saved toolbar
    is upgraded once, and anything arranged after that stays as it is */
@@ -15153,8 +15213,9 @@ function saveRailLayout(){
   /* your own template follows what you change; Grouped and Classic stay as shipped */
   if (railActive !== "grouped" && railActive !== "classic"){
     const list = railTemplates(), t = list.find(x => x.id === railActive);
-    if (t){ Object.assign(t, L); railSaveTemplates(list); }
+    if (t){ Object.assign(t, L); SAFE_STORE.set(RAIL_TEMPLATES_KEY, JSON.stringify(list)); }
   }
+  railPushShared();
   if ($("#settingsOverlay")?.classList.contains("open")) renderToolbarSettings();
 }
 /* b113 reordered the top of the toolbar; a saved toolbar that still has the
@@ -15186,6 +15247,7 @@ function loadRailLayout(){
   let saved = null; try { saved = JSON.parse(SAFE_STORE.get(RAIL_LAYOUT_KEY) || "null"); } catch (_) {}
   if (saved && saved.v >= 4 && Array.isArray(saved.main)){
     railActive = saved.active && (saved.active === "grouped" || saved.active === "classic" || railTemplateLayout(saved.active)) ? saved.active : "grouped";
+    if (railActive === "grouped" && railNorm(saved) === railNorm(RAIL_GROUPED_B181)){ applyRailLayout(JSON.parse(JSON.stringify(RAIL_GROUPED))); saveRailLayout(); return; }
     applyRailLayout(saved); return;
   }
   /* b181: everyone moves to the grouped toolbar; a toolbar arranged by hand
@@ -15234,6 +15296,7 @@ function renderToolbarSettings(){
     });
     pick.appendChild(b);
   }
+  $("#tbShared").checked = !!railShared()?.on;
   const own = railActive !== "grouped" && railActive !== "classic", edited = railEdited();
   $("#tbState").textContent = "· " + railTemplateName(railActive) + (own ? " (your template; changes are kept)" : edited ? " (changed)" : "");
   $("#tbRename").style.display = $("#tbDelete").style.display = own ? "" : "none";
@@ -15333,6 +15396,10 @@ document.addEventListener("pointerdown", e => {
   };
   addEventListener("pointermove", move, true); addEventListener("pointerup", up, true);
 }, true);
+$("#tbShared").addEventListener("change", e => {
+  railSetShared(e.target.checked);
+  toast(e.target.checked ? "This toolbar is now used on all your devices." : "Each device keeps its own toolbar from now on.");
+});
 $("#tbGap").addEventListener("click", () => tbarCommit(rows => { rows.push({gap:true}); }));
 $("#tbUndo").addEventListener("click", () => { railUseTemplate(railActive); renderToolbarSettings(); });
 $("#tbSave").addEventListener("click", async () => {
@@ -17656,9 +17723,11 @@ document.querySelectorAll(".tool[data-type]").forEach(btn => {
         const cr = cpEl ? cpEl.getBoundingClientRect() : null;
         const overCard = cr && ev.clientX >= cr.left && ev.clientX <= cr.right &&
                               ev.clientY >= cr.top  && ev.clientY <= cr.bottom;
-        if (!moved || overCard){ createIntoCard(type, moved ? ev : null); return; }
-        return;                                       // dragged out of the page: cancel
+        if (moved && overCard) createIntoCard(type, ev);
+        return;                                       // a plain click makes nothing (b182); dragged out of the page: cancel
       }
+      /* b182: a click only picks the tool; double-click or drag to make one */
+      if (!moved){ toolClickHint(); return; }
       const r = canvasEl.getBoundingClientRect();
       const onCanvas = ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
       const p = moved && onCanvas ? screenToWorld(ev.clientX, ev.clientY) : viewCenterWorld();
@@ -17668,7 +17737,17 @@ document.querySelectorAll(".tool[data-type]").forEach(btn => {
     btn.addEventListener("pointermove", move);
     btn.addEventListener("pointerup", up);
   });
+  btn.addEventListener("dblclick", e => {
+    if (document.body.classList.contains("rail-edit")) return;
+    e.preventDefault(); toolHintShown = true;
+    if (inCardPage()) createIntoCard(btn.dataset.type, null); else createFromTool(btn.dataset.type, viewCenterWorld());
+  });
 });
+let toolHintShown = false;
+function toolClickHint(){
+  if (toolHintShown) return; toolHintShown = true;
+  toast("Drag it onto the board, or double-click it.", 3500);
+}
 /* Which rail tools mean "a block" when dropped inside a card page. */
 /* tool -> {kind, label}. The label is the TOOL's name, not the kind's: adding
    a Note on a card was producing a block titled "Writing", because the label
@@ -23839,7 +23918,12 @@ function openWidgetPicker(){
   pop.style.top = Math.min(r.top / z, innerHeight / z - 250) + "px";
   pop.classList.add("open");
 }
-$("#toolWidget").addEventListener("click", () => { if (!document.body.classList.contains("rail-edit")) openWidgetPicker(); });
+$("#toolWidget").addEventListener("click", () => {
+  if (document.body.classList.contains("rail-edit")) return;
+  if ($("#widgetPop").classList.contains("open") && Date.now() - (hoverOpenedAt.get($("#widgetPop")) || 0) < 700) return;
+  openWidgetPicker();
+});
+railHoverPopup("#toolWidget", "#widgetPop", () => { closeRailFly(); if (!$("#widgetPop").classList.contains("open")) openWidgetPicker(); });
 document.addEventListener("pointerdown", e => {
   const pop = $("#widgetPop");
   if (pop?.classList.contains("open") && !pop.contains(e.target) && !e.target.closest?.("#toolWidget")) pop.classList.remove("open");
@@ -33813,6 +33897,12 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b182", [
+    "Toolbar: click picks a tool; double-click or drag to add it.",
+    "Toolbar: More and Widgets open on hover.",
+    "Toolbar: no gap between Column and Arrow. Upload and Library share one light tile.",
+    "Settings \u203a Toolbar: Same toolbar on all my devices.",
+  ]],
   ["b181", [
     "New toolbar: similar tools grouped. Hover a corner triangle for the rest.",
     "Settings \u203a Toolbar: Grouped or Classic, edit groups, save templates.",
@@ -33840,14 +33930,6 @@ const PATCH_NOTES = [
     "Document background: less blur, less dark.",
     "Folder renamed to Album.",
     "Help: \u201cTake the tour\u201d is now \u201cTutorial\u201d. Personalization removed.",
-  ]],
-  ["b176", [
-    "Bullets work like Google Docs: Backspace removes a bullet, Tab/Shift+Tab nest.",
-    "Typing \u201c- \u201d, \u201c1. \u201d or \u201c[] \u201d starts a list.",
-    "Document editor: menus, toolbar and title in one row; outline; fonts; sizes in pt; line spacing.",
-    "PDF, Word and text files import as documents.",
-    "Notes delete without asking.",
-    "Mood tracker and calendar scale when resized.",
   ]],
 ];
 function renderPatchNotes(){
