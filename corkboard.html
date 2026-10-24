@@ -5393,7 +5393,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b178";
+window.BUILD = "b179";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -8370,7 +8370,10 @@ function hitsAt(ev){
   if (hitsMemo?.ev !== ev) hitsMemo = {ev, list:document.elementsFromPoint(ev.clientX, ev.clientY)};
   return hitsMemo.list;
 }
+/* lines connect things on the board; they never drop into a board, column or album */
+const onlyLines = ids => !!ids?.length && ids.every(id => card(id)?.type === "line");
 function boardDropAt(ev, draggedIds){
+  if (onlyLines(draggedIds)) return null;
   for (const hit of hitsAt(ev)){
     /* Board cards are pointer-events:none so their empty margin is not a hit
        target (that is what made the icon tight to click). The consequence is
@@ -8400,6 +8403,7 @@ function boardDropAt(ev, draggedIds){
   return null;
 }
 function entityDropAt(ev, draggedIds){
+  if (onlyLines(draggedIds)) return null;
   for (const hit of hitsAt(ev)){
     const el = hit.closest ? hit.closest(".type-card") : null;   /* same reason as boardDropAt */
     if (!el || !el.dataset.id) continue;
@@ -8466,6 +8470,7 @@ function attachCardsToEntity(ids, entityId){
    carries them with it. */
 function albumTakes(c){ return !!c && (c.type === "image" || c.type === "board"); }
 function columnElAt(ev, excludeIds, gridOk){
+  if (onlyLines(excludeIds)) return null;
   for (const hit of hitsAt(ev)){
     const el = (hit.closest && hit.closest(".type-column")) || hit;
     if (!el.classList) continue;
@@ -15550,7 +15555,9 @@ function lineLiveBox(id, live){
 }
 /* the line's two ends and its bend point in board coordinates */
 function lineGeom(c, live){
-  const own = lineLiveBox(c.id, live) || {x:c.x, y:c.y};
+  /* while an end is dragged, `c` is the line as it will be, not the stored one:
+     its own box must come from `c` too, or the ends are drawn against the old box */
+  const own = (live ? lineLiveBox(c.id, live) : null) || {x:c.x, y:c.y, w:c.w, h:c.h};
   const onBoard = id => id && card(id) && card(id).type !== "line" && cur().cardIds.includes(id);
   const raw = e => onBoard(e?.id) ? (() => { const b = lineLiveBox(e.id, live); return {x:b.x + b.w / 2, y:b.y + b.h / 2, box:b}; })()
                                    : {x:own.x + (Number(e?.x) || 0), y:own.y + (Number(e?.y) || 0)};
@@ -15641,7 +15648,7 @@ function lineCardAt(x, y, skip){
   for (const el of document.elementsFromPoint(x, y)){
     const ce = el.closest?.("#world > .card"); if (!ce) continue;
     const c = card(ce.dataset.id);
-    if (c && c.type !== "line" && c.id !== skip && !c.locked) return c.id;
+    if (c && !["line", "board", "column", "grid"].includes(c.type) && c.id !== skip && !c.locked) return c.id;
   }
   return null;
 }
@@ -32965,6 +32972,10 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b179", [
+    "Lines: the end you drag stays under the pointer.",
+    "Lines no longer drop into, or attach to, boards and columns.",
+  ]],
   ["b178", [
     "Columns show their contents in full. Lists inside a column work like normal lists.",
   ]],
@@ -33001,10 +33012,6 @@ const PATCH_NOTES = [
     "Added Done page: automatic log, habits, sticker packs.",
     "Focus timer: countdown or stopwatch; stops after 2 idle hours.",
     "Documents are A4 width.",
-  ]],
-  ["b171", [
-    "New fonts: Noticia Text and Karla.",
-    "New document editor. Boards export as PNG or PDF.",
   ]],
 ];
 function renderPatchNotes(){
