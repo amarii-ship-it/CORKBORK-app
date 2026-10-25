@@ -4212,6 +4212,7 @@ body.note-full-open #textBar{visibility:hidden !important;}
 .colchild.cc-fulllist{padding:0; background:var(--surface);}
 .cc-list{padding:10px 12px 8px; cursor:default;}
 .cc-list .list-head{margin-bottom:4px;}
+.colchild{touch-action:none;}
 .colchild .cc-real{position:relative !important; left:auto !important; top:auto !important; width:100% !important; height:auto; transform:none !important; box-shadow:none; margin:0;}
 .colchild .cc-preview{background:transparent; box-shadow:none; border:none; margin:0; cursor:inherit; max-height:none;}
 </style>
@@ -5531,7 +5532,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b185";
+window.BUILD = "b186";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -8710,7 +8711,7 @@ function startChildDrag(e, dEl, colId, kidId){
   const up = ev => {
     cleanup(ev);
     if (!moved) return;
-    const b = cur(), src = card(colId);
+    const b = cur(), src = card(colId); if (!src || !card(kidId)){ renderAll(); return; }
     const targetColEl = columnElAt(ev, [], albumTakes(card(kidId)));
     pushUndo();
     /* remove from source container */
@@ -8747,6 +8748,12 @@ function startChildDrag(e, dEl, colId, kidId){
   }
   dEl.addEventListener("pointermove", move);
   dEl.addEventListener("pointerup", up);
+  /* U-054: a cancelled touch (the browser took it for a scroll) or a lost
+     hold must end the drag, or the ghost and the column stayed stuck */
+  const cancel = () => { if (!dEl.isConnected || moved) renderAll(); cleanup(); dEl.removeEventListener("pointercancel", cancel); dEl.removeEventListener("lostpointercapture", lost); };
+  const lost = () => setTimeout(() => { if (dEl.classList.contains("drag-src")) cancel(); }, 0);
+  dEl.addEventListener("pointercancel", cancel);
+  dEl.addEventListener("lostpointercapture", lost);
 }
 /* =====================================================================
    DROP INTO BOARDS AND CARDS
@@ -15230,6 +15237,19 @@ railMain().addEventListener("pointerout", e => {
   if (e.relatedTarget && railFlyOpen.contains(e.relatedTarget)) return;
   clearTimeout(railFlyT); railFlyT = setTimeout(closeRailFly, 240);
 });
+/* U-055: on a touch screen a tap or a long press on a group opens it (a long
+   press used to open Edit toolbar instead) */
+let railLastPtr = "mouse";
+railMain().addEventListener("pointerdown", e => { railLastPtr = e.pointerType; }, true);
+railMain().addEventListener("click", e => {
+  if (railLastPtr !== "touch" && railLastPtr !== "pen") return;
+  const face = e.target.closest?.(".railgrp > .tool:first-child"); if (!face) return;
+  const g = face.closest(".railgrp"); railFlyOpen === g ? closeRailFly() : openRailFly(g);
+});
+$("#rail").addEventListener("contextmenu", e => {
+  const g = e.target.closest?.(".railgrp"); if (!g || railLastPtr === "mouse") return;
+  e.preventDefault(); e.stopImmediatePropagation(); openRailFly(g);
+}, true);
 /* on a touch screen the corner triangle opens the group */
 railMain().addEventListener("pointerdown", e => {
   const tri = e.target.closest?.(".railtri"); if (!tri) return;
@@ -33939,6 +33959,10 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b186", [
+    "Fixed: dragging out of a column could freeze it.",
+    "Touch: tap or hold a toolbar group to see its tools.",
+  ]],
   ["b185", [
     "A board with nothing placed but items in Unsorted says so, with Show Unsorted.",
     "Columns show blocks, tables, palettes, comments, drawings and widgets in full.",
@@ -33974,14 +33998,6 @@ const PATCH_NOTES = [
   ]],
   ["b178", [
     "Columns show their contents in full. Lists inside a column work like normal lists.",
-  ]],
-  ["b177", [
-    "Albums: resizing scales the icons. Double-click to resize the grid only.",
-    "Headings: resizing scales the text. Double-click to edit.",
-    "Calendar: month is the title. Today moved next to D/W/M/3M.",
-    "Document background: less blur, less dark.",
-    "Folder renamed to Album.",
-    "Help: \u201cTake the tour\u201d is now \u201cTutorial\u201d. Personalization removed.",
   ]],
 ];
 function renderPatchNotes(){
