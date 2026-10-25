@@ -3493,6 +3493,10 @@ select.cp-pill{appearance:none; padding-right:22px;
   position:absolute; left:50%; top:45%; transform:translate(-50%,-50%);
   color:var(--text-dim); font-size:14px; pointer-events:none; display:none; text-align:center; line-height:1.6;
 }
+#emptyHintMsg, #emptyHintOpen{display:none;}
+#emptyHint.has-unsorted .eh-empty{display:none;}
+#emptyHint.has-unsorted #emptyHintMsg{display:block;}
+#emptyHint.has-unsorted #emptyHintOpen{display:inline-block; pointer-events:auto; margin-top:10px; padding:6px 14px; border-radius:8px; background:var(--accent); color:var(--canvas); font-weight:600;}
 
 /* card-page emoji picker popup */
 #cpEmojiPop{
@@ -4208,6 +4212,7 @@ body.note-full-open #textBar{visibility:hidden !important;}
 .colchild.cc-fulllist{padding:0; background:var(--surface);}
 .cc-list{padding:10px 12px 8px; cursor:default;}
 .cc-list .list-head{margin-bottom:4px;}
+.colchild .cc-real{position:relative !important; left:auto !important; top:auto !important; width:100% !important; height:auto; transform:none !important; box-shadow:none; margin:0;}
 .colchild .cc-preview{background:transparent; box-shadow:none; border:none; margin:0; cursor:inherit; max-height:none;}
 </style>
 </head>
@@ -4658,7 +4663,7 @@ body.note-full-open #textBar{visibility:hidden !important;}
           <path d="M6.5 7l1 12a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-12 M10 11v6 M14 11v6"/>
         </svg>Trash</button>
     </div>
-    <div id="emptyHint">This board is empty.<br>Drag a card from the left, or paste an image.</div>
+    <div id="emptyHint"><span class="eh-empty">This board is empty.<br>Drag a card from the left, or paste an image.</span><span id="emptyHintMsg"></span><button id="emptyHintOpen" type="button">Show Unsorted</button></div>
     <div id="trashBar"><span id="trashCount"></span><button id="btnEmptyTrash">Empty Recycle Bin</button></div>
     <div id="marquee"></div>
     <div id="scrollV" class="scrollbar"><div class="sbthumb"></div></div>
@@ -5526,7 +5531,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b184";
+window.BUILD = "b185";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6998,6 +7003,10 @@ function renderBoard(){
   if (connectorSvg.parentNode !== worldEl) worldEl.insertBefore(connectorSvg, typeof guidesEl !== "undefined" ? guidesEl.nextSibling : worldEl.firstChild);
   const b = cur();
   $("#emptyHint").style.display = (b.cardIds.length || currentBoardId === TRASH_ID) ? "none" : "block";
+  /* U-052: nothing placed, but things waiting in this board's Unsorted (a Milanote inbox comes in there) */
+  const waiting = (b.unsortedIds || []).filter(id => state.cards[id]).length;
+  $("#emptyHint").classList.toggle("has-unsorted", !!waiting);
+  if (waiting) $("#emptyHintMsg").textContent = "Nothing is placed on this board yet. " + waiting + (waiting === 1 ? " item is" : " items are") + " in its Unsorted tray.";
   const inTrash = currentBoardId === TRASH_ID;
   $("#trashBar").classList.toggle("open", inTrash);
   if (inTrash){
@@ -8652,6 +8661,15 @@ function buildColumnChild(col, k){
     buildTodo(k, w, "col");
     d.appendChild(w);
   }
+  else if (COL_REAL[k.type]){
+    /* b185: blocks, tables, palettes, comments, drawings and widgets show
+       their real contents in a column, drawn by their own builders */
+    const w = document.createElement("div"); w.className = "card type-" + k.type + " cc-real"; w.dataset.kid = k.id;
+    w.style.aspectRatio = Math.max(40, k.w || 300) + " / " + Math.max(30, k.h || 200);
+    if (k.type === "block" || k.type === "comment") w.style.aspectRatio = "", w.style.minHeight = "60px";
+    try { COL_REAL[k.type](k, w); } catch (err){ console.warn("column child:", err); drawerPreview(k, w); }
+    d.classList.add("cc-fulllist"); d.appendChild(w);
+  }
   else {
     /* Anything else looks like itself, the same way Unsorted draws it
        (U-033, U-049): a sheet's face, a file, a document's name, an album… */
@@ -8667,6 +8685,8 @@ function buildColumnChild(col, k){
   });
   return d;
 }
+const COL_REAL = {block:(c, el) => buildBlock(c, el), table:(c, el) => buildTable(c, el), palette:(c, el) => buildPalette(c, el),
+  comment:(c, el) => buildCommentCard(c, el), sketch:(c, el) => buildSketch(c, el), widget:(c, el) => buildWidget(c, el)};
 function startChildDrag(e, dEl, colId, kidId){
   e.stopPropagation();
   if (e.button === 2) return;
@@ -19151,6 +19171,7 @@ function pasteTargetNote(worldPt){
 
 /* ---------------- unsorted drawer ---------------- */
 $("#drawerFab").addEventListener("click", () => { $("#drawer").classList.remove("collapsed"); $("#drawerFab").classList.add("hidden"); });
+$("#emptyHintOpen").addEventListener("click", () => $("#drawerFab").click());
 $("#drawerClose").addEventListener("click", () => { $("#drawer").classList.add("collapsed"); $("#drawerFab").classList.remove("hidden"); });
 $("#drawerList").addEventListener("pointerdown", e => {
   const item = e.target.closest(".ditem"); if (!item) return;
@@ -33918,6 +33939,10 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b185", [
+    "A board with nothing placed but items in Unsorted says so, with Show Unsorted.",
+    "Columns show blocks, tables, palettes, comments, drawings and widgets in full.",
+  ]],
   ["b184", [
     "Fixed: palette card colours couldn\u2019t be edited with a mouse.",
   ]],
