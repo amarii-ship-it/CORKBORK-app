@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b187";
+window.BUILD = "b188";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -10039,6 +10039,7 @@ function overDeleteBin(ev){
 
 /* ---------------- board navigation ---------------- */
 function openBoard(id){
+  if (bootPending) setTimeout(() => hydrateBoardPictures(id), 0);   /* b188: lazy pictures on phones */
   if (!board(id)){ toast("That board no longer exists."); return; }
   if (typeof noteFullId !== "undefined" && noteFullId) closeNoteFull();   /* the top bar stays usable over a document */
   currentBoardId = id;
@@ -32197,7 +32198,8 @@ async function mirrorCloudFilesToArchive(){
 /* Offline first: unless turned off on this device, every original in Drive
    is downloaded into this browser in the background, so it opens with no
    connection. A computer with an archive folder keeps them there instead. */
-function keepOfflineEnabled(){ return SAFE_STORE.get("cb_keepOffline") !== "0"; }
+/* on a phone or tablet originals download when opened, unless turned on (b188) */
+function keepOfflineEnabled(){ const v = SAFE_STORE.get("cb_keepOffline"); return v == null || v === "" ? !lazyPictures() : v !== "0"; }
 let prefetchRunning = false;
 async function keepOriginalsOffline(){
   if (prefetchRunning || !keepOfflineEnabled() || navigator.onLine === false || await archiveHandle()) return 0;
@@ -33884,8 +33886,40 @@ async function bootReadWorkspace(){
   if (pendingIds.length) bootPending = {memo, ids:pendingIds};
   return out;
 }
+/* b188: on a phone or tablet only the pictures of the board you open are
+   read in; the rest stay in storage until you go there. Loading every
+   picture of a big workspace slowed phones down for boards never opened. */
+function lazyPictures(){ return !!window.__lazyPictures || (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches); }
+function boardCardIdsDeep(bid){
+  const out = new Set(), walk = id => { const c = state.cards[id]; if (!c || out.has(id)) return; out.add(id);
+    for (const k of [...(c.childIds || []), ...(c.attachedIds || []), ...(c.unsortedIds || [])]) walk(k); };
+  const b = state.boards[bid]; for (const id of [...(b?.cardIds || []), ...(b?.unsortedIds || [])]) walk(id);
+  return [...out];
+}
+let lazyHydrating = Promise.resolve();
+function hydrateBoardPictures(bid){
+  if (!bootPending) return lazyHydrating;
+  const job = async () => {
+    if (!bootPending) return;
+    const memo = bootPending.memo, ids = boardCardIdsDeep(bid).filter(id => hasAssetToken(state.cards[id]));
+    if (!ids.length) return;
+    await fetchAssetsInto(memo, [...collectAssetTokens(ids.map(id => state.cards[id])).keys()]);
+    let changed = false;
+    for (const id of ids) for (const ws of [state, tabBase]){
+      const c = ws?.cards?.[id]; if (!c || !hasAssetToken(c)) continue;
+      ws.cards[id] = unpackFromMemo(c, memo, true); if (ws === state) changed = true;
+    }
+    if (changed && bid === currentBoardId) renderBoard();
+  };
+  return lazyHydrating = lazyHydrating.then(job, job);
+}
 async function bootHydrateRest(){
   if (!bootPending) return;
+  if (lazyPictures()){
+    await hydrateBoardPictures(currentBoardId);
+    if (!workspaceLoadFailure){ setTimeout(migrateSharedAssetStorage, 500); setTimeout(resumeMasterArchiveMigration, 1200); }
+    return;   /* bootPending stays: other boards load when opened */
+  }
   const {memo, ids} = bootPending;
   const tokens = [...collectAssetTokens(ids.map(id => state.cards[id])).keys()];
   for (let i = 0; i < tokens.length; i += 300){
@@ -33983,6 +34017,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b188", [
+    "Phones and tablets load only the open board\u2019s pictures, and don\u2019t pre-download every original.",
+  ]],
   ["b187", [
     "New app icon (the CORKBORK raven) for phones and tablets.",
     "D&D backgrounds show their description (imported ones: import again).",
