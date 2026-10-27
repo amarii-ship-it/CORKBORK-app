@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b188";
+window.BUILD = "b189";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6321,6 +6321,7 @@ function markDirty(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 500);
   shareSchedule();
+  if (typeof widgetPushSoon === "function") widgetPushSoon();
 }
 /* ---- several tabs at once ----------------------------------------------
    Every tab can edit. Each tab remembers the copy it last read or wrote
@@ -31875,6 +31876,7 @@ async function getToken(interactive){
     if (authWorkerUrl()){
       const silent = await workerRefresh();
       if (silent) return silent;
+      if (ANDROID) return androidSignIn();   /* b189: in the Android app, sign in through Chrome */
       await loadGIS();
       try { return await workerSignIn(); }
       catch (e){ if (!(e.status >= 500)) throw e; }   /* helper broken: fall back to hourly sign-in */
@@ -33850,6 +33852,145 @@ function shareBoot(){
   } else run();
 }
 
+/* ---- Android app and home-screen widgets (b189) ---------------------------
+   In the Android app CORKBORK runs inside the app, which offers
+   window.CorkborkAndroid. This side hands the widgets a small summary (lists,
+   dated items, recent and favourite boards drawn as their tiles) and applies
+   what was done on a widget while the app was closed: ticks, new items and
+   quick notes, links and pictures (those go to Home's Unsorted). */
+const ANDROID = window.CorkborkAndroid || null;
+const WIDGET_LIST_MAX = 60, WIDGET_ITEM_MAX = 60;
+const widgetTileCache = new Map();
+function widgetBoardTitle(bid){ return state.boards[bid]?.title || "Board"; }
+function widgetAccent(v, title){
+  const s = String(v || autoAccent(title) || "#8A8F98"), hexes = s.match(/#[0-9a-f]{6}|#[0-9a-f]{3}\b/gi) || [];
+  return hexes.length ? hexes : ["#8A8F98"];
+}
+/* a board as its tile: colour (or gradient), icon or letter, 128 px */
+async function widgetTile(bid){
+  const tile = cardIndex().tile.get(bid), title = widgetBoardTitle(bid);
+  const icon = tile?.icon || autoIcon(title) || "", cols = widgetAccent(tile?.accent, title);
+  const key = cols.join() + "|" + icon + "|" + (tile?.iconTone || "") + "|" + title;
+  if (widgetTileCache.has(key)) return widgetTileCache.get(key);
+  const cv = document.createElement("canvas"); cv.width = cv.height = 128; const g = cv.getContext("2d");
+  const grad = g.createLinearGradient(0, 0, 128, 128); cols.forEach((c, i) => grad.addColorStop(cols.length > 1 ? i / (cols.length - 1) : 0, c));
+  g.fillStyle = grad; g.beginPath(); g.roundRect(0, 0, 128, 128, 28); g.fill();
+  const ink = tile?.iconTone === "dark" ? "#2a2223" : "#ffffff";
+  try {
+    if (isIconRef(icon)){
+      buildIconSprite();
+      const sym = document.querySelector('symbol[id="ic-' + icon.slice(3) + '"]');
+      if (sym){
+        const stroke = sym.getAttribute("stroke") ? ' fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"' : ' fill="' + ink + '"';
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" color="' + ink + '"' + stroke + '>' + sym.innerHTML.replace(/currentColor/g, ink) + "</svg>";
+        const img = new Image(); img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        await img.decode(); g.drawImage(img, 32, 32, 64, 64);
+      }
+    } else {
+      const t = icon || title.trim().charAt(0).toUpperCase() || "B";
+      g.fillStyle = ink; g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = (/\p{Extended_Pictographic}/u.test(t) ? "58px" : "bold 60px") + " system-ui, sans-serif"; g.fillText(t, 64, 68);
+    }
+  } catch (_) {}
+  const url = cv.toDataURL("image/png"); widgetTileCache.set(key, url); return url;
+}
+async function widgetSnapshot(){
+  const inBin = new Set(state.boards[TRASH_ID]?.cardIds || []), idx = cardIndex();
+  const lists = Object.values(state.cards).filter(c => c?.type === "todo" && !inBin.has(c.id) && !c.linkTo)
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, WIDGET_LIST_MAX)
+    .map(c => ({id:c.id, title:c.title || "List", board:widgetBoardTitle(idx.onBoard.get(c.id) || idx.onBoard.get(idx.holder.get(c.id)?.id)),
+      items:(c.items || []).slice(0, WIDGET_ITEM_MAX).map(i => ({id:i.id, text:String(i.text || "").slice(0, 200), done:!!i.done, due:i.due || ""}))}));
+  const boardOut = async ids => { const out = []; for (const bid of ids) if (state.boards[bid] && bid !== TRASH_ID) out.push({id:bid, title:widgetBoardTitle(bid), tile:await widgetTile(bid)}); return out; };
+  const recent = Object.values(state.boards).filter(b => b.id !== TRASH_ID && b.lastViewedAt).sort((a, b) => b.lastViewedAt - a.lastViewedAt).slice(0, 8).map(b => b.id);
+  const favs = (state.favorites || []).map(id => state.cards[id]).filter(c => c?.type === "board" && c.boardId).map(c => c.boardId).slice(0, 8);
+  return {v:1, at:Date.now(), home:state.rootBoardId, lists, recent:await boardOut(recent), favs:await boardOut(favs)};
+}
+let widgetPushT = 0, widgetLastJson = "";
+function widgetPushSoon(ms = 2500){
+  if (!ANDROID || !state) return;
+  clearTimeout(widgetPushT);
+  widgetPushT = setTimeout(async () => {
+    try { const j = JSON.stringify(await widgetSnapshot()); if (j !== widgetLastJson){ widgetLastJson = j; ANDROID.setWidgetData(j); } }
+    catch (e){ console.warn("widgets:", e); }
+  }, ms);
+}
+function moveToHomeUnsorted(id){
+  for (const b of Object.values(state.boards)){ b.cardIds = (b.cardIds || []).filter(x => x !== id); b.unsortedIds = (b.unsortedIds || []).filter(x => x !== id); }
+  const home = state.boards[state.rootBoardId]; if (home && !home.unsortedIds.includes(id)) home.unsortedIds.push(id);
+}
+/* what was done on widgets while CORKBORK was closed */
+async function applyWidgetActions(){
+  if (!ANDROID || !state || workspaceLoadFailure) return;
+  let list; try { list = JSON.parse(ANDROID.takePending() || "[]"); } catch (_) { return; }
+  if (!Array.isArray(list) || !list.length) return;
+  const done = []; let n = 0;
+  for (const a of list){
+    try {
+      if (a.type === "tick" || a.type === "add"){
+        const c = card(a.list); if (!c || c.type !== "todo"){ done.push(a.id); continue; }
+        if (a.type === "tick") patchCard(c.id, {items:(c.items || []).map(i => i.id === a.item ? {...i, done:!!a.done} : i)});
+        else if (String(a.text || "").trim()) patchCard(c.id, {items:[...(c.items || []), {id:uid("i"), text:String(a.text).trim().slice(0, 2000), done:false}]});
+      } else if (a.type === "note" || a.type === "link"){
+        const t = String(a.text || "").trim(), url = /^https?:\/\/\S+$/i.test(t) ? t : (a.url || "");
+        const nc = url ? addCard("link", 0, 0, {url:safeWebUrl(url), title:a.title || ""}, true) : t ? addCard("note", 0, 0, {text:t, html:escapeHtml(t).replace(/\n/g, "<br>")}, true) : null;
+        if (nc) moveToHomeUnsorted(nc.id);
+      } else if (a.type === "image" && /^data:image\//.test(a.data || "")){
+        const blob = await dataUrlToBlob(a.data), f = new File([blob], a.name || "photo.jpg", {type:blob.type});
+        const nc = await addImageCard(f, 0, 0, true); if (nc) moveToHomeUnsorted(nc.id);
+        if (nc && a.text) patchCard(nc.id, {caption:String(a.text).slice(0, 500)});
+      }
+      done.push(a.id); n++;
+    } catch (e){ console.warn("widget action:", e); }
+  }
+  if (n){ markDirty(); renderAll(); toast(n + " change" + (n === 1 ? "" : "s") + " from your widgets added."); }
+  try { ANDROID.ackPending(JSON.stringify(done)); } catch (_) {}
+  widgetPushSoon(500);
+}
+/* a widget's › opens CORKBORK at a list or a board */
+window.corkborkOpen = function(target){
+  const [kind, id] = String(target || "").split(":");
+  if (kind === "board" && state.boards[id]){ openBoard(id); return; }
+  if (kind === "list" && card(id)){
+    const idx = cardIndex(), bid = idx.onBoard.get(id) || idx.onBoard.get(idx.holder.get(id)?.id);
+    if (bid) openBoard(bid);
+    setTimeout(() => { try { setSelection([id]); centerOnCard(card(id)); } catch (_) {} }, 200);
+  }
+};
+/* Google won't sign in inside an app's web view: the app opens this page in
+   Chrome (corkboard.html#android-signin), which signs in and hands the
+   passes back to the app. */
+let androidSignInWait = null;
+window.corkborkAndroidSignedIn = function(rt, at, exp){
+  if (rt) SAFE_STORE.set("cb_refresh", rt);
+  if (at) storeToken(at, Math.max(60, Math.round((Number(exp) - Date.now()) / 1000)) || 3500);
+  const w = androidSignInWait; androidSignInWait = null;
+  if (w) at ? w.res(SYNC.token) : w.rej(new Error("Sign-in didn't finish."));
+  toast(at ? "Signed in." : "Sign-in didn't finish.");
+};
+function androidSignIn(){
+  return new Promise((res, rej) => { androidSignInWait = {res, rej}; ANDROID.signIn(location.href.split("#")[0] + "#android-signin"); });
+}
+async function androidSignInPage(){
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;inset:0;z-index:99999;background:var(--canvas,#fbf2f0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;font:16px Karla,sans-serif";
+  box.innerHTML = '<b style="font-size:20px">Sign in for the CORKBORK app</b><span>Google doesn’t allow signing in inside apps, so it happens here in Chrome.</span>';
+  const go = document.createElement("button"); go.className = "primary"; go.textContent = "Sign in with Google"; go.style.cssText = "padding:12px 22px;border-radius:12px;font-size:16px";
+  box.appendChild(go); document.body.appendChild(box);
+  go.addEventListener("click", async () => {
+    try {
+      await loadGIS(); await workerSignIn();
+      const back = "corkbork://signedin#rt=" + encodeURIComponent(SAFE_STORE.get("cb_refresh") || "") + "&at=" + encodeURIComponent(SYNC.token || "") + "&exp=" + (SYNC.tokenExp || 0);
+      box.innerHTML = '<b style="font-size:20px">Signed in</b><span>Go back to the app:</span>';
+      const ret = document.createElement("a"); ret.href = back; ret.className = "primary"; ret.textContent = "Return to CORKBORK"; ret.style.cssText = "padding:12px 22px;border-radius:12px;font-size:16px;text-decoration:none";
+      box.appendChild(ret);
+    } catch (e){ go.textContent = "Try again"; toast("Sign-in didn't finish: " + (e?.message || e)); }
+  });
+}
+if (ANDROID){
+  document.documentElement.classList.add("in-android");
+  document.addEventListener("visibilitychange", () => { if (document.hidden) widgetPushSoon(0); else applyWidgetActions(); });
+  window.corkborkWidgetsChanged = () => applyWidgetActions();
+}
 /* ---- opening fast with a lot of pictures (U-034) ----------------------------
    Reading every picture before showing anything took many seconds once a
    workspace held hundreds of MB of them. Startup now reads the catalogue and
@@ -34001,6 +34142,11 @@ async function bootHydrateRest(){
   if (!workspaceLoadFailure) applyBugAudit();
   refreshSaveHealth();
   if (bootPending) setTimeout(bootHydrateRest, 50);
+  if (location.hash === "#android-signin") androidSignInPage();
+  if (ANDROID){
+    setTimeout(applyWidgetActions, 800); widgetPushSoon(1500);
+    const m = /^#open=(.+)$/.exec(location.hash); if (m) setTimeout(() => window.corkborkOpen(decodeURIComponent(m[1])), 600);
+  }
   else {
     if (!workspaceLoadFailure) setTimeout(migrateSharedAssetStorage, 500);
     if (!workspaceLoadFailure) setTimeout(resumeMasterArchiveMigration, 1200);
@@ -34017,6 +34163,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b189", [
+    "Android app: home-screen widgets for to-dos, Today, next up and boards.",
+    "Android: tick items from the widget. Quick note widget sends to Home \u203a Unsorted.",
+    "Android: sign in through Chrome.",
+  ]],
   ["b188", [
     "Phones and tablets load only the open board\u2019s pictures, and don\u2019t pre-download every original.",
   ]],
@@ -34057,13 +34208,6 @@ const PATCH_NOTES = [
     "Draw: Apple Pencil pressure changes line width.",
     "D&D sheet: Arrange moves the boxes. Layout saved per sheet.",
     "Save a copy: big workspaces open again; includes Drive originals.",
-  ]],
-  ["b179", [
-    "Lines: the end you drag stays under the pointer.",
-    "Lines no longer drop into, or attach to, boards and columns.",
-  ]],
-  ["b178", [
-    "Columns show their contents in full. Lists inside a column work like normal lists.",
   ]],
 ];
 function renderPatchNotes(){
