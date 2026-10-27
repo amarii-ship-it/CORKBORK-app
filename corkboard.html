@@ -1074,6 +1074,7 @@ svg.bz-ic{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:
 .bz.bz-arranging .bz-main [data-bz]::after{content:"\2725"; position:absolute; top:4px; right:6px; font-size:11px; color:var(--acc);}
 .bz .bz-dragging{background:var(--pp0, #FBF6EC); z-index:50; transition:none; box-shadow:0 10px 26px rgba(0,0,0,.28); cursor:grabbing;}
 .bz .bz-drop{height:4px; border-radius:2px; background:var(--acc); flex:none;}
+.se-bgdesc{font-style:italic; color:var(--pink2, #6b5a3a); margin:6px 0 10px; line-height:1.5;}
 .bz-btn.on{background:var(--acc); color:var(--acc-ink, #F4ECDD);}
 .bz-sec{padding:7px 10px;}
 .bz-sec h4{font-size:13px; color:var(--pink3, #5A4A2E); border-bottom:1px solid var(--pp3, #D8C7A5); padding-bottom:3px; margin-bottom:5px;}
@@ -5532,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b186";
+window.BUILD = "b187";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6295,6 +6296,24 @@ function markViewDirty(){
   saveTimer = setTimeout(saveNow, 500);
 }
 let editCount = 0;   /* every edit bumps this, so slow merges can tell they were overtaken */
+/* b187 freeze recorder: if the page stops responding for 4+ seconds, the
+   next report says when, for how long and what was open (iPad freezes
+   couldn't be reproduced here). Kept in the bug list, nothing is sent. */
+(function freezeWatch(){
+  let last = performance.now();
+  setInterval(() => {
+    const t = performance.now(), gap = t - last; last = t;
+    if (gap < 4000 || document.hidden) return;
+    try {
+      const where = $("#sheetEditor")?.classList.contains("open") ? "D&D sheet editor (" + (typeof sePage !== "undefined" ? sePage : "?") + ")" : document.body.classList.contains("note-full-open") ? "document editor" : "board";
+      const note = "App stopped responding for " + Math.round(gap / 1000) + " s in " + where + " \u00b7 build " + window.BUILD + " \u00b7 " + (state ? Object.keys(state.cards || {}).length : 0) + " cards";
+      (window.__freezes = window.__freezes || []).push(note); console.warn(note);
+      if (state && Array.isArray(state.bugs) && state.bugs.filter(b => /stopped responding/.test(b.text || "")).length < 20){
+        state.bugs.push({id:uid("bug"), ts:now(), text:note}); markDirty();
+      }
+    } catch (_) {}
+  }, 1000);
+})();
 function markDirty(){
   dirty = true; cloudDirty = true; editCount++;
   entityIdxCache = null;
@@ -28155,7 +28174,7 @@ function subclassLibPut(className, sub, src){
 
 /* ---- backgrounds ---- */
 function normBg(b){
-  return {name:cut(b.name, 80), skills:cutList(b.skills, 6).filter(s => SKILL_AB[s]), skillChoice:b.skillChoice ? {n:cutNum(b.skillChoice.n, 1, 4), from:cutList(b.skillChoice.from, 18).filter(s => SKILL_AB[s])} : null,
+  return {name:cut(b.name, 80), desc:cut(b.desc, 1200), skills:cutList(b.skills, 6).filter(s => SKILL_AB[s]), skillChoice:b.skillChoice ? {n:cutNum(b.skillChoice.n, 1, 4), from:cutList(b.skillChoice.from, 18).filter(s => SKILL_AB[s])} : null,
     tools:cutList(b.tools, 8), toolNote:cut(b.toolNote, 200), langs:cutList(b.langs, 6), langChoose:cutNum(b.langChoose, 0, 4), equipment:cutList(b.equipment, 20, 200),
     feature:b.feature?.n ? {n:cut(b.feature.n, 120), d:cut(b.feature.d, 6000)} : null,
     personality:cutList(b.personality, 12, 400), ideals:cutList(b.ideals, 12, 400), bonds:cutList(b.bonds, 12, 400), flaws:cutList(b.flaws, 12, 400)};
@@ -28226,6 +28245,8 @@ function seBackground(page, sh){
   page.appendChild(bzEl("div", "se-hint", "Don't see one? Import official content, or check Sources on Home."));
   if (custom) page.appendChild(seField("Background", sh.background, v => seSet({background:v}), {big:true, hint:"A background you make up: set its skills and tools under Abilities › Skills & proficiencies by hand."}));
   const look = g ? opts.find(o => o.key === g.key) || bgOptions().find(o => o.key === g.key) : null;
+  if (look?.bg?.desc) page.appendChild(bzEl("p", "se-p se-bgdesc", look.bg.desc));
+  else if (g && look && look.book !== "SRD") page.appendChild(bzEl("div", "se-hint", "No description saved for this background. Import it again to add one."));
   if (g){
     const ch = g.choices || {}, redo = next => { pushUndo(); applyBackground(look, next); renderSheetEditor(); };
     const sum = bzEl("div", "se-bgsum");
@@ -28366,6 +28387,9 @@ function parseBackgroundText(text){
   const src = field(/^Source\s*:\s*/i);
   if (!sk && !lines.some(l => /^Feature\s*:/i.test(l))) return [];
   const bg = {name, book:src};
+  /* b187: the opening paragraph, before the first "Skill Proficiencies:" style line */
+  const firstField = lines.findIndex((l, i) => i > first && /^(Skill|Tool) Proficienc|^Languages?\s*:|^Equipment\s*:|^Feature\s*:|^Source\s*:/i.test(l));
+  bg.desc = lines.slice(first + 1, firstField < 0 ? first + 1 : firstField).filter(l => l && !/^source\s*:/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 1200);
   const fixed = sk.split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.replace(/[.;]$/, "").trim()).filter(x => SKILL_AB[x]);
   if (/choice|choose|following/i.test(sk)){ bg.skillChoice = readSkillChoice(sk); bg.skills = /plus|and one/i.test(sk) ? fixed.slice(0, 1) : []; } else bg.skills = fixed;
   if (tl && !/^none/i.test(tl)){ if (/choice|one type/i.test(tl)) bg.toolNote = tl; else bg.tools = tl.split(/,\s*(?:and\s+)?|\s+and\s+/).map(x => x.trim()).filter(Boolean); }
@@ -33959,6 +33983,11 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b187", [
+    "New app icon (the CORKBORK raven) for phones and tablets.",
+    "D&D backgrounds show their description (imported ones: import again).",
+    "Freezes of 4+ seconds are noted in the bug list.",
+  ]],
   ["b186", [
     "Fixed: dragging out of a column could freeze it.",
     "Touch: tap or hold a toolbar group to see its tools.",

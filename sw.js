@@ -7,7 +7,7 @@
    - Libraries loaded on demand (Word layout, OCR, PDF pages): cached the
      first time they are used, then served offline.
    - Google sign-in and Drive: never cached; sync handles being offline.     */
-const SHELL = "corkbork-shell-v1";
+const SHELL = "corkbork-shell-v2";
 const LIBS = "corkbork-libs-v1";
 const SHELL_FILES = ["./", "./index.html", "./corkboard.html", "./privacy.html", "./terms.html", "./manifest.webmanifest",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png",
