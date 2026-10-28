@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b191";
+window.BUILD = "b192";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -32470,8 +32470,11 @@ function queueCloudPush(){
 function startCloudPolling(){
   clearInterval(cloudPoll);
   if (!SYNC.clientId || location.protocol === "file:") return;
-  cloudPoll = setInterval(() => { if (document.visibilityState === "visible") requestCloudSync(); }, SYNC_POLL_MS);
+  cloudPoll = setInterval(() => { if (cloudPollWanted()) requestCloudSync(); }, SYNC_POLL_MS);
 }
+/* a browser tab checks Drive only while it's on screen; the Android app keeps
+   running off screen (b192), so it keeps syncing there too */
+function cloudPollWanted(){ return document.visibilityState === "visible" || !!window.CorkborkAndroid; }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && SYNC.clientId) requestCloudSync(); });
 addEventListener("online", () => { if (SYNC.clientId) requestCloudSync(); });
 
@@ -33989,7 +33992,12 @@ async function androidSignInPage(){
 }
 if (ANDROID){
   document.documentElement.classList.add("in-android");
-  document.addEventListener("visibilitychange", () => { if (document.hidden) widgetPushSoon(0); else applyWidgetActions(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden){ applyWidgetActions(); return; }
+    widgetPushSoon(0);
+    /* leaving the screen: send unsynced changes now, not after the usual pause */
+    if (SYNC.pending){ clearTimeout(cloudTimer); requestCloudSync(); }
+  });
   window.corkborkWidgetsChanged = () => applyWidgetActions();
 }
 /* ---- opening fast with a lot of pictures (U-034) ----------------------------
@@ -34164,6 +34172,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b192", [
+    "Android: syncing carries on while the app is open but off screen.",
+  ]],
   ["b191", [
     "Fixed: Android app\u2019s top bar still under the status bar.",
     "Android: app version shown next to the build number.",
