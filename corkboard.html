@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b194";
+window.BUILD = "b195";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -33962,7 +33962,12 @@ async function widgetSnapshot(){
   const boardOut = async ids => { const out = []; for (const bid of ids) if (state.boards[bid] && bid !== TRASH_ID) out.push({id:bid, title:widgetBoardTitle(bid), tile:await widgetTile(bid)}); return out; };
   const recent = Object.values(state.boards).filter(b => b.id !== TRASH_ID && b.lastViewedAt).sort((a, b) => b.lastViewedAt - a.lastViewedAt).slice(0, 8).map(b => b.id);
   const favs = (state.favorites || []).map(id => state.cards[id]).filter(c => c?.type === "board" && c.boardId).map(c => c.boardId).slice(0, 8);
-  return {v:1, at:Date.now(), home:state.rootBoardId, lists, recent:await boardOut(recent), favs:await boardOut(favs)};
+  /* b195: every board by name, for choosing which a widget shows; tiles only for the chosen ones */
+  const all = Object.values(state.boards).filter(b => b.id !== TRASH_ID).map(b => ({id:b.id, title:widgetBoardTitle(b.id)}))
+    .sort((a, b) => a.title.localeCompare(b.title)).slice(0, 400);
+  let chosen = []; try { chosen = JSON.parse(window.CorkborkAndroid?.chosenBoards?.() || "[]"); } catch (_) {}
+  return {v:1, at:Date.now(), home:state.rootBoardId, lists, recent:await boardOut(recent), favs:await boardOut(favs), all,
+    picked:await boardOut((Array.isArray(chosen) ? chosen : []).slice(0, 60))};
 }
 let widgetPushT = 0, widgetLastJson = "";
 function widgetPushSoon(ms = 2500){
@@ -34053,7 +34058,7 @@ if (ANDROID){
     /* leaving the screen: send unsynced changes now, not after the usual pause */
     if (SYNC.pending){ clearTimeout(cloudTimer); requestCloudSync(); }
   });
-  window.corkborkWidgetsChanged = () => applyWidgetActions();
+  window.corkborkWidgetsChanged = () => { applyWidgetActions(); widgetPushSoon(300); };
 }
 /* ---- opening fast with a lot of pictures (U-034) ----------------------------
    Reading every picture before showing anything took many seconds once a
@@ -34227,6 +34232,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b195", [
+    "Android: boards widgets can show boards you choose (Recent stays the default).",
+  ]],
   ["b194", [
     "Android: fixed the 2x2 Today widget.",
     "Android: boards widget at 4x1 and 2x1 shows just the tiles.",
