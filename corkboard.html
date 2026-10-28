@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b189";
+window.BUILD = "b190";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -34163,6 +34163,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b190", [
+    "Fixed: Android app\u2019s top bar sat under the camera and status icons.",
+  ]],
   ["b189", [
     "Android app: home-screen widgets for to-dos, Today, next up and boards.",
     "Android: tick items from the widget. Quick note widget sends to Home \u203a Unsorted.",
@@ -34200,14 +34203,6 @@ const PATCH_NOTES = [
     "New toolbar: similar tools grouped. Hover a corner triangle for the rest.",
     "Settings \u203a Toolbar: Grouped or Classic, edit groups, save templates.",
     "New Board and Widgets icons. Image merged into Upload.",
-  ]],
-  ["b180", [
-    "PDF reader: select and copy text, highlight, fill in forms, zoom. Works on iPad.",
-    "PDF reader: Convert to document opens the text in the editor.",
-    "PDF reader: Download filled PDF.",
-    "Draw: Apple Pencil pressure changes line width.",
-    "D&D sheet: Arrange moves the boxes. Layout saved per sheet.",
-    "Save a copy: big workspaces open again; includes Drive originals.",
   ]],
 ];
 function renderPatchNotes(){
