@@ -5533,7 +5533,7 @@ window.__errs = [];
    bar next to the wordmark, so there is never any doubt about which file
    is actually running.
    ===================================================================== */
-window.BUILD = "b192";
+window.BUILD = "b193";
 
 /* =====================================================================
    PROJECT INTENT AND CURRENT BACKLOG
@@ -6055,8 +6055,11 @@ function cloneWorkspaceForSave(value, seen=new WeakMap()){
   for (const [key, item] of Object.entries(value)) out[key] = cloneWorkspaceForSave(item, seen);
   return out;
 }
-async function unpackStoredWorkspace(source, memo = tabAssetMemo()){
+async function unpackStoredWorkspace(source, memo = tabAssetMemo(), partialFrom = null){
   if (!source) return source;
+  /* U-058: only the pictures named in partialFrom are read in; cards whose pictures
+     aren't here (yet) keep naming them by token */
+  if (partialFrom){ await fetchAssetsInto(memo, [...collectAssetTokens(partialFrom).keys()]); return unpackFromMemo(source, memo, true); }
   /* pictures this tab already holds are reused, not read again: a second
      copy of every picture doubled memory on each restore or Drive pull */
   return mapStoredAssets(source, "unpack", memo);
@@ -6549,7 +6552,10 @@ async function saveNowLocked(retried){
     const refs = [...collectAssetTokens(packed).keys()].map(id => ASSET_KEY_PREFIX + id);
     const back = await idbCheck(WORKSPACE_STAMP_KEY, refs);
     if (!back.value || !tabSame(back.value, stamp)) throw new Error("the saved copy did not read back correctly");
-    if (back.missing.length) throw new Error("a shared attachment is missing from local storage");
+    if (back.missing.length){
+      const coming = await assetsComingSet();   /* U-058: still downloading from Drive */
+      if (back.missing.some(k => !coming.has(k.slice(ASSET_KEY_PREFIX.length)))) throw new Error("a shared attachment is missing from local storage");
+    }
     /* forget pictures nothing points at any more (deleted cards), so their
        megabytes can be freed; anything still live stays remembered */
     if (assetTokenCache.size > refs.length){
@@ -32065,7 +32071,7 @@ function syncProgress(verb, done, total){
   else {
     SYNC.progress = Math.floor(done / total * 100);
     SYNC.detail = verb + " pictures: " + done.toLocaleString() + " of " + total.toLocaleString() + ". " +
-      (verb === "Uploading" ? "Your other devices get these boards when this finishes; keep CORKBORK open." : "The new boards appear when this finishes.");
+      (verb === "Uploading" ? "Your other devices get these boards when this finishes; keep CORKBORK open." : "Pictures fill in as they arrive.");
   }
   refreshSyncUI();
 }
@@ -32097,11 +32103,12 @@ async function uploadAssets(catalogue, meta){
     });
   } finally { await saver.flush(); syncProgress("", 0, 0); }
 }
-async function downloadAssets(catalogue, meta){
+async function downloadAssets(catalogue, meta, remoteMap = catalogue.driveAssets || {}){
   const have = new Set(await idbKeys());
-  const want = [...collectAssetTokens(catalogue).keys()].filter(id => !have.has(ASSET_KEY_PREFIX + id));
+  return downloadAssetIds([...collectAssetTokens(catalogue).keys()].filter(id => !have.has(ASSET_KEY_PREFIX + id)), meta, remoteMap);
+}
+async function downloadAssetIds(want, meta, remoteMap = {}){
   if (!want.length) return;
-  const remoteMap = catalogue.driveAssets || {};
   const unknown = want.filter(id => !remoteMap[id] && !meta.assets[id]);
   const index = unknown.length ? await driveAssetLookup(unknown, (await driveLayout()).assets) : null;
   const saver = assetProgressSaver(meta);
@@ -32243,9 +32250,47 @@ async function readRemoteCatalogue(fileId){
   if (!integrity.ok) throw new Error("Drive's copy failed its integrity check: " + integrity.errors[0]);
   return remote;
 }
-/* Bring a remote catalogue into this device. Returns true if anything changed. */
+/* U-058: pictures still coming down from Drive after a pull. Their cards
+   show a waiting picture, and saving doesn't wait for them. Kept in storage
+   so a restart mid-download picks up where it left off. */
+const ASSETS_COMING_KEY = "sync:coming";
+let assetsComing = null;
+async function assetsComingSet(){
+  if (!assetsComing){ let v = null; try { v = await idbGetRaw(ASSETS_COMING_KEY); } catch (_) {} assetsComing = new Set(Array.isArray(v) ? v : []); }
+  return assetsComing;
+}
+async function setAssetsComing(ids){
+  assetsComing = new Set(ids);
+  try { if (ids.length) await idbSet(ASSETS_COMING_KEY, [...ids]); else await idbDel(ASSETS_COMING_KEY); } catch (_) {}
+}
+/* a board's cards, with what they hold, in a stored (packed) workspace */
+function storedBoardCardIds(ws, bid){
+  const out = new Set(), walk = id => { const c = ws.cards?.[id]; if (!c || out.has(id)) return; out.add(id);
+    for (const k of [...(c.childIds || []), ...(c.attachedIds || []), ...(c.unsortedIds || [])]) walk(k); };
+  const b = ws.boards?.[bid]; for (const id of [...(b?.cardIds || []), ...(b?.unsortedIds || [])]) walk(id);
+  return out;
+}
+/* bring down the pictures still owed, then put them in their cards */
+async function downloadAssetsComing(meta){
+  const coming = await assetsComingSet(); if (!coming.size) return;
+  const have = new Set(await idbKeys());
+  await downloadAssetIds([...coming].filter(id => !have.has(ASSET_KEY_PREFIX + id)), meta);
+  await setAssetsComing([]);
+  /* cards still naming a picture by token get it now (on a phone: those on screen; the rest when opened) */
+  const waiting = Object.keys(state.cards).filter(id => hasAssetToken(state.cards[id]));
+  if (waiting.length){ bootPending = {memo:bootPending?.memo || tabAssetMemo(), ids:waiting}; await bootHydrateRest(); }
+}
+/* Bring a remote catalogue into this device. Returns true if anything changed.
+   U-058: boards first. Pictures outside cards, on Home (the board that opens
+   first) and on the board on screen come down before the merge; the rest
+   after it, while the boards already show. A new phone used to show nothing
+   until every picture had downloaded. */
 async function mergeRemoteCatalogue(base, remote, meta){
-  await downloadAssets(remote, meta);
+  const remoteMap = remote.driveAssets || {};
+  for (const [id, f] of Object.entries(remoteMap)) if (!meta.assets[id]) meta.assets[id] = f;
+  const {cards:remoteCards = {}, ...remoteRest} = remote;
+  const firstRemote = new Set([...storedBoardCardIds(remote, remote.rootBoardId), ...storedBoardCardIds(remote, currentBoardId)]);
+  await downloadAssets([remoteRest, [...firstRemote].map(id => remoteCards[id])], meta, remoteMap);
   /* what this device looked like when the merge began; anything done while
      Drive's copy is being unpacked (a drag, a paste, another tab's save) is
      laid back on top instead of being overwritten */
@@ -32254,15 +32299,24 @@ async function mergeRemoteCatalogue(base, remote, meta){
   const {workspace, report} = syncMergeWorkspace(base, local, remote);
   if (!report.fromRemote && !report.repairs) return false;
   delete workspace.driveAssets;
-  let merged = await unpackStoredWorkspace(workspace);
+  const have = new Set(await idbKeys());
+  const coming = [...collectAssetTokens(workspace).keys()].filter(id => !have.has(ASSET_KEY_PREFIX + id));
+  /* on a phone only the board on screen is unpacked (b188); elsewhere every picture already here */
+  const memo = tabAssetMemo(), {cards:mergedCards, ...mergedRest} = workspace;
+  const first = new Set([...storedBoardCardIds(workspace, workspace.rootBoardId), ...storedBoardCardIds(workspace, currentBoardId)]);
+  let merged = await unpackStoredWorkspace(workspace, memo, lazyPictures() ? [mergedRest, [...first].map(id => mergedCards[id])] : workspace);
   if (state !== startRef || editCount !== startEdits) merged = tabMergeWorkspace(startCopy, state, merged);
   scrubWorkspace(merged);
   const integrity = validateWorkspace(merged);
   if (!integrity.ok) throw new Error("the merged workspace failed its integrity check: " + integrity.errors[0]);
   state = merged;
   if (!state.boards[currentBoardId]) currentBoardId = state.rootBoardId;
+  const waiting = Object.keys(state.cards).filter(id => hasAssetToken(state.cards[id]));
+  bootPending = waiting.length ? {memo:bootPending?.memo || memo, ids:waiting} : null;
+  await setAssetsComing([...new Set([...(await assetsComingSet()), ...coming])]);
   undoStack = []; redoStack = []; selection.clear();
   dirty = true; await saveNow(); renderAll();
+  await downloadAssetsComing(meta);
   if (report.copies.length) toast(report.copies.length === 1
     ? "One card was edited on two devices. The other version is kept as a conflict copy beside it."
     : report.copies.length + " cards were edited on two devices. The other versions are kept as conflict copies.", 9000);
@@ -32390,6 +32444,7 @@ async function cloudSyncOnce(){
     const startState = state, startModified = editCount;
     const layout = await driveLayout();
     const meta = await syncMeta();
+    await downloadAssetsComing(meta);   /* U-058: a pull cut short last time */
     let base = await idbGetRaw(SYNC_BASE_KEY) || null;
     let file = await driveFind("catalogue", layout.root);
     let readRev = file?.headRevisionId || "";
@@ -34172,6 +34227,9 @@ async function bootHydrateRest(){
 
 /* Terse by design: one line per change, newest build first. */
 const PATCH_NOTES = [
+  ["b193", [
+    "Fixed: a new device showed no boards until every picture had downloaded.",
+  ]],
   ["b192", [
     "Android: syncing carries on while the app is open but off screen.",
   ]],
